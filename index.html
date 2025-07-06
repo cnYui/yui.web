@@ -4,8 +4,88 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>悠一的二次元小站</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-  <h1>欢迎来到悠一的二次元世界！</h1>
+  <header>
+    <div class="container">
+      <nav>
+        <a href="index.html" class="logo">悠一</a>
+        <ul class="nav-links">
+          <li><a href="index.html">首页</a></li>
+          <li><a href="posts.html">我的帖子</a></li>
+          <li><a href="#about">关于我</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>欢迎来到悠一的二次元世界！</h1>
+      <p>这里是我分享动漫、游戏、轻小说以及一切二次元相关内容的个人空间。</p>
+      <a href="posts.html" class="btn">查看我的帖子</a>
+    </section>
+
+    <section class="section" id="featured">
+      <h2 class="section-title">精选内容</h2>
+      <div class="cards">
+        <div class="card">
+          <div class="card-img emoji-card-img anime-bg">
+            📺
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">本季新番推荐</h3>
+            <p class="card-text">这里是我对本季度最值得一看的动画作品的个人推荐。</p>
+            <p class="card-date">2025-07-01</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-img emoji-card-img game-bg">
+            🎮
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">最近在玩的游戏</h3>
+            <p class="card-text">分享一些我最近在玩的游戏以及个人体验。</p>
+            <p class="card-date">2025-06-25</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-img emoji-card-img novel-bg">
+            📚
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">轻小说阅读笔记</h3>
+            <p class="card-text">记录我最近阅读的几部轻小说以及个人感想。</p>
+            <p class="card-date">2025-06-15</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="about">
+      <h2 class="section-title">关于我</h2>
+      <div class="post-container">
+        <p>大家好，我是悠一，一个热爱二次元文化的普通人。</p>
+        <p>这个网站是我记录和分享自己对动漫、游戏、轻小说等二次元内容的看法和感受的地方。</p>
+        <p>希望能通过这个小站结交更多志同道合的朋友，一起交流二次元的乐趣！</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <ul class="social-links">
+        <li><a href="#" title="Twitter"><i class="fab fa-twitter"></i></a></li>
+        <li><a href="#" title="哔哩哔哩"><i class="fab fa-bilibili"></i></a></li>
+        <li><a href="#" title="GitHub"><i class="fab fa-github"></i></a></li>
+      </ul>
+      <p class="copyright">&copy; 2025 悠一的二次元小站. 保留所有权利。</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
 </body>
 </html>
