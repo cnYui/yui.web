@@ -1,5 +1,4 @@
-// API地址
-const API_URL = 'http://localhost:3000/api';
+// 静态版本 - 使用localStorage存储数据
 
 // 默认帖子数据（如果API请求失败时使用）
 const defaultPosts = [
@@ -71,58 +70,44 @@ document.addEventListener('DOMContentLoaded', function() {
       submitBtn.textContent = '发布中...';
       submitBtn.disabled = true;
       
-      // 发送到后端 API
-      fetch(`${API_URL}/posts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ title, content })
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('发布失败');
+      // 创建新帖子对象
+      const newPost = {
+        id: Date.now().toString(), // 使用时间戳作为ID
+        title: title,
+        content: content,
+        date: new Date().toLocaleString('zh-CN')
+      };
+      
+      // 从 localStorage 获取现有帖子
+      const savedPosts = localStorage.getItem('posts');
+      let posts = [];
+      
+      if (savedPosts) {
+        try {
+          posts = JSON.parse(savedPosts);
+        } catch (error) {
+          console.error('解析帖子数据失败:', error);
+          posts = [];
         }
-        return response.json();
-      })
-      .then(newPost => {
-        // 创建新帖子元素
-        const postList = document.getElementById('post-list');
-        const postItem = document.createElement('div');
-        postItem.className = 'post-item';
-        postItem.dataset.id = newPost.id;
-        
-        // 设置帖子HTML
-        postItem.innerHTML = `
-          <div class="post-header">
-            <h3 class="post-title">${newPost.title}</h3>
-            <span class="post-meta">${newPost.date}</span>
-          </div>
-          <div class="post-content">${newPost.content.replace(/\n/g, '<br>')}</div>
-        `;
-        
-        // 添加到帖子列表的顶部
-        if (postList.firstChild) {
-          postList.insertBefore(postItem, postList.firstChild);
-        } else {
-          postList.appendChild(postItem);
-        }
-        
-        // 清空表单
-        postForm.reset();
-        
-        // 恢复按钮状态
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
-      })
-      .catch(error => {
-        console.error('发布帖子错误:', error);
-        alert('发布失败，请重试');
-        
-        // 恢复按钮状态
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
-      });
+      }
+      
+      // 添加新帖子到数组开头
+      posts.unshift(newPost);
+      
+      // 保存到 localStorage
+      localStorage.setItem('posts', JSON.stringify(posts));
+      
+      // 清空表单
+      postForm.reset();
+      
+      // 恢复按钮状态
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+      
+      // 重新加载帖子列表
+      loadPosts();
+      
+      alert('发布成功！');
     });
   }
   
@@ -133,80 +118,40 @@ document.addEventListener('DOMContentLoaded', function() {
   loadPosts();
 });
 
-// 从后端加载帖子
+// 从 localStorage 加载帖子
 function loadPosts() {
   const postList = document.getElementById('post-list');
   if (!postList) return;
   
-  // 显示加载状态
-  const loadingElement = document.createElement('div');
-  loadingElement.className = 'loading-message';
-  loadingElement.id = 'loading-message'; // 添加ID便于后续删除
-  loadingElement.textContent = '正在加载帖子...';
+  // 清空列表
   postList.innerHTML = '';
-  postList.appendChild(loadingElement);
   
-  console.log('开始加载帖子，请求URL:', `${API_URL}/posts`);
+  // 从 localStorage 获取帖子
+  const savedPosts = localStorage.getItem('posts');
+  let posts = [];
   
-  // 设置超时处理
-  const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('请求超时')), 5000); // 增加超时时间到 5 秒
-  });
+  if (savedPosts) {
+    try {
+      posts = JSON.parse(savedPosts);
+    } catch (error) {
+      console.error('解析帖子数据失败:', error);
+      posts = defaultPosts;
+    }
+  } else {
+    // 如果没有本地数据，使用默认数据
+    posts = defaultPosts;
+    localStorage.setItem('posts', JSON.stringify(posts));
+  }
   
-  // 从后端 API 获取帖子
-  Promise.race([
-    fetch(`${API_URL}/posts`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-      cache: 'no-cache' // 禁用缓存，确保每次都获取最新数据
-    }),
-    timeoutPromise
-  ])
-    .then(response => {
-      console.log('收到响应:', response.status, response.statusText);
-      if (!response.ok) {
-        throw new Error(`加载帖子失败: ${response.status} ${response.statusText}`);
-      }
-      return response.json();
-    })
-    .then(posts => {
-      console.log('获取到帖子数据:', posts);
-      // 清除加载状态
-      postList.innerHTML = '';
-      
-      if (!posts || posts.length === 0) {
-        // 如果没有帖子，显示提示信息
-        const emptyMessage = document.createElement('div');
-        emptyMessage.className = 'empty-message';
-        emptyMessage.textContent = '还没有帖子，来发布第一篇吧！';
-        postList.appendChild(emptyMessage);
-        return;
-      }
-      
-      // 按日期降序排序（最新的在前）
-      posts.sort((a, b) => new Date(b.date || b["日期"]) - new Date(a.date || a["日期"]));
-      
-      // 添加帖子到页面
-      renderPosts(posts, postList);
-    })
-    .catch(error => {
-      console.error('加载帖子错误:', error);
-      console.log('使用默认帖子数据');
-      
-      // 清除加载状态
-      postList.innerHTML = '';
-      
-      // 使用默认数据
-      renderPosts(defaultPosts, postList);
-      
-      // 显示离线模式提示
-      const offlineNotice = document.createElement('div');
-      offlineNotice.className = 'offline-notice';
-      offlineNotice.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 当前为离线模式，显示的是默认帖子。<br>错误信息: ${error.message}`;
-      postList.insertBefore(offlineNotice, postList.firstChild);
-    });
+  if (posts && posts.length > 0) {
+    renderPosts(posts, postList);
+  } else {
+    // 显示空列表提示
+    const emptyMessage = document.createElement('div');
+    emptyMessage.className = 'empty-message';
+    emptyMessage.innerHTML = '<p>还没有帖子，<a href="#post-form">去发布一篇</a>吧！</p>';
+    postList.appendChild(emptyMessage);
+  }
 }
 
 // 渲染帖子列表
@@ -255,7 +200,8 @@ function setupAdminFeatures() {
   
   // 检查是否已登录
   const savedToken = localStorage.getItem('adminToken');
-  if (savedToken) {
+  const savedLoginStatus = localStorage.getItem('adminLoggedIn');
+  if (savedToken && savedLoginStatus === 'true') {
     adminToken = savedToken;
     isAdminLoggedIn = true;
     showAdminStatus();
@@ -294,35 +240,22 @@ function setupAdminFeatures() {
     const username = document.getElementById('admin-username').value;
     const password = document.getElementById('admin-password').value;
     
-    try {
-      const response = await fetch(`${API_URL}/admin/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ username, password })
-      });
+    // 静态版本 - 简单的用户名密码验证
+    if (username === 'admin' && password === 'yui2025') {
+      adminToken = 'static-admin-token-' + Date.now();
+      isAdminLoggedIn = true;
+      localStorage.setItem('adminToken', adminToken);
+      localStorage.setItem('adminLoggedIn', 'true');
       
-      const result = await response.json();
+      adminModal.style.display = 'none';
+      showAdminStatus();
       
-      if (result.success) {
-        adminToken = result.token;
-        isAdminLoggedIn = true;
-        localStorage.setItem('adminToken', adminToken);
-        
-        adminModal.style.display = 'none';
-        showAdminStatus();
-        
-        // 重新加载帖子以显示删除按钮
-        loadPosts();
-        
-        alert('登录成功！');
-      } else {
-        alert(result.message || '登录失败');
-      }
-    } catch (error) {
-      console.error('登录错误:', error);
-      alert('登录失败，请检查网络连接');
+      // 重新加载帖子以显示删除按钮
+      loadPosts();
+      
+      alert('登录成功！');
+    } else {
+      alert('用户名或密码错误！');
     }
   });
   
@@ -338,6 +271,7 @@ function setupAdminFeatures() {
     isAdminLoggedIn = false;
     adminToken = null;
     localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminLoggedIn');
     
     adminStatus.classList.remove('show');
     adminBtn.textContent = '管理员';
@@ -350,7 +284,7 @@ function setupAdminFeatures() {
   }
   
   // 删除帖子函数
-  window.deletePost = async function(postId) {
+  window.deletePost = function(postId) {
     if (!isAdminLoggedIn || !adminToken) {
       alert('请先登录管理员账户');
       return;
@@ -360,25 +294,35 @@ function setupAdminFeatures() {
       return;
     }
     
+    // 从 localStorage 获取帖子数据
+    const savedPosts = localStorage.getItem('posts');
+    if (!savedPosts) {
+      alert('没有找到帖子数据');
+      return;
+    }
+    
     try {
-      const response = await fetch(`${API_URL}/posts/${postId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        }
-      });
+      let posts = JSON.parse(savedPosts);
       
-      const result = await response.json();
+      // 过滤掉要删除的帖子
+      const originalLength = posts.length;
+      posts = posts.filter(post => (post.id || post.ID) !== postId);
       
-      if (result.success) {
-        alert('帖子已删除');
-        loadPosts(); // 重新加载帖子列表
-      } else {
-        alert(result.message || '删除失败');
+      if (posts.length === originalLength) {
+        alert('未找到要删除的帖子');
+        return;
       }
+      
+      // 保存更新后的数据
+      localStorage.setItem('posts', JSON.stringify(posts));
+      
+      // 重新加载帖子列表
+      loadPosts();
+      
+      alert('帖子已删除');
     } catch (error) {
-      console.error('删除错误:', error);
-      alert('删除失败，请检查网络连接');
+      console.error('删除帖子错误:', error);
+      alert('删除失败，数据解析错误');
     }
   };
   
