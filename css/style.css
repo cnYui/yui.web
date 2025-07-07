@@ -155,6 +155,15 @@ nav {
 .card-img {
   width: 100%;
   height: 200px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card-image {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
 
@@ -455,7 +464,112 @@ textarea.form-control {
   color: #ff9800;
 }
 
+/* 内容页面样式 */
+.section-title {
+  color: var(--primary-color);
+  font-size: 2rem;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.content-section {
+  margin: 30px 0;
+}
+
+.content-section h2 {
+  color: var(--secondary-color);
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 5px;
+}
+
+.anime-item, .music-item, .novel-item {
+  background-color: #f8f9fa;
+  padding: 20px;
+  margin: 15px 0;
+  border-radius: 8px;
+  border-left: 4px solid var(--primary-color);
+}
+
+.anime-item h3, .music-item h3, .novel-item h3 {
+  color: var(--primary-color);
+  margin-bottom: 10px;
+}
+
+.back-link {
+  text-align: center;
+  margin-top: 30px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: var(--primary-color);
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.btn:hover {
+  background-color: var(--secondary-color);
+}
+
+/* 可点击卡片样式 */
+.card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.card-link:hover {
+  text-decoration: none;
+  color: inherit;
+}
+
+.card-link .card {
+  transition: all 0.3s ease;
+}
+
+.card-link:hover .card {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
 /* 响应式设计 */
+@media (max-width: 768px) {
+  .container {
+    width: 95%;
+    padding: 10px;
+  }
+
+  .hero h1 {
+    font-size: 2rem;
+  }
+
+  .cards {
+    flex-direction: column;
+  }
+
+  .nav-links {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .nav-links li {
+    margin-left: 0;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+  }
+
+  .content-section h2 {
+    font-size: 1.3rem;
+  }
+}
+
 @media (max-width: 768px) {
   .hero h1 {
     font-size: 2rem;
