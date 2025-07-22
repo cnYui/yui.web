@@ -1,0 +1,92 @@
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00ff88;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00cc6a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="chart" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#00ff88;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#00ff88;stop-opacity:0.8" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bg)"/>
+  
+  <!-- Header -->
+  <rect x="0" y="0" width="400" height="50" fill="#1a1a1a" stroke="#00ff88" stroke-width="1"/>
+  <text x="20" y="25" fill="#00ff88" font-family="Arial, sans-serif" font-size="16" font-weight="bold">数据分析平台</text>
+  <text x="20" y="40" fill="#ccc" font-family="Arial, sans-serif" font-size="11">实时数据可视化系统</text>
+  
+  <!-- Status Indicators -->
+  <circle cx="320" cy="20" r="5" fill="#00ff88">
+    <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <text x="335" y="25" fill="#00ff88" font-family="Arial, sans-serif" font-size="10">实时</text>
+  
+  <circle cx="320" cy="35" r="5" fill="#ff6b6b">
+    <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <text x="335" y="40" fill="#ff6b6b" font-family="Arial, sans-serif" font-size="10">处理中</text>
+  
+  <!-- Main Dashboard -->
+  <rect x="20" y="60" width="360" height="220" fill="#0f0f0f" stroke="#333" stroke-width="1"/>
+  
+  <!-- Chart Area 1 - Line Chart -->
+  <rect x="30" y="70" width="160" height="100" fill="#1a1a1a" stroke="#00ff88" stroke-width="1"/>
+  <text x="35" y="85" fill="#00ff88" font-family="Arial, sans-serif" font-size="12" font-weight="bold">用户访问趋势</text>
+  
+  <!-- Line Chart -->
+  <polyline points="40,150 60,130 80,140 100,120 120,110 140,125 160,105 180,115" 
+            fill="none" stroke="#00ff88" stroke-width="2"/>
+  <polyline points="40,150 60,130 80,140 100,120 120,110 140,125 160,105 180,115 180,160 40,160" 
+            fill="url(#chart)"/>
+  
+  <!-- Chart Area 2 - Bar Chart -->
+  <rect x="210" y="70" width="160" height="100" fill="#1a1a1a" stroke="#00ff88" stroke-width="1"/>
+  <text x="215" y="85" fill="#00ff88" font-family="Arial, sans-serif" font-size="12" font-weight="bold">数据源分布</text>
+  
+  <!-- Bar Chart -->
+  <rect x="220" y="130" width="15" height="30" fill="#00ff88"/>
+  <rect x="240" y="120" width="15" height="40" fill="#00cc6a"/>
+  <rect x="260" y="140" width="15" height="20" fill="#00aa55"/>
+  <rect x="280" y="110" width="15" height="50" fill="#008844"/>
+  <rect x="300" y="125" width="15" height="35" fill="#006633"/>
+  <rect x="320" y="135" width="15" height="25" fill="#004422"/>
+  
+  <!-- Metrics Panel -->
+  <rect x="30" y="180" width="340" height="90" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
+  <text x="35" y="195" fill="#ccc" font-family="Arial, sans-serif" font-size="12" font-weight="bold">实时指标</text>
+  
+  <!-- Metric Cards -->
+  <rect x="40" y="205" width="70" height="50" rx="5" fill="#2a2a2a" stroke="#00ff88" stroke-width="1"/>
+  <text x="75" y="220" fill="#00ff88" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1,234</text>
+  <text x="75" y="235" fill="#ccc" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">在线用户</text>
+  <text x="75" y="248" fill="#888" font-family="Arial, sans-serif" font-size="9" text-anchor="middle">+12%</text>
+  
+  <rect x="120" y="205" width="70" height="50" rx="5" fill="#2a2a2a" stroke="#00ff88" stroke-width="1"/>
+  <text x="155" y="220" fill="#00ff88" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">89.5%</text>
+  <text x="155" y="235" fill="#ccc" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">系统负载</text>
+  <text x="155" y="248" fill="#888" font-family="Arial, sans-serif" font-size="9" text-anchor="middle">正常</text>
+  
+  <rect x="200" y="205" width="70" height="50" rx="5" fill="#2a2a2a" stroke="#00ff88" stroke-width="1"/>
+  <text x="235" y="220" fill="#00ff88" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2.3GB</text>
+  <text x="235" y="235" fill="#ccc" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">数据处理</text>
+  <text x="235" y="248" fill="#888" font-family="Arial, sans-serif" font-size="9" text-anchor="middle">实时</text>
+  
+  <rect x="280" y="205" width="70" height="50" rx="5" fill="#2a2a2a" stroke="#00ff88" stroke-width="1"/>
+  <text x="315" y="220" fill="#00ff88" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">99.9%</text>
+  <text x="315" y="235" fill="#ccc" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">可用性</text>
+  <text x="315" y="248" fill="#888" font-family="Arial, sans-serif" font-size="9" text-anchor="middle">优秀</text>
+  
+  <!-- Data Flow Animation -->
+  <circle cx="50" cy="100" r="3" fill="#00ff88">
+    <animateMotion dur="3s" repeatCount="indefinite">
+      <path d="M0,0 Q50,-20 100,0 Q150,20 200,0"/>
+    </animateMotion>
+  </circle>
+</svg>

@@ -1,0 +1,89 @@
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e293b;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="phoneGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#334155;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="screenGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e293b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bgGradient)"/>
+  
+  <!-- Phone frame -->
+  <rect x="150" y="30" width="100" height="180" rx="15" fill="url(#phoneGradient)" stroke="#475569" stroke-width="2"/>
+  
+  <!-- Screen -->
+  <rect x="160" y="45" width="80" height="150" rx="8" fill="url(#screenGradient)" stroke="#64748b" stroke-width="1"/>
+  
+  <!-- Status bar -->
+  <rect x="165" y="50" width="70" height="12" fill="#1e293b"/>
+  <text x="170" y="59" font-family="Arial, sans-serif" font-size="7" fill="#e2e8f0">9:41</text>
+  <circle cx="225" cy="56" r="2" fill="#10b981"/>
+  <rect x="228" y="54" width="8" height="4" rx="1" fill="#e2e8f0"/>
+  
+  <!-- App header -->
+  <rect x="165" y="65" width="70" height="20" fill="#3b82f6"/>
+  <text x="200" y="77" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="white" text-anchor="middle">React Native App</text>
+  
+  <!-- Navigation tabs -->
+  <rect x="165" y="90" width="23" height="15" fill="#3b82f6"/>
+  <text x="176" y="100" font-family="Arial, sans-serif" font-size="6" fill="white" text-anchor="middle">首页</text>
+  
+  <rect x="188" y="90" width="23" height="15" fill="#1e293b"/>
+  <text x="199" y="100" font-family="Arial, sans-serif" font-size="6" fill="#94a3b8" text-anchor="middle">发现</text>
+  
+  <rect x="211" y="90" width="24" height="15" fill="#1e293b"/>
+  <text x="223" y="100" font-family="Arial, sans-serif" font-size="6" fill="#94a3b8" text-anchor="middle">我的</text>
+  
+  <!-- Content cards -->
+  <rect x="170" y="110" width="60" height="25" rx="4" fill="#1e293b" stroke="#374151" stroke-width="1"/>
+  <circle cx="180" cy="118" r="3" fill="#10b981"/>
+  <text x="186" y="120" font-family="Arial, sans-serif" font-size="7" fill="#e2e8f0">技术文章</text>
+  <text x="225" y="128" font-family="Arial, sans-serif" font-size="6" fill="#94a3b8" text-anchor="end">128篇</text>
+  
+  <rect x="170" y="140" width="60" height="25" rx="4" fill="#1e293b" stroke="#374151" stroke-width="1"/>
+  <circle cx="180" cy="148" r="3" fill="#f59e0b"/>
+  <text x="186" y="150" font-family="Arial, sans-serif" font-size="7" fill="#e2e8f0">开源项目</text>
+  <text x="225" y="158" font-family="Arial, sans-serif" font-size="6" fill="#94a3b8" text-anchor="end">24个</text>
+  
+  <!-- Bottom navigation -->
+  <rect x="165" y="175" width="70" height="15" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <circle cx="175" cy="182" r="2" fill="#3b82f6"/>
+  <circle cx="190" cy="182" r="2" fill="#64748b"/>
+  <circle cx="205" cy="182" r="2" fill="#64748b"/>
+  <circle cx="220" cy="182" r="2" fill="#64748b"/>
+  
+  <!-- Side annotations -->
+  <text x="50" y="80" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#e2e8f0">React Native</text>
+  <text x="50" y="95" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">跨平台移动应用</text>
+  
+  <rect x="50" y="105" width="80" height="2" fill="#3b82f6"/>
+  
+  <text x="50" y="125" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0">• 原生性能</text>
+  <text x="50" y="140" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0">• 热重载</text>
+  <text x="50" y="155" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0">• 组件化开发</text>
+  <text x="50" y="170" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0">• TypeScript支持</text>
+  
+  <!-- Right side info -->
+  <text x="280" y="80" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#e2e8f0">技术栈</text>
+  
+  <rect x="280" y="90" width="60" height="20" rx="4" fill="#1e293b" stroke="#3b82f6" stroke-width="1"/>
+  <text x="310" y="102" font-family="Arial, sans-serif" font-size="8" fill="#3b82f6" text-anchor="middle">React Native</text>
+  
+  <rect x="280" y="115" width="60" height="20" rx="4" fill="#1e293b" stroke="#10b981" stroke-width="1"/>
+  <text x="310" y="127" font-family="Arial, sans-serif" font-size="8" fill="#10b981" text-anchor="middle">TypeScript</text>
+  
+  <rect x="280" y="140" width="60" height="20" rx="4" fill="#1e293b" stroke="#f59e0b" stroke-width="1"/>
+  <text x="310" y="152" font-family="Arial, sans-serif" font-size="8" fill="#f59e0b" text-anchor="middle">Redux Toolkit</text>
+  
+  <rect x="280" y="165" width="60" height="20" rx="4" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="310" y="177" font-family="Arial, sans-serif" font-size="8" fill="#8b5cf6" text-anchor="middle">Expo</text>
+</svg>

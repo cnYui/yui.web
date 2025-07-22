@@ -1,0 +1,90 @@
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e293b;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="terminalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#000000;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bgGradient)"/>
+  
+  <!-- Terminal window -->
+  <rect x="30" y="40" width="340" height="220" rx="8" fill="url(#terminalGradient)" stroke="#475569" stroke-width="2"/>
+  
+  <!-- Terminal header -->
+  <rect x="30" y="40" width="340" height="25" rx="8" fill="#374151"/>
+  <rect x="30" y="57" width="340" height="8" fill="#374151"/>
+  
+  <!-- Window controls -->
+  <circle cx="45" cy="52" r="4" fill="#ef4444"/>
+  <circle cx="60" cy="52" r="4" fill="#f59e0b"/>
+  <circle cx="75" cy="52" r="4" fill="#10b981"/>
+  
+  <!-- Terminal title -->
+  <text x="200" y="57" font-family="Monaco, monospace" font-size="10" fill="#e2e8f0" text-anchor="middle">DevOps Pipeline - CI/CD</text>
+  
+  <!-- Terminal content -->
+  <text x="40" y="85" font-family="Monaco, monospace" font-size="10" fill="#10b981">$ npm run build</text>
+  <text x="40" y="100" font-family="Monaco, monospace" font-size="9" fill="#94a3b8">✓ Building for production...</text>
+  <text x="40" y="115" font-family="Monaco, monospace" font-size="9" fill="#94a3b8">✓ Optimizing assets...</text>
+  <text x="40" y="130" font-family="Monaco, monospace" font-size="9" fill="#10b981">✓ Build completed in 2.3s</text>
+  
+  <text x="40" y="150" font-family="Monaco, monospace" font-size="10" fill="#3b82f6">$ docker build -t app:latest .</text>
+  <text x="40" y="165" font-family="Monaco, monospace" font-size="9" fill="#94a3b8">Sending build context to Docker daemon...</text>
+  <text x="40" y="180" font-family="Monaco, monospace" font-size="9" fill="#10b981">✓ Image built successfully</text>
+  
+  <text x="40" y="200" font-family="Monaco, monospace" font-size="10" fill="#f59e0b">$ kubectl apply -f deployment.yaml</text>
+  <text x="40" y="215" font-family="Monaco, monospace" font-size="9" fill="#10b981">✓ Deployment updated</text>
+  
+  <text x="40" y="235" font-family="Monaco, monospace" font-size="10" fill="#8b5cf6">$ terraform apply</text>
+  <text x="40" y="250" font-family="Monaco, monospace" font-size="9" fill="#10b981">✓ Infrastructure provisioned</text>
+  
+  <!-- Pipeline visualization -->
+  <rect x="50" y="20" width="300" height="15" rx="7" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  
+  <!-- Pipeline stages -->
+  <rect x="55" y="22" width="40" height="11" rx="5" fill="#10b981"/>
+  <text x="75" y="30" font-family="Arial, sans-serif" font-size="7" fill="white" text-anchor="middle">Build</text>
+  
+  <rect x="100" y="22" width="40" height="11" rx="5" fill="#10b981"/>
+  <text x="120" y="30" font-family="Arial, sans-serif" font-size="7" fill="white" text-anchor="middle">Test</text>
+  
+  <rect x="145" y="22" width="50" height="11" rx="5" fill="#3b82f6"/>
+  <text x="170" y="30" font-family="Arial, sans-serif" font-size="7" fill="white" text-anchor="middle">Deploy</text>
+  
+  <rect x="200" y="22" width="50" height="11" rx="5" fill="#f59e0b"/>
+  <text x="225" y="30" font-family="Arial, sans-serif" font-size="7" fill="white" text-anchor="middle">Monitor</text>
+  
+  <rect x="255" y="22" width="50" height="11" rx="5" fill="#8b5cf6"/>
+  <text x="280" y="30" font-family="Arial, sans-serif" font-size="7" fill="white" text-anchor="middle">Scale</text>
+  
+  <!-- Status indicators -->
+  <circle cx="320" cy="27" r="3" fill="#10b981"/>
+  <text x="330" y="30" font-family="Arial, sans-serif" font-size="8" fill="#10b981">Active</text>
+  
+  <!-- Side panel with tools -->
+  <rect x="20" y="270" width="360" height="25" rx="4" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  
+  <rect x="30" y="275" width="50" height="15" rx="3" fill="#374151" stroke="#64748b" stroke-width="1"/>
+  <text x="55" y="284" font-family="Arial, sans-serif" font-size="8" fill="#e2e8f0" text-anchor="middle">GitHub Actions</text>
+  
+  <rect x="90" y="275" width="40" height="15" rx="3" fill="#374151" stroke="#64748b" stroke-width="1"/>
+  <text x="110" y="284" font-family="Arial, sans-serif" font-size="8" fill="#e2e8f0" text-anchor="middle">Docker</text>
+  
+  <rect x="140" y="275" width="50" height="15" rx="3" fill="#374151" stroke="#64748b" stroke-width="1"/>
+  <text x="165" y="284" font-family="Arial, sans-serif" font-size="8" fill="#e2e8f0" text-anchor="middle">Kubernetes</text>
+  
+  <rect x="200" y="275" width="45" height="15" rx="3" fill="#374151" stroke="#64748b" stroke-width="1"/>
+  <text x="222" y="284" font-family="Arial, sans-serif" font-size="8" fill="#e2e8f0" text-anchor="middle">Terraform</text>
+  
+  <rect x="255" y="275" width="40" height="15" rx="3" fill="#374151" stroke="#64748b" stroke-width="1"/>
+  <text x="275" y="284" font-family="Arial, sans-serif" font-size="8" fill="#e2e8f0" text-anchor="middle">Ansible</text>
+  
+  <rect x="305" y="275" width="40" height="15" rx="3" fill="#374151" stroke="#64748b" stroke-width="1"/>
+  <text x="325" y="284" font-family="Arial, sans-serif" font-size="8" fill="#e2e8f0" text-anchor="middle">Grafana</text>
+</svg>

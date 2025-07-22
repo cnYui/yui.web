@@ -191,9 +191,15 @@ function renderPosts(posts, container) {
 function setupAdminFeatures() {
   const adminBtn = document.getElementById('admin-btn');
   const adminModal = document.getElementById('admin-modal');
-  const closeBtn = adminModal.querySelector('.close');
   const adminLoginForm = document.getElementById('admin-login-form');
   const adminStatus = document.getElementById('admin-status');
+  
+  // 如果必要的元素不存在，直接返回
+  if (!adminBtn || !adminModal || !adminLoginForm || !adminStatus) {
+    return;
+  }
+  
+  const closeBtn = adminModal.querySelector('.close');
   
   let isAdminLoggedIn = false;
   let adminToken = null;
