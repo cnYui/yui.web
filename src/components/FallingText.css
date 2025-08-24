@@ -1,0 +1,85 @@
+.falling-text-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100vh;
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 35vh;
+}
+
+.title-section {
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.subtitle-section {
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+.title-word {
+  display: inline-block;
+  margin: 0 0.1em;
+}
+
+.subtitle-word {
+  display: inline-block;
+  margin: 0 0.15em;
+}
+
+.falling-text-target {
+  display: inline-block;
+  color: white;
+  font-weight: bold;
+}
+
+.word {
+  display: inline-block;
+  margin: 0 2px;
+  user-select: none;
+  color: white;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.chinese-word {
+  /* 保持汉字原有样式 */
+  color: white;
+  font-weight: bold;
+  font-size: 1.5em;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.english-word {
+  /* 英文单词：小号、细长、浅灰色 */
+  color: #888888;
+  font-weight: 300;
+  font-size: 0.8em;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 5px rgba(136, 136, 136, 0.3);
+}
+
+.highlighted {
+  color: cyan;
+  font-weight: bold;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+}
+
+.blue-word {
+  color: #22FFFF !important;
+  text-shadow: 0 0 10px rgba(34, 255, 255, 0.5) !important;
+}
+
+.falling-text-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
