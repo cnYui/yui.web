@@ -95,6 +95,4 @@ tmp/
 temp/
 
 # Large media files
-public/music/
-public/images/music_pic/
-public/images/travel/
+# Removed exclusions for image directories to fix 404 errors in deployment
