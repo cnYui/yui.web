@@ -17,15 +17,13 @@ const MusicRecommend = () => {
     }}>
       {/* MUSIC 文字标题 */}
       <div style={{
-        position: 'fixed',
-        top: '3rem',
+        position: 'absolute',
+        top: '2rem',
         left: '50%',
         transform: 'translateX(-50%)',
         width: '250px',
         height: '80px',
-        zIndex: 1000,
-        padding: '1rem 2rem',
-        borderRadius: '10px'
+        zIndex: 20,
       }}>
         <TextPressure
           text="MUSIC"

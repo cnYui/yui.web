@@ -10,7 +10,7 @@ const TechBlog = () => {
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [profileCardOffset, setProfileCardOffset] = useState(0);
 
-  // 滚动事件监听器
+  // 滚动事件监听
   useEffect(() => {
     const handleScroll = () => {
       const container = scrollContainerRef.current;
@@ -23,8 +23,7 @@ const TechBlog = () => {
 
       // 计算ProfileCard的同步滚动偏移量
       // 当右侧内容滚动时，左侧ProfileCard向上移动
-      // 最大向上移动距离为150px，根据滚动进度线性映射
-      // 使用缓动函数优化滚动体验
+      // 最大向上移动距离为150px，根据滚动进度线性映�?      // 使用缓动函数优化滚动体验
       // 这个逻辑不受isScrolling状态影响，确保实时同步
       const maxOffset = 150;
       const easeOutQuart = 1 - Math.pow(1 - (scrollPercentage / 100), 4);
@@ -33,7 +32,7 @@ const TechBlog = () => {
 
       // 只有在非自动滚动状态下才检测滚动到底部的逻辑
       if (!isScrolling) {
-        // 检测是否滚动到底部（95%以上认为是底部）
+        // 检测是否滚动到底部�?5%以上认为是底部）
         if (scrollPercentage >= 95 && !hasScrolledToBottom) {
           setHasScrolledToBottom(true);
           triggerSmoothScroll();
@@ -64,8 +63,8 @@ const TechBlog = () => {
       // 使用requestAnimationFrame实现平滑滚动
       const animateScroll = (timestamp) => {
         const progress = Math.min((timestamp - startTime) / 1000, 1); // 1秒动画
-        const easeInOutQuad = progress < 0.5 
-          ? 2 * progress * progress 
+        const easeInOutQuad = progress < 0.5
+          ? 2 * progress * progress
           : 1 - Math.pow(-2 * progress + 2, 2) / 2;
         
         const newScrollTop = currentScrollTop + (targetScrollTop - currentScrollTop) * easeInOutQuad;
@@ -93,26 +92,21 @@ const TechBlog = () => {
 
   return (
     <div style={{
-      backgroundColor: '#000000',
-      minHeight: '100vh',
-      width: '100%',
-      position: 'relative',
-      color: '#ffffff'
     }}>
-      {/* TECH 文字标题 */}
+      {/* PROJECT 文字标题（与其他页面保持一致） */}
       <div style={{
-        position: 'fixed',
+        position: 'absolute',
         top: '2rem',
         left: '50%',
         transform: 'translateX(-50%)',
-        width: '200px',
+        width: '150px',
         height: '80px',
-        zIndex: 999
+        zIndex: 20
       }}>
         <TextPressure
           text="TECH"
           textColor="#FFFFFF"
-          minFontSize={36}
+          minFontSize={48}
           width={true}
           weight={true}
           italic={true}
@@ -152,7 +146,7 @@ const TechBlog = () => {
             handle="techdev"
             status="Coding"
             contactText="Contact Me"
-            avatarUrl="/主题.png"
+            avatarUrl="/avatar.jpg"
             iconUrl="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=tech%20icon%20pattern%20geometric%20circuit%20board%20design%20minimalist%20blue%20glow&image_size=square"
             showUserInfo={true}
             showBehindGradient={true}
@@ -195,8 +189,7 @@ const TechBlog = () => {
               textClassName="text-white/90"
             >
               <div style={{ lineHeight: '1.2', color: '#e8e8e8' }}>
-                我是一名充满激情的技术开发者，专注于前端开发与人工智能应用的深度融合。在这个数字化的世界里，我致力于通过代码创造美好的用户体验，分享技术探索的心得与生活中的感悟。
-              </div>
+                我是一名充满激情的技术开发者，专注于前端开发与人工智能应用的深度融合。在这个数字化的世界里，我致力于通过代码创造美好的用户体验，分享技术探索的心得与生活中的感悟�?              </div>
             </ScrollReveal>
           </div>
 
@@ -209,8 +202,7 @@ const TechBlog = () => {
               textClassName="text-white/90"
             >
               <div style={{ lineHeight: '1.2', color: '#e8e8e8' }}>
-                对新兴技术保持着永不熄灭的好奇心，我喜欢动手实践，从绚丽的3D可视化到智能的AI应用，不断挑战自己的技术边界。每一次技术突破都是对未知领域的勇敢探索，每一行代码都承载着对完美的不懈追求。
-              </div>
+                对新兴技术保持着永不熄灭的好奇心，我喜欢动手实践，从绚丽�?D可视化到智能的AI应用，不断挑战自己的技术边界。每一次技术突破都是对未知领域的勇敢探索，每一行代码都承载着对完美的不懈追求�?              </div>
             </ScrollReveal>
           </div>
 
@@ -224,19 +216,18 @@ const TechBlog = () => {
             >
               <div style={{ lineHeight: '1.2', color: '#d0d0d0' }}>
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <strong style={{ color: '#4ecdc4' }}>前端开发：</strong>React、Vue.js、TypeScript、Vite —— 构建现代化的用户界面
+                  <strong style={{ color: '#4ecdc4' }}>前端开发：</strong>React、Vue.js、TypeScript、Vite —�?构建现代化的用户界面
                 </div>
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <strong style={{ color: '#45b7d1' }}>后端技术：</strong>Node.js、Python、Go —— 打造高性能的服务端架构
+                  <strong style={{ color: '#45b7d1' }}>后端技术：</strong>Node.js、Python、Go —�?打造高性能的服务端架构
                 </div>
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <strong style={{ color: '#96ceb4' }}>AI/ML领域：</strong>TensorFlow、PyTorch、OpenAI API —— 探索人工智能的无限可能
+                  <strong style={{ color: '#96ceb4' }}>AI/ML领域：</strong>TensorFlow、PyTorch、OpenAI API — 探索人工智能的无限可能                </div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <strong style={{ color: '#ffd93d' }}>开发工具：</strong>Git、Docker、Vite、Webpack —�?提升开发效率的利器
                 </div>
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <strong style={{ color: '#ffd93d' }}>开发工具：</strong>Git、Docker、Vite、Webpack —— 提升开发效率的利器
-                </div>
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <strong style={{ color: '#ff6b6b' }}>开发环境：</strong>Windsurf、Cursor、Trae、CodeBuddy —— 现代化的编程体验
+                  <strong style={{ color: '#ff6b6b' }}>开发环境：</strong>Windsurf、Cursor、Trae、CodeBuddy —�?现代化的编程体验
                 </div>
               </div>
             </ScrollReveal>
@@ -251,12 +242,11 @@ const TechBlog = () => {
               textClassName="text-white/90"
             >
               <div style={{ lineHeight: '1.2', color: '#e8e8e8' }}>
-                目前正在深入探索Web3、区块链技术和智能合约等前沿领域，相信这些技术将重新定义数字世界的未来。在技术的海洋中，我始终保持学习的热情，与时代同步前行。
-              </div>
+                目前正在深入探索Web3、区块链技术和智能合约等前沿领域，相信这些技术将重新定义数字世界的未来。在技术的海洋中，我始终保持学习的热情，与时代同步前行�?              </div>
             </ScrollReveal>
           </div>
 
-          {/* 新的内容区域 - 当滚动到底部时显示 */}
+          {/* 新的内容区域 - 当滚动到底部时显�?*/}
           <div style={{
             marginTop: '4rem',
             opacity: currentSection === 1 ? 1 : 0,
@@ -274,8 +264,7 @@ const TechBlog = () => {
                 textClassName="text-white/90"
               >
                 <div style={{ lineHeight: '1.2', color: '#e8e8e8', fontSize: '1.2rem', fontWeight: 'bold' }}>
-                  🚀 探索更多技术领域
-                </div>
+                  🚀 探索更多技术领�?                </div>
               </ScrollReveal>
             </div>
 
@@ -289,14 +278,13 @@ const TechBlog = () => {
               >
                 <div style={{ lineHeight: '1.2', color: '#d0d0d0' }}>
                   <div style={{ marginBottom: '1.5rem' }}>
-                    <strong style={{ color: '#ff9f43' }}>云计算与DevOps：</strong>AWS、Docker、Kubernetes、CI/CD —— 构建现代化的部署流程
+                    <strong style={{ color: '#ff9f43' }}>云计算与DevOps：</strong>AWS、Docker、Kubernetes、CI/CD — 构建现代化的部署流程
                   </div>
                   <div style={{ marginBottom: '1.5rem' }}>
-                    <strong style={{ color: '#a55eea' }}>数据库技术：</strong>MongoDB、PostgreSQL、Redis —— 高效的数据存储与管理
+                    <strong style={{ color: '#a55eea' }}>数据库技术：</strong>MongoDB、PostgreSQL、Redis —�?高效的数据存储与管理
                   </div>
                   <div style={{ marginBottom: '1.5rem' }}>
-                    <strong style={{ color: '#26de81' }}>移动开发：</strong>React Native、Flutter —— 跨平台移动应用开发
-                  </div>
+                    <strong style={{ color: '#26de81' }}>移动开发：</strong>React Native、Flutter — 跨平台移动应用开发                  </div>
                 </div>
               </ScrollReveal>
             </div>
@@ -310,8 +298,7 @@ const TechBlog = () => {
                 textClassName="text-white/90"
               >
                 <div style={{ lineHeight: '1.2', color: '#e8e8e8' }}>
-                  在技术的道路上，每一次学习都是一次成长，每一次实践都是一次突破。让我们一起在代码的世界中探索无限可能，用技术改变世界，用创新点亮未来。
-                </div>
+                  在技术的道路上，每一次学习都是一次成长，每一次实践都是一次突破。让我们一起在代码的世界中探索无限可能，用技术改变世界，用创新点亮未来�?                </div>
               </ScrollReveal>
             </div>
 
@@ -330,7 +317,7 @@ const TechBlog = () => {
                   fontSize: '1.1rem',
                   fontStyle: 'italic'
                 }}>
-                  "代码是诗歌，技术是艺术，创新是灵魂。"
+                  "代码是诗歌，技术是艺术，创新是灵魂�?
                 </div>
               </ScrollReveal>
             </div>

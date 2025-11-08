@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-route
 import Dock from './components/Dock';
 import Home from './pages/Home';
 import TechBlog from './pages/TechBlog';
+import ProjectExperience from './pages/ProjectExperience';
 import AnimeRecommend from './pages/AnimeRecommend';
 import MusicRecommend from './pages/MusicRecommend';
 import TravelFootprint from './pages/TravelFootprint';
@@ -34,6 +35,16 @@ function AppContent() {
       ),
       label: '技术博客',
       onClick: () => navigate('/tech-blog')
+    },
+    {
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+      ),
+      label: '项目经历',
+      onClick: () => navigate('/project-experience')
     },
     {
       icon: (
@@ -73,6 +84,7 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/tech-blog" element={<TechBlog />} />
+        <Route path="/project-experience" element={<ProjectExperience />} />
         <Route path="/anime-recommend" element={<AnimeRecommend />} />
         <Route path="/music-recommend" element={<MusicRecommend />} />
         <Route path="/travel-footprint" element={<TravelFootprint />} />
