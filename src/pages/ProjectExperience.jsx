@@ -54,11 +54,6 @@ function ProjectExperience() {
       description: '参加了徽客松，制作了随口成曲项目，项目链接：http://xhslink.com/o/9pQHBf9V1Fv'
     },
     {
-      src: '/images/hackathon/trae-hackathon-08.jpg',
-      title: '项目展示与交流',
-      description: '向观众展示创新项目成果，技术交流互动'
-    },
-    {
       src: '/images/hackathon/trae-hackathon-04.jpg',
       title: 'TRAE Friends苏州',
       description: 'TRAE Friends苏州站技术分享'
