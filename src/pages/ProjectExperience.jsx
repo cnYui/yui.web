@@ -4,6 +4,21 @@ import TextPressure from '../components/TextPressure.jsx';
 function ProjectExperience() {
   const hackathonImages = [
     {
+      src: '/images/hackathon/无锡Rokid ARAI三等奖.jpg',
+      title: '无锡Rokid ARAI三等奖',
+      description: '在无锡Rokid ARAI比赛中荣获三等奖'
+    },
+    {
+      src: '/images/hackathon/渝客松Google GDG赛道第一名.jpg',
+      title: '渝客松Google GDG赛道第一名',
+      description: '在渝客松Google GDG赛道比赛中荣获第一名'
+    },
+    {
+      src: '/images/hackathon/AdventureX24.jpg',
+      title: '2024AdventureX',
+      description: '第一次观摩黑客松'
+    },
+    {
       src: '/images/hackathon/trae-hackathon-01.jpg',
       title: '2025AdventureX',
       description: '作为游客，第一次静距离观摩学习'
@@ -32,11 +47,6 @@ function ProjectExperience() {
       src: '/images/hackathon/trae-hackathon-08.jpg',
       title: 'TRAE SOLO Hackathon上海场',
       description: '荣获二等奖'
-    },
-    {
-      src: '/images/hackathon/trae-hackathon-04.jpg',
-      title: '获奖时刻',
-      description: 'TRAE SOLO Hackathon一等奖获得者'
     },
     {
       src: '/images/hackathon/trae-hackathon-05.jpg',
