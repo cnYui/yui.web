@@ -1,6 +1,7 @@
 // Language Toggle Script
 (function() {
     const LANG_KEY = 'yui-portfolio-lang';
+    const LANGUAGES = ['zh', 'en', 'ja']; // 语言顺序：中文 → 英文 → 日语
     
     // Translation data for each page
     const translations = {
@@ -24,6 +25,16 @@
                     travel: 'Travel',
                     music: 'Music',
                     anime: 'Anime'
+                }
+            },
+            ja: {
+                logo: 'ポートフォリオ.',
+                nav: {
+                    projects: 'プロジェクト',
+                    blog: 'ブログ',
+                    travel: '旅行',
+                    music: '音楽',
+                    anime: 'アニメ'
                 }
             }
         },
@@ -98,6 +109,41 @@
                 copyright: '© 2025 Yui. All rights reserved.',
                 privacy: 'Privacy Policy',
                 terms: 'Terms of Use'
+            },
+            ja: {
+                title: 'Yui | ポートフォリオ',
+                available: '仕事募集中',
+                hello: 'こんにちは、',
+                name: 'Yui',
+                intro: 'クリーンで優れたユーザー体験を持つデジタルプロダクトの構築に注力しています。',
+                role: 'デザイナー | 開発者 | クリエイター',
+                resume: '履歴書',
+                contactMe: 'お問い合わせ',
+                portfolio: 'ポートフォリオ',
+                selectedWorks: '厳選作品',
+                viewAll: 'すべてのプロジェクトを見る',
+                bridgeTitle: 'デザインとコードをつなぐ架け橋。',
+                yearsExp: '年の経験',
+                projects: 'プロジェクト',
+                awards: '受賞',
+                satisfaction: '満足度',
+                aboutDesc: '私は直感的で美しいデジタル体験の構築に情熱を注ぐクリエイターです。デザインと開発の両方のバックグラウンドを持ち、技術的制約と美的ニーズの両方を深く理解しています。',
+                userCentric: 'ユーザー中心のアプローチ',
+                cleanCode: 'クリーンなコード設計',
+                pixelPerfect: 'ピクセルパーフェクトな実装',
+                learnMore: '詳しく見る',
+                journal: 'ジャーナル',
+                latestThoughts: '最新の考え',
+                footerDesc: '心とコードでデジタル体験を創造。サンフランシスコ在住。クリーンで実用的、ユーザーフレンドリーなデザインに注力。',
+                menu: 'メニュー',
+                about: '概要',
+                work: '作品',
+                blog: 'ブログ',
+                contact: '連絡先',
+                contactInfo: '連絡先',
+                copyright: '© 2025 Yui. All rights reserved.',
+                privacy: 'プライバシーポリシー',
+                terms: '利用規約'
             }
         },
         // Projects page specific
@@ -149,6 +195,30 @@
                 moreComing: 'More milestones coming soon',
                 quote: '"Every hackathon is an opportunity to learn something new, meet amazing people, and push my limits."',
                 footerText: '© 2024 Yui\'s Journey. Keep creating.'
+            },
+            ja: {
+                title: 'プロジェクト - Yuiのポートフォリオ',
+                period: '2024 — 現在',
+                journeyTitle: '私の技術',
+                journeySubtitle: 'の旅',
+                journeyDesc: '初めて観客としてハッカソンに参加してから、全国で受賞するまで。成長、学習、創造のタイムライン。',
+                hackathons: 'ハッカソン',
+                awards: '受賞',
+                cities: '都市',
+                connections: 'つながり',
+                filter: 'フィルター:',
+                all: 'すべて',
+                award: '受賞',
+                hackathon: 'ハッカソン',
+                meetup: 'ミートアップ',
+                project: 'プロジェクト',
+                aiVideo: 'AI動画/漫画',
+                loadMore: 'もっと見る',
+                viewProject: 'プロジェクトを見る',
+                journeyContinues: '旅は続く...',
+                moreComing: 'さらなるマイルストーンが近日公開',
+                quote: '「すべてのハッカソンは、新しいことを学び、素晴らしい人々と出会い、自分の限界を押し広げる機会です。」',
+                footerText: '© 2024 Yuiの旅. 創造し続ける.'
             }
         },
         // Travel page specific
@@ -206,6 +276,33 @@
                 whereNext: 'Where to next?',
                 planning: 'Planning the next adventure...',
                 footerText: '© 2024 Yui\'s Travel Journal. All memories preserved.'
+            },
+            ja: {
+                title: '旅行 - Yuiのポートフォリオ',
+                subtitle: '旅行日記 • 2024',
+                mainTitle: 'アジアを',
+                mainTitleLine2: '巡る旅',
+                description: '東京のネオン街から京都の古寺まで。日本と中国を巡るビジュアルジャーニー。',
+                countries: '国',
+                cities: '都市',
+                photos: '写真',
+                nextDest: '次の目的地:',
+                osaka: '大阪',
+                all: 'すべて',
+                tokyo: '東京',
+                kyoto: '京都',
+                nagoya: '名古屋',
+                hiroshima: '広島',
+                yokohama: '横浜',
+                hangzhou: '杭州',
+                nanjing: '南京',
+                beijing: '北京',
+                food: 'グルメ',
+                others: 'その他',
+                loadMore: 'もっと写真を見る',
+                whereNext: '次はどこへ？',
+                planning: '次の冒険を計画中...',
+                footerText: '© 2024 Yuiの旅行日記. すべての思い出を保存.'
             }
         },
         // Blog page specific
@@ -228,7 +325,6 @@
                 readArticle: '阅读文章',
                 footerTitle: 'Yui的作品集',
                 footerText: '© 2024 技术博客.',
-                // Article page specific
                 backToBlog: '返回博客',
                 tags: '标签:',
                 shareArticle: '分享文章:',
@@ -252,11 +348,33 @@
                 readArticle: 'Read Article',
                 footerTitle: 'Yui\'s Portfolio',
                 footerText: '© 2024 Tech Blog.',
-                // Article page specific
                 backToBlog: 'Back to Blog',
                 tags: 'Tags:',
                 shareArticle: 'Share this article:',
                 relatedArticles: 'Related Articles'
+            },
+            ja: {
+                title: '技術ブログ - Yuiのポートフォリオ',
+                search: '検索',
+                searchPlaceholder: '記事を検索...',
+                topics: 'トピック',
+                allPosts: 'すべての記事',
+                frontend: 'フロントエンド',
+                backend: 'バックエンド',
+                devops: 'DevOps',
+                design: 'デザイン',
+                ai: 'AI',
+                authorRole: '開発者 & クリエイター',
+                authorBio: 'アクセシブルなWebアプリの構築とプログラミング知識の共有に情熱を注いでいます。',
+                loadMore: 'もっと記事を見る',
+                noMore: 'これで全部です！記事はもうありません。',
+                readArticle: '記事を読む',
+                footerTitle: 'Yuiのポートフォリオ',
+                footerText: '© 2024 技術ブログ.',
+                backToBlog: 'ブログに戻る',
+                tags: 'タグ:',
+                shareArticle: 'この記事をシェア:',
+                relatedArticles: '関連記事'
             }
         },
         // Music page specific
@@ -324,6 +442,38 @@
                 suggestTrack: 'Suggest a Track',
                 footerTitle: 'Yui\'s Portfolio',
                 footerText: '© 2024 Music Collection.'
+            },
+            ja: {
+                title: '音楽 - Yuiのポートフォリオ',
+                collection: '音楽コレクション',
+                mainTitle: '音楽と',
+                mainTitleItalic: 'バイブス.',
+                description: 'ジャンルを超えた厳選音楽コレクション。J-Popからジャズ、ヒップホップからマスロックまで。',
+                tracks: 'トラック',
+                artists: 'アーティスト',
+                genres: 'ジャンル',
+                mood: 'ムード',
+                moodValue: 'チル',
+                browseByGenre: 'ジャンルで探す',
+                all: 'すべて',
+                jpop: 'J-Pop',
+                rock: 'ロック',
+                hiphop: 'ヒップホップ',
+                jazz: 'ジャズ',
+                cpop: 'C-Pop',
+                electronic: 'エレクトロニック',
+                editorChoice: 'エディターズチョイス',
+                currentFavorite: '今のお気に入り: Feather',
+                editorDesc: 'Nujabesによる作品。伝説的なジャズホッププロデューサーとCise Starrのコラボレーション傑作。スムースなジャズサンプルとヒップホップビートの完璧な融合で、一つの時代を定義しました。',
+                listenNow: '今すぐ聴く',
+                theCollection: 'コレクション',
+                showing: '表示中',
+                loadMore: 'もっとトラックを見る',
+                endTitle: 'プレイリストの終わり！',
+                endDesc: '常に新しい音楽を発見中。更新をお楽しみに。',
+                suggestTrack: 'トラックを提案',
+                footerTitle: 'Yuiのポートフォリオ',
+                footerText: '© 2024 音楽コレクション.'
             }
         },
         // Resume page specific
@@ -433,6 +583,59 @@
                 copyright: '© 2025 Yui. All rights reserved.',
                 privacy: 'Privacy Policy',
                 terms: 'Terms of Use'
+            },
+            ja: {
+                title: 'Yui | 履歴書',
+                badge: '履歴書',
+                mainTitle: 'プロフェッショナル',
+                mainTitleItalic: 'ジャーニー',
+                mainDesc: 'キャリア、学歴、そして培ってきたスキルのタイムライン。卓越したデジタル体験の創造に専念。',
+                downloadPdf: 'PDF履歴書をダウンロード',
+                experience: '職歴',
+                job1Title: 'R&D / DevOps インターン',
+                job1Period: '2025 — 現在',
+                job1Company: '国家エネルギー研究所 • 南京',
+                job1Desc: 'ベクトルデータベースとAgentic RAGシステムの開発をリード。国家エネルギーレポートのGraphRAGナレッジグラフの開発と最適化を担当。',
+                job1Item1: 'ベクトルデータベースに基づくセマンティック検索システムを設計・実装。',
+                job1Item2: 'Agentic RAGアーキテクチャを構築し、Q&A精度を向上。',
+                job1Item3: 'GraphRAGナレッジグラフを開発し、エネルギーレポートのインテリジェント分析を強化。',
+                education: '学歴',
+                edu1Title: '福井大学（在学中）',
+                edu1Period: '2025 — 2027',
+                edu1School: '福井大学、日本',
+                edu2Title: '人工知能学士',
+                edu2Period: '2021 — 2025',
+                edu2School: '山東交通学院',
+                skills: 'スキル',
+                skillDesign: 'デザイン',
+                skillDev: '開発',
+                skillTools: 'ツール',
+                skillUI: 'UIデザイン',
+                skillResearch: 'ユーザーリサーチ',
+                skillPrototype: 'プロトタイピング',
+                skillDesignSystem: 'デザインシステム',
+                skillWireframe: 'ワイヤーフレーム',
+                awards: '受賞歴',
+                award1Title: '優秀卒業プロジェクト',
+                award1Source: '山東交通学院 • 2025',
+                award2Title: 'TRAE ハッカソン 2位',
+                award2Source: 'TRAE Solo Hackathon • 2025',
+                award3Title: '渝客松オンライン 1位',
+                award3Source: '渝客松 Google GDG トラック • 2025',
+                award4Title: 'Rokid AIメガネ 3位',
+                award4Source: '無錫 Rokid AR AI • 2025',
+                award5Title: 'テンセントクラウドハッカソン受賞',
+                award5Source: 'テンセントクラウド Hackathon • 2025',
+                footerDesc: '心とコードでデジタル体験を創造。サンフランシスコ在住。クリーンで実用的、ユーザーフレンドリーなデザインに注力。',
+                menu: 'メニュー',
+                menuAbout: '概要',
+                menuWork: '作品',
+                menuBlog: 'ブログ',
+                menuContact: '連絡先',
+                contactInfo: '連絡先',
+                copyright: '© 2025 Yui. All rights reserved.',
+                privacy: 'プライバシーポリシー',
+                terms: '利用規約'
             }
         },
         // Anime page specific
@@ -498,6 +701,37 @@
                 suggestAnime: 'Suggest an Anime',
                 footerTitle: 'Yui\'s Portfolio',
                 footerText: '© 2024 Anime Collection.'
+            },
+            ja: {
+                title: 'アニメ - Yuiのポートフォリオ',
+                collection: 'アニメコレクション',
+                mainTitle: 'アニメと',
+                mainTitleItalic: 'おすすめ.',
+                description: '厳選されたアニメコレクション。クラシックから隠れた名作まで、私の好みを形作った作品たち。',
+                total: '合計',
+                types: 'タイプ',
+                favorites: 'お気に入り',
+                watching: '視聴中',
+                browseByGenre: 'ジャンルで探す',
+                all: 'すべて',
+                action: 'アクション',
+                sliceOfLife: '日常',
+                romance: 'ロマンス',
+                fantasy: 'ファンタジー',
+                drama: 'ドラマ',
+                music: '音楽',
+                editorChoice: 'エディターズチョイス',
+                currentFavorite: '今のお気に入り',
+                editorDesc: '私のコレクションから最高のアニメを探索。各作品は異なるジャンルとストーリーテリングスタイルを通じたユニークな旅を表しています。',
+                viewDetails: '詳細を見る',
+                theCollection: 'コレクション',
+                showing: '表示中',
+                loadMore: 'もっとタイトルを見る',
+                endTitle: 'コレクションの終わり！',
+                endDesc: '常に新しいアニメを視聴中。更新をお楽しみに。',
+                suggestAnime: 'アニメを提案',
+                footerTitle: 'Yuiのポートフォリオ',
+                footerText: '© 2024 アニメコレクション.'
             }
         }
     };
@@ -513,13 +747,18 @@
         localStorage.setItem(LANG_KEY, lang);
     }
     
-    // Update toggle button text
+    // Update toggle button text - shows next language
     function updateToggleButton(lang) {
         const toggleBtn = document.getElementById('langToggle');
         if (!toggleBtn) return;
         const span = toggleBtn.querySelector('span');
         if (span) {
-            span.textContent = lang === 'zh' ? 'EN' : '中';
+            // 显示下一个语言的标识
+            const currentIndex = LANGUAGES.indexOf(lang);
+            const nextIndex = (currentIndex + 1) % LANGUAGES.length;
+            const nextLang = LANGUAGES[nextIndex];
+            const labels = { zh: '中', en: 'EN', ja: '日' };
+            span.textContent = labels[nextLang];
         }
     }
     
@@ -580,7 +819,7 @@
         // Logo - find all logo links
         document.querySelectorAll('a[href="/"]').forEach(logo => {
             const text = logo.textContent.trim();
-            if (text.includes('作品集') || text.includes('Portfolio')) {
+            if (text.includes('作品集') || text.includes('Portfolio') || text.includes('ポートフォリオ')) {
                 logo.textContent = data.logo;
             }
         });
@@ -588,7 +827,7 @@
         // Also update footer logo
         document.querySelectorAll('footer .font-display').forEach(el => {
             const text = el.textContent.trim();
-            if (text.includes('作品集') || text.includes('Portfolio')) {
+            if (text.includes('作品集') || text.includes('Portfolio') || text.includes('ポートフォリオ')) {
                 el.textContent = data.logo;
             }
         });
@@ -605,10 +844,12 @@
         });
     }
     
-    // Toggle language
+    // Toggle language - cycle through zh -> en -> ja -> zh
     function toggleLang() {
         const current = getCurrentLang();
-        const next = current === 'zh' ? 'en' : 'zh';
+        const currentIndex = LANGUAGES.indexOf(current);
+        const nextIndex = (currentIndex + 1) % LANGUAGES.length;
+        const next = LANGUAGES[nextIndex];
         saveLang(next);
         applyTranslations(next);
     }
@@ -635,7 +876,8 @@
             return translations[page] ? translations[page][lang] : null;
         },
         applyTranslations,
-        toggleLang
+        toggleLang,
+        LANGUAGES
     };
     
     // Run init when DOM is ready
