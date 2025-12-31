@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html class="" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Travel Footprints - Yui's Portfolio</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Inter:wght@300..600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1a1a1a",
+                        "secondary": "#f5f5f0",
+                        "text-main": "#1a1a1a",
+                        "text-muted": "#666666",
+                        "text-light": "#999999",
+                        "border-subtle": "#e8e8e8",
+                        "cream": "#faf9f6",
+                    },
+                    fontFamily: {
+                        "display": ["Playfair Display", "serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .gallery-item { opacity: 0; transform: scale(0.95); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .gallery-item.visible { opacity: 1; transform: scale(1); }
+        .masonry { column-count: 3; column-gap: 1.5rem; }
+        @media (max-width: 1024px) { .masonry { column-count: 2; } }
+        @media (max-width: 640px) { .masonry { column-count: 1; } }
+        .masonry-item { break-inside: avoid; margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body class="bg-cream text-text-main font-body antialiased">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle bg-cream/95 backdrop-blur-sm">
+        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
+            <div class="flex items-center gap-4">
+                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
+            </div>
+            <div class="flex items-center gap-10">
+                <nav class="hidden md:flex items-center gap-8">
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/项目经历/">项目经历</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/技术博客/">技术博客</a>
+                    <a class="text-sm uppercase tracking-widest text-primary font-medium border-b border-primary pb-0.5" href="/旅行足迹/">旅行足迹</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/音乐推荐/">音乐推荐</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/番剧推荐/">番剧推荐</a>
+                </nav>
+                <div class="flex gap-4">
+                    <button class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors">
+                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">search</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full">
+        <!-- Hero Section - Full Width Image -->
+        <section class="relative h-[70vh] min-h-[500px] overflow-hidden">
+            <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('/images/travel/东京夜景.jpg');">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 p-8 md:p-16">
+                <div class="max-w-[1400px] mx-auto">
+                    <p class="text-white/70 text-sm uppercase tracking-[0.3em] mb-4">Travel Journal • 2024</p>
+                    <h1 class="text-white text-5xl md:text-7xl lg:text-8xl font-display font-medium leading-none mb-6">
+                        Wandering<br/>Through Asia
+                    </h1>
+                    <p class="text-white/80 text-lg md:text-xl font-light max-w-xl">
+                        From the neon streets of Tokyo to the ancient temples of Kyoto. A visual journey across Japan and China.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Stats Bar -->
+        <section class="bg-primary text-white py-6">
+            <div class="max-w-[1400px] mx-auto px-6 md:px-12 flex flex-wrap justify-center md:justify-between items-center gap-8">
+                <div class="flex items-center gap-12">
+                    <div class="text-center">
+                        <p class="text-3xl font-display font-medium">2</p>
+                        <p class="text-xs uppercase tracking-widest text-white/60">Countries</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-3xl font-display font-medium">10</p>
+                        <p class="text-xs uppercase tracking-widest text-white/60">Cities</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-3xl font-display font-medium">80+</p>
+                        <p class="text-xs uppercase tracking-widest text-white/60">Photos</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-white/60">
+                    <span class="material-symbols-outlined text-lg">flight_takeoff</span>
+                    <span class="text-sm">Next destination: <span class="text-white font-medium">Osaka</span></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter Pills -->
+        <section class="sticky top-[88px] z-40 bg-cream border-b border-border-subtle py-4">
+            <div class="max-w-[1400px] mx-auto px-6 md:px-12">
+                <div class="flex flex-wrap items-center gap-3">
+                    <button class="filter-btn px-5 py-2 rounded-full bg-primary text-white text-sm font-medium transition-all hover:scale-105" data-filter="All">All</button>
+                    <button class="filter-btn px-5 py-2 rounded-full bg-white border border-border-subtle text-text-main text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all" data-filter="Tokyo">Tokyo</button>
+                    <button class="filter-btn px-5 py-2 rounded-full bg-white border border-border-subtle text-text-main text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all" data-filter="Kyoto">Kyoto</button>
+                    <button class="filter-btn px-5 py-2 rounded-full bg-white border border-border-subtle text-text-main text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all" data-filter="Osaka">Osaka</button>
+                    <button class="filter-btn px-5 py-2 rounded-full bg-white border border-border-subtle text-text-main text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all" data-filter="Nagoya">Nagoya</button>
+                    <button class="filter-btn px-5 py-2 rounded-full bg-white border border-border-subtle text-text-main text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all" data-filter="Hiroshima">Hiroshima</button>
+                    <button class="filter-btn px-5 py-2 rounded-full bg-white border border-border-subtle text-text-main text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all" data-filter="Yokohama">Yokohama</button>
+                    <button class="filter-btn px-5 py-2 rounded-full bg-white border border-border-subtle text-text-main text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all" data-filter="Hangzhou">Hangzhou</button>
+                    <button class="filter-btn px-5 py-2 rounded-full bg-white border border-border-subtle text-text-main text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all" data-filter="Nanjing">Nanjing</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Masonry Gallery -->
+        <section class="py-12 md:py-16">
+            <div class="max-w-[1400px] mx-auto px-6 md:px-12">
+                <div id="gallery" class="masonry">
+                </div>
+                
+                <!-- Load More -->
+                <div id="loadMoreContainer" class="flex justify-center mt-12">
+                    <button id="loadMoreBtn" class="group flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-full hover:bg-primary/90 transition-all hover:scale-105">
+                        <span class="font-medium">Load More Photos</span>
+                        <span class="material-symbols-outlined group-hover:translate-y-1 transition-transform">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-border-subtle bg-cream py-16">
+        <div class="max-w-[1400px] mx-auto px-6 md:px-12 text-center">
+            <p class="font-display text-2xl italic text-primary mb-4">Portfolio.</p>
+            <p class="text-text-light text-sm">© 2024 Yui's Travel Journal. All memories preserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const travelData = [
+            { image: '/images/travel/晴空塔.jpg', title: 'Tokyo Skytree', city: 'Tokyo', desc: 'The iconic 634m broadcasting tower' },
+            { image: '/images/travel/金阁寺.JPG', title: 'Kinkaku-ji Temple', city: 'Kyoto', desc: 'The stunning Golden Pavilion' },
+            { image: '/images/travel/雷门.JPG', title: 'Kaminarimon Gate', city: 'Tokyo', desc: 'Thunder Gate at Senso-ji Temple' },
+            { image: '/images/travel/通天阁.jpg', title: 'Tsutenkaku Tower', city: 'Osaka', desc: 'Osaka\'s iconic retro tower' },
+            { image: '/images/travel/二年阪.JPG', title: 'Ninenzaka Street', city: 'Kyoto', desc: 'Charming stone-paved slope' },
+            { image: '/images/travel/涩谷Dify大会.jpg', title: 'Shibuya District', city: 'Tokyo', desc: 'Heart of Tokyo\'s youth culture' },
+            { image: '/images/travel/伏见稻田大社.jpg', title: 'Fushimi Inari Shrine', city: 'Kyoto', desc: 'Thousands of vermillion torii gates' },
+            { image: '/images/travel/天守阁.jpg', title: 'Osaka Castle', city: 'Osaka', desc: 'Symbol of Osaka\'s samurai history' },
+            { image: '/images/travel/东京阳关水族馆.jpg', title: 'Sunshine Aquarium', city: 'Tokyo', desc: 'Rooftop aquarium in Ikebukuro' },
+            { image: '/images/travel/京都塔联动京吹.jpg', title: 'Kyoto Tower', city: 'Kyoto', desc: 'Panoramic views of the ancient capital' },
+            { image: '/images/travel/大阪日本桥.jpg', title: 'Nipponbashi', city: 'Osaka', desc: 'Osaka\'s otaku paradise' },
+            { image: '/images/travel/名古屋城.jpg', title: 'Nagoya Castle', city: 'Nagoya', desc: 'Famous golden shachihoko ornaments' },
+            { image: '/images/travel/京都大学.jpg', title: 'Kyoto University', city: 'Kyoto', desc: 'Beautiful campus and academic excellence' },
+            { image: '/images/travel/黑门市场.jpg', title: 'Kuromon Market', city: 'Osaka', desc: 'Osaka\'s Kitchen - fresh seafood' },
+            { image: '/images/travel/名古屋蓝调时刻.jpg', title: 'Nagoya Blue Hour', city: 'Nagoya', desc: 'Magical twilight moment' },
+            { image: '/images/travel/京都百鬼夜行.JPG', title: 'Hyakki Yagyo Festival', city: 'Kyoto', desc: 'Night Parade of One Hundred Demons' },
+            { image: '/images/travel/大阪LV帆船大楼.JPG', title: 'LV Sail Building', city: 'Osaka', desc: 'Architectural marvel on the waterfront' },
+            { image: '/images/travel/原子弹爆照遗址.jpg', title: 'Atomic Bomb Dome', city: 'Hiroshima', desc: 'UNESCO World Heritage Site' },
+            { image: '/images/travel/广岛西小岛上.jpg', title: 'Itsukushima Island', city: 'Hiroshima', desc: 'Famous floating torii gate' },
+            { image: '/images/travel/横国.jpg', title: 'Yokohama National University', city: 'Yokohama', desc: 'Prestigious national university' },
+            { image: '/images/travel/横滨某座桥.jpg', title: 'Yokohama Waterfront', city: 'Yokohama', desc: 'Scenic harbor area' },
+            { image: '/images/travel/杭师大食堂.JPG', title: 'Hangzhou Normal University', city: 'Hangzhou', desc: 'Historic university campus' },
+            { image: '/images/travel/杭州某家咖啡店.JPG', title: 'Hangzhou Coffee Culture', city: 'Hangzhou', desc: 'Cozy coffee shops' },
+            { image: '/images/travel/南京玄武鸡鸣寺.jpg', title: 'Jiming Temple', city: 'Nanjing', desc: 'Ancient Buddhist temple' },
+        ];
+
+        // Randomize aspect ratios for masonry effect
+        const aspectRatios = ['aspect-[3/4]', 'aspect-[4/5]', 'aspect-square', 'aspect-[4/3]'];
+        
+        let currentIndex = 0;
+        let currentFilter = 'All';
+        let filteredData = [...travelData];
+        const itemsPerPage = 9;
+        const gallery = document.getElementById('gallery');
+        const loadMoreContainer = document.getElementById('loadMoreContainer');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+
+        function getRandomAspect(index) {
+            return aspectRatios[index % aspectRatios.length];
+        }
+
+        function createCard(item, index) {
+            const aspect = getRandomAspect(index);
+            return `
+                <div class="masonry-item gallery-item">
+                    <div class="group relative ${aspect} overflow-hidden rounded-lg cursor-pointer">
+                        <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="${item.image}" alt="${item.title}"/>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-5 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+                            <p class="text-white/60 text-xs uppercase tracking-widest mb-1">${item.city}</p>
+                            <h3 class="text-white text-lg font-display font-medium">${item.title}</h3>
+                            <p class="text-white/70 text-sm mt-1">${item.desc}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateFilterButtons(activeFilter) {
+            filterButtons.forEach(btn => {
+                const btnFilter = btn.dataset.filter;
+                if (btnFilter === activeFilter) {
+                    btn.classList.remove('bg-white', 'border', 'border-border-subtle', 'text-text-main');
+                    btn.classList.add('bg-primary', 'text-white');
+                } else {
+                    btn.classList.remove('bg-primary', 'text-white');
+                    btn.classList.add('bg-white', 'border', 'border-border-subtle', 'text-text-main');
+                }
+            });
+        }
+
+        function filterGallery(filter) {
+            currentFilter = filter;
+            currentIndex = 0;
+            
+            if (filter === 'All') {
+                filteredData = [...travelData];
+            } else {
+                filteredData = travelData.filter(item => item.city === filter);
+            }
+            
+            gallery.innerHTML = '';
+            
+            loadMoreContainer.innerHTML = `
+                <button id="loadMoreBtn" class="group flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-full hover:bg-primary/90 transition-all hover:scale-105">
+                    <span class="font-medium">Load More Photos</span>
+                    <span class="material-symbols-outlined group-hover:translate-y-1 transition-transform">expand_more</span>
+                </button>
+            `;
+            document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
+            
+            updateFilterButtons(filter);
+            loadMore();
+        }
+
+        function loadMore() {
+            const endIndex = Math.min(currentIndex + itemsPerPage, filteredData.length);
+            
+            for (let i = currentIndex; i < endIndex; i++) {
+                const cardHtml = createCard(filteredData[i], i);
+                gallery.insertAdjacentHTML('beforeend', cardHtml);
+            }
+            
+            setTimeout(() => {
+                const items = gallery.querySelectorAll('.gallery-item:not(.visible)');
+                items.forEach((item, index) => {
+                    setTimeout(() => {
+                        item.classList.add('visible');
+                    }, index * 80);
+                });
+            }, 50);
+            
+            currentIndex = endIndex;
+            
+            if (currentIndex >= filteredData.length) {
+                loadMoreContainer.innerHTML = `
+                    <div class="text-center py-12">
+                        <span class="material-symbols-outlined text-4xl text-text-light mb-4 block">flight_takeoff</span>
+                        <p class="text-text-muted font-display text-xl italic">Where to next?</p>
+                        <p class="text-text-light text-sm mt-2">Planning the next adventure...</p>
+                    </div>
+                `;
+            }
+        }
+
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterGallery(btn.dataset.filter);
+            });
+        });
+
+        loadMore();
+    </script>
+</body>
+</html>

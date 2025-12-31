@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>番剧推荐 - Yui's Portfolio</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1a1a1a",
+                        "secondary": "#f4f4f5",
+                        "text-main": "#1a1a1a",
+                        "text-muted": "#71717a",
+                        "text-tertiary": "#9ca3af",
+                        "background": "#ffffff",
+                        "surface": "#ffffff",
+                        "border-subtle": "#e4e4e7",
+                        "accent-soft": "#e5e7eb",
+                        "background-soft": "#f9fafb",
+                    },
+                    fontFamily: {
+                        "display": ["Playfair Display", "serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .anime-item { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+        .anime-item.visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body class="bg-background text-text-main font-body min-h-screen flex flex-col overflow-x-hidden antialiased selection:bg-gray-200">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle bg-white/95 backdrop-blur-sm">
+        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
+            <div class="flex items-center gap-4">
+                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
+            </div>
+            <div class="flex items-center gap-10">
+                <nav class="hidden md:flex items-center gap-8">
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/项目经历/">项目经历</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/技术博客/">技术博客</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/旅行足迹/">旅行足迹</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/音乐推荐/">音乐推荐</a>
+                    <a class="text-sm uppercase tracking-widest text-primary font-medium border-b border-primary pb-0.5" href="/番剧推荐/">番剧推荐</a>
+                </nav>
+                <div class="flex gap-4">
+                    <button class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors">
+                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">search</span>
+                    </button>
+                    <button class="md:hidden flex items-center justify-center size-10 text-primary">
+                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col items-center w-full">
+        <div class="w-full max-w-[1400px] px-6 md:px-12 flex flex-col gap-12 pb-24">
+            <!-- Header Section -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 pt-12 pb-8 border-b border-accent-soft">
+                <div class="flex flex-col gap-4 max-w-2xl">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background-soft border border-accent-soft w-fit">
+                        <span class="material-symbols-outlined text-[16px] text-text-muted">movie</span>
+                        <span class="text-xs font-medium text-text-muted uppercase tracking-wider">Anime Collection</span>
+                    </div>
+                    <h1 class="text-primary text-5xl md:text-6xl font-display font-medium leading-tight">Anime &amp; <br/><i class="font-display italic text-text-muted">Recommendations.</i></h1>
+                </div>
+                <p class="text-text-muted text-lg font-light leading-relaxed max-w-md">
+                    A curated collection of anime that shaped my taste. From classics to hidden gems.
+                </p>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 py-4">
+                <div class="flex flex-col gap-1">
+                    <p class="text-text-tertiary text-xs font-medium uppercase tracking-widest">Total</p>
+                    <p class="text-primary text-4xl font-display font-medium">31</p>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <p class="text-text-tertiary text-xs font-medium uppercase tracking-widest">Genres</p>
+                    <p class="text-primary text-4xl font-display font-medium">10+</p>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <p class="text-text-tertiary text-xs font-medium uppercase tracking-widest">Favorites</p>
+                    <p class="text-primary text-4xl font-display font-medium">5</p>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <p class="text-text-tertiary text-xs font-medium uppercase tracking-widest">Watching</p>
+                    <p class="text-primary text-4xl font-display font-medium italic">3</p>
+                </div>
+            </div>
+
+            <!-- Browse by Genre -->
+            <div class="flex flex-col gap-6">
+                <div class="flex items-center justify-between border-b border-border-subtle pb-4">
+                    <h3 class="text-primary text-2xl font-semibold tracking-tight">Browse by Genre</h3>
+                </div>
+                <div class="flex flex-wrap gap-3 pb-2">
+                    <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-primary text-white px-6 transition-transform active:scale-95" data-filter="All">
+                        <span class="text-sm font-medium">All</span>
+                    </button>
+                    <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary hover:bg-gray-200 text-text-main px-6 transition-colors" data-filter="Action">
+                        <span class="text-sm font-medium">Action</span>
+                    </button>
+                    <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary hover:bg-gray-200 text-text-main px-6 transition-colors" data-filter="Slice of Life">
+                        <span class="text-sm font-medium">Slice of Life</span>
+                    </button>
+                    <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary hover:bg-gray-200 text-text-main px-6 transition-colors" data-filter="Romance">
+                        <span class="text-sm font-medium">Romance</span>
+                    </button>
+                    <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary hover:bg-gray-200 text-text-main px-6 transition-colors" data-filter="Fantasy">
+                        <span class="text-sm font-medium">Fantasy</span>
+                    </button>
+                    <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary hover:bg-gray-200 text-text-main px-6 transition-colors" data-filter="Drama">
+                        <span class="text-sm font-medium">Drama</span>
+                    </button>
+                    <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary hover:bg-gray-200 text-text-main px-6 transition-colors" data-filter="Music">
+                        <span class="text-sm font-medium">Music</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Editor's Choice -->
+            <div class="w-full py-6">
+                <div class="flex flex-col md:flex-row items-center gap-12 rounded-xl bg-white overflow-hidden">
+                    <div class="relative w-full md:w-1/2 aspect-video bg-cover bg-center rounded-lg overflow-hidden">
+                        <img class="w-full h-full object-cover" src="/images/animate/image.png" alt="Editor's Choice Anime"/>
+                    </div>
+                    <div class="flex flex-col justify-center gap-6 md:w-1/2">
+                        <div class="flex items-center gap-3">
+                            <span class="px-2 py-1 rounded bg-black text-white text-xs font-semibold uppercase tracking-wider">Editor's Choice</span>
+                            <div class="flex items-center gap-1 text-primary">
+                                <span class="material-symbols-outlined text-lg">star</span>
+                                <span class="text-sm font-bold">9.8</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-4">
+                            <h2 class="text-primary text-3xl md:text-4xl font-bold leading-tight tracking-tight">Current Obsession</h2>
+                            <p class="text-text-muted text-base md:text-lg font-light leading-relaxed">
+                                Exploring the best anime from my personal collection. Each title represents a unique journey through different genres and storytelling styles.
+                            </p>
+                        </div>
+                        <div class="flex gap-4 pt-2">
+                            <button class="flex items-center justify-center h-12 px-8 rounded-md bg-primary hover:bg-primary/90 text-white text-sm font-medium transition-all">
+                                View Details
+                            </button>
+                            <button class="flex items-center justify-center size-12 rounded-md border border-border-subtle hover:bg-gray-50 text-text-main transition-colors">
+                                <span class="material-symbols-outlined">bookmark</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- The Collection -->
+            <div class="flex items-end justify-between pt-8 border-b border-border-subtle pb-6">
+                <h2 class="text-primary text-2xl font-bold tracking-tight">The Collection</h2>
+                <span id="showingCount" class="text-text-muted text-sm">Showing 8 of 31</span>
+            </div>
+
+            <!-- Anime Grid -->
+            <div id="animeGallery" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+            </div>
+
+            <!-- Load More -->
+            <div id="loadMoreContainer" class="flex justify-center mt-8">
+                <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle bg-white px-8 py-3 text-sm font-medium text-text-main hover:bg-gray-50 transition-colors">
+                    Load More Titles
+                    <span class="material-symbols-outlined text-lg">expand_more</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-accent-soft bg-white py-12 md:py-16">
+        <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex flex-col gap-1 text-center md:text-left">
+                <h2 class="text-primary text-lg font-display font-semibold">Yui's Portfolio</h2>
+                <p class="text-text-tertiary text-xs">© 2024 Anime Collection.</p>
+            </div>
+            <div class="flex gap-8">
+                <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">mail</span></a>
+                <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">movie</span></a>
+                <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">alternate_email</span></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const animeData = [
+            { image: '/images/animate/image.png', title: 'Anime Collection 1', genre: 'Action', rating: '9.5' },
+            { image: '/images/animate/image copy.png', title: 'Anime Collection 2', genre: 'Romance', rating: '9.2' },
+            { image: '/images/animate/image copy 2.png', title: 'Anime Collection 3', genre: 'Slice of Life', rating: '8.8' },
+            { image: '/images/animate/image copy 3.png', title: 'Anime Collection 4', genre: 'Fantasy', rating: '9.0' },
+            { image: '/images/animate/image copy 4.png', title: 'Anime Collection 5', genre: 'Drama', rating: '9.3' },
+            { image: '/images/animate/image copy 5.png', title: 'Anime Collection 6', genre: 'Action', rating: '8.9' },
+            { image: '/images/animate/image copy 6.png', title: 'Anime Collection 7', genre: 'Music', rating: '9.1' },
+            { image: '/images/animate/image copy 7.png', title: 'Anime Collection 8', genre: 'Romance', rating: '8.7' },
+            { image: '/images/animate/image copy 8.png', title: 'Anime Collection 9', genre: 'Slice of Life', rating: '9.4' },
+            { image: '/images/animate/image copy 9.png', title: 'Anime Collection 10', genre: 'Fantasy', rating: '8.6' },
+            { image: '/images/animate/image copy 10.png', title: 'Anime Collection 11', genre: 'Action', rating: '9.2' },
+            { image: '/images/animate/image copy 11.png', title: 'Anime Collection 12', genre: 'Drama', rating: '8.8' },
+            { image: '/images/animate/image copy 12.png', title: 'Anime Collection 13', genre: 'Romance', rating: '9.0' },
+            { image: '/images/animate/image copy 13.png', title: 'Anime Collection 14', genre: 'Music', rating: '8.5' },
+            { image: '/images/animate/image copy 14.png', title: 'Anime Collection 15', genre: 'Slice of Life', rating: '9.1' },
+            { image: '/images/animate/image copy 15.png', title: 'Anime Collection 16', genre: 'Fantasy', rating: '8.9' },
+            { image: '/images/animate/image copy 16.png', title: 'Anime Collection 17', genre: 'Action', rating: '9.3' },
+            { image: '/images/animate/image copy 17.png', title: 'Anime Collection 18', genre: 'Drama', rating: '8.7' },
+            { image: '/images/animate/image copy 18.png', title: 'Anime Collection 19', genre: 'Romance', rating: '9.0' },
+            { image: '/images/animate/image copy 19.png', title: 'Anime Collection 20', genre: 'Music', rating: '8.8' },
+            { image: '/images/animate/image copy 20.png', title: 'Anime Collection 21', genre: 'Slice of Life', rating: '9.2' },
+            { image: '/images/animate/image copy 21.png', title: 'Anime Collection 22', genre: 'Fantasy', rating: '8.6' },
+            { image: '/images/animate/image copy 22.png', title: 'Anime Collection 23', genre: 'Action', rating: '9.4' },
+            { image: '/images/animate/image copy 23.png', title: 'Anime Collection 24', genre: 'Drama', rating: '8.9' },
+            { image: '/images/animate/image copy 24.png', title: 'Anime Collection 25', genre: 'Romance', rating: '9.1' },
+            { image: '/images/animate/image copy 25.png', title: 'Anime Collection 26', genre: 'Music', rating: '8.5' },
+            { image: '/images/animate/image copy 26.png', title: 'Anime Collection 27', genre: 'Slice of Life', rating: '9.0' },
+            { image: '/images/animate/image copy 27.png', title: 'Anime Collection 28', genre: 'Fantasy', rating: '8.8' },
+            { image: '/images/animate/image copy 28.png', title: 'Anime Collection 29', genre: 'Action', rating: '9.3' },
+            { image: '/images/animate/image copy 29.png', title: 'Anime Collection 30', genre: 'Drama', rating: '8.7' },
+            { image: '/images/animate/image copy 30.png', title: 'Anime Collection 31', genre: 'Romance', rating: '9.2' },
+        ];
+
+        let currentIndex = 0;
+        let currentFilter = 'All';
+        let filteredData = [...animeData];
+        const itemsPerPage = 8;
+        const gallery = document.getElementById('animeGallery');
+        const loadMoreContainer = document.getElementById('loadMoreContainer');
+        const showingCount = document.getElementById('showingCount');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+
+        function createCard(item) {
+            return `
+                <div class="anime-item group flex flex-col gap-4 cursor-pointer">
+                    <div class="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-gray-100">
+                        <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${item.title}" src="${item.image}"/>
+                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-primary text-lg font-bold leading-tight group-hover:text-gray-600 transition-colors">${item.title}</h3>
+                            <span class="flex items-center gap-1 text-xs font-bold text-primary bg-secondary px-1.5 py-0.5 rounded">${item.rating}</span>
+                        </div>
+                        <p class="text-sm text-text-muted">${item.genre}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateFilterButtons(activeFilter) {
+            filterButtons.forEach(btn => {
+                const btnFilter = btn.dataset.filter;
+                if (btnFilter === activeFilter) {
+                    btn.classList.remove('bg-secondary', 'text-text-main');
+                    btn.classList.add('bg-primary', 'text-white');
+                } else {
+                    btn.classList.remove('bg-primary', 'text-white');
+                    btn.classList.add('bg-secondary', 'text-text-main');
+                }
+            });
+        }
+
+        function updateShowingCount() {
+            const showing = Math.min(currentIndex, filteredData.length);
+            showingCount.textContent = `Showing ${showing} of ${filteredData.length}`;
+        }
+
+        function filterGallery(filter) {
+            currentFilter = filter;
+            currentIndex = 0;
+
+            if (filter === 'All') {
+                filteredData = [...animeData];
+            } else {
+                filteredData = animeData.filter(item => item.genre === filter);
+            }
+
+            gallery.innerHTML = '';
+
+            loadMoreContainer.innerHTML = `
+                <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle bg-white px-8 py-3 text-sm font-medium text-text-main hover:bg-gray-50 transition-colors">
+                    Load More Titles
+                    <span class="material-symbols-outlined text-lg">expand_more</span>
+                </button>
+            `;
+            document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
+
+            updateFilterButtons(filter);
+            loadMore();
+        }
+
+        function loadMore() {
+            const endIndex = Math.min(currentIndex + itemsPerPage, filteredData.length);
+            const fragment = document.createDocumentFragment();
+            const tempDiv = document.createElement('div');
+
+            for (let i = currentIndex; i < endIndex; i++) {
+                tempDiv.innerHTML = createCard(filteredData[i]);
+                const card = tempDiv.firstElementChild;
+                fragment.appendChild(card);
+            }
+
+            gallery.appendChild(fragment);
+
+            setTimeout(() => {
+                const items = gallery.querySelectorAll('.anime-item:not(.visible)');
+                items.forEach((item, index) => {
+                    setTimeout(() => {
+                        item.classList.add('visible');
+                    }, index * 100);
+                });
+            }, 50);
+
+            currentIndex = endIndex;
+            updateShowingCount();
+
+            if (currentIndex >= filteredData.length) {
+                loadMoreContainer.innerHTML = `
+                    <div class="group flex flex-col h-full bg-background-soft border border-accent-soft p-8 items-center justify-center text-center transition-all hover:bg-gray-100 rounded-lg">
+                        <div class="w-12 h-12 flex items-center justify-center mb-6 text-primary">
+                            <span class="material-symbols-outlined text-4xl font-light">theaters</span>
+                        </div>
+                        <h3 class="text-2xl font-display font-medium text-primary mb-3">That's the collection!</h3>
+                        <p class="text-text-muted text-sm mb-8 leading-relaxed max-w-[200px]">Always watching new anime. Check back for updates.</p>
+                        <button class="bg-white border border-border-subtle text-primary px-6 py-2.5 rounded text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 shadow-sm">
+                            Suggest an Anime
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterGallery(btn.dataset.filter);
+            });
+        });
+
+        loadMore();
+    </script>
+</body>
+</html>

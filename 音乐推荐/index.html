@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Music Recommendations - Yui's Portfolio</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#222222",
+                        "secondary": "#f4f4f5",
+                        "text-main": "#222222",
+                        "text-muted": "#71717a",
+                        "text-tertiary": "#9ca3af",
+                        "background-light": "#ffffff",
+                        "background-soft": "#f9fafb",
+                        "border-subtle": "#E5E5E5",
+                        "accent-soft": "#e5e7eb",
+                    },
+                    fontFamily: {
+                        "display": ["Playfair Display", "serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                }
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .music-item { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+        .music-item.visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body class="bg-background-light text-text-main font-body antialiased overflow-x-hidden">
+    <div class="relative flex min-h-screen w-full flex-col">
+        <!-- Header -->
+        <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle bg-white/95 backdrop-blur-sm">
+            <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
+                <div class="flex items-center gap-4">
+                    <a class="text-2xl font-display font-semibold italic tracking-tight text-primary hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
+                </div>
+                <div class="flex items-center gap-10">
+                    <nav class="hidden md:flex items-center gap-8">
+                        <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/项目经历/">项目经历</a>
+                        <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/技术博客/">技术博客</a>
+                        <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/旅行足迹/">旅行足迹</a>
+                        <a class="text-sm uppercase tracking-widest text-primary font-medium border-b border-primary pb-0.5" href="/音乐推荐/">音乐推荐</a>
+                        <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/番剧推荐/">番剧推荐</a>
+                    </nav>
+                    <div class="flex gap-4">
+                        <button class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors">
+                            <span class="material-symbols-outlined font-light" style="font-size: 24px;">search</span>
+                        </button>
+                        <button class="md:hidden flex items-center justify-center size-10 text-primary">
+                            <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col items-center w-full px-4 sm:px-6 lg:px-12 py-12">
+            <div class="w-full max-w-[1280px] flex flex-col gap-12">
+                <!-- Header Section -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 pb-8 border-b border-accent-soft">
+                    <div class="flex flex-col gap-4 max-w-2xl">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background-soft border border-accent-soft w-fit">
+                            <span class="material-symbols-outlined text-[16px] text-text-muted">library_music</span>
+                            <span class="text-xs font-medium text-text-muted uppercase tracking-wider">Music Collection</span>
+                        </div>
+                        <h1 class="text-primary text-5xl md:text-6xl font-display font-medium leading-tight">Music &amp; <br/><i class="font-display italic text-text-muted">Vibes.</i></h1>
+                    </div>
+                    <p class="text-text-muted text-lg font-light leading-relaxed max-w-md">
+                        A curated collection of my favorite tracks across genres. From J-Pop to Jazz, Hip-Hop to Math Rock.
+                    </p>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 py-4">
+                    <div class="flex flex-col gap-1">
+                        <p class="text-text-tertiary text-xs font-medium uppercase tracking-widest">Tracks</p>
+                        <p class="text-primary text-4xl font-display font-medium">24</p>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <p class="text-text-tertiary text-xs font-medium uppercase tracking-widest">Artists</p>
+                        <p class="text-primary text-4xl font-display font-medium">24</p>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <p class="text-text-tertiary text-xs font-medium uppercase tracking-widest">Genres</p>
+                        <p class="text-primary text-4xl font-display font-medium">8+</p>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <p class="text-text-tertiary text-xs font-medium uppercase tracking-widest">Mood</p>
+                        <p class="text-primary text-4xl font-display font-medium italic">Chill</p>
+                    </div>
+                </div>
+
+                <!-- Browse by Genre -->
+                <div class="flex flex-col gap-6">
+                    <div class="flex items-center justify-between border-b border-border-subtle pb-4">
+                        <h3 class="text-primary text-2xl font-semibold tracking-tight">Browse by Genre</h3>
+                    </div>
+                    <div class="flex flex-wrap gap-3 pb-2">
+                        <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-primary text-white px-6 transition-transform active:scale-95" data-filter="All">
+                            <span class="text-sm font-medium">All</span>
+                        </button>
+                        <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary hover:bg-gray-200 text-text-main px-6 transition-colors" data-filter="J-Pop">
+                            <span class="text-sm font-medium">J-Pop</span>
+                        </button>
+                        <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary hover:bg-gray-200 text-text-main px-6 transition-colors" data-filter="Rock">
+                            <span class="text-sm font-medium">Rock</span>
+                        </button>
+                        <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary hover:bg-gray-200 text-text-main px-6 transition-colors" data-filter="Hip-Hop">
+                            <span class="text-sm font-medium">Hip-Hop</span>
+                        </button>
+                        <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary hover:bg-gray-200 text-text-main px-6 transition-colors" data-filter="Jazz">
+                            <span class="text-sm font-medium">Jazz</span>
+                        </button>
+                        <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary hover:bg-gray-200 text-text-main px-6 transition-colors" data-filter="C-Pop">
+                            <span class="text-sm font-medium">C-Pop</span>
+                        </button>
+                        <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary hover:bg-gray-200 text-text-main px-6 transition-colors" data-filter="Electronic">
+                            <span class="text-sm font-medium">Electronic</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Editor's Choice -->
+                <div class="w-full py-6">
+                    <div class="flex flex-col md:flex-row items-center gap-12 rounded-xl bg-white overflow-hidden">
+                        <div class="relative w-full md:w-1/2 aspect-square md:aspect-video bg-cover bg-center rounded-lg overflow-hidden">
+                            <img class="w-full h-full object-cover" src="/images/music_pic/截屏2025-08-23 14.33.50.png" alt="Editor's Choice - Nujabes"/>
+                        </div>
+                        <div class="flex flex-col justify-center gap-6 md:w-1/2">
+                            <div class="flex items-center gap-3">
+                                <span class="px-2 py-1 rounded bg-black text-white text-xs font-semibold uppercase tracking-wider">Editor's Choice</span>
+                                <div class="flex items-center gap-1 text-primary">
+                                    <span class="material-symbols-outlined text-lg">star</span>
+                                    <span class="text-sm font-bold">9.8</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-4">
+                                <h2 class="text-primary text-3xl md:text-4xl font-bold leading-tight tracking-tight">
+                                    Current Obsession: Feather
+                                </h2>
+                                <p class="text-text-muted text-base md:text-lg font-light leading-relaxed">
+                                    By Nujabes. The legendary jazz-hop producer's masterpiece featuring Cise Starr. A timeless blend of smooth jazz samples and hip-hop beats that defined a generation.
+                                </p>
+                            </div>
+                            <div class="flex gap-4 pt-2">
+                                <button class="flex items-center justify-center h-12 px-8 rounded-md bg-primary hover:bg-primary/90 text-white text-sm font-medium transition-all">
+                                    Listen Now
+                                </button>
+                                <button class="flex items-center justify-center size-12 rounded-md border border-border-subtle hover:bg-gray-50 text-text-main transition-colors">
+                                    <span class="material-symbols-outlined">bookmark</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- The Collection -->
+                <div class="flex items-end justify-between pt-8 border-b border-border-subtle pb-6">
+                    <h2 class="text-primary text-2xl font-bold tracking-tight">The Collection</h2>
+                    <span id="showingCount" class="text-text-muted text-sm">Showing 8 of 24</span>
+                </div>
+
+                <!-- Music Grid -->
+                <div id="musicGallery" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+                </div>
+
+                <!-- Load More -->
+                <div id="loadMoreContainer" class="flex justify-center mt-8">
+                    <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle bg-white px-8 py-3 text-sm font-medium text-text-main hover:bg-gray-50 transition-colors">
+                        Load More Tracks
+                        <span class="material-symbols-outlined text-lg">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="w-full border-t border-accent-soft bg-white py-12 md:py-16">
+            <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex flex-col gap-1 text-center md:text-left">
+                    <h2 class="text-primary text-lg font-display font-semibold">Yui's Portfolio</h2>
+                    <p class="text-text-tertiary text-xs">© 2024 Music Collection.</p>
+                </div>
+                <div class="flex gap-8">
+                    <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">mail</span></a>
+                    <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">library_music</span></a>
+                    <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">alternate_email</span></a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const musicData = [
+            { image: '/images/music_pic/截屏2025-08-23 14.26.27.png', title: '麥恩莉', artist: '方大同', genre: 'C-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.32.33.png', title: '400 metres', artist: 'Chinese Football', genre: 'Rock' },
+            { image: '/images/music_pic/截屏2025-08-23 14.33.50.png', title: 'Feather', artist: 'Nujabes', genre: 'Jazz' },
+            { image: '/images/music_pic/截屏2025-08-23 14.34.24.png', title: 'Sonny Boy', artist: 'Toe', genre: 'Rock' },
+            { image: '/images/music_pic/截屏2025-08-23 14.34.50.png', title: 'Time', artist: 'Pink Floyd', genre: 'Rock' },
+            { image: '/images/music_pic/截屏2025-08-23 14.35.19.png', title: 'Give Me The Gun', artist: 'American Football', genre: 'Rock' },
+            { image: '/images/music_pic/截屏2025-08-23 14.37.41.png', title: '4', artist: 'aesthetics across the color line', genre: 'Electronic' },
+            { image: '/images/music_pic/截屏2025-08-23 14.38.46.png', title: 'more than words', artist: '羊文学', genre: 'J-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.39.09.png', title: '简单爱', artist: '周杰伦', genre: 'C-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.39.42.png', title: '踊り子', artist: 'Vaundy', genre: 'J-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.40.14.png', title: 'The Other Side Of Paradise', artist: 'Glass Animals', genre: 'Electronic' },
+            { image: '/images/music_pic/截屏2025-08-23 14.40.37.png', title: '多分、風', artist: '魚韻 (Sakanaction)', genre: 'J-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.41.05.png', title: 'オトノケ', artist: 'Creepy Nuts', genre: 'Hip-Hop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.41.39.png', title: 'Graduation song', artist: 'Murphy Radio', genre: 'Rock' },
+            { image: '/images/music_pic/截屏2025-08-23 14.42.02.png', title: 'Just the Two of Us', artist: 'Grover Washington Jr.', genre: 'Jazz' },
+            { image: '/images/music_pic/截屏2025-08-23 14.42.38.png', title: 'All My Life', artist: 'Lil Durk, J. Cole', genre: 'Hip-Hop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.43.11.png', title: 'ANTENNA', artist: 'Supercar', genre: 'Rock' },
+            { image: '/images/music_pic/截屏2025-08-23 14.43.41.png', title: 'hong kong milk tea', artist: 'core wave', genre: 'Electronic' },
+            { image: '/images/music_pic/截屏2025-08-23 14.44.28.png', title: '白日', artist: 'King Gnu', genre: 'J-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.45.29.png', title: 'Vanilla', artist: '落日飞车', genre: 'C-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.46.02.png', title: 'You\'re Beautiful', artist: 'James Blunt', genre: 'Rock' },
+            { image: '/images/music_pic/截屏2025-08-23 14.46.32.png', title: 'Talking Box', artist: 'Wurs', genre: 'Electronic' },
+            { image: '/images/music_pic/截屏2025-08-23 14.47.15.png', title: 'Yellow', artist: 'Coldplay', genre: 'Rock' },
+            { image: '/images/music_pic/截屏2025-08-23 14.47.41.png', title: '又三郎', artist: 'ヨルシカ (Yorushika)', genre: 'J-Pop' },
+        ];
+
+        let currentIndex = 0;
+        let currentFilter = 'All';
+        let filteredData = [...musicData];
+        const itemsPerPage = 8;
+        const gallery = document.getElementById('musicGallery');
+        const loadMoreContainer = document.getElementById('loadMoreContainer');
+        const showingCount = document.getElementById('showingCount');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+
+        function createCard(item) {
+            return `
+                <div class="music-item group flex flex-col gap-4 cursor-pointer">
+                    <div class="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+                        <img class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" alt="${item.title}" src="${item.image}"/>
+                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
+                        <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
+                            <button class="size-10 rounded-full bg-white text-primary flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+                                <span class="material-symbols-outlined text-[20px]">play_arrow</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-primary text-lg font-bold leading-tight group-hover:text-gray-600 transition-colors">${item.title}</h3>
+                        </div>
+                        <p class="text-sm text-text-muted">${item.artist}</p>
+                        <span class="text-xs text-text-tertiary">${item.genre}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateFilterButtons(activeFilter) {
+            filterButtons.forEach(btn => {
+                const btnFilter = btn.dataset.filter;
+                if (btnFilter === activeFilter) {
+                    btn.classList.remove('bg-secondary', 'text-text-main');
+                    btn.classList.add('bg-primary', 'text-white');
+                } else {
+                    btn.classList.remove('bg-primary', 'text-white');
+                    btn.classList.add('bg-secondary', 'text-text-main');
+                }
+            });
+        }
+
+        function updateShowingCount() {
+            const showing = Math.min(currentIndex, filteredData.length);
+            showingCount.textContent = `Showing ${showing} of ${filteredData.length}`;
+        }
+
+        function filterGallery(filter) {
+            currentFilter = filter;
+            currentIndex = 0;
+
+            if (filter === 'All') {
+                filteredData = [...musicData];
+            } else {
+                filteredData = musicData.filter(item => item.genre === filter);
+            }
+
+            gallery.innerHTML = '';
+
+            loadMoreContainer.innerHTML = `
+                <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle bg-white px-8 py-3 text-sm font-medium text-text-main hover:bg-gray-50 transition-colors">
+                    Load More Tracks
+                    <span class="material-symbols-outlined text-lg">expand_more</span>
+                </button>
+            `;
+            document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
+
+            updateFilterButtons(filter);
+            loadMore();
+        }
+
+        function loadMore() {
+            const endIndex = Math.min(currentIndex + itemsPerPage, filteredData.length);
+            const fragment = document.createDocumentFragment();
+            const tempDiv = document.createElement('div');
+
+            for (let i = currentIndex; i < endIndex; i++) {
+                tempDiv.innerHTML = createCard(filteredData[i]);
+                const card = tempDiv.firstElementChild;
+                fragment.appendChild(card);
+            }
+
+            gallery.appendChild(fragment);
+
+            setTimeout(() => {
+                const items = gallery.querySelectorAll('.music-item:not(.visible)');
+                items.forEach((item, index) => {
+                    setTimeout(() => {
+                        item.classList.add('visible');
+                    }, index * 100);
+                });
+            }, 50);
+
+            currentIndex = endIndex;
+            updateShowingCount();
+
+            if (currentIndex >= filteredData.length) {
+                loadMoreContainer.innerHTML = `
+                    <div class="group flex flex-col h-full bg-background-soft border border-accent-soft p-8 items-center justify-center text-center transition-all hover:bg-gray-100 rounded-lg">
+                        <div class="w-12 h-12 flex items-center justify-center mb-6 text-primary">
+                            <span class="material-symbols-outlined text-4xl font-light">headphones</span>
+                        </div>
+                        <h3 class="text-2xl font-display font-medium text-primary mb-3">That's the playlist!</h3>
+                        <p class="text-text-muted text-sm mb-8 leading-relaxed max-w-[200px]">Always discovering new music. Check back for updates.</p>
+                        <button class="bg-white border border-border-subtle text-primary px-6 py-2.5 rounded text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 shadow-sm">
+                            Suggest a Track
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterGallery(btn.dataset.filter);
+            });
+        });
+
+        loadMore();
+    </script>
+</body>
+</html>

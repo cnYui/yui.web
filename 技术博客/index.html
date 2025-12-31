@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Tech Blog - Yui's Portfolio</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#222222",
+                        "secondary": "#f4f4f5",
+                        "text-main": "#222222",
+                        "text-muted": "#71717a",
+                        "text-tertiary": "#9ca3af",
+                        "background": "#ffffff",
+                        "background-soft": "#f9fafb",
+                        "border-subtle": "#e5e5e5",
+                        "accent-soft": "#e5e7eb",
+                    },
+                    fontFamily: {
+                        "display": ["Playfair Display", "serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .blog-item { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+        .blog-item.visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body class="bg-background text-text-main font-body min-h-screen flex flex-col overflow-x-hidden antialiased">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle bg-white/95 backdrop-blur-sm">
+        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
+            <div class="flex items-center gap-4">
+                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
+            </div>
+            <div class="flex items-center gap-10">
+                <nav class="hidden md:flex items-center gap-8">
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/项目经历/">项目经历</a>
+                    <a class="text-sm uppercase tracking-widest text-primary font-medium border-b border-primary pb-0.5" href="/技术博客/">技术博客</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/旅行足迹/">旅行足迹</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/音乐推荐/">音乐推荐</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/番剧推荐/">番剧推荐</a>
+                </nav>
+                <div class="flex gap-4">
+                    <button class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors">
+                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">search</span>
+                    </button>
+                    <button class="md:hidden flex items-center justify-center size-10 text-primary">
+                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 w-full max-w-[1400px] mx-auto px-6 md:px-12 py-12">
+        <div class="flex flex-col lg:flex-row gap-12">
+            <!-- Sidebar -->
+            <aside class="lg:w-72 shrink-0">
+                <!-- Search -->
+                <div class="mb-8">
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted mb-4">Search</h3>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-lg">search</span>
+                        <input type="text" placeholder="Search articles..." class="w-full h-10 pl-10 pr-4 rounded-md border border-border-subtle bg-white text-sm focus:outline-none focus:border-primary transition-colors"/>
+                    </div>
+                </div>
+
+                <!-- Topics -->
+                <div class="mb-8">
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted mb-4">Topics</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="filter-btn px-4 py-2 rounded-md bg-primary text-white text-sm font-medium transition-all" data-filter="All">All Posts</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary text-text-main text-sm font-medium hover:bg-gray-200 transition-all" data-filter="Frontend">Frontend</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary text-text-main text-sm font-medium hover:bg-gray-200 transition-all" data-filter="Backend">Backend</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary text-text-main text-sm font-medium hover:bg-gray-200 transition-all" data-filter="DevOps">DevOps</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary text-text-main text-sm font-medium hover:bg-gray-200 transition-all" data-filter="Design">Design</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary text-text-main text-sm font-medium hover:bg-gray-200 transition-all" data-filter="AI">AI</button>
+                    </div>
+                </div>
+
+                <!-- Author Card -->
+                <div class="p-6 border border-border-subtle rounded-lg">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-full overflow-hidden">
+                            <img src="/images/profile/avatar-small.jpg" alt="Yui" class="w-full h-full object-cover"/>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-primary">Yui</h4>
+                            <p class="text-xs text-text-muted">Developer & Creator</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-text-muted leading-relaxed mb-4">
+                        Passionate about building accessible web apps and teaching others how to code.
+                    </p>
+                    <div class="flex gap-4 text-text-muted">
+                        <a href="#" class="hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">link</span></a>
+                        <a href="#" class="hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">alternate_email</span></a>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Blog List -->
+            <div class="flex-1">
+                <div id="blogList" class="flex flex-col gap-8">
+                </div>
+
+                <!-- Load More -->
+                <div id="loadMoreContainer" class="flex justify-center mt-12">
+                    <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle bg-white px-8 py-3 text-sm font-medium text-text-main hover:bg-gray-50 transition-colors">
+                        Load More Articles
+                        <span class="material-symbols-outlined text-lg">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-accent-soft bg-white py-12 md:py-16">
+        <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex flex-col gap-1 text-center md:text-left">
+                <h2 class="text-primary text-lg font-display font-semibold">Yui's Portfolio</h2>
+                <p class="text-text-tertiary text-xs">© 2024 Tech Blog.</p>
+            </div>
+            <div class="flex gap-8">
+                <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">mail</span></a>
+                <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">code</span></a>
+                <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">alternate_email</span></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const blogData = [
+            { id: 7, image: '/images/blog/vibe-coding-guide.png', title: 'Vibe Coding 实战指南', category: 'AI', date: 'Dec 31, 2024', readTime: '12 min read', excerpt: '一年多 AI Coding 实战经验总结，从构思设计到纠错技巧，帮助你减少"屎山代码"、提升开发效率。', author: 'Yui', link: '/技术博客/vibe-coding.html' },
+            { id: 1, image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=300&fit=crop', title: 'Building Scalable APIs with Node.js', category: 'Backend', date: 'Oct 12, 2023', readTime: '8 min read', excerpt: 'A deep dive into structuring Express applications for enterprise-level scale, covering error handling, database connections, and middleware optimization.', author: 'Yui' },
+            { id: 2, image: 'https://images.unsplash.com/photo-1507721999472-8ed4421c4af2?w=400&h=300&fit=crop', title: 'The Future of CSS: Container Queries', category: 'Frontend', date: 'Sep 28, 2023', readTime: '5 min read', excerpt: 'Exploring how we can move away from viewport-based media queries to truly component-driven design with the new Container Queries spec.', author: 'Yui' },
+            { id: 3, image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=300&fit=crop', title: 'Bridging the Gap Between Design and Code', category: 'Design', date: 'Aug 15, 2023', readTime: '12 min read', excerpt: 'How design systems can help teams collaborate more effectively and ship consistent user experiences across products.', author: 'Yui' },
+            { id: 4, image: 'https://images.unsplash.com/photo-1518432031352-d6fc5c10da5a?w=400&h=300&fit=crop', title: 'Docker for Frontend Developers', category: 'DevOps', date: 'Jul 20, 2023', readTime: '10 min read', excerpt: 'A practical guide to containerizing your frontend applications and setting up efficient development workflows.', author: 'Yui' },
+            { id: 5, image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop', title: 'Getting Started with LangChain', category: 'AI', date: 'Jun 10, 2023', readTime: '15 min read', excerpt: 'Learn how to build powerful AI applications using LangChain, from simple chatbots to complex RAG systems.', author: 'Yui' },
+            { id: 6, image: 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400&h=300&fit=crop', title: 'React Performance Optimization Tips', category: 'Frontend', date: 'May 5, 2023', readTime: '7 min read', excerpt: 'Practical techniques to improve your React app performance, including memoization, code splitting, and lazy loading.', author: 'Yui' },
+        ];
+
+        let currentIndex = 0;
+        let currentFilter = 'All';
+        let filteredData = [...blogData];
+        const itemsPerPage = 4;
+        const blogList = document.getElementById('blogList');
+        const loadMoreContainer = document.getElementById('loadMoreContainer');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+
+        function createCard(item) {
+            const articleLink = item.link || `/技术博客/article.html?id=${item.id}`;
+            return `
+                <a href="${articleLink}" class="blog-item group flex flex-col md:flex-row gap-6 p-6 border border-border-subtle rounded-lg hover:border-primary/30 hover:shadow-sm transition-all">
+                    <div class="w-full md:w-48 h-32 shrink-0 overflow-hidden rounded-md bg-gray-100">
+                        <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="${item.image}" alt="${item.title}"/>
+                    </div>
+                    <div class="flex-1 flex flex-col gap-3">
+                        <div class="flex items-center gap-3 text-xs">
+                            <span class="px-2 py-1 rounded bg-primary text-white font-semibold uppercase tracking-wider">${item.category}</span>
+                            <span class="text-text-muted">${item.date}</span>
+                            <span class="text-text-muted">•</span>
+                            <span class="text-text-muted">${item.readTime}</span>
+                        </div>
+                        <h2 class="text-xl font-bold text-primary group-hover:text-text-muted transition-colors">${item.title}</h2>
+                        <p class="text-sm text-text-muted leading-relaxed line-clamp-2">${item.excerpt}</p>
+                        <div class="flex items-center justify-between mt-auto pt-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-full overflow-hidden shrink-0">
+                                    <img src="/images/profile/avatar-small.jpg" alt="${item.author}" class="w-full h-full object-cover" loading="lazy"/>
+                                </div>
+                                <span class="text-sm text-text-muted">${item.author}</span>
+                            </div>
+                            <span class="text-sm font-medium text-primary flex items-center gap-1 group-hover:gap-2 transition-all">
+                                Read Article <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            `;
+        }
+
+        function updateFilterButtons(activeFilter) {
+            filterButtons.forEach(btn => {
+                const btnFilter = btn.dataset.filter;
+                if (btnFilter === activeFilter) {
+                    btn.classList.remove('bg-secondary', 'text-text-main');
+                    btn.classList.add('bg-primary', 'text-white');
+                } else {
+                    btn.classList.remove('bg-primary', 'text-white');
+                    btn.classList.add('bg-secondary', 'text-text-main');
+                }
+            });
+        }
+
+        function filterBlog(filter) {
+            currentFilter = filter;
+            currentIndex = 0;
+
+            if (filter === 'All') {
+                filteredData = [...blogData];
+            } else {
+                filteredData = blogData.filter(item => item.category === filter);
+            }
+
+            blogList.innerHTML = '';
+
+            loadMoreContainer.innerHTML = `
+                <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle bg-white px-8 py-3 text-sm font-medium text-text-main hover:bg-gray-50 transition-colors">
+                    Load More Articles
+                    <span class="material-symbols-outlined text-lg">expand_more</span>
+                </button>
+            `;
+            document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
+
+            updateFilterButtons(filter);
+            loadMore();
+        }
+
+        function loadMore() {
+            const endIndex = Math.min(currentIndex + itemsPerPage, filteredData.length);
+            const fragment = document.createDocumentFragment();
+            const tempDiv = document.createElement('div');
+
+            for (let i = currentIndex; i < endIndex; i++) {
+                tempDiv.innerHTML = createCard(filteredData[i]);
+                const card = tempDiv.firstElementChild;
+                fragment.appendChild(card);
+            }
+
+            blogList.appendChild(fragment);
+
+            setTimeout(() => {
+                const items = blogList.querySelectorAll('.blog-item:not(.visible)');
+                items.forEach((item, index) => {
+                    setTimeout(() => {
+                        item.classList.add('visible');
+                    }, index * 100);
+                });
+            }, 50);
+
+            currentIndex = endIndex;
+
+            if (currentIndex >= filteredData.length) {
+                loadMoreContainer.innerHTML = `
+                    <div class="text-center text-text-muted text-sm py-8">
+                        <span class="material-symbols-outlined text-2xl mb-2 block">check_circle</span>
+                        You've reached the end of the articles.
+                    </div>
+                `;
+            }
+        }
+
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBlog(btn.dataset.filter);
+            });
+        });
+
+        loadMore();
+    </script>
+</body>
+</html>

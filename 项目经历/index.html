@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Project Experience - Yui's Portfolio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;1,400&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1a1a1a",
+                        "secondary": "#f8f8f8",
+                        "text-main": "#1a1a1a",
+                        "text-muted": "#666666",
+                        "text-light": "#999999",
+                        "border-subtle": "#e5e5e5",
+                        "accent-gold": "#c9a227",
+                        "accent-silver": "#8a8a8a",
+                        "accent-bronze": "#b87333",
+                    },
+                    fontFamily: {
+                        "display": ["Playfair Display", "serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .timeline-item { opacity: 0; transform: translateX(-20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .timeline-item.visible { opacity: 1; transform: translateX(0); }
+        .timeline-line { background: linear-gradient(to bottom, #e5e5e5 0%, #1a1a1a 10%, #1a1a1a 90%, #e5e5e5 100%); }
+        
+        /* Particle Canvas */
+        #particleCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-white text-text-main font-body min-h-screen">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle bg-white/95 backdrop-blur-sm">
+        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
+            <div class="flex items-center gap-4">
+                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
+            </div>
+            <div class="flex items-center gap-10">
+                <nav class="hidden md:flex items-center gap-8">
+                    <a class="text-sm uppercase tracking-widest text-primary font-medium border-b border-primary pb-0.5" href="/项目经历/">项目经历</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/技术博客/">技术博客</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/旅行足迹/">旅行足迹</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/音乐推荐/">音乐推荐</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/番剧推荐/">番剧推荐</a>
+                </nav>
+                <div class="flex gap-4">
+                    <button class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors">
+                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">search</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full">
+        <!-- Hero Section with Particle Background -->
+        <section class="relative bg-[#0a0a12] text-white py-20 md:py-28 overflow-hidden">
+            <canvas id="particleCanvas"></canvas>
+            <div class="hero-content max-w-[1200px] mx-auto px-6 md:px-12">
+                <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
+                    <div>
+                        <p class="text-white/50 text-sm uppercase tracking-[0.3em] mb-4">2024 — Present</p>
+                        <h1 class="text-5xl md:text-7xl font-display font-medium leading-tight">
+                            My Journey<br/>
+                            <span class="italic text-white/70">in Tech</span>
+                        </h1>
+                    </div>
+                    <div class="md:max-w-md">
+                        <p class="text-white/70 text-lg font-light leading-relaxed">
+                            From my first hackathon as a spectator to winning awards across China. A timeline of growth, learning, and building.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16 pt-16 border-t border-white/20">
+                    <div>
+                        <p class="text-4xl md:text-5xl font-display font-medium">10+</p>
+                        <p class="text-white/50 text-sm uppercase tracking-widest mt-2">Hackathons</p>
+                    </div>
+                    <div>
+                        <p class="text-4xl md:text-5xl font-display font-medium">4</p>
+                        <p class="text-white/50 text-sm uppercase tracking-widest mt-2">Awards</p>
+                    </div>
+                    <div>
+                        <p class="text-4xl md:text-5xl font-display font-medium">8</p>
+                        <p class="text-white/50 text-sm uppercase tracking-widest mt-2">Cities</p>
+                    </div>
+                    <div>
+                        <p class="text-4xl md:text-5xl font-display font-medium italic">∞</p>
+                        <p class="text-white/50 text-sm uppercase tracking-widest mt-2">Connections</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter -->
+        <section class="sticky top-[88px] z-40 bg-white border-b border-border-subtle py-4">
+            <div class="max-w-[1200px] mx-auto px-6 md:px-12">
+                <div class="flex flex-wrap items-center gap-3">
+                    <span class="text-sm text-text-light mr-2">Filter:</span>
+                    <button class="filter-btn px-4 py-2 rounded-full bg-primary text-white text-sm font-medium transition-all" data-filter="All">All</button>
+                    <button class="filter-btn px-4 py-2 rounded-full border border-border-subtle text-text-main text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all" data-filter="Award">Award</button>
+                    <button class="filter-btn px-4 py-2 rounded-full border border-border-subtle text-text-main text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all" data-filter="Hackathon">Hackathon</button>
+                    <button class="filter-btn px-4 py-2 rounded-full border border-border-subtle text-text-main text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all" data-filter="Meetup">Meetup</button>
+                    <button class="filter-btn px-4 py-2 rounded-full border border-border-subtle text-text-main text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all" data-filter="Project">Project</button>
+                    <button class="filter-btn px-4 py-2 rounded-full border border-border-subtle text-text-main text-sm font-medium hover:bg-primary hover:text-white hover:border-primary transition-all" data-filter="AI Video/Comic">AI Video/Comic</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Timeline -->
+        <section class="py-16 md:py-24">
+            <div class="max-w-[1200px] mx-auto px-6 md:px-12">
+                <div class="relative">
+                    <!-- Timeline Line -->
+                    <div class="hidden md:block absolute left-[140px] top-0 bottom-0 w-[2px] timeline-line"></div>
+                    
+                    <!-- Timeline Items -->
+                    <div id="timeline" class="flex flex-col gap-12 md:gap-16">
+                    </div>
+                </div>
+
+                <!-- Load More -->
+                <div id="loadMoreContainer" class="flex justify-center mt-16">
+                    <button id="loadMoreBtn" class="group flex items-center gap-3 px-8 py-4 border-2 border-primary text-primary rounded-full hover:bg-primary hover:text-white transition-all">
+                        <span class="font-medium">Load More Milestones</span>
+                        <span class="material-symbols-outlined group-hover:translate-y-1 transition-transform">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quote Section -->
+        <section class="bg-secondary py-20">
+            <div class="max-w-[800px] mx-auto px-6 text-center">
+                <span class="material-symbols-outlined text-5xl text-text-light mb-6">format_quote</span>
+                <blockquote class="text-2xl md:text-3xl font-display italic text-text-main leading-relaxed">
+                    "Every hackathon is a chance to learn something new, meet amazing people, and push your limits."
+                </blockquote>
+                <p class="text-text-muted mt-6">— Yui, 2024</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-border-subtle bg-white py-16">
+        <div class="max-w-[1200px] mx-auto px-6 md:px-12 text-center">
+            <p class="font-display text-2xl italic text-primary mb-4">Portfolio.</p>
+            <p class="text-text-light text-sm">© 2024 Yui's Journey. Keep building.</p>
+        </div>
+    </footer>
+
+    <script>
+        const projectData = [
+            { date: 'Dec 2024', city: 'Online', image: '/images/ai-video-comic.jpg', title: 'AI Video/Comic Project', category: 'AI Video/Comic', desc: 'Creative AI-generated video and comic content exploring new forms of digital storytelling.', link: '', badge: '' },
+            { date: 'Nov 2024', city: 'Shanghai', image: '/images/hackathon/trae-hackathon-08.jpg', title: 'TRAE SOLO Hackathon Shanghai', category: 'Award', desc: 'Won 2nd place at the TRAE SOLO Hackathon Shanghai edition.', link: '', badge: '🥈 2nd Place' },
+            { date: 'Oct 2024', city: 'Chongqing', image: '/images/hackathon/渝客松Google GDG赛道第一名.jpg', title: 'Yukesong Google GDG Track', category: 'Award', desc: 'Achieved 1st place in the Google GDG track at Yukesong hackathon.', link: '', badge: '🥇 1st Place' },
+            { date: 'Sep 2024', city: 'Wuxi', image: '/images/hackathon/无锡Rokid ARAI三等奖.jpg', title: 'Wuxi Rokid AR AI Competition', category: 'Award', desc: 'Won 3rd place at the Wuxi Rokid AR AI competition, showcasing innovative AR applications.', link: '', badge: '🥉 3rd Place' },
+            { date: 'Sep 2024', city: 'Online', image: '/images/hackathon/image.png', title: 'Tencent Cloud Online Hackathon', category: 'Award', desc: 'Pet health companion mini-program that won recognition at Tencent Cloud hackathon.', link: 'http://xhslink.com/o/ATzpS0qsjaQ', badge: '🏆 Winner' },
+            { date: 'Aug 2024', city: 'Anhui', image: '/images/hackathon/trae-hackathon-07.jpg', title: 'Huikesong Hackathon', category: 'Hackathon', desc: 'Created "Suikou Chengqu" (Instant Song) project at Anhui hackathon.', link: 'http://xhslink.com/o/9pQHBf9V1Fv', badge: '' },
+            { date: 'Aug 2024', city: 'Nanjing', image: '/images/hackathon/trae-hackathon-05.jpg', title: 'Nanckathon S1', category: 'Hackathon', desc: 'Participated in the Nanckathon S1 hackathon event in Nanjing.', link: '', badge: '' },
+            { date: 'Jul 2024', city: 'Nanjing', image: '/images/hackathon/trae-hackathon-09.jpg', title: 'TRAE Friends Nanjing', category: 'Meetup', desc: 'Technical sharing session at TRAE Friends Nanjing meetup.', link: '', badge: '' },
+            { date: 'Jul 2024', city: 'Suzhou', image: '/images/hackathon/trae-hackathon-04.jpg', title: 'TRAE Friends Suzhou', category: 'Meetup', desc: 'Technical sharing session at TRAE Friends Suzhou meetup.', link: '', badge: '' },
+            { date: 'Jun 2024', city: 'Hangzhou', image: '/images/hackathon/trae-hackathon-02.jpg', title: 'Trae Solo Hackathon Hangzhou', category: 'Hackathon', desc: 'Participated as a fresh graduate with WeChat mini-program experience.', link: '', badge: '' },
+            { date: 'May 2024', city: 'Online', image: '/images/hackathon/image copy 2.png', title: 'n8n + Xiaohongshu MCP Auto-posting', category: 'Project', desc: 'Automated Xiaohongshu account management using n8n workflow.', link: 'https://www.xiaohongshu.com/user/profile/5b869e548bf5ee0001f35235', badge: '' },
+            { date: 'Apr 2024', city: 'Online', image: '/images/hackathon/image copy.png', title: 'Douyin Creator Competition', category: 'Project', desc: 'Legal Theater Assistant built with Coze workflow for Douyin Creator competition.', link: 'http://xhslink.com/o/5kBv2KfGeLj', badge: '' },
+            { date: 'Jan 2024', city: 'Beijing', image: '/images/hackathon/trae-hackathon-01.jpg', title: '2025 AdventureX', category: 'Hackathon', desc: 'Attended as a visitor, first close-up observation and learning experience.', link: '', badge: '' },
+            { date: 'Dec 2023', city: 'Beijing', image: '/images/hackathon/AdventureX24.jpg', title: '2024 AdventureX', category: 'Hackathon', desc: 'First time observing a hackathon as a spectator, learning from the community.', link: '', badge: '👀 First Hackathon' },
+        ];
+
+        let currentIndex = 0;
+        let currentFilter = 'All';
+        let filteredData = [...projectData];
+        const itemsPerPage = 6;
+        const timeline = document.getElementById('timeline');
+        const loadMoreContainer = document.getElementById('loadMoreContainer');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+
+        function createTimelineItem(item, index) {
+            const isEven = index % 2 === 0;
+            const badgeHtml = item.badge ? `<span class="inline-block px-3 py-1 bg-accent-gold/10 text-accent-gold text-xs font-semibold rounded-full mb-3">${item.badge}</span>` : '';
+            const linkHtml = item.link ? `<a href="${item.link}" target="_blank" class="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-3"><span>View Project</span><span class="material-symbols-outlined text-sm">arrow_outward</span></a>` : '';
+            
+            return `
+                <div class="timeline-item flex flex-col md:flex-row gap-6 md:gap-12 items-start">
+                    <!-- Date Column -->
+                    <div class="md:w-[120px] shrink-0 text-right hidden md:block">
+                        <p class="text-lg font-display font-medium text-primary">${item.date}</p>
+                        <p class="text-sm text-text-light flex items-center justify-end gap-1 mt-1">
+                            <span class="material-symbols-outlined text-sm">location_on</span>
+                            ${item.city}
+                        </p>
+                    </div>
+                    
+                    <!-- Timeline Dot -->
+                    <div class="hidden md:flex flex-col items-center">
+                        <div class="w-4 h-4 rounded-full bg-primary border-4 border-white shadow-md z-10"></div>
+                    </div>
+                    
+                    <!-- Content Card -->
+                    <div class="flex-1 group">
+                        <!-- Mobile Date -->
+                        <div class="md:hidden flex items-center gap-2 text-sm text-text-light mb-3">
+                            <span class="font-medium text-primary">${item.date}</span>
+                            <span>•</span>
+                            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">location_on</span>${item.city}</span>
+                        </div>
+                        
+                        <div class="flex flex-col md:flex-row gap-6 items-start">
+                            <!-- Image Card -->
+                            <div class="bg-secondary rounded-2xl overflow-hidden hover:shadow-lg transition-shadow duration-300 max-w-xs shrink-0">
+                                <div class="aspect-[4/3] overflow-hidden">
+                                    <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="${item.image}" alt="${item.title}"/>
+                                </div>
+                            </div>
+                            
+                            <!-- Text Content with dash -->
+                            <div class="flex items-start gap-4 flex-1">
+                                <span class="text-2xl text-text-light font-light hidden md:block">—</span>
+                                <div class="flex-1">
+                                    ${badgeHtml}
+                                    <span class="text-xs uppercase tracking-widest text-text-light">${item.category}</span>
+                                    <h3 class="text-xl font-display font-semibold text-primary mt-2 group-hover:text-text-muted transition-colors">${item.title}</h3>
+                                    <p class="text-text-muted text-sm leading-relaxed mt-3">${item.desc}</p>
+                                    ${linkHtml}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateFilterButtons(activeFilter) {
+            filterButtons.forEach(btn => {
+                const btnFilter = btn.dataset.filter;
+                if (btnFilter === activeFilter) {
+                    btn.classList.remove('border', 'border-border-subtle', 'text-text-main');
+                    btn.classList.add('bg-primary', 'text-white', 'border-primary');
+                } else {
+                    btn.classList.remove('bg-primary', 'text-white', 'border-primary');
+                    btn.classList.add('border', 'border-border-subtle', 'text-text-main');
+                }
+            });
+        }
+
+        function filterTimeline(filter) {
+            currentFilter = filter;
+            currentIndex = 0;
+            
+            if (filter === 'All') {
+                filteredData = [...projectData];
+            } else {
+                filteredData = projectData.filter(item => item.category === filter);
+            }
+            
+            timeline.innerHTML = '';
+            
+            loadMoreContainer.innerHTML = `
+                <button id="loadMoreBtn" class="group flex items-center gap-3 px-8 py-4 border-2 border-primary text-primary rounded-full hover:bg-primary hover:text-white transition-all">
+                    <span class="font-medium">Load More Milestones</span>
+                    <span class="material-symbols-outlined group-hover:translate-y-1 transition-transform">expand_more</span>
+                </button>
+            `;
+            document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
+            
+            updateFilterButtons(filter);
+            loadMore();
+        }
+
+        function loadMore() {
+            const endIndex = Math.min(currentIndex + itemsPerPage, filteredData.length);
+            
+            for (let i = currentIndex; i < endIndex; i++) {
+                const itemHtml = createTimelineItem(filteredData[i], i);
+                timeline.insertAdjacentHTML('beforeend', itemHtml);
+            }
+            
+            setTimeout(() => {
+                const items = timeline.querySelectorAll('.timeline-item:not(.visible)');
+                items.forEach((item, index) => {
+                    setTimeout(() => {
+                        item.classList.add('visible');
+                    }, index * 150);
+                });
+            }, 50);
+            
+            currentIndex = endIndex;
+            
+            if (currentIndex >= filteredData.length) {
+                loadMoreContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
+                            <span class="material-symbols-outlined text-3xl text-primary">rocket_launch</span>
+                        </div>
+                        <p class="font-display text-xl text-primary">The journey continues...</p>
+                        <p class="text-text-light text-sm mt-2">More milestones coming soon</p>
+                    </div>
+                `;
+            }
+        }
+
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterTimeline(btn.dataset.filter);
+            });
+        });
+
+        loadMore();
+    </script>
+
+    <!-- Particle Earth Animation -->
+    <script>
+        (function() {
+            const canvas = document.getElementById('particleCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const section = canvas.parentElement;
+            
+            // 创建隐藏的地图画布
+            const mapCanvas = document.createElement('canvas');
+            const mapCtx = mapCanvas.getContext('2d');
+            
+            let width, height;
+            const DOT_SPACING = 10;
+            const MAX_DOT_SIZE = 4.5;
+            const MIN_DOT_SIZE = 0.8;
+            
+            // 预渲染地图的尺寸
+            const MAP_WIDTH = 1800;
+            const MAP_HEIGHT = 900;
+            
+            let earthOffset = 0;
+            const SCROLL_SPEED = 30;
+            
+            const BG_COLOR = '#0a0a12';
+            const DOT_COLOR = { r: 120, g: 100, b: 200 };
+            
+            // 预渲染的地图数据
+            let mapImageData = null;
+            
+            // 加载并预渲染 GeoJSON 到位图
+            async function loadAndRenderGeoJSON() {
+                try {
+                    const response = await fetch('/custom.geo.json');
+                    const data = await response.json();
+                    
+                    mapCanvas.width = MAP_WIDTH;
+                    mapCanvas.height = MAP_HEIGHT;
+                    
+                    mapCtx.fillStyle = '#000000';
+                    mapCtx.fillRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
+                    
+                    mapCtx.fillStyle = '#FFFFFF';
+                    
+                    data.features.forEach(feature => {
+                        const geometry = feature.geometry;
+                        if (geometry.type === 'Polygon') {
+                            drawPolygon(geometry.coordinates[0]);
+                        } else if (geometry.type === 'MultiPolygon') {
+                            geometry.coordinates.forEach(polygon => {
+                                drawPolygon(polygon[0]);
+                            });
+                        }
+                    });
+                    
+                    mapImageData = mapCtx.getImageData(0, 0, MAP_WIDTH, MAP_HEIGHT);
+                    
+                    resize();
+                    requestAnimationFrame(animate);
+                } catch (error) {
+                    console.error('Failed to load GeoJSON:', error);
+                }
+            }
+            
+            function drawPolygon(coords) {
+                mapCtx.beginPath();
+                coords.forEach((coord, i) => {
+                    const x = ((coord[0] + 180) / 360) * MAP_WIDTH;
+                    const y = ((90 - coord[1]) / 180) * MAP_HEIGHT;
+                    if (i === 0) mapCtx.moveTo(x, y);
+                    else mapCtx.lineTo(x, y);
+                });
+                mapCtx.closePath();
+                mapCtx.fill();
+            }
+            
+            function isLand(lon, lat) {
+                if (!mapImageData) return false;
+                while (lon > 180) lon -= 360;
+                while (lon < -180) lon += 360;
+                const x = Math.floor(((lon + 180) / 360) * MAP_WIDTH);
+                const y = Math.floor(((90 - lat) / 180) * MAP_HEIGHT);
+                if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
+                const index = (y * MAP_WIDTH + x) * 4;
+                return mapImageData.data[index] > 128;
+            }
+            
+            function resize() {
+                width = canvas.width = section.offsetWidth;
+                height = canvas.height = section.offsetHeight;
+            }
+            
+            function draw() {
+                ctx.fillStyle = BG_COLOR;
+                ctx.fillRect(0, 0, width, height);
+                
+                const cols = Math.ceil(width / DOT_SPACING) + 1;
+                const rows = Math.ceil(height / DOT_SPACING) + 1;
+                
+                for (let row = 0; row < rows; row++) {
+                    for (let col = 0; col < cols; col++) {
+                        const x = col * DOT_SPACING;
+                        const y = row * DOT_SPACING;
+                        
+                        const lon = ((x + earthOffset) / MAP_WIDTH) * 360 - 180;
+                        const lat = 90 - (y / MAP_HEIGHT) * 180;
+                        
+                        if (isLand(lon, lat)) {
+                            const size = MAX_DOT_SIZE;
+                            const brightness = 0.7;
+                            
+                            const r = Math.floor(DOT_COLOR.r * brightness);
+                            const g = Math.floor(DOT_COLOR.g * brightness);
+                            const b = Math.floor(DOT_COLOR.b * brightness);
+                            
+                            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                            ctx.beginPath();
+                            ctx.arc(x, y, size, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    }
+                }
+            }
+            
+            let lastTime = 0;
+            function animate(currentTime) {
+                const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1);
+                lastTime = currentTime;
+                
+                earthOffset += SCROLL_SPEED * deltaTime;
+                if (earthOffset > MAP_WIDTH) earthOffset -= MAP_WIDTH;
+                
+                draw();
+                requestAnimationFrame(animate);
+            }
+            
+            window.addEventListener('resize', resize);
+            loadAndRenderGeoJSON();
+        })();
+    </script>
+</body>
+</html>
