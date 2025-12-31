@@ -47,11 +47,11 @@
             </div>
             <div class="flex items-center gap-10">
                 <nav class="hidden md:flex items-center gap-8">
-                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/项目经历/">项目经历</a>
-                    <a class="text-sm uppercase tracking-widest text-primary font-medium border-b border-primary pb-0.5" href="/技术博客/">技术博客</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/旅行足迹/">旅行足迹</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/音乐推荐/">音乐推荐</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/番剧推荐/">番剧推荐</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/projects/">项目经历</a>
+                    <a class="text-sm uppercase tracking-widest text-primary font-medium border-b border-primary pb-0.5" href="/blog/">技术博客</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/travel/">旅行足迹</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/music/">音乐推荐</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/anime/">番剧推荐</a>
                 </nav>
                 <div class="flex gap-4">
                     <button class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors">
@@ -145,7 +145,7 @@
 
     <script>
         const blogData = [
-            { id: 7, image: '/images/blog/vibe-coding-guide.png', title: 'Vibe Coding 实战指南', category: 'AI', date: 'Dec 31, 2025', readTime: '12 min read', excerpt: '一年多 AI Coding 实战经验总结，从构思设计到纠错技巧，帮助你减少"屎山代码"、提升开发效率。', author: 'Yui', link: '/技术博客/vibe-coding.html' },
+            { id: 7, image: '/images/blog/vibe-coding-guide.png', title: 'Vibe Coding 实战指南', category: 'AI', date: 'Dec 31, 2025', readTime: '12 min read', excerpt: '一年多 AI Coding 实战经验总结，从构思设计到纠错技巧，帮助你减少"屎山代码"、提升开发效率。', author: 'Yui', link: '/blog/vibe-coding.html' },
             { id: 1, image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=300&fit=crop', title: 'Building Scalable APIs with Node.js', category: 'Backend', date: 'Oct 12, 2023', readTime: '8 min read', excerpt: 'A deep dive into structuring Express applications for enterprise-level scale, covering error handling, database connections, and middleware optimization.', author: 'Yui' },
             { id: 2, image: 'https://images.unsplash.com/photo-1507721999472-8ed4421c4af2?w=400&h=300&fit=crop', title: 'The Future of CSS: Container Queries', category: 'Frontend', date: 'Sep 28, 2023', readTime: '5 min read', excerpt: 'Exploring how we can move away from viewport-based media queries to truly component-driven design with the new Container Queries spec.', author: 'Yui' },
             { id: 3, image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=300&fit=crop', title: 'Bridging the Gap Between Design and Code', category: 'Design', date: 'Aug 15, 2023', readTime: '12 min read', excerpt: 'How design systems can help teams collaborate more effectively and ship consistent user experiences across products.', author: 'Yui' },
@@ -163,7 +163,7 @@
         const filterButtons = document.querySelectorAll('.filter-btn');
 
         function createCard(item) {
-            const articleLink = item.link || `/技术博客/article.html?id=${item.id}`;
+            const articleLink = item.link || `/blog/article.html?id=${item.id}`;
             return `
                 <a href="${articleLink}" class="blog-item group flex flex-col md:flex-row gap-6 p-6 border border-border-subtle rounded-lg hover:border-primary/30 hover:shadow-sm transition-all">
                     <div class="w-full md:w-48 h-32 shrink-0 overflow-hidden rounded-md bg-gray-100">
