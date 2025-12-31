@@ -70,14 +70,17 @@
                     <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/music/">Music</a>
                     <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/anime/">Anime</a>
                 </nav>
-                <div class="flex gap-4">
-                    <button class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors">
-                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">search</span>
-                    </button>
-                    <button class="md:hidden flex items-center justify-center size-10 text-primary">
-                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
-                    </button>
-                </div>
+                <div class="flex gap-2">
+                        <button id="langToggle" class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors rounded-full hover:bg-gray-100" title="中/EN">
+                            <span class="text-xs font-bold">EN</span>
+                        </button>
+                        <button id="themeToggle" class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors rounded-full hover:bg-gray-100" title="Toggle theme">
+                            <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
+                        </button>
+                        <button class="md:hidden flex items-center justify-center size-10 text-primary">
+                            <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
+                        </button>
+                    </div>
             </div>
         </div>
     </header>
