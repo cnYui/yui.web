@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <script>
         tailwind.config = {
+            darkMode: "class",
             theme: {
                 extend: {
                     colors: {
@@ -23,6 +24,12 @@
                         "background-soft": "#f9fafb",
                         "border-subtle": "#e5e5e5",
                         "accent-soft": "#e5e7eb",
+                        "dark-bg": "#0f0f0f",
+                        "dark-surface": "#1a1a1a",
+                        "dark-card": "#242424",
+                        "dark-border": "#333333",
+                        "dark-text": "#e5e5e5",
+                        "dark-text-muted": "#a0a0a0",
                     },
                     fontFamily: {
                         "display": ["Playfair Display", "serif"],
@@ -32,44 +39,48 @@
             },
         }
     </script>
+    <script src="/js/theme.js"></script>
+    <script src="/js/lang.js"></script>
     <style>
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
-        /* 禁止选择和复制 */
         .prose, article { 
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
         }
-        .prose h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; color: #222; }
-        .prose h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #222; }
-        .prose p { margin-bottom: 1rem; line-height: 1.8; color: #444; }
+        .prose h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; }
+        .prose h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .prose p { margin-bottom: 1rem; line-height: 1.8; }
         .prose ul, .prose ol { margin-bottom: 1rem; padding-left: 1.5rem; }
-        .prose li { margin-bottom: 0.5rem; line-height: 1.7; color: #444; }
-        .prose strong { color: #222; font-weight: 600; }
+        .prose li { margin-bottom: 0.5rem; line-height: 1.7; }
+        .prose strong { font-weight: 600; }
     </style>
 </head>
-<body class="bg-background text-text-main font-body min-h-screen flex flex-col overflow-x-hidden antialiased">
+<body class="bg-background dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col overflow-x-hidden antialiased transition-colors duration-300">
     <!-- Header -->
-    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle bg-white/95 backdrop-blur-sm">
+    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
         <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
             <div class="flex items-center gap-4">
-                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
+                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">作品集.</a>
             </div>
             <div class="flex items-center gap-10">
                 <nav class="hidden md:flex items-center gap-8">
-                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/projects/">Projects</a>
-                    <a class="text-sm uppercase tracking-widest text-primary font-medium border-b border-primary pb-0.5" href="/blog/">Blog</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/travel/">Travel</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/music/">Music</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/anime/">Anime</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
+                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/blog/">博客</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">音乐</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">动漫</a>
                 </nav>
                 <div class="flex gap-2">
-                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors rounded-full hover:bg-gray-100" title="中/EN">
+                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="中/EN">
                         <span class="text-xs font-bold">EN</span>
                     </button>
-                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors rounded-full hover:bg-gray-100" title="Toggle theme">
+                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
                         <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
+                    </button>
+                    <button class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text">
+                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
                     </button>
                 </div>
             </div>
@@ -78,31 +89,31 @@
 
     <main class="flex-1 w-full">
         <!-- Article Header -->
-        <div class="w-full bg-background-soft py-16">
+        <div class="w-full bg-background-soft dark:bg-dark-surface py-16">
             <div class="max-w-3xl mx-auto px-6">
-                <a href="/blog/" class="inline-flex items-center gap-2 text-sm text-text-muted hover:text-primary transition-colors mb-8">
+                <a href="/blog/" class="inline-flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors mb-8">
                     <span class="material-symbols-outlined text-lg">arrow_back</span>
-                    返回博客列表
+                    返回博客
                 </a>
                 <div class="flex items-center gap-3 mb-6">
-                    <span class="px-3 py-1 rounded bg-primary text-white text-xs font-semibold uppercase tracking-wider">AI</span>
-                    <span class="text-sm text-text-muted">Dec 31, 2025</span>
-                    <span class="text-text-muted">•</span>
-                    <span class="text-sm text-text-muted">12 min read</span>
+                    <span class="px-3 py-1 rounded bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-xs font-semibold uppercase tracking-wider">AI</span>
+                    <span class="text-sm text-text-muted dark:text-dark-text-muted">Dec 31, 2025</span>
+                    <span class="text-text-muted dark:text-dark-text-muted">•</span>
+                    <span class="text-sm text-text-muted dark:text-dark-text-muted">12 min read</span>
                 </div>
-                <h1 class="text-4xl md:text-5xl font-display font-bold text-primary leading-tight mb-6">
+                <h1 class="text-4xl md:text-5xl font-display font-bold text-primary dark:text-dark-text leading-tight mb-6">
                     Vibe Coding 实战指南
                 </h1>
-                <p class="text-xl text-text-muted font-light leading-relaxed">
+                <p class="text-xl text-text-muted dark:text-dark-text-muted font-light leading-relaxed">
                     一年多 AI Coding 实战经验总结，从构思设计到纠错技巧，帮助你减少"屎山代码"、提升开发效率。
                 </p>
-                <div class="flex items-center gap-4 mt-8 pt-8 border-t border-border-subtle">
+                <div class="flex items-center gap-4 mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
                     <div class="w-12 h-12 rounded-full overflow-hidden">
                         <img src="/images/profile/avatar-small.jpg" alt="Yui" class="w-full h-full object-cover"/>
                     </div>
                     <div>
-                        <p class="font-semibold text-primary">Yui</p>
-                        <p class="text-sm text-text-muted">Developer & Creator</p>
+                        <p class="font-semibold text-primary dark:text-dark-text">Yui</p>
+                        <p class="text-sm text-text-muted dark:text-dark-text-muted">开发者 & 创作者</p>
                     </div>
                 </div>
             </div>
@@ -110,148 +121,121 @@
 
         <!-- Featured Image -->
         <div class="w-full max-w-4xl mx-auto px-6 -mt-0">
-            <div class="aspect-video rounded-lg overflow-hidden bg-gray-100 shadow-lg">
+            <div class="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-lg">
                 <img class="w-full h-full object-cover" src="/images/blog/vibe-coding-guide.png" alt="Vibe Coding 实战指南"/>
             </div>
         </div>
 
         <!-- Article Content -->
         <article class="w-full max-w-3xl mx-auto px-6 py-16">
-            <div class="prose prose-lg max-w-none">
-                <h2>前言</h2>
+            <div class="prose prose-lg max-w-none text-text-main dark:text-dark-text">
+                <h2 class="text-primary dark:text-dark-text">前言</h2>
                 <p>本人自去年10月起重度使用 AI Coding，历经毕业设计（深度学习/模型融合）、React + TypeScript、Flutter、微信小程序及安卓开发等多个领域。在一年多的实战中，我总结了一套减少"屎山代码"、提升开发效率的 Vibe Coding 经验，主要侧重于前端与流程控制。</p>
 
-                <h2>1. 动笔前的核心：构思与设计闭环</h2>
+                <h2 class="text-primary dark:text-dark-text">1. 动笔前的核心：构思与设计闭环</h2>
                 <p>在让 AI 写代码之前，必须先理清整体框架，切忌盲目开工。</p>
                 
-                <h3>逻辑先行</h3>
+                <h3 class="text-primary dark:text-dark-text">逻辑先行</h3>
                 <p>不要只盯着界面长什么样，更要明确用户的操作流程。例如：如何点击、如何输入、数据流向哪里。必须确保整个交互流程是闭环的，提前预判并解决逻辑冲突点（这些细节往往在实际上手测试时才会暴露，提前构思能大幅减少返工）。</p>
                 
-                <h3>视觉具象化</h3>
+                <h3 class="text-primary dark:text-dark-text">视觉具象化</h3>
                 <p>推荐先用笔画草图，然后将草图配合文字描述发送给前端 AI 设计工具。</p>
                 
-                <h3>精确指令</h3>
+                <h3 class="text-primary dark:text-dark-text">精确指令</h3>
                 <p>提供具体的配色方案（如 #XXXXXX 颜色代码）和布局细节（如"底部圆角矩形导航栏"）。AI 根据图片生成的界面往往比纯文字描述更精准。</p>
 
-                <h2>2. 上下文投喂：从设计稿到 Trae</h2>
+                <h2 class="text-primary dark:text-dark-text">2. 上下文投喂：从设计稿到 Trae</h2>
                 <p>当你在 AI 设计工具中完成了满意的 UI 调整后，如何将其无缝迁移到 Trae？</p>
                 
-                <ul>
+                <ul class="list-disc">
                     <li><strong>素材准备：</strong>下载设计好的 HTML 文件并解压。</li>
                     <li><strong>精准投喂：</strong>将每一个界面的 HTML 拖入 Trae 的工作目录。</li>
                     <li><strong>建立认知：</strong>明确告诉 Trae："这个 HTML 是参考界面，包含哪些按钮，点击后跳转到哪里"。</li>
                     <li><strong>复现与微调：</strong>即使目标代码不是 HTML（如 React 或 Flutter），也可以让 Trae 严格参考该 HTML 的布局进行 1:1 复现。复现后，可配合浏览器预览，选中具体元素发给 Trae 进行像素级的微调。</li>
                 </ul>
 
-                <h2>3. 需求文档策略：原子化与 Human-in-the-loop</h2>
+                <h2 class="text-primary dark:text-dark-text">3. 需求文档策略：原子化与 Human-in-the-loop</h2>
                 <p>需求文档的质量直接决定了代码的质量，越详细越好。</p>
                 
-                <h3>人机协作（Human-in-the-loop）</h3>
+                <h3 class="text-primary dark:text-dark-text">人机协作（Human-in-the-loop）</h3>
                 <p>可以先写一个简单的草稿，让 AI 扩充，但必须要人工审核。尽管 AI 理解能力很强，但为了防止方向性错误，人工把关是必不可少的。</p>
                 
-                <h3>原子化切分</h3>
+                <h3 class="text-primary dark:text-dark-text">原子化切分</h3>
                 <p>建议主动要求 Trae 将需求切分为一个个"原子化"的任务。</p>
                 
-                <h3>分阶段实现</h3>
+                <h3 class="text-primary dark:text-dark-text">分阶段实现</h3>
                 <p>不要试图一次性生成所有功能。分阶段编写代码的好处在于，一旦出现重大错误，你可以回滚到上一个健康的"存档点"，而不是推倒重来。</p>
 
-                <h2>4. 纠错技巧：逆向约束法</h2>
+                <h2 class="text-primary dark:text-dark-text">4. 纠错技巧：逆向约束法</h2>
                 <p>当 AI 在某个功能上反复出错，或者一直曲解你的意图时：</p>
                 
-                <ul>
+                <ul class="list-disc">
                     <li><strong>及时撤回：</strong>不要基于错误的代码继续对话，立即撤回该次生成。</li>
                     <li><strong>添加"禁止项"：</strong>在原始提示词（Prompt）中显式添加"禁止 XXX"或"不要使用 XXX 方法"。</li>
                     <li><strong>迭代修正：</strong>这种"负面约束"能有效防止 AI 再次掉入同样的逻辑陷阱。如果仍有偏差，继续迭代提示词，直到逻辑完全对齐。</li>
                 </ul>
 
-                <h2>5. 陷入死循环时的"暂停思考"</h2>
+                <h2 class="text-primary dark:text-dark-text">5. 陷入死循环时的"暂停思考"</h2>
                 <p>如果一个报错让 AI 修复了多次（消耗了多个最大思考长度）仍未解决，或者你输入了好几个"继续"它还在原地打转：</p>
                 
-                <ul>
+                <ul class="list-disc">
                     <li><strong>强制叫停：</strong>此时 AI 可能已经糊涂了，不要盲目让它继续试错。</li>
                     <li><strong>引导反思：</strong>停下来问 AI 三个问题："当前具体的报错是什么？"、"是哪个代码文件出了问题？"、"你觉得应该怎么解决？"。</li>
                     <li><strong>理清思路：</strong>帮助 AI 重新梳理上下文，往往能跳出死循环，找到真正的解决方案。</li>
                 </ul>
 
-                <h2>6. 特定框架开发：文档先行</h2>
+                <h2 class="text-primary dark:text-dark-text">6. 特定框架开发：文档先行</h2>
                 <p>在开发微信小程序、安卓、鸿蒙或使用 LangGraph 等特定框架/库时：</p>
                 
-                <ul>
+                <ul class="list-disc">
                     <li><strong>避免幻觉：</strong>AI 可能会因为不熟悉特定语法而瞎编代码（幻觉）。</li>
                     <li><strong>喂养文档：</strong>直接让 AI 开发前，先让它阅读相关的官方文档或语法指南。例如 iOS 开发可以利用 MCP 工具加载 Swift 语法，鸿蒙或 LangGraph 1.0 同理。</li>
                     <li><strong>参考系：</strong>给 AI 一个准确的语法 Docs 作为参考系（Context），能极大降低写出"屎山代码"的概率。</li>
                 </ul>
 
-                <h2>总结</h2>
+                <h2 class="text-primary dark:text-dark-text">总结</h2>
                 <p>Vibe Coding 的核心在于：先构思后动手、精准投喂上下文、原子化需求、善用负面约束、及时暂停反思、以及文档先行。掌握这些技巧，你将能更高效地与 AI 协作，写出更优质的代码。</p>
             </div>
 
             <!-- Tags -->
-            <div class="flex flex-wrap gap-2 mt-12 pt-8 border-t border-border-subtle">
-                <span class="text-sm text-text-muted mr-2">Tags:</span>
-                <span class="px-3 py-1 rounded-full bg-secondary text-sm text-text-main">AI Coding</span>
-                <span class="px-3 py-1 rounded-full bg-secondary text-sm text-text-main">Vibe Coding</span>
-                <span class="px-3 py-1 rounded-full bg-secondary text-sm text-text-main">Trae</span>
-                <span class="px-3 py-1 rounded-full bg-secondary text-sm text-text-main">开发效率</span>
-                <span class="px-3 py-1 rounded-full bg-secondary text-sm text-text-main">前端</span>
+            <div class="flex flex-wrap gap-2 mt-12 pt-8 border-t border-border-subtle dark:border-dark-border">
+                <span class="text-sm text-text-muted dark:text-dark-text-muted mr-2">标签:</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">AI Coding</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Vibe Coding</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Trae</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">开发效率</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">前端</span>
             </div>
 
             <!-- Share -->
-            <div class="flex items-center justify-between mt-8 pt-8 border-t border-border-subtle">
-                <span class="text-sm text-text-muted">分享文章:</span>
+            <div class="flex items-center justify-between mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
+                <span class="text-sm text-text-muted dark:text-dark-text-muted">分享文章:</span>
                 <div class="flex gap-4">
-                    <button class="w-10 h-10 rounded-full border border-border-subtle flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all">
+                    <button class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text">
                         <span class="material-symbols-outlined text-lg">share</span>
                     </button>
-                    <button class="w-10 h-10 rounded-full border border-border-subtle flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all">
+                    <button class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text">
                         <span class="material-symbols-outlined text-lg">link</span>
                     </button>
-                    <button class="w-10 h-10 rounded-full border border-border-subtle flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all">
+                    <button class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text">
                         <span class="material-symbols-outlined text-lg">bookmark</span>
                     </button>
                 </div>
             </div>
         </article>
-
-        <!-- Related Articles -->
-        <div class="w-full bg-background-soft py-16">
-            <div class="max-w-4xl mx-auto px-6">
-                <h2 class="text-2xl font-display font-bold text-primary mb-8">相关文章</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <a href="/blog/article.html?id=5" class="group flex gap-4 p-4 bg-white rounded-lg border border-border-subtle hover:border-primary/30 transition-all">
-                        <div class="w-24 h-24 shrink-0 rounded-md overflow-hidden bg-gray-100">
-                            <img class="w-full h-full object-cover" src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=200&h=200&fit=crop" alt="Related article"/>
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <span class="text-xs text-text-muted">AI • 15 min read</span>
-                            <h3 class="font-semibold text-primary group-hover:text-text-muted transition-colors line-clamp-2">Getting Started with LangChain</h3>
-                        </div>
-                    </a>
-                    <a href="/blog/article.html?id=6" class="group flex gap-4 p-4 bg-white rounded-lg border border-border-subtle hover:border-primary/30 transition-all">
-                        <div class="w-24 h-24 shrink-0 rounded-md overflow-hidden bg-gray-100">
-                            <img class="w-full h-full object-cover" src="https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=200&h=200&fit=crop" alt="Related article"/>
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <span class="text-xs text-text-muted">Frontend • 7 min read</span>
-                            <h3 class="font-semibold text-primary group-hover:text-text-muted transition-colors line-clamp-2">React Performance Optimization Tips</h3>
-                        </div>
-                    </a>
-                </div>
-            </div>
-        </div>
     </main>
 
     <!-- Footer -->
-    <footer class="w-full border-t border-accent-soft bg-white py-12 md:py-16">
+    <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
         <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="flex flex-col gap-1 text-center md:text-left">
-                <h2 class="text-primary text-lg font-display font-semibold">Yui's Portfolio</h2>
-                <p class="text-text-tertiary text-xs">© 2024 Tech Blog.</p>
+                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold">Yui的作品集</h2>
+                <p class="text-text-tertiary dark:text-dark-text-muted text-xs">© 2024 技术博客.</p>
             </div>
             <div class="flex gap-8">
-                <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">mail</span></a>
-                <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">code</span></a>
-                <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">alternate_email</span></a>
+                <a class="text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="#"><span class="material-symbols-outlined">mail</span></a>
+                <a class="text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="#"><span class="material-symbols-outlined">code</span></a>
+                <a class="text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="#"><span class="material-symbols-outlined">alternate_email</span></a>
             </div>
         </div>
     </footer>
