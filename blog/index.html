@@ -84,23 +84,23 @@
             <aside class="lg:w-72 shrink-0">
                 <!-- Search -->
                 <div class="mb-8">
-                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-4">搜索</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-4" data-i18n="search">搜索</h3>
                     <div class="relative">
                         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted dark:text-dark-text-muted text-lg">search</span>
-                        <input type="text" placeholder="搜索文章..." class="w-full h-10 pl-10 pr-4 rounded-md border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card text-sm text-text-main dark:text-dark-text focus:outline-none focus:border-primary dark:focus:border-dark-text transition-colors"/>
+                        <input type="text" placeholder="搜索文章..." data-i18n-placeholder="searchPlaceholder" class="w-full h-10 pl-10 pr-4 rounded-md border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card text-sm text-text-main dark:text-dark-text focus:outline-none focus:border-primary dark:focus:border-dark-text transition-colors"/>
                     </div>
                 </div>
 
                 <!-- Topics -->
                 <div class="mb-8">
-                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-4">主题</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-4" data-i18n="topics">主题</h3>
                     <div class="flex flex-wrap gap-2">
-                        <button class="filter-btn px-4 py-2 rounded-md bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-sm font-medium transition-all" data-filter="All">全部文章</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Frontend">前端</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Backend">后端</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="DevOps">运维</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Design">设计</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="AI">人工智能</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-sm font-medium transition-all" data-filter="All" data-i18n="allPosts">全部文章</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Frontend" data-i18n="frontend">前端</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Backend" data-i18n="backend">后端</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="DevOps" data-i18n="devops">运维</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Design" data-i18n="design">设计</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="AI" data-i18n="ai">人工智能</button>
                     </div>
                 </div>
 
@@ -112,10 +112,10 @@
                         </div>
                         <div>
                             <h4 class="font-semibold text-primary dark:text-dark-text">Yui</h4>
-                            <p class="text-xs text-text-muted dark:text-dark-text-muted">开发者 & 创作者</p>
+                            <p class="text-xs text-text-muted dark:text-dark-text-muted" data-i18n="authorRole">开发者 & 创作者</p>
                         </div>
                     </div>
-                    <p class="text-sm text-text-muted dark:text-dark-text-muted leading-relaxed mb-4">
+                    <p class="text-sm text-text-muted dark:text-dark-text-muted leading-relaxed mb-4" data-i18n="authorBio">
                         热衷于构建无障碍的 Web 应用，并乐于分享编程知识。
                     </p>
                     <div class="flex gap-4 text-text-muted dark:text-dark-text-muted">
@@ -133,7 +133,7 @@
                 <!-- Load More -->
                 <div id="loadMoreContainer" class="flex justify-center mt-12">
                     <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card px-8 py-3 text-sm font-medium text-text-main dark:text-dark-text hover:bg-gray-50 dark:hover:bg-dark-border transition-colors">
-                        加载更多文章
+                        <span data-i18n="loadMore">加载更多文章</span>
                         <span class="material-symbols-outlined text-lg">expand_more</span>
                     </button>
                 </div>
@@ -145,8 +145,8 @@
     <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
         <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="flex flex-col gap-1 text-center md:text-left">
-                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold">Yui的作品集</h2>
-                <p class="text-text-tertiary dark:text-dark-text-muted text-xs">© 2024 技术博客.</p>
+                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui的作品集</h2>
+                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2024 技术博客.</p>
             </div>
             <div class="flex gap-8">
                 <a class="text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="#"><span class="material-symbols-outlined">mail</span></a>
@@ -177,6 +177,8 @@
 
         function createCard(item) {
             const articleLink = item.link || `/blog/article.html?id=${item.id}`;
+            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
+            const readText = lang === 'zh' ? '阅读文章' : 'Read Article';
             return `
                 <a href="${articleLink}" class="blog-item group flex flex-col md:flex-row gap-6 p-6 border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card hover:border-primary/30 dark:hover:border-dark-text/30 hover:shadow-sm transition-all">
                     <div class="w-full md:w-48 h-32 shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-dark-surface">
@@ -199,7 +201,7 @@
                                 <span class="text-sm text-text-muted dark:text-dark-text-muted">${item.author}</span>
                             </div>
                             <span class="text-sm font-medium text-primary dark:text-dark-text flex items-center gap-1 group-hover:gap-2 transition-all">
-                                阅读文章 <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                                ${readText} <span class="material-symbols-outlined text-sm">arrow_forward</span>
                             </span>
                         </div>
                     </div>
@@ -232,9 +234,11 @@
 
             blogList.innerHTML = '';
 
+            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
+            const loadMoreText = lang === 'zh' ? '加载更多文章' : 'Load More Articles';
             loadMoreContainer.innerHTML = `
                 <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle bg-white px-8 py-3 text-sm font-medium text-text-main hover:bg-gray-50 transition-colors">
-                    加载更多文章
+                    ${loadMoreText}
                     <span class="material-symbols-outlined text-lg">expand_more</span>
                 </button>
             `;
@@ -269,10 +273,12 @@
             currentIndex = endIndex;
 
             if (currentIndex >= filteredData.length) {
+                const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
+                const noMoreText = lang === 'zh' ? '已经到底啦，没有更多文章了。' : 'That\'s all! No more articles.';
                 loadMoreContainer.innerHTML = `
                     <div class="text-center text-text-muted text-sm py-8">
                         <span class="material-symbols-outlined text-2xl mb-2 block">check_circle</span>
-                        已经到底啦，没有更多文章了。
+                        ${noMoreText}
                     </div>
                 `;
             }
