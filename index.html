@@ -2,7 +2,7 @@
 <html class="" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Yui | Personal Portfolio</title>
+<title>Yui | 个人作品集</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Inter:wght@300..600&amp;display=swap" rel="stylesheet"/>
@@ -16,11 +16,19 @@
                     colors: {
                         "primary": "#222222",
                         "primary-hover": "#333333",
-                        "secondary": "#E0D8D0","background-light": "#ffffff",
+                        "secondary": "#E0D8D0",
+                        "background-light": "#ffffff",
                         "surface-light": "#FAFAFA",
                         "text-main": "#222222",
                         "text-muted": "#666666",
                         "border-light": "#E5E5E5",
+                        // Dark mode colors
+                        "dark-bg": "#0f0f0f",
+                        "dark-surface": "#1a1a1a",
+                        "dark-card": "#242424",
+                        "dark-border": "#333333",
+                        "dark-text": "#e5e5e5",
+                        "dark-text-muted": "#a0a0a0",
                     },
                     fontFamily: {
                         "serif": ["Playfair Display", "serif"],
@@ -30,11 +38,14 @@
                     borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
                     boxShadow: {
                         "soft": "0 4px 20px rgba(0,0,0,0.03)",
+                        "soft-dark": "0 4px 20px rgba(0,0,0,0.3)",
                     }
                 },
             },
         }
     </script>
+    <script src="/js/theme.js"></script>
+    <script src="/js/lang.js"></script>
 <style type="text/tailwindcss">
     @layer utilities {
         .btn-primary {
@@ -49,31 +60,31 @@
     }
 </style>
 </head>
-<body class="bg-background-light font-sans text-text-main antialiased overflow-x-hidden selection:bg-secondary selection:text-primary">
+<body class="bg-background-light dark:bg-dark-bg font-sans text-text-main dark:text-dark-text antialiased overflow-x-hidden selection:bg-secondary selection:text-primary transition-colors duration-300">
 <div class="relative flex flex-col min-h-screen w-full">
-<header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle bg-white/95 backdrop-blur-sm">
+<header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle bg-white/95 dark:bg-dark-bg/95 dark:border-dark-border backdrop-blur-sm">
 <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
 <div class="flex items-center gap-4">
-<a class="text-2xl font-display font-semibold italic tracking-tight text-primary hover:opacity-80 transition-opacity" href="/">
-                    Portfolio.
+<a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">
+                    作品集.
                 </a>
 </div>
 <div class="flex items-center gap-10">
 <nav class="hidden md:flex items-center gap-8">
-<a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/projects/">Projects</a>
-<a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/blog/">Blog</a>
-<a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/travel/">Travel</a>
-<a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/music/">Music</a>
-<a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/anime/">Anime</a>
+<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
+<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">博客</a>
+<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
+<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">音乐</a>
+<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">动漫</a>
 </nav>
 <div class="flex gap-2">
-<button id="langToggle" class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors rounded-full hover:bg-gray-100" title="中/EN">
+<button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="中/EN">
 <span class="text-xs font-bold">EN</span>
 </button>
-<button id="themeToggle" class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors rounded-full hover:bg-gray-100" title="Toggle theme">
+<button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
 <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
 </button>
-<button class="md:hidden flex items-center justify-center size-10 text-primary">
+<button class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text">
 <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
 </button>
 </div>
@@ -85,84 +96,84 @@
 <div class="flex flex-col-reverse lg:flex-row items-center gap-16 lg:gap-24">
 <div class="flex flex-col gap-8 lg:w-1/2 text-center lg:text-left items-center lg:items-start">
 <div class="space-y-4">
-<span class="inline-block px-3 py-1 bg-surface-light text-text-muted text-[10px] font-bold tracking-[0.2em] uppercase border border-border-light rounded-full">
-                                Available for hire
+<span class="inline-block px-3 py-1 bg-surface-light dark:bg-dark-card text-text-muted dark:text-dark-text-muted text-[10px] font-bold tracking-[0.2em] uppercase border border-border-light dark:border-dark-border rounded-full" data-i18n="available">
+                                可接受工作邀请
                             </span>
-<h1 class="font-serif text-5xl md:text-6xl lg:text-7xl leading-[1.1] text-text-main">
-                                Hello, I'm <span class="italic text-gray-500">Yui</span>.
+<h1 class="font-serif text-5xl md:text-6xl lg:text-7xl leading-[1.1] text-text-main dark:text-dark-text">
+                                <span data-i18n="hello">你好，我是</span> <span class="italic text-gray-500 dark:text-gray-400" data-i18n="name">Yui</span>。
                             </h1>
-<p class="text-lg font-light text-text-muted max-w-lg mx-auto lg:mx-0 leading-relaxed">
-                                I build digital products with a focus on simplicity and user experience. <br class="hidden md:block"/> Designer | Developer | Creator
+<p class="text-lg font-light text-text-muted dark:text-dark-text-muted max-w-lg mx-auto lg:mx-0 leading-relaxed">
+                                <span data-i18n="intro">我专注于构建简洁且用户体验优秀的数字产品。</span><br class="hidden md:block"/> <span data-i18n="role">设计师 | 开发者 | 创作者</span>
                             </p>
 </div>
 <div class="flex flex-wrap gap-4 justify-center lg:justify-start pt-2">
-<a class="btn-primary" href="/resume/">
-                                Resume
+<a class="btn-primary" href="/resume/" data-i18n="resume">
+                                简历
                             </a>
-<button class="btn-secondary">
-                                Contact Me
+<button class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text dark:hover:border-gray-500" data-i18n="contactMe">
+                                联系我
                             </button>
 </div>
 
 </div>
 <div class="lg:w-1/2 flex justify-center lg:justify-end relative">
 <div class="relative w-72 h-96 md:w-[400px] md:h-[500px]">
-<div class="absolute -bottom-6 -left-6 w-full h-full border border-gray-200 hidden md:block"></div>
-<div class="relative z-10 w-full h-full rounded-none overflow-hidden bg-gray-100 shadow-soft" data-alt="Portrait of Yui" style='background-image: url("/images/profile/portrait-compressed.jpg"); background-size: cover; background-position: center;'>
+<div class="absolute -bottom-6 -left-6 w-full h-full border border-gray-200 dark:border-dark-border hidden md:block"></div>
+<div class="relative z-10 w-full h-full rounded-none overflow-hidden bg-gray-100 dark:bg-dark-card shadow-soft dark:shadow-soft-dark" data-alt="Portrait of Yui" style='background-image: url("/images/profile/portrait-compressed.jpg"); background-size: cover; background-position: center;'>
 </div>
 </div>
 </div>
 </div>
 </section>
-<section class="w-full bg-surface-light py-24 px-6 md:px-12" id="work">
+<section class="w-full bg-surface-light dark:bg-dark-surface py-24 px-6 md:px-12" id="work">
 <div class="max-w-7xl mx-auto flex flex-col gap-12">
-<div class="flex flex-col md:flex-row justify-between items-end border-b border-gray-200 pb-6 gap-4">
+<div class="flex flex-col md:flex-row justify-between items-end border-b border-gray-200 dark:border-dark-border pb-6 gap-4">
 <div>
-<span class="text-xs font-bold uppercase tracking-widest text-text-muted mb-2 block">Portfolio</span>
-<h2 class="section-title">Selected Works</h2>
+<span class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-2 block" data-i18n="portfolio">作品集</span>
+<h2 class="section-title dark:text-dark-text" data-i18n="selectedWorks">精选作品</h2>
 </div>
-<a class="text-text-main font-medium text-sm flex items-center gap-2 hover:opacity-60 transition-opacity border-b border-black pb-0.5" href="/projects/">
-                            View All Projects <span class="material-symbols-outlined text-sm">arrow_forward</span>
+<a class="text-text-main dark:text-dark-text font-medium text-sm flex items-center gap-2 hover:opacity-60 transition-opacity border-b border-black dark:border-dark-text pb-0.5" href="/projects/">
+                            <span data-i18n="viewAll">查看全部项目</span> <span class="material-symbols-outlined text-sm">arrow_forward</span>
 </a>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
 <div class="group flex flex-col">
-<div class="aspect-[4/3] w-full bg-gray-200 overflow-hidden mb-5 rounded-sm relative">
+<div class="aspect-[4/3] w-full bg-gray-200 dark:bg-dark-card overflow-hidden mb-5 rounded-sm relative">
 <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" src="/images/hackathon/渝客松Google GDG赛道第一名.jpg" alt="Yukesong Google GDG 1st Place"/>
 <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
 </div>
 <div class="flex flex-col">
 <div class="flex justify-between items-start mb-2">
-<h3 class="text-xl font-serif font-medium text-text-main">Yukesong Google GDG - 1st Place</h3>
-<span class="text-[10px] font-bold border border-gray-200 px-2 py-1 uppercase tracking-wider text-text-muted">Award</span>
+<h3 class="text-xl font-serif font-medium text-text-main dark:text-dark-text">渝客松 Google GDG - 第一名</h3>
+<span class="text-[10px] font-bold border border-gray-200 dark:border-dark-border px-2 py-1 uppercase tracking-wider text-text-muted dark:text-dark-text-muted">获奖</span>
 </div>
-<p class="text-sm text-text-muted font-light line-clamp-2 leading-relaxed">Achieved 1st place in the Google GDG track at Yukesong hackathon.</p>
+<p class="text-sm text-text-muted dark:text-dark-text-muted font-light line-clamp-2 leading-relaxed">在渝客松黑客松 Google GDG 赛道获得第一名。</p>
 </div>
 </div>
 <div class="group flex flex-col">
-<div class="aspect-[4/3] w-full bg-gray-200 overflow-hidden mb-5 rounded-sm relative">
+<div class="aspect-[4/3] w-full bg-gray-200 dark:bg-dark-card overflow-hidden mb-5 rounded-sm relative">
 <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" src="/images/hackathon/trae-hackathon-08.jpg" alt="TRAE SOLO Hackathon Shanghai"/>
 <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
 </div>
 <div class="flex flex-col">
 <div class="flex justify-between items-start mb-2">
-<h3 class="text-xl font-serif font-medium text-text-main">TRAE SOLO Hackathon Shanghai</h3>
-<span class="text-[10px] font-bold border border-gray-200 px-2 py-1 uppercase tracking-wider text-text-muted">Award</span>
+<h3 class="text-xl font-serif font-medium text-text-main dark:text-dark-text">TRAE SOLO 黑客松上海站</h3>
+<span class="text-[10px] font-bold border border-gray-200 dark:border-dark-border px-2 py-1 uppercase tracking-wider text-text-muted dark:text-dark-text-muted">获奖</span>
 </div>
-<p class="text-sm text-text-muted font-light line-clamp-2 leading-relaxed">Won 2nd place at the TRAE SOLO Hackathon Shanghai edition.</p>
+<p class="text-sm text-text-muted dark:text-dark-text-muted font-light line-clamp-2 leading-relaxed">在 TRAE SOLO 黑客松上海站获得第二名。</p>
 </div>
 </div>
 <div class="group flex flex-col">
-<div class="aspect-[4/3] w-full bg-gray-200 overflow-hidden mb-5 rounded-sm relative">
+<div class="aspect-[4/3] w-full bg-gray-200 dark:bg-dark-card overflow-hidden mb-5 rounded-sm relative">
 <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" src="/images/hackathon/无锡Rokid ARAI三等奖.jpg" alt="Wuxi Rokid AR AI"/>
 <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
 </div>
 <div class="flex flex-col">
 <div class="flex justify-between items-start mb-2">
-<h3 class="text-xl font-serif font-medium text-text-main">Wuxi Rokid AR AI - 3rd Prize</h3>
-<span class="text-[10px] font-bold border border-gray-200 px-2 py-1 uppercase tracking-wider text-text-muted">Award</span>
+<h3 class="text-xl font-serif font-medium text-text-main dark:text-dark-text">无锡 Rokid AR AI - 三等奖</h3>
+<span class="text-[10px] font-bold border border-gray-200 dark:border-dark-border px-2 py-1 uppercase tracking-wider text-text-muted dark:text-dark-text-muted">获奖</span>
 </div>
-<p class="text-sm text-text-muted font-light line-clamp-2 leading-relaxed">Won 3rd place at the Wuxi Rokid AR AI competition.</p>
+<p class="text-sm text-text-muted dark:text-dark-text-muted font-light line-clamp-2 leading-relaxed">在无锡 Rokid AR AI 比赛中获得三等奖。</p>
 </div>
 </div>
 </div>
@@ -172,103 +183,103 @@
 <section class="w-full py-24 px-6 md:px-12 max-w-7xl mx-auto" id="about">
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24 items-center">
 <div class="lg:col-span-5 relative">
-<div class="aspect-square bg-secondary/30 rounded-full absolute -top-10 -left-10 w-40 h-40 blur-3xl opacity-50"></div>
-<h2 class="font-serif text-4xl md:text-5xl leading-tight text-text-main relative z-10">
-                    Bridging the gap between <span class="italic text-gray-500">Design</span> and <span class="italic text-gray-500">Code</span>.
+<div class="aspect-square bg-secondary/30 dark:bg-dark-card/30 rounded-full absolute -top-10 -left-10 w-40 h-40 blur-3xl opacity-50"></div>
+<h2 class="font-serif text-4xl md:text-5xl leading-tight text-text-main dark:text-dark-text relative z-10">
+                    连接<span class="italic text-gray-500 dark:text-gray-400">设计</span>与<span class="italic text-gray-500 dark:text-gray-400">代码</span>的桥梁。
                 </h2>
-<div class="mt-12 grid grid-cols-2 gap-x-8 gap-y-10 border-t border-gray-100 pt-8">
+<div class="mt-12 grid grid-cols-2 gap-x-8 gap-y-10 border-t border-gray-100 dark:border-dark-border pt-8">
 <div class="flex flex-col gap-1">
-<span class="text-3xl font-serif text-text-main">5+</span>
-<span class="text-xs uppercase tracking-widest text-text-muted">Years Experience</span>
-</div>
-<div class="flex flex-col gap-1">
-<span class="text-3xl font-serif text-text-main">50+</span>
-<span class="text-xs uppercase tracking-widest text-text-muted">Projects</span>
+<span class="text-3xl font-serif text-text-main dark:text-dark-text">5+</span>
+<span class="text-xs uppercase tracking-widest text-text-muted dark:text-dark-text-muted">年经验</span>
 </div>
 <div class="flex flex-col gap-1">
-<span class="text-3xl font-serif text-text-main">12</span>
-<span class="text-xs uppercase tracking-widest text-text-muted">Awards</span>
+<span class="text-3xl font-serif text-text-main dark:text-dark-text">50+</span>
+<span class="text-xs uppercase tracking-widest text-text-muted dark:text-dark-text-muted">项目</span>
 </div>
 <div class="flex flex-col gap-1">
-<span class="text-3xl font-serif text-text-main">100%</span>
-<span class="text-xs uppercase tracking-widest text-text-muted">Satisfaction</span>
+<span class="text-3xl font-serif text-text-main dark:text-dark-text">12</span>
+<span class="text-xs uppercase tracking-widest text-text-muted dark:text-dark-text-muted">奖项</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-3xl font-serif text-text-main dark:text-dark-text">100%</span>
+<span class="text-xs uppercase tracking-widest text-text-muted dark:text-dark-text-muted">满意度</span>
 </div>
 </div>
 </div>
-<div class="lg:col-span-7 bg-surface-light p-10 md:p-14 border border-gray-100 relative">
-<p class="text-text-muted text-lg font-light leading-relaxed mb-8">
-                    I am a passionate creator focused on building intuitive and beautiful digital experiences. With a background in both design and development, I understand the technical constraints and the aesthetic needs of a project.
+<div class="lg:col-span-7 bg-surface-light dark:bg-dark-surface p-10 md:p-14 border border-gray-100 dark:border-dark-border relative">
+<p class="text-text-muted dark:text-dark-text-muted text-lg font-light leading-relaxed mb-8">
+                    我是一位充满热情的创作者，专注于构建直观且美观的数字体验。凭借设计和开发的双重背景，我深刻理解项目的技术限制和美学需求。
                 </p>
 <div class="space-y-4 mb-8">
-<div class="flex items-center gap-4 text-text-main">
-<span class="material-symbols-outlined font-light text-gray-400">check_circle</span>
-<span class="text-sm font-medium tracking-wide">User-Centric Approach</span>
+<div class="flex items-center gap-4 text-text-main dark:text-dark-text">
+<span class="material-symbols-outlined font-light text-gray-400 dark:text-gray-500">check_circle</span>
+<span class="text-sm font-medium tracking-wide">以用户为中心的方法</span>
 </div>
-<div class="flex items-center gap-4 text-text-main">
-<span class="material-symbols-outlined font-light text-gray-400">check_circle</span>
-<span class="text-sm font-medium tracking-wide">Clean Code Architecture</span>
+<div class="flex items-center gap-4 text-text-main dark:text-dark-text">
+<span class="material-symbols-outlined font-light text-gray-400 dark:text-gray-500">check_circle</span>
+<span class="text-sm font-medium tracking-wide">简洁的代码架构</span>
 </div>
-<div class="flex items-center gap-4 text-text-main">
-<span class="material-symbols-outlined font-light text-gray-400">check_circle</span>
-<span class="text-sm font-medium tracking-wide">Pixel-Perfect Implementation</span>
+<div class="flex items-center gap-4 text-text-main dark:text-dark-text">
+<span class="material-symbols-outlined font-light text-gray-400 dark:text-gray-500">check_circle</span>
+<span class="text-sm font-medium tracking-wide">像素级精准实现</span>
 </div>
 </div>
-<button class="text-primary font-medium border-b border-primary pb-0.5 text-sm hover:opacity-60 transition-opacity">
-                    More About Me
+<button class="text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 text-sm hover:opacity-60 transition-opacity">
+                    了解更多
                 </button>
 </div>
 </div>
 </section>
-<section class="w-full px-6 md:px-12 py-24 bg-surface-light" id="blog">
+<section class="w-full px-6 md:px-12 py-24 bg-surface-light dark:bg-dark-surface" id="blog">
 <div class="max-w-7xl mx-auto flex flex-col gap-12">
 <div class="flex justify-between items-end">
 <div>
-<span class="text-xs font-bold uppercase tracking-widest text-text-muted mb-2 block">Journal</span>
-<h2 class="section-title">Latest Thoughts</h2>
+<span class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-2 block">日志</span>
+<h2 class="section-title dark:text-dark-text">最新想法</h2>
 </div>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
 <a class="group flex gap-6 items-start" href="#">
-<div class="w-32 h-24 md:w-40 md:h-28 bg-gray-200 shrink-0 overflow-hidden" data-alt="Abstract code lines on a dark monitor screen" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCZLQ0yuSTLGi-BgmR-inhVdvgyU9LHRJxZR0PWEwitTyNShIN0Fazz_7lgGJhLviv9rX4qZjxStFYQGWxi1ha5VPqpxrP-9g3q2x_oxrWktUAjXkSeB1D9VL4mxCeak754xPm6Uir0s3GoAHRsMcMd3oDm8WfPlSxb6DEWHXDt56cXjANiQD7CVxcvEWxgSM1uenYkZ8UNSpvlZk3P9H29x-UzSI36QXTU3De_iQZr_8bui7JtH_gDu27N-AQqFakQ2LjJEkv5i_U"); background-size: cover; background-position: center;'>
+<div class="w-32 h-24 md:w-40 md:h-28 bg-gray-200 dark:bg-dark-card shrink-0 overflow-hidden" data-alt="Abstract code lines on a dark monitor screen" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCZLQ0yuSTLGi-BgmR-inhVdvgyU9LHRJxZR0PWEwitTyNShIN0Fazz_7lgGJhLviv9rX4qZjxStFYQGWxi1ha5VPqpxrP-9g3q2x_oxrWktUAjXkSeB1D9VL4mxCeak754xPm6Uir0s3GoAHRsMcMd3oDm8WfPlSxb6DEWHXDt56cXjANiQD7CVxcvEWxgSM1uenYkZ8UNSpvlZk3P9H29x-UzSI36QXTU3De_iQZr_8bui7JtH_gDu27N-AQqFakQ2LjJEkv5i_U"); background-size: cover; background-position: center;'>
 </div>
 <div class="flex flex-col gap-2">
-<span class="text-xs text-text-muted uppercase tracking-wider">Engineering — Oct 12</span>
-<h3 class="text-xl font-serif font-medium leading-tight group-hover:text-gray-600 transition-colors">Optimizing React Performance in 2024</h3>
-<p class="text-sm text-text-muted font-light line-clamp-2 leading-relaxed">Deep dive into the latest hooks and compilation strategies to make your web apps faster.</p>
+<span class="text-xs text-text-muted dark:text-dark-text-muted uppercase tracking-wider">技术 — 10月12日</span>
+<h3 class="text-xl font-serif font-medium leading-tight group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors text-text-main dark:text-dark-text">2024年 React 性能优化</h3>
+<p class="text-sm text-text-muted dark:text-dark-text-muted font-light line-clamp-2 leading-relaxed">深入探讨最新的 hooks 和编译策略，让你的 Web 应用更快。</p>
 </div>
 </a>
 <a class="group flex gap-6 items-start" href="#">
-<div class="w-32 h-24 md:w-40 md:h-28 bg-gray-200 shrink-0 overflow-hidden" data-alt="Colorful geometric shapes representing design theory" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAfxRyjrJnzbSB8uS_VqBq9Pme4MkPg7coVRSjpD16RLmb1Ft3yhLBO0N-6GFAKxCjnqUKu7njjtg0W-e_TGtMXX_sJaqQXieYXhFfttwJl4K-n2f4SXdJ6CcBr0b6r8dCSYTEGVt4Saa0K6-cSz82b3uRu8IaSxeO1OJPTI8RHJPzPe7yZV3pEUjhr9707CRgSzODKRU_INefXcormGoRTgn7LjNBji5xeQRf01ZaKC5_spa3TKM5kMxCvBHXOsSM91max0VZfBg0"); background-size: cover; background-position: center;'>
+<div class="w-32 h-24 md:w-40 md:h-28 bg-gray-200 dark:bg-dark-card shrink-0 overflow-hidden" data-alt="Colorful geometric shapes representing design theory" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAfxRyjrJnzbSB8uS_VqBq9Pme4MkPg7coVRSjpD16RLmb1Ft3yhLBO0N-6GFAKxCjnqUKu7njjtg0W-e_TGtMXX_sJaqQXieYXhFfttwJl4K-n2f4SXdJ6CcBr0b6r8dCSYTEGVt4Saa0K6-cSz82b3uRu8IaSxeO1OJPTI8RHJPzPe7yZV3pEUjhr9707CRgSzODKRU_INefXcormGoRTgn7LjNBji5xeQRf01ZaKC5_spa3TKM5kMxCvBHXOsSM91max0VZfBg0"); background-size: cover; background-position: center;'>
 </div>
 <div class="flex flex-col gap-2">
-<span class="text-xs text-text-muted uppercase tracking-wider">Design — Sep 28</span>
-<h3 class="text-xl font-serif font-medium leading-tight group-hover:text-gray-600 transition-colors">Minimalism is not just about less</h3>
-<p class="text-sm text-text-muted font-light line-clamp-2 leading-relaxed">Exploring how white space and typography create meaning in modern interface design.</p>
+<span class="text-xs text-text-muted dark:text-dark-text-muted uppercase tracking-wider">设计 — 9月28日</span>
+<h3 class="text-xl font-serif font-medium leading-tight group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors text-text-main dark:text-dark-text">极简主义不仅仅是"少"</h3>
+<p class="text-sm text-text-muted dark:text-dark-text-muted font-light line-clamp-2 leading-relaxed">探索留白和排版如何在现代界面设计中创造意义。</p>
 </div>
 </a>
 </div>
 </div>
 </section>
 </main>
-<footer class="w-full bg-white py-16 px-6 md:px-12 border-t border-gray-100">
+<footer class="w-full bg-white dark:bg-dark-bg py-16 px-6 md:px-12 border-t border-gray-100 dark:border-dark-border">
 <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12">
 <div class="flex flex-col gap-6 max-w-sm">
-<div class="flex items-center gap-2 text-primary">
-<h2 class="text-xl font-display italic">Portfolio.</h2>
+<div class="flex items-center gap-2 text-primary dark:text-dark-text">
+<h2 class="text-xl font-display italic">作品集.</h2>
 </div>
-<p class="text-sm text-text-muted font-light leading-relaxed">
-                        Crafting digital experiences with heart and code. Based in San Francisco. Focusing on clean, functional, and user-friendly designs.
+<p class="text-sm text-text-muted dark:text-dark-text-muted font-light leading-relaxed">
+                        用心和代码打造数字体验。坐标旧金山。专注于简洁、实用、用户友好的设计。
                     </p>
 <div class="flex gap-6 mt-2">
-<a class="text-gray-400 hover:text-primary transition-colors" href="#">
+<a class="text-gray-400 dark:text-gray-500 hover:text-primary dark:hover:text-dark-text transition-colors" href="#">
 <span class="sr-only">Twitter</span>
 <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
 </a>
-<a class="text-gray-400 hover:text-primary transition-colors" href="#">
+<a class="text-gray-400 dark:text-gray-500 hover:text-primary dark:hover:text-dark-text transition-colors" href="#">
 <span class="sr-only">GitHub</span>
 <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.419-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg>
 </a>
-<a class="text-gray-400 hover:text-primary transition-colors" href="#">
+<a class="text-gray-400 dark:text-gray-500 hover:text-primary dark:hover:text-dark-text transition-colors" href="#">
 <span class="sr-only">LinkedIn</span>
 <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path></svg>
 </a>
@@ -276,28 +287,28 @@
 </div>
 <div class="flex gap-12 md:gap-24">
 <div class="flex flex-col gap-4">
-<h4 class="font-serif text-base font-medium">Menu</h4>
-<nav class="flex flex-col gap-2 text-sm text-text-muted">
-<a class="hover:text-primary transition-colors" href="#about">About</a>
-<a class="hover:text-primary transition-colors" href="#work">Work</a>
-<a class="hover:text-primary transition-colors" href="#blog">Blog</a>
-<a class="hover:text-primary transition-colors" href="#contact">Contact</a>
+<h4 class="font-serif text-base font-medium dark:text-dark-text">菜单</h4>
+<nav class="flex flex-col gap-2 text-sm text-text-muted dark:text-dark-text-muted">
+<a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="#about">关于</a>
+<a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="#work">作品</a>
+<a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="#blog">博客</a>
+<a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="#contact">联系</a>
 </nav>
 </div>
 <div class="flex flex-col gap-4">
-<h4 class="font-serif text-base font-medium">Contact</h4>
-<nav class="flex flex-col gap-2 text-sm text-text-muted">
-<a class="hover:text-primary transition-colors" href="mailto:hello@alex.com">hello@alex.com</a>
+<h4 class="font-serif text-base font-medium dark:text-dark-text">联系方式</h4>
+<nav class="flex flex-col gap-2 text-sm text-text-muted dark:text-dark-text-muted">
+<a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:hello@alex.com">hello@alex.com</a>
 <span class="cursor-default">+1 (555) 123-4567</span>
 </nav>
 </div>
 </div>
 </div>
-<div class="max-w-7xl mx-auto px-6 md:px-12 mt-16 pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-400">
-<span>© 2025 Yui. All rights reserved.</span>
+<div class="max-w-7xl mx-auto px-6 md:px-12 mt-16 pt-8 border-t border-gray-100 dark:border-dark-border flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
+<span>© 2025 Yui. 保留所有权利。</span>
 <div class="flex gap-6">
-<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
-<a class="hover:text-primary transition-colors" href="#">Terms of Use</a>
+<a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="#">隐私政策</a>
+<a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="#">使用条款</a>
 </div>
 </div>
 </footer>

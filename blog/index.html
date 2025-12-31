@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Tech Blog - Yui's Portfolio</title>
+    <title>技术博客 - Yui的作品集</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <script>
         tailwind.config = {
+            darkMode: "class",
             theme: {
                 extend: {
                     colors: {
@@ -23,6 +24,13 @@
                         "background-soft": "#f9fafb",
                         "border-subtle": "#e5e5e5",
                         "accent-soft": "#e5e7eb",
+                        // Dark mode colors
+                        "dark-bg": "#0f0f0f",
+                        "dark-surface": "#1a1a1a",
+                        "dark-card": "#242424",
+                        "dark-border": "#333333",
+                        "dark-text": "#e5e5e5",
+                        "dark-text-muted": "#a0a0a0",
                     },
                     fontFamily: {
                         "display": ["Playfair Display", "serif"],
@@ -32,35 +40,37 @@
             },
         }
     </script>
+    <script src="/js/theme.js"></script>
+    <script src="/js/lang.js"></script>
     <style>
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
         .blog-item { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
         .blog-item.visible { opacity: 1; transform: translateY(0); }
     </style>
 </head>
-<body class="bg-background text-text-main font-body min-h-screen flex flex-col overflow-x-hidden antialiased">
+<body class="bg-background dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col overflow-x-hidden antialiased transition-colors duration-300">
     <!-- Header -->
-    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle bg-white/95 backdrop-blur-sm">
+    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
         <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
             <div class="flex items-center gap-4">
-                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
+                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">作品集.</a>
             </div>
             <div class="flex items-center gap-10">
                 <nav class="hidden md:flex items-center gap-8">
-                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/projects/">Projects</a>
-                    <a class="text-sm uppercase tracking-widest text-primary font-medium border-b border-primary pb-0.5" href="/blog/">Blog</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/travel/">Travel</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/music/">Music</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted hover:text-primary transition-colors" href="/anime/">Anime</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
+                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/blog/">博客</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">音乐</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">动漫</a>
                 </nav>
                 <div class="flex gap-2">
-                        <button id="langToggle" class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors rounded-full hover:bg-gray-100" title="中/EN">
+                        <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="中/EN">
                             <span class="text-xs font-bold">EN</span>
                         </button>
-                        <button id="themeToggle" class="flex items-center justify-center size-10 text-primary hover:text-text-muted transition-colors rounded-full hover:bg-gray-100" title="Toggle theme">
+                        <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
                             <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
                         </button>
-                        <button class="md:hidden flex items-center justify-center size-10 text-primary">
+                        <button class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text">
                             <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
                         </button>
                     </div>
@@ -74,43 +84,43 @@
             <aside class="lg:w-72 shrink-0">
                 <!-- Search -->
                 <div class="mb-8">
-                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted mb-4">Search</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-4">搜索</h3>
                     <div class="relative">
-                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-lg">search</span>
-                        <input type="text" placeholder="Search articles..." class="w-full h-10 pl-10 pr-4 rounded-md border border-border-subtle bg-white text-sm focus:outline-none focus:border-primary transition-colors"/>
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted dark:text-dark-text-muted text-lg">search</span>
+                        <input type="text" placeholder="搜索文章..." class="w-full h-10 pl-10 pr-4 rounded-md border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card text-sm text-text-main dark:text-dark-text focus:outline-none focus:border-primary dark:focus:border-dark-text transition-colors"/>
                     </div>
                 </div>
 
                 <!-- Topics -->
                 <div class="mb-8">
-                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted mb-4">Topics</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-4">主题</h3>
                     <div class="flex flex-wrap gap-2">
-                        <button class="filter-btn px-4 py-2 rounded-md bg-primary text-white text-sm font-medium transition-all" data-filter="All">All Posts</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary text-text-main text-sm font-medium hover:bg-gray-200 transition-all" data-filter="Frontend">Frontend</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary text-text-main text-sm font-medium hover:bg-gray-200 transition-all" data-filter="Backend">Backend</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary text-text-main text-sm font-medium hover:bg-gray-200 transition-all" data-filter="DevOps">DevOps</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary text-text-main text-sm font-medium hover:bg-gray-200 transition-all" data-filter="Design">Design</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary text-text-main text-sm font-medium hover:bg-gray-200 transition-all" data-filter="AI">AI</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-sm font-medium transition-all" data-filter="All">全部文章</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Frontend">前端</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Backend">后端</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="DevOps">运维</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Design">设计</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="AI">人工智能</button>
                     </div>
                 </div>
 
                 <!-- Author Card -->
-                <div class="p-6 border border-border-subtle rounded-lg">
+                <div class="p-6 border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card">
                     <div class="flex items-center gap-4 mb-4">
                         <div class="w-12 h-12 rounded-full overflow-hidden">
                             <img src="/images/profile/avatar-small.jpg" alt="Yui" class="w-full h-full object-cover"/>
                         </div>
                         <div>
-                            <h4 class="font-semibold text-primary">Yui</h4>
-                            <p class="text-xs text-text-muted">Developer & Creator</p>
+                            <h4 class="font-semibold text-primary dark:text-dark-text">Yui</h4>
+                            <p class="text-xs text-text-muted dark:text-dark-text-muted">开发者 & 创作者</p>
                         </div>
                     </div>
-                    <p class="text-sm text-text-muted leading-relaxed mb-4">
-                        Passionate about building accessible web apps and teaching others how to code.
+                    <p class="text-sm text-text-muted dark:text-dark-text-muted leading-relaxed mb-4">
+                        热衷于构建无障碍的 Web 应用，并乐于分享编程知识。
                     </p>
-                    <div class="flex gap-4 text-text-muted">
-                        <a href="#" class="hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">link</span></a>
-                        <a href="#" class="hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">alternate_email</span></a>
+                    <div class="flex gap-4 text-text-muted dark:text-dark-text-muted">
+                        <a href="#" class="hover:text-primary dark:hover:text-dark-text transition-colors"><span class="material-symbols-outlined text-lg">link</span></a>
+                        <a href="#" class="hover:text-primary dark:hover:text-dark-text transition-colors"><span class="material-symbols-outlined text-lg">alternate_email</span></a>
                     </div>
                 </div>
             </aside>
@@ -122,8 +132,8 @@
 
                 <!-- Load More -->
                 <div id="loadMoreContainer" class="flex justify-center mt-12">
-                    <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle bg-white px-8 py-3 text-sm font-medium text-text-main hover:bg-gray-50 transition-colors">
-                        Load More Articles
+                    <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card px-8 py-3 text-sm font-medium text-text-main dark:text-dark-text hover:bg-gray-50 dark:hover:bg-dark-border transition-colors">
+                        加载更多文章
                         <span class="material-symbols-outlined text-lg">expand_more</span>
                     </button>
                 </div>
@@ -132,16 +142,16 @@
     </main>
 
     <!-- Footer -->
-    <footer class="w-full border-t border-accent-soft bg-white py-12 md:py-16">
+    <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
         <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="flex flex-col gap-1 text-center md:text-left">
-                <h2 class="text-primary text-lg font-display font-semibold">Yui's Portfolio</h2>
-                <p class="text-text-tertiary text-xs">© 2024 Tech Blog.</p>
+                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold">Yui的作品集</h2>
+                <p class="text-text-tertiary dark:text-dark-text-muted text-xs">© 2024 技术博客.</p>
             </div>
             <div class="flex gap-8">
-                <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">mail</span></a>
-                <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">code</span></a>
-                <a class="text-text-muted hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">alternate_email</span></a>
+                <a class="text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="#"><span class="material-symbols-outlined">mail</span></a>
+                <a class="text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="#"><span class="material-symbols-outlined">code</span></a>
+                <a class="text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="#"><span class="material-symbols-outlined">alternate_email</span></a>
             </div>
         </div>
     </footer>
@@ -168,28 +178,28 @@
         function createCard(item) {
             const articleLink = item.link || `/blog/article.html?id=${item.id}`;
             return `
-                <a href="${articleLink}" class="blog-item group flex flex-col md:flex-row gap-6 p-6 border border-border-subtle rounded-lg hover:border-primary/30 hover:shadow-sm transition-all">
-                    <div class="w-full md:w-48 h-32 shrink-0 overflow-hidden rounded-md bg-gray-100">
+                <a href="${articleLink}" class="blog-item group flex flex-col md:flex-row gap-6 p-6 border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card hover:border-primary/30 dark:hover:border-dark-text/30 hover:shadow-sm transition-all">
+                    <div class="w-full md:w-48 h-32 shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-dark-surface">
                         <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="${item.image}" alt="${item.title}"/>
                     </div>
                     <div class="flex-1 flex flex-col gap-3">
                         <div class="flex items-center gap-3 text-xs">
-                            <span class="px-2 py-1 rounded bg-primary text-white font-semibold uppercase tracking-wider">${item.category}</span>
-                            <span class="text-text-muted">${item.date}</span>
-                            <span class="text-text-muted">•</span>
-                            <span class="text-text-muted">${item.readTime}</span>
+                            <span class="px-2 py-1 rounded bg-primary dark:bg-dark-text text-white dark:text-dark-bg font-semibold uppercase tracking-wider">${item.category}</span>
+                            <span class="text-text-muted dark:text-dark-text-muted">${item.date}</span>
+                            <span class="text-text-muted dark:text-dark-text-muted">•</span>
+                            <span class="text-text-muted dark:text-dark-text-muted">${item.readTime}</span>
                         </div>
-                        <h2 class="text-xl font-bold text-primary group-hover:text-text-muted transition-colors">${item.title}</h2>
-                        <p class="text-sm text-text-muted leading-relaxed line-clamp-2">${item.excerpt}</p>
+                        <h2 class="text-xl font-bold text-primary dark:text-dark-text group-hover:text-text-muted dark:group-hover:text-dark-text-muted transition-colors">${item.title}</h2>
+                        <p class="text-sm text-text-muted dark:text-dark-text-muted leading-relaxed line-clamp-2">${item.excerpt}</p>
                         <div class="flex items-center justify-between mt-auto pt-2">
                             <div class="flex items-center gap-2">
                                 <div class="w-6 h-6 rounded-full overflow-hidden shrink-0">
                                     <img src="/images/profile/avatar-small.jpg" alt="${item.author}" class="w-full h-full object-cover" loading="lazy"/>
                                 </div>
-                                <span class="text-sm text-text-muted">${item.author}</span>
+                                <span class="text-sm text-text-muted dark:text-dark-text-muted">${item.author}</span>
                             </div>
-                            <span class="text-sm font-medium text-primary flex items-center gap-1 group-hover:gap-2 transition-all">
-                                Read Article <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                            <span class="text-sm font-medium text-primary dark:text-dark-text flex items-center gap-1 group-hover:gap-2 transition-all">
+                                阅读文章 <span class="material-symbols-outlined text-sm">arrow_forward</span>
                             </span>
                         </div>
                     </div>
@@ -201,11 +211,11 @@
             filterButtons.forEach(btn => {
                 const btnFilter = btn.dataset.filter;
                 if (btnFilter === activeFilter) {
-                    btn.classList.remove('bg-secondary', 'text-text-main');
-                    btn.classList.add('bg-primary', 'text-white');
+                    btn.classList.remove('bg-secondary', 'dark:bg-dark-card', 'text-text-main', 'dark:text-dark-text');
+                    btn.classList.add('bg-primary', 'dark:bg-dark-text', 'text-white', 'dark:text-dark-bg');
                 } else {
-                    btn.classList.remove('bg-primary', 'text-white');
-                    btn.classList.add('bg-secondary', 'text-text-main');
+                    btn.classList.remove('bg-primary', 'dark:bg-dark-text', 'text-white', 'dark:text-dark-bg');
+                    btn.classList.add('bg-secondary', 'dark:bg-dark-card', 'text-text-main', 'dark:text-dark-text');
                 }
             });
         }
@@ -224,7 +234,7 @@
 
             loadMoreContainer.innerHTML = `
                 <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle bg-white px-8 py-3 text-sm font-medium text-text-main hover:bg-gray-50 transition-colors">
-                    Load More Articles
+                    加载更多文章
                     <span class="material-symbols-outlined text-lg">expand_more</span>
                 </button>
             `;
@@ -262,7 +272,7 @@
                 loadMoreContainer.innerHTML = `
                     <div class="text-center text-text-muted text-sm py-8">
                         <span class="material-symbols-outlined text-2xl mb-2 block">check_circle</span>
-                        You've reached the end of the articles.
+                        已经到底啦，没有更多文章了。
                     </div>
                 `;
             }
