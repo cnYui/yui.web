@@ -227,7 +227,12 @@
                 noMore: '已经到底啦，没有更多文章了。',
                 readArticle: '阅读文章',
                 footerTitle: 'Yui的作品集',
-                footerText: '© 2024 技术博客.'
+                footerText: '© 2024 技术博客.',
+                // Article page specific
+                backToBlog: '返回博客',
+                tags: '标签:',
+                shareArticle: '分享文章:',
+                relatedArticles: '相关文章'
             },
             en: {
                 title: 'Tech Blog - Yui\'s Portfolio',
@@ -246,7 +251,12 @@
                 noMore: 'That\'s all! No more articles.',
                 readArticle: 'Read Article',
                 footerTitle: 'Yui\'s Portfolio',
-                footerText: '© 2024 Tech Blog.'
+                footerText: '© 2024 Tech Blog.',
+                // Article page specific
+                backToBlog: 'Back to Blog',
+                tags: 'Tags:',
+                shareArticle: 'Share this article:',
+                relatedArticles: 'Related Articles'
             }
         },
         // Music page specific
