@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AI生图生视频使用经历和经验 - Tech Blog</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#222222",
+                        "secondary": "#f4f4f5",
+                        "text-main": "#222222",
+                        "text-muted": "#71717a",
+                        "text-tertiary": "#9ca3af",
+                        "background": "#ffffff",
+                        "background-soft": "#f9fafb",
+                        "border-subtle": "#e5e5e5",
+                        "accent-soft": "#e5e7eb",
+                        "dark-bg": "#0f0f0f",
+                        "dark-surface": "#1a1a1a",
+                        "dark-card": "#242424",
+                        "dark-border": "#333333",
+                        "dark-text": "#e5e5e5",
+                        "dark-text-muted": "#a0a0a0",
+                    },
+                    fontFamily: {
+                        "display": ["Playfair Display", "serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+    <script src="/js/theme.js"></script>
+    <script src="/js/lang.js"></script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .prose, article { 
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        .prose h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; }
+        .prose h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .prose p { margin-bottom: 1rem; line-height: 1.8; }
+        .prose ul, .prose ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .prose li { margin-bottom: 0.5rem; line-height: 1.7; }
+        .prose strong { font-weight: 600; color: inherit; }
+        .prose blockquote { border-left: 4px solid #e5e5e5; padding-left: 1rem; margin: 1.5rem 0; font-style: italic; color: #71717a; }
+        .dark .prose blockquote { border-left-color: #333; color: #a0a0a0; }
+        .dark .prose strong { color: #ffffff; }
+        .prose hr { border: none; border-top: 1px solid #e5e5e5; margin: 2rem 0; }
+        .dark .prose hr { border-top-color: #333; }
+    </style>
+</head>
+<body class="bg-background dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col overflow-x-hidden antialiased transition-colors duration-300">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
+        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
+            <div class="flex items-center gap-4">
+                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">作品集.</a>
+            </div>
+            <div class="flex items-center gap-10">
+                <nav class="hidden md:flex items-center gap-8">
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
+                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/blog/">博客</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">音乐</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">动漫</a>
+                </nav>
+                <div class="flex gap-2">
+                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="中/EN/日">
+                        <span class="text-xs font-bold">EN</span>
+                    </button>
+                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
+                        <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
+                    </button>
+                    <button class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text">
+                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 w-full">
+        <!-- Article Header -->
+        <div class="w-full bg-background-soft dark:bg-dark-surface py-16">
+            <div class="max-w-3xl mx-auto px-6">
+                <a href="/blog/" class="inline-flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors mb-8">
+                    <span class="material-symbols-outlined text-lg">arrow_back</span>
+                    <span data-i18n="backToBlog">返回博客</span>
+                </a>
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="px-3 py-1 rounded bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-xs font-semibold uppercase tracking-wider">AI</span>
+                    <span class="text-sm text-text-muted dark:text-dark-text-muted">Jan 4, 2026</span>
+                    <span class="text-text-muted dark:text-dark-text-muted">•</span>
+                    <span class="text-sm text-text-muted dark:text-dark-text-muted">8 min read</span>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-display font-bold text-primary dark:text-dark-text leading-tight mb-6">
+                    AI生图生视频使用经历和经验
+                </h1>
+                <p class="text-xl text-text-muted dark:text-dark-text-muted font-light leading-relaxed">
+                    AI只是工具，人之所以为人是因为会使用工具。
+                </p>
+                <div class="flex items-center gap-4 mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
+                    <div class="w-12 h-12 rounded-full overflow-hidden">
+                        <img src="/images/profile/avatar-small.jpg" alt="Yui" class="w-full h-full object-cover"/>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-primary dark:text-dark-text">Yui</p>
+                        <p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="authorRole">开发者 & 创作者</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Featured Image -->
+        <div class="w-full max-w-4xl mx-auto px-6 -mt-0">
+            <div class="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-lg">
+                <img class="w-full h-full object-cover" src="/images/blog/ai-image-video-guide.jpg" alt="AI生图生视频使用经历和经验"/>
+            </div>
+        </div>
+
+        <!-- Article Content -->
+        <article class="w-full max-w-3xl mx-auto px-6 py-16">
+            <div class="prose prose-lg max-w-none text-text-main dark:text-dark-text">
+
+                <h2 class="text-primary dark:text-dark-text">从"意大利面"到"以假乱真"</h2>
+                <p>这两年AI生图生视频越来越可怕了。从一开始吃意大利面的搞笑视频（我记得那个时候生成图像已经很强了），到现在 <strong>Veo3、Sora2、Nano Banana</strong> 的出现，已经可以在以假乱真的前提下，生成一些现实不存在的、但是非常"真实"的图片了。</p>
+                
+                <p>听说当初Sora2刚出来的时候，有人用家里老人的形象生成一段视频，然后拿给老人看，告诉老人这个视频是假的，但是老人却笃定说这是真的；还有大学男生做了一段自己在非洲敞篷车上自拍的视频，发给家里看，家里急的报警了，以为小孩被拐卖了（笑）。</p>
+
+                <hr/>
+
+                <h2 class="text-primary dark:text-dark-text">Sora2：我的AI视频起点</h2>
+                <p>我清楚记得Sora2是从25年9月31号发布的，那个时候正好下班，看到Sora2在发兑换码，于是先买了一个玩玩。在10月1号的晚上正式上传了自己的形象，然后便<strong>一发不可收拾</strong>，玩到国庆结束。</p>
+                
+                <p>那个时候Sora里面已经到处可见奥特曼的恶搞视频了，再到后来国内平台抖音、小红书都是Sora上的恶搞视频，比如：</p>
+                <ul class="list-disc">
+                    <li>家门口监控视角，拍摄门口小猫拿着机枪和喷火器扫射主人</li>
+                    <li>家里冲出来一头巨大无比的河马，沿途将客厅和走廊的墙壁和家具全部撞坏</li>
+                    <li>……</li>
+                </ul>
+                
+                <p>现在Sora2虽然开始了收费模式，但是付费用户毕竟是少数，而且生成视频的数量和并发也从刚开始的<strong>100个/天</strong>到后来<strong>50个</strong>，现在只有<strong>30个</strong>了（之前看的，后来就没用过了）。</p>
+                
+                <p>在这波AI视频浪潮下，我也把小红书账号成功起号，专门发AI视频，尤其是一些动漫结局不好的，我会做最完美的大结局和一些"杀青梗"（演员谢幕，表示一个角色都没死）。</p>
+
+                <hr/>
+
+                <h2 class="text-primary dark:text-dark-text">Nano Banana：从生图到生漫画</h2>
+                <p>Sora2版权炮+收费之后就很难做AI视频了，于是我将目光投向Gemini下的 <strong>Nano Banana</strong> 生图模型。当初这个模型就是和Sora2一样，凭借着<strong>人物一致性</strong>而出名的。</p>
+                
+                <p>最恐怖的是，可以将自己的脸+网上找的衣服，就可以生成一张自己试衣服的照片，那段时间AI试衣也火了一阵子。</p>
+                
+                <p>那个时候的Nano Banana生成中文还不是很行，基本上会出现乱码和火星文，中文只有豆包能够生成，但是也要试好几次。主要是豆包生图那个时候水平就在那里，就算中文比较好，背景图片也很差，经常需要将Nano Banana的图片传入豆包来生成文字。</p>
+
+                <hr/>
+
+                <h2 class="text-primary dark:text-dark-text">Nano Banana Pro：创作的新可能</h2>
+                <p>再到后来，<strong>Nano Banana Pro</strong> 伴随着Gemini 3横空出世，解决了中文一致性的问题，生成相关的图片再也不是问题。</p>
+                
+                <p>从高级的一道菜的拆解展示，到使用Chiikawa形象的景区旅游导图，再到后来堪比摄影大师拍摄的画面——让我这个非常羡慕艺术生的理工科学生也手痒痒想尝试尝试。</p>
+                
+                <p>本人本身就有一些摄影的小爱好，略微有那么一些些审美，再加上本身vibe coding就比较多，一些生图的提示词还是能够写出来的。</p>
+                
+                <p><strong>于是我创作了这些图片：</strong></p>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-8">
+                    <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card">
+                        <img class="w-full h-auto object-cover" src="/images/blog/chiikawa-1.jpg" alt="小红书AI视频作品1"/>
+                    </div>
+                    <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card">
+                        <img class="w-full h-auto object-cover" src="/images/blog/chiikawa-2.jpg" alt="小红书AI视频作品2"/>
+                    </div>
+                    <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card">
+                        <img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-3.jpg" alt="AI生成作品3"/>
+                    </div>
+                    <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card">
+                        <img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-4.jpg" alt="AI生成作品4"/>
+                    </div>
+                </div>
+
+                <hr/>
+
+                <h2 class="text-primary dark:text-dark-text">我的Chiikawa漫画创作经历</h2>
+                <p>我本人没有任何绘画经验，语文也不是很好，也没有写过小说，但是前段时间制作了一篇<strong>原创的Chiikawa漫画中篇故事</strong>，从故事大纲、页面分镜到四格漫画和漫画面，在Nano Banana Pro的帮助下，我一个人就完成了。</p>
+                
+                <p>简单来说创作流程就是：</p>
+                <ol class="list-decimal">
+                    <li><strong>生成故事大纲</strong> - 先把整体故事框架定下来</li>
+                    <li><strong>粗生成一遍</strong> - 快速生成初版画面</li>
+                    <li><strong>上传参考图</strong> - 提供角色参考</li>
+                    <li><strong>细调人物一致性</strong> - 确保角色形象统一</li>
+                </ol>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
+                    <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card">
+                        <img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-1.jpg" alt="Chiikawa漫画作品1"/>
+                    </div>
+                    <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card">
+                        <img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-2.jpg" alt="Chiikawa漫画作品2"/>
+                    </div>
+                </div>
+
+                <hr/>
+
+                <blockquote>
+                    <p>AI生图生视频给我的整体感受就是：工具在进化，创作的门槛在降低，AI在让创作平权——但创意永不会平权，创意和审美永远是人类的专属。</p>
+                </blockquote>
+            </div>
+
+            <!-- Tags -->
+            <div class="flex flex-wrap gap-2 mt-12 pt-8 border-t border-border-subtle dark:border-dark-border">
+                <span class="text-sm text-text-muted dark:text-dark-text-muted mr-2" data-i18n="tags">标签:</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">AI生图</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">AI视频</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Sora2</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Nano Banana</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Chiikawa</span>
+            </div>
+
+            <!-- Share -->
+            <div class="flex items-center justify-between mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
+                <span class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="shareArticle">分享文章:</span>
+                <div class="flex gap-4">
+                    <button class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text">
+                        <span class="material-symbols-outlined text-lg">share</span>
+                    </button>
+                    <button class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text">
+                        <span class="material-symbols-outlined text-lg">link</span>
+                    </button>
+                    <button class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text">
+                        <span class="material-symbols-outlined text-lg">bookmark</span>
+                    </button>
+                </div>
+            </div>
+        </article>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
+        <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex flex-col gap-1 text-center md:text-left">
+                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui的作品集</h2>
+                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 技术博客.</p>
+            </div>
+            <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
+                <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
+                <span class="cursor-default">15951875192</span>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
