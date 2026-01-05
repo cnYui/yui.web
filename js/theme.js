@@ -6,7 +6,7 @@
     function getPreferredTheme() {
         const saved = localStorage.getItem(THEME_KEY);
         if (saved) return saved;
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        return 'light';
     }
     
     // Apply theme to document

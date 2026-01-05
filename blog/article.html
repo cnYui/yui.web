@@ -198,14 +198,8 @@
             <div class="flex items-center justify-between mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
                 <span class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="shareArticle">分享文章:</span>
                 <div class="flex gap-4">
-                    <button class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text">
+                    <button id="shareBtn" class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text" title="复制链接">
                         <span class="material-symbols-outlined text-lg">share</span>
-                    </button>
-                    <button class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text">
-                        <span class="material-symbols-outlined text-lg">link</span>
-                    </button>
-                    <button class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text">
-                        <span class="material-symbols-outlined text-lg">bookmark</span>
                     </button>
                 </div>
             </div>
@@ -252,8 +246,37 @@
             </div>
         </div>
     </footer>
-
     <script>
+        document.getElementById('shareBtn').addEventListener('click', async () => {
+            const url = 'https://aaccx.pw' + window.location.pathname;
+            try {
+                await navigator.clipboard.writeText(url);
+                showToast('复制成功');
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                showToast('复制失败');
+            }
+        });
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 dark:bg-white/90 text-white dark:text-black px-6 py-3 rounded-full text-sm font-medium shadow-lg transition-all duration-300 opacity-0 translate-y-2 z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // Trigger reflow
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            });
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 2000);
+        }
+
         // Article data
         const articles = {
             7: {

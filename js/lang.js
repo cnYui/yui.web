@@ -71,7 +71,7 @@
                 blog: '博客',
                 contact: '联系',
                 contactInfo: '联系方式',
-                copyright: '© 2025 Yui. 保留所有权利。',
+                copyright: '© 2026 Yui. 保留所有权利。',
                 privacy: '隐私政策',
                 terms: '使用条款'
             },
@@ -106,7 +106,7 @@
                 blog: 'Blog',
                 contact: 'Contact',
                 contactInfo: 'Contact',
-                copyright: '© 2025 Yui. All rights reserved.',
+                copyright: '© 2026 Yui. All rights reserved.',
                 privacy: 'Privacy Policy',
                 terms: 'Terms of Use'
             },
@@ -141,7 +141,7 @@
                 blog: 'ブログ',
                 contact: '連絡先',
                 contactInfo: '連絡先',
-                copyright: '© 2025 Yui. All rights reserved.',
+                copyright: '© 2026 Yui. All rights reserved.',
                 privacy: 'プライバシーポリシー',
                 terms: '利用規約'
             }
@@ -150,7 +150,7 @@
         projects: {
             zh: {
                 title: '项目经历 - Yui的作品集',
-                period: '2024 — 至今',
+                period: '2026 — 至今',
                 journeyTitle: '我的技术',
                 journeySubtitle: '之旅',
                 journeyDesc: '从第一次作为观众参加黑客松，到在全国各地获奖。一段成长、学习和创造的时间线。',
@@ -170,11 +170,11 @@
                 journeyContinues: '旅程继续...',
                 moreComing: '更多里程碑即将到来',
                 quote: '"每一次黑客松都是学习新知识、结识优秀伙伴、突破自我极限的机会。"',
-                footerText: '© 2024 Yui的旅程. 继续创造.'
+                footerText: '© 2026 Yui的旅程. 继续创造.'
             },
             en: {
                 title: 'Projects - Yui\'s Portfolio',
-                period: '2024 — Present',
+                period: '2026 — Present',
                 journeyTitle: 'My Journey',
                 journeySubtitle: 'in Tech',
                 journeyDesc: 'From attending my first hackathon as a spectator to winning awards across the country. A timeline of growth, learning, and creation.',
@@ -194,11 +194,11 @@
                 journeyContinues: 'The journey continues...',
                 moreComing: 'More milestones coming soon',
                 quote: '"Every hackathon is an opportunity to learn something new, meet amazing people, and push my limits."',
-                footerText: '© 2024 Yui\'s Journey. Keep creating.'
+                footerText: '© 2026 Yui\'s Journey. Keep creating.'
             },
             ja: {
                 title: 'プロジェクト - Yuiのポートフォリオ',
-                period: '2024 — 現在',
+                period: '2026 — 現在',
                 journeyTitle: '私の技術',
                 journeySubtitle: 'の旅',
                 journeyDesc: '初めて観客としてハッカソンに参加してから、全国で受賞するまで。成長、学習、創造のタイムライン。',
@@ -218,14 +218,14 @@
                 journeyContinues: '旅は続く...',
                 moreComing: 'さらなるマイルストーンが近日公開',
                 quote: '「すべてのハッカソンは、新しいことを学び、素晴らしい人々と出会い、自分の限界を押し広げる機会です。」',
-                footerText: '© 2024 Yuiの旅. 創造し続ける.'
+                footerText: '© 2026 Yuiの旅. 創造し続ける.'
             }
         },
         // Travel page specific
         travel: {
             zh: {
                 title: '旅行足迹 - Yui的作品集',
-                subtitle: '旅行日志 • 2024',
+                subtitle: '旅行日志 • 2026',
                 mainTitle: '漫游',
                 mainTitleLine2: '亚洲',
                 description: '从东京的霓虹街道到京都的古老寺庙。一段穿越日本和中国的视觉之旅。',
@@ -248,11 +248,11 @@
                 loadMore: '加载更多照片',
                 whereNext: '下一站去哪？',
                 planning: '正在规划下一次冒险...',
-                footerText: '© 2024 Yui的旅行日志. 所有回忆永存.'
+                footerText: '© 2026 Yui的旅行日志. 所有回忆永存.'
             },
             en: {
                 title: 'Travel - Yui\'s Portfolio',
-                subtitle: 'Travel Journal • 2024',
+                subtitle: 'Travel Journal • 2026',
                 mainTitle: 'Wandering',
                 mainTitleLine2: 'Through Asia',
                 description: 'From the neon streets of Tokyo to the ancient temples of Kyoto. A visual journey across Japan and China.',
@@ -275,11 +275,11 @@
                 loadMore: 'Load More Photos',
                 whereNext: 'Where to next?',
                 planning: 'Planning the next adventure...',
-                footerText: '© 2024 Yui\'s Travel Journal. All memories preserved.'
+                footerText: '© 2026 Yui\'s Travel Journal. All memories preserved.'
             },
             ja: {
                 title: '旅行 - Yuiのポートフォリオ',
-                subtitle: '旅行日記 • 2024',
+                subtitle: '旅行日記 • 2026',
                 mainTitle: 'アジアを',
                 mainTitleLine2: '巡る旅',
                 description: '東京のネオン街から京都の古寺まで。日本と中国を巡るビジュアルジャーニー。',
@@ -302,7 +302,7 @@
                 loadMore: 'もっと写真を見る',
                 whereNext: '次はどこへ？',
                 planning: '次の冒険を計画中...',
-                footerText: '© 2024 Yuiの旅行日記. すべての思い出を保存.'
+                footerText: '© 2026 Yuiの旅行日記. すべての思い出を保存.'
             }
         },
         // Blog page specific
@@ -324,7 +324,7 @@
                 noMore: '已经到底啦，没有更多文章了。',
                 readArticle: '阅读文章',
                 footerTitle: 'Yui的作品集',
-                footerText: '© 2024 技术博客.',
+                footerText: '© 2026 技术博客.',
                 backToBlog: '返回博客',
                 tags: '标签:',
                 shareArticle: '分享文章:',
@@ -347,7 +347,7 @@
                 noMore: 'That\'s all! No more articles.',
                 readArticle: 'Read Article',
                 footerTitle: 'Yui\'s Portfolio',
-                footerText: '© 2024 Tech Blog.',
+                footerText: '© 2026 Tech Blog.',
                 backToBlog: 'Back to Blog',
                 tags: 'Tags:',
                 shareArticle: 'Share this article:',
@@ -370,7 +370,7 @@
                 noMore: 'これで全部です！記事はもうありません。',
                 readArticle: '記事を読む',
                 footerTitle: 'Yuiのポートフォリオ',
-                footerText: '© 2024 技術ブログ.',
+                footerText: '© 2026 技術ブログ.',
                 backToBlog: 'ブログに戻る',
                 tags: 'タグ:',
                 shareArticle: 'この記事をシェア:',
@@ -409,7 +409,7 @@
                 endDesc: '持续发现新音乐，敬请期待更新。',
                 suggestTrack: '推荐曲目',
                 footerTitle: 'Yui的作品集',
-                footerText: '© 2024 音乐收藏.'
+                footerText: '© 2026 音乐收藏.'
             },
             en: {
                 title: 'Music - Yui\'s Portfolio',
@@ -441,7 +441,7 @@
                 endDesc: 'Always discovering new music. Stay tuned for updates.',
                 suggestTrack: 'Suggest a Track',
                 footerTitle: 'Yui\'s Portfolio',
-                footerText: '© 2024 Music Collection.'
+                footerText: '© 2026 Music Collection.'
             },
             ja: {
                 title: '音楽 - Yuiのポートフォリオ',
@@ -473,7 +473,7 @@
                 endDesc: '常に新しい音楽を発見中。更新をお楽しみに。',
                 suggestTrack: 'トラックを提案',
                 footerTitle: 'Yuiのポートフォリオ',
-                footerText: '© 2024 音楽コレクション.'
+                footerText: '© 2026 音楽コレクション.'
             }
         },
         // Resume page specific
@@ -527,7 +527,7 @@
                 menuBlog: '博客',
                 menuContact: '联系',
                 contactInfo: '联系方式',
-                copyright: '© 2025 Yui. 保留所有权利.',
+                copyright: '© 2026 Yui. 保留所有权利.',
                 privacy: '隐私政策',
                 terms: '使用条款'
             },
@@ -580,7 +580,7 @@
                 menuBlog: 'Blog',
                 menuContact: 'Contact',
                 contactInfo: 'Contact',
-                copyright: '© 2025 Yui. All rights reserved.',
+                copyright: '© 2026 Yui. All rights reserved.',
                 privacy: 'Privacy Policy',
                 terms: 'Terms of Use'
             },
@@ -633,7 +633,7 @@
                 menuBlog: 'ブログ',
                 menuContact: '連絡先',
                 contactInfo: '連絡先',
-                copyright: '© 2025 Yui. All rights reserved.',
+                copyright: '© 2026 Yui. All rights reserved.',
                 privacy: 'プライバシーポリシー',
                 terms: '利用規約'
             }
@@ -669,7 +669,7 @@
                 endDesc: '持续追番中，敬请期待更新。',
                 suggestAnime: '推荐番剧',
                 footerTitle: 'Yui的作品集',
-                footerText: '© 2024 番剧收藏.'
+                footerText: '© 2026 番剧收藏.'
             },
             en: {
                 title: 'Anime - Yui\'s Portfolio',
@@ -700,7 +700,7 @@
                 endDesc: 'Always watching new anime. Check back for updates.',
                 suggestAnime: 'Suggest an Anime',
                 footerTitle: 'Yui\'s Portfolio',
-                footerText: '© 2024 Anime Collection.'
+                footerText: '© 2026 Anime Collection.'
             },
             ja: {
                 title: 'アニメ - Yuiのポートフォリオ',
@@ -731,7 +731,7 @@
                 endDesc: '常に新しいアニメを視聴中。更新をお楽しみに。',
                 suggestAnime: 'アニメを提案',
                 footerTitle: 'Yuiのポートフォリオ',
-                footerText: '© 2024 アニメコレクション.'
+                footerText: '© 2026 アニメコレクション.'
             }
         }
     };

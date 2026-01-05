@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>AI生图生视频使用经历和经验 - Tech Blog</title>
+    <title>AI生图生视频使用经历和经验分享 - Tech Blog</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography"></script>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -213,6 +213,54 @@
                     </div>
                 </div>
 
+                <h2 class="text-primary dark:text-dark-text">进阶之路：审美积累与提示词魔法</h2>
+                
+                <p>我个人非常偏爱<strong>迷幻、梦境</strong>这类风格，这种氛围感往往是提示词中最难描述的部分。一张AI生成的好照片，如果让人一眼无法看穿其背后的Prompt，那它就成功了一半。</p>
+                
+                <p>这种"不可名状"的创意，其实是一种知识壁垒。虽然现在的反推工具很强大，但原创的灵感和审美是独一无二的。想要提升这方面的能力，我非常推荐大家关注 <strong><a href="https://super-i.cn/" target="_blank" class="text-primary dark:text-dark-text hover:underline font-medium">刺猬星球</a></strong>。</p>
+
+                <div class="w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card my-8 shadow-md">
+                    <img class="w-full h-auto object-cover" src="/images/blog/hedgehog-homepage.jpg" alt="刺猬星球主页 - 提示词与审美积累"/>
+                    <p class="text-sm text-center text-text-muted dark:text-dark-text-muted py-3 bg-gray-50 dark:bg-dark-surface border-t border-border-subtle dark:border-dark-border">刺猬星球：丰富的提示词教程与案例库</p>
+                </div>
+
+                <p>比如其中的<strong>【提示词创作第四节】：模拟真实设备与纪实瞬间</strong>，就详细讲解了如何通过添加胶卷滤镜（如 <code>Fujifilm Pro 400H</code>）来营造偏冷调的日常抓拍感，或者迁移摄影大师的风格。将这些不同的技巧组合起来，就能碰撞出属于你自己的独特画风。</p>
+
+                <hr/>
+
+                <h2 class="text-primary dark:text-dark-text">生产力革命：从娱乐到工业落地</h2>
+                
+                <p>除了娱乐创作，AI生图正在真实地改变生产流程。除了 GitHub 上有 <strong>awesome nanobanana</strong> 这样的项目，还有很多网站收纳了非常多的提示词。不过也不要过多的依赖别人的东西，提示词都是人试出来的，如果你也有奇思妙想，你也可以试试。</p>
+
+                <p>我在工作中就遇到了一个典型的<strong>工业可视化需求</strong>：将复杂的工厂2D设计图纸，转化为直观的伪3D风格展示图，用于电厂的大屏监控系统。</p>
+
+                <p><strong>传统工作流痛点：</strong></p>
+                <ul class="list-disc">
+                    <li>设计人员需要读懂复杂的2D图纸</li>
+                    <li>手动绘制或建模3D图形，极其耗时</li>
+                    <li>修改成本高，响应速度慢</li>
+                </ul>
+
+                <p><strong>AI工作流方案：</strong></p>
+                <p>我将原图拆分为核心图例和局部结构，通过上传参考图（Image-to-Image）配合精准的 Prompt，让 AI 理解工艺流程，直接生成高质量的伪 3D 效果图。</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-8">
+                    <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm group">
+                        <div class="relative overflow-hidden">
+                            <img class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" src="/images/blog/factory-2d-drawing.jpg" alt="原始2D设计图纸"/>
+                        </div>
+                        <p class="text-sm text-center font-medium text-text-muted dark:text-dark-text-muted py-3 bg-gray-50 dark:bg-dark-surface">输入：原始 2D 工业图纸</p>
+                    </div>
+                    <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm group">
+                        <div class="relative overflow-hidden">
+                            <img class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" src="/images/blog/factory-3d-render.jpg" alt="AI生成伪3D效果图"/>
+                        </div>
+                        <p class="text-sm text-center font-medium text-text-muted dark:text-dark-text-muted py-3 bg-gray-50 dark:bg-dark-surface">输出：AI 生成伪 3D 监控图</p>
+                    </div>
+                </div>
+
+                <p>这种流程不仅效率提升了数倍，生成的图片后续能够用于大屏交互，管理员点击设备即可查看状态，完美实现了从"看图纸"到"看实景"的跨越。</p>
+
                 <hr/>
 
                 <blockquote>
@@ -234,14 +282,8 @@
             <div class="flex items-center justify-between mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
                 <span class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="shareArticle">分享文章:</span>
                 <div class="flex gap-4">
-                    <button class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text">
+                    <button id="shareBtn" class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text" title="复制链接">
                         <span class="material-symbols-outlined text-lg">share</span>
-                    </button>
-                    <button class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text">
-                        <span class="material-symbols-outlined text-lg">link</span>
-                    </button>
-                    <button class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text">
-                        <span class="material-symbols-outlined text-lg">bookmark</span>
                     </button>
                 </div>
             </div>
@@ -261,5 +303,36 @@
             </div>
         </div>
     </footer>
+    <script>
+        document.getElementById('shareBtn').addEventListener('click', async () => {
+            const url = 'https://aaccx.pw' + window.location.pathname;
+            try {
+                await navigator.clipboard.writeText(url);
+                showToast('复制成功');
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                showToast('复制失败');
+            }
+        });
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 dark:bg-white/90 text-white dark:text-black px-6 py-3 rounded-full text-sm font-medium shadow-lg transition-all duration-300 opacity-0 translate-y-2 z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // Trigger reflow
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            });
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 2000);
+        }
+    </script>
 </body>
 </html>
