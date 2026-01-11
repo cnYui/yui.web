@@ -1,57 +1,62 @@
 # Yui's Personal Website
 
-一个简洁优雅的个人展示网站，采用纯静态 HTML + Tailwind CSS 构建。
+A clean and elegant personal portfolio website built with pure static HTML + Tailwind CSS.
 
-## 🌐 在线访问
+## 🌐 Live Demo
 
 [https://cnyui.github.io/yui.web](https://cnyui.github.io/yui.web)
 
-## ✨ 特性
+## ✨ Features
 
-- 🎨 现代化 UI 设计，深色主题
-- 🌍 粒子地球动画背景
-- 📱 完全响应式，适配各种设备
-- ⚡ 纯静态页面，加载极速
-- 🚀 GitHub Pages 自动部署
+- 🎨 Modern UI design with dark/light theme toggle
+- 🌍 Interactive particle globe animation background
+- 🌐 Bilingual support (English/Chinese)
+- 📱 Fully responsive, works on all devices
+- ⚡ Pure static pages, lightning fast loading
+- 🚀 Auto-deployment via GitHub Pages
 
-## 📁 网站结构
+## 📁 Site Structure
 
 ```
-├── index.html          # 首页
-├── resume/             # 个人简历页面
-├── projects/           # 项目经历展示
-├── blog/               # 技术博客文章
-├── travel/             # 旅行照片记录
-├── music/              # 音乐推荐列表
-├── anime/              # 番剧推荐列表
-├── images/             # 图片资源
-└── 404.html            # 404 页面
+├── index.html          # Homepage
+├── resume/             # Resume page
+├── projects/           # Project timeline & hackathon experiences
+├── blog/               # Tech blog articles
+├── travel/             # Travel photo gallery
+├── music/              # Music recommendations
+├── anime/              # Anime recommendations
+├── images/             # Image assets
+├── js/                 # JavaScript modules
+│   ├── lang.js         # Language toggle
+│   └── theme.js        # Theme toggle
+└── 404.html            # 404 page
 ```
 
-## 🛠️ 技术栈
+## 🛠️ Tech Stack
 
 - HTML5
 - Tailwind CSS (CDN)
 - Vanilla JavaScript
-- Canvas 2D (粒子动画)
-- GeoJSON (地图数据)
+- Canvas 2D (particle animation)
+- GeoJSON (map data)
+- Material Icons
 
-## 🚀 本地运行
+## 🚀 Local Development
 
 ```bash
-# 使用 Python
+# Using Python
 python -m http.server 3000
 
-# 或使用 Node.js
+# Or using Node.js
 npx serve
 ```
 
-访问 `http://localhost:3000` 查看网站
+Visit `http://localhost:3000` to view the site.
 
-## 📦 部署
+## 📦 Deployment
 
-推送到 `main` 分支后，GitHub Actions 会自动部署到 GitHub Pages。
+Push to the `main` branch and GitHub Actions will automatically deploy to GitHub Pages.
 
-## 📄 许可证
+## 📄 License
 
 MIT License
