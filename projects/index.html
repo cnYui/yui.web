@@ -197,32 +197,38 @@
 
     <script>
         const projectData = [
+            // Feb 2026
+            { date: 'Feb 2026', city: 'Nanjing', images: ['/images/hackathon/tangquan-hackathon.jpg', '/images/hackathon/tangquan-poster.jpg'], title: 'Tangquan Hackathon', category: 'Hackathon', desc: 'Participated in Nanjing Tangquan Hackathon, experiencing the unique atmosphere of coding in hot springs.', link: '', badge: '' },
+            // Jan 2026
+            { date: 'Jan 2026', city: 'Shanghai', images: ['/images/hackathon/huanqiu-gold.jpg', '/images/hackathon/huanqiu-tea.jpg', '/images/hackathon/huanqiu-award.jpg'], title: 'Global Hackathon', category: 'Award', desc: 'Won gold award at Global Hackathon, showcasing innovative ideas.', link: '', badge: '🥇 Gold Award' },
+            { date: 'Jan 2026', city: 'Online', images: ['/images/hackathon/openclaw-feishu.jpg'], title: 'OpenClaw Feishu Plugin - Crazy Thursday', category: 'Project', desc: 'Developed OpenClaw Feishu plugin for Crazy Thursday event, enhancing team collaboration efficiency.', link: '', badge: '' },
+            { date: 'Jan 2026', city: 'Nanjing', images: ['/images/hackathon/nanjing-opc.jpg'], title: 'Nanjing OPC Hackathon', category: 'Hackathon', desc: 'Participated in Nanjing OPC Hackathon, exploring AI + Gaming.', link: '', badge: '' },
             // Dec 2025
-            { date: 'Dec 2025', city: 'Online', image: '/images/ai-video-comic.jpg', title: 'AI Video/Comic Project', category: 'AI Video/Comic', desc: 'Creative AI-generated video and comic content exploring new forms of digital storytelling.', link: '', badge: '' },
-            { date: 'Dec 2025', city: 'Nanjing', image: '/images/hackathon/nanjing-mofa-hackathon.jpg', title: 'Nanjing MoFa Hackathon', category: 'Hackathon', desc: 'Participated in the MoFa (Model Factory) Hackathon in Nanjing.', link: '', badge: '' },
-            { date: 'Dec 2025', city: 'Shanghai', image: '/images/hackathon/shanghai-christmas-hackathon.jpg', title: 'Shanghai Christmas Hackathon', category: 'Hackathon', desc: 'Joined the festive Christmas-themed hackathon in Shanghai.', link: '', badge: '' },
-            { date: 'Dec 2025', city: 'Shanghai', image: '/images/hackathon/volcano-force.jpg', title: 'Volcano Engine Force Conference', category: 'Meetup', desc: 'Attended the Volcano Engine Force Conference in Shanghai.', link: '', badge: '' },
+            { date: 'Dec 2025', city: 'Online', images: ['/images/ai-video-comic.jpg'], title: 'AI Video/Comic Project', category: 'AI Video/Comic', desc: 'Creative AI-generated video and comic content exploring new forms of digital storytelling.', link: '', badge: '' },
+            { date: 'Dec 2025', city: 'Nanjing', images: ['/images/hackathon/nanjing-mofa-hackathon.jpg'], title: 'Nanjing MoFa Hackathon', category: 'Hackathon', desc: 'Participated in the MoFa (Model Factory) Hackathon in Nanjing.', link: '', badge: '' },
+            { date: 'Dec 2025', city: 'Shanghai', images: ['/images/hackathon/shanghai-christmas-hackathon.jpg'], title: 'Shanghai Christmas Hackathon', category: 'Hackathon', desc: 'Joined the festive Christmas-themed hackathon in Shanghai.', link: '', badge: '' },
+            { date: 'Dec 2025', city: 'Shanghai', images: ['/images/hackathon/volcano-force.jpg'], title: 'Volcano Engine Force Conference', category: 'Meetup', desc: 'Attended the Volcano Engine Force Conference in Shanghai.', link: '', badge: '' },
             // Nov 2025
-            { date: 'Nov 2025', city: 'Chongqing', image: '/images/hackathon/渝客松Google GDG赛道第一名.jpg', title: 'Yukesong Google GDG Track', category: 'Award', desc: 'Achieved 1st place in the Google GDG track at Yukesong hackathon.', link: '', badge: '🥇 1st Place' },
-            { date: 'Nov 2025', city: 'Wuxi', image: '/images/hackathon/无锡Rokid ARAI三等奖.jpg', title: 'Wuxi Rokid AR AI Competition', category: 'Award', desc: 'Won 3rd place at the Wuxi Rokid AR AI competition, showcasing innovative AR applications.', link: '', badge: '🥉 3rd Place' },
+            { date: 'Nov 2025', city: 'Chongqing', images: ['/images/hackathon/渝客松Google GDG赛道第一名.jpg'], title: 'Yukesong Google GDG Track', category: 'Award', desc: 'Achieved 1st place in the Google GDG track at Yukesong hackathon.', link: '', badge: '🥇 1st Place' },
+            { date: 'Nov 2025', city: 'Wuxi', images: ['/images/hackathon/无锡Rokid ARAI三等奖.jpg'], title: 'Wuxi Rokid AR AI Competition', category: 'Award', desc: 'Won 3rd place at the Wuxi Rokid AR AI competition, showcasing innovative AR applications.', link: '', badge: '🥉 3rd Place' },
             // Oct 2025
-            { date: 'Oct 2025', city: 'Anhui', image: '/images/hackathon/trae-hackathon-07.jpg', title: 'Huikesong Hackathon', category: 'Hackathon', desc: 'Created "Suikou Chengqu" (Instant Song) project at Anhui hackathon.', link: 'http://xhslink.com/o/9pQHBf9V1Fv', badge: '' },
+            { date: 'Oct 2025', city: 'Anhui', images: ['/images/hackathon/trae-hackathon-07.jpg'], title: 'Huikesong Hackathon', category: 'Hackathon', desc: 'Created "Suikou Chengqu" (Instant Song) project at Anhui hackathon.', link: 'http://xhslink.com/o/9pQHBf9V1Fv', badge: '' },
             // Sep 2025
-            { date: 'Sep 2025', city: 'Hangzhou', image: '/images/hackathon/yunqi-conference.jpg', title: 'Alibaba Yunqi Conference', category: 'Meetup', desc: 'Attended the Alibaba Cloud Yunqi Conference at Yunqi Town, Hangzhou.', link: '', badge: '' },
-            { date: 'Sep 2025', city: 'Online', image: '/images/hackathon/image.png', title: 'Tencent Cloud Online Hackathon', category: 'Award', desc: 'Pet health companion mini-program that won recognition at Tencent Cloud hackathon.', link: 'http://xhslink.com/o/ATzpS0qsjaQ', badge: '🏆 Winner' },
-            { date: 'Sep 2025', city: 'Online', image: '/images/hackathon/image copy 2.png', title: 'n8n + Xiaohongshu MCP Auto-posting', category: 'Project', desc: 'Automated Xiaohongshu account management using n8n workflow.', link: 'https://www.xiaohongshu.com/user/profile/5b869e548bf5ee0001f35235', badge: '' },
-            { date: 'Sep 2025', city: 'Online', image: '/images/hackathon/image copy.png', title: 'Douyin Creator Competition', category: 'Project', desc: 'Legal Theater Assistant built with Coze workflow for Douyin Creator competition.', link: 'http://xhslink.com/o/5kBv2KfGeLj', badge: '' },
+            { date: 'Sep 2025', city: 'Hangzhou', images: ['/images/hackathon/yunqi-conference.jpg'], title: 'Alibaba Yunqi Conference', category: 'Meetup', desc: 'Attended the Alibaba Cloud Yunqi Conference at Yunqi Town, Hangzhou.', link: '', badge: '' },
+            { date: 'Sep 2025', city: 'Online', images: ['/images/hackathon/image.png'], title: 'Tencent Cloud Online Hackathon', category: 'Award', desc: 'Pet health companion mini-program that won recognition at Tencent Cloud hackathon.', link: 'http://xhslink.com/o/ATzpS0qsjaQ', badge: '🏆 Winner' },
+            { date: 'Sep 2025', city: 'Online', images: ['/images/hackathon/image copy 2.png'], title: 'n8n + Xiaohongshu MCP Auto-posting', category: 'Project', desc: 'Automated Xiaohongshu account management using n8n workflow.', link: 'https://www.xiaohongshu.com/user/profile/5b869e548bf5ee0001f35235', badge: '' },
+            { date: 'Sep 2025', city: 'Online', images: ['/images/hackathon/image copy.png'], title: 'Douyin Creator Competition', category: 'Project', desc: 'Legal Theater Assistant built with Coze workflow for Douyin Creator competition.', link: 'http://xhslink.com/o/5kBv2KfGeLj', badge: '' },
             // Aug 2025
-            { date: 'Aug 2025', city: 'Shanghai', image: '/images/hackathon/trae-hackathon-08.jpg', title: 'TRAE SOLO Hackathon Shanghai', category: 'Award', desc: 'Won 2nd place at the TRAE SOLO Hackathon Shanghai edition.', link: '', badge: '🥈 2nd Place' },
-            { date: 'Aug 2025', city: 'Nanjing', image: '/images/hackathon/trae-hackathon-05.jpg', title: 'Nanckathon S1', category: 'Hackathon', desc: 'Participated in the Nanckathon S1 hackathon event in Nanjing.', link: '', badge: '' },
+            { date: 'Aug 2025', city: 'Shanghai', images: ['/images/hackathon/trae-hackathon-08.jpg'], title: 'TRAE SOLO Hackathon Shanghai', category: 'Award', desc: 'Won 2nd place at the TRAE SOLO Hackathon Shanghai edition.', link: '', badge: '🥈 2nd Place' },
+            { date: 'Aug 2025', city: 'Nanjing', images: ['/images/hackathon/trae-hackathon-05.jpg'], title: 'Nanckathon S1', category: 'Hackathon', desc: 'Participated in the Nanckathon S1 hackathon event in Nanjing.', link: '', badge: '' },
             // Jul 2025
-            { date: 'Jul 2025', city: 'Nanjing', image: '/images/hackathon/trae-hackathon-09.jpg', title: 'TRAE Friends Nanjing', category: 'Meetup', desc: 'Technical sharing session at TRAE Friends Nanjing meetup.', link: '', badge: '' },
-            { date: 'Jul 2025', city: 'Suzhou', image: '/images/hackathon/trae-hackathon-04.jpg', title: 'TRAE Friends Suzhou', category: 'Meetup', desc: 'Technical sharing session at TRAE Friends Suzhou meetup.', link: '', badge: '' },
-            { date: 'Jul 2025', city: 'Hangzhou', image: '/images/hackathon/trae-hackathon-01.jpg', title: '2025 AdventureX', category: 'Hackathon', desc: 'Attended as a visitor, first close-up observation and learning experience.', link: '', badge: '' },
+            { date: 'Jul 2025', city: 'Nanjing', images: ['/images/hackathon/trae-hackathon-09.jpg'], title: 'TRAE Friends Nanjing', category: 'Meetup', desc: 'Technical sharing session at TRAE Friends Nanjing meetup.', link: '', badge: '' },
+            { date: 'Jul 2025', city: 'Suzhou', images: ['/images/hackathon/trae-hackathon-04.jpg'], title: 'TRAE Friends Suzhou', category: 'Meetup', desc: 'Technical sharing session at TRAE Friends Suzhou meetup.', link: '', badge: '' },
+            { date: 'Jul 2025', city: 'Hangzhou', images: ['/images/hackathon/trae-hackathon-01.jpg'], title: '2025 AdventureX', category: 'Hackathon', desc: 'Attended as a visitor, first close-up observation and learning experience.', link: '', badge: '' },
             // Jun 2025
-            { date: 'Jun 2025', city: 'Hangzhou', image: '/images/hackathon/trae-hackathon-02.jpg', title: 'Trae Solo Hackathon Hangzhou', category: 'Hackathon', desc: 'Participated as a fresh graduate with WeChat mini-program experience.', link: '', badge: '' },
+            { date: 'Jun 2025', city: 'Hangzhou', images: ['/images/hackathon/trae-hackathon-02.jpg'], title: 'Trae Solo Hackathon Hangzhou', category: 'Hackathon', desc: 'Participated as a fresh graduate with WeChat mini-program experience.', link: '', badge: '' },
             // Jul 2024
-            { date: 'Jul 2024', city: 'Hangzhou', image: '/images/hackathon/AdventureX24.jpg', title: '2024 AdventureX', category: 'Hackathon', desc: 'First time observing a hackathon as a spectator, learning from the community.', link: '', badge: '👀 First Hackathon' },
+            { date: 'Jul 2024', city: 'Hangzhou', images: ['/images/hackathon/AdventureX24.jpg'], title: '2024 AdventureX', category: 'Hackathon', desc: 'First time observing a hackathon as a spectator, learning from the community.', link: '', badge: '👀 First Hackathon' },
         ];
 
         let currentIndex = 0;
@@ -237,6 +243,45 @@
             const isEven = index % 2 === 0;
             const badgeHtml = item.badge ? `<span class="inline-block px-3 py-1 bg-accent-gold/10 dark:bg-accent-gold/20 text-accent-gold text-xs font-semibold rounded-full mb-3">${item.badge}</span>` : '';
             const linkHtml = item.link ? `<a href="${item.link}" target="_blank" class="inline-flex items-center gap-1 text-sm text-primary dark:text-dark-text hover:underline mt-3"><span>查看项目</span><span class="material-symbols-outlined text-sm">arrow_outward</span></a>` : '';
+            
+            // 处理多图片
+            const images = item.images || [item.image];
+            const hasMultipleImages = images.length > 1;
+            const carouselId = `carousel-${index}`;
+            
+            let imageHtml = '';
+            if (hasMultipleImages) {
+                imageHtml = `
+                    <div class="relative group/carousel">
+                        <div class="aspect-[4/3] overflow-hidden">
+                            ${images.map((img, imgIndex) => `
+                                <img class="carousel-image w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ${imgIndex === 0 ? '' : 'hidden'}" 
+                                     src="${img}" 
+                                     alt="${item.title} - ${imgIndex + 1}"
+                                     data-carousel="${carouselId}"
+                                     data-index="${imgIndex}"/>
+                            `).join('')}
+                        </div>
+                        <button class="carousel-prev absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-opacity z-10" data-carousel="${carouselId}">
+                            <span class="material-symbols-outlined text-sm">chevron_left</span>
+                        </button>
+                        <button class="carousel-next absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-opacity z-10" data-carousel="${carouselId}">
+                            <span class="material-symbols-outlined text-sm">chevron_right</span>
+                        </button>
+                        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                            ${images.map((_, imgIndex) => `
+                                <div class="carousel-dot w-1.5 h-1.5 rounded-full ${imgIndex === 0 ? 'bg-white' : 'bg-white/50'} transition-all" data-carousel="${carouselId}" data-index="${imgIndex}"></div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                imageHtml = `
+                    <div class="aspect-[4/3] overflow-hidden">
+                        <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="${images[0]}" alt="${item.title}"/>
+                    </div>
+                `;
+            }
             
             return `
                 <div class="timeline-item flex flex-col md:flex-row gap-6 md:gap-12 items-start">
@@ -266,9 +311,7 @@
                         <div class="flex flex-col md:flex-row gap-6 items-start">
                             <!-- Image Card -->
                             <div class="bg-secondary dark:bg-dark-card rounded-2xl overflow-hidden hover:shadow-lg transition-shadow duration-300 max-w-xs shrink-0">
-                                <div class="aspect-[4/3] overflow-hidden">
-                                    <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="${item.image}" alt="${item.title}"/>
-                                </div>
+                                ${imageHtml}
                             </div>
                             
                             <!-- Text Content with dash -->
@@ -366,6 +409,51 @@
         // 初始化时绑定加载更多按钮事件
         document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
         loadMore();
+
+        // 轮播图控制
+        document.addEventListener('click', function(e) {
+            // 处理上一张按钮
+            if (e.target.closest('.carousel-prev')) {
+                const btn = e.target.closest('.carousel-prev');
+                const carouselId = btn.dataset.carousel;
+                navigateCarousel(carouselId, -1);
+            }
+            
+            // 处理下一张按钮
+            if (e.target.closest('.carousel-next')) {
+                const btn = e.target.closest('.carousel-next');
+                const carouselId = btn.dataset.carousel;
+                navigateCarousel(carouselId, 1);
+            }
+        });
+
+        function navigateCarousel(carouselId, direction) {
+            const images = document.querySelectorAll(`img[data-carousel="${carouselId}"]`);
+            const dots = document.querySelectorAll(`.carousel-dot[data-carousel="${carouselId}"]`);
+            
+            let currentIndex = -1;
+            images.forEach((img, idx) => {
+                if (!img.classList.contains('hidden')) {
+                    currentIndex = idx;
+                }
+            });
+            
+            if (currentIndex === -1) return;
+            
+            let newIndex = currentIndex + direction;
+            if (newIndex < 0) newIndex = images.length - 1;
+            if (newIndex >= images.length) newIndex = 0;
+            
+            // 隐藏当前图片
+            images[currentIndex].classList.add('hidden');
+            dots[currentIndex].classList.remove('bg-white');
+            dots[currentIndex].classList.add('bg-white/50');
+            
+            // 显示新图片
+            images[newIndex].classList.remove('hidden');
+            dots[newIndex].classList.remove('bg-white/50');
+            dots[newIndex].classList.add('bg-white');
+        }
     </script>
 
     <!-- Particle Earth Animation -->
