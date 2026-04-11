@@ -383,6 +383,7 @@
         // Skill page specific
         skill: {
             zh: {
+                title: 'Yui Intro Skill',
                 brand: 'Yui Skill.',
                 navRawMarkdown: 'Raw Markdown',
                 navPortfolio: '作品集',
@@ -392,6 +393,7 @@
                 statusError: '加载 /SKILL.md 失败:'
             },
             en: {
+                title: 'Yui Intro Skill',
                 brand: 'Yui Skill.',
                 navRawMarkdown: 'Raw Markdown',
                 navPortfolio: 'Portfolio',
@@ -401,6 +403,7 @@
                 statusError: 'Failed to load /SKILL.md:'
             },
             ja: {
+                title: 'Yui Intro Skill',
                 brand: 'Yui スキル.',
                 navRawMarkdown: 'Raw Markdown',
                 navPortfolio: 'ポートフォリオ',
@@ -820,8 +823,8 @@
     function detectPage() {
         const path = window.location.pathname;
         if (path === '/404.html' || path === '/404') return 'notfound';
-        if (path === '/skill' || path === '/skill/' || path.startsWith('/skill/')) return 'skill';
-        if (path === '/' || path === '/index.html' || (path.endsWith('/index.html') && !path.includes('/projects') && !path.includes('/blog') && !path.includes('/music') && !path.includes('/travel') && !path.includes('/resume') && !path.includes('/anime') && !path.includes('/skill'))) return 'index';
+        if (path === '/skill' || path.startsWith('/skill/')) return 'skill';
+        if (path === '/' || path === '/index.html' || (path.endsWith('/index.html') && !path.includes('/projects') && !path.includes('/blog') && !path.includes('/music') && !path.includes('/travel') && !path.includes('/resume') && !path.includes('/anime'))) return 'index';
         if (path.includes('/projects')) return 'projects';
         if (path.includes('/blog')) return 'blog';
         if (path.includes('/music')) return 'music';
