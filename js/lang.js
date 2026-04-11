@@ -839,6 +839,11 @@
         if (path.includes('/anime')) return 'anime';
         return 'index';
     }
+
+    function isBlogArticlePage() {
+        const path = window.location.pathname;
+        return path.startsWith('/blog/') && path !== '/blog/' && !path.endsWith('/index.html');
+    }
     
     // Apply translations to page
     function applyTranslations(lang) {
@@ -847,7 +852,7 @@
         const pageData = translations[page] ? translations[page][lang] : null;
         
         // Update document title if page data exists
-        if (pageData && pageData.title) {
+        if (pageData && pageData.title && !(page === 'blog' && isBlogArticlePage())) {
             document.title = pageData.title;
         }
         
