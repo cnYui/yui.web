@@ -93,6 +93,7 @@ dist
 # Temporary folders
 tmp/
 temp/
+.worktrees/
 
 # Large media files
 # Removed exclusions for image directories to fix 404 errors in deployment
