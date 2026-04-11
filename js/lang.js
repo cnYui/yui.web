@@ -380,6 +380,78 @@
                 relatedArticles: '関連記事'
             }
         },
+        // Notfound page specific
+        notfound: {
+            zh: {
+                title: '404 - 页面未找到',
+                heading: '页面未找到',
+                description: '抱歉，您访问的页面不存在。',
+                homeLink: '返回首页'
+            },
+            en: {
+                title: '404 - Page Not Found',
+                heading: 'Page Not Found',
+                description: 'Sorry, the page you are looking for does not exist.',
+                homeLink: 'Return home'
+            },
+            ja: {
+                title: '404 - ページが見つかりません',
+                heading: 'ページが見つかりません',
+                description: '申し訳ありません、お探しのページは存在しません。',
+                homeLink: 'ホームに戻る'
+            }
+        },
+        // Skill page specific
+        skill: {
+            zh: {
+                brand: 'Yui Skill.',
+                navRawMarkdown: 'Raw Markdown',
+                navPortfolio: '作品集',
+                eyebrowAgent: '可供 agent 读取的档案',
+                eyebrowMarkdown: 'Markdown 实时渲染',
+                statusLoading: '正在加载 /SKILL.md...',
+                statusError: '加载 /SKILL.md 失败:'
+            },
+            en: {
+                brand: 'Yui Skill.',
+                navRawMarkdown: 'Raw Markdown',
+                navPortfolio: 'Portfolio',
+                eyebrowAgent: 'Agent-readable profile',
+                eyebrowMarkdown: 'Markdown rendered live',
+                statusLoading: 'Loading /SKILL.md...',
+                statusError: 'Failed to load /SKILL.md:'
+            },
+            ja: {
+                brand: 'Yui スキル.',
+                navRawMarkdown: 'Raw Markdown',
+                navPortfolio: 'ポートフォリオ',
+                eyebrowAgent: 'エージェントが読めるプロフィール',
+                eyebrowMarkdown: 'Markdown をライブレンダリング',
+                statusLoading: '/SKILL.md を読み込み中...',
+                statusError: '/SKILL.md の読み込みに失敗しました:'
+            }
+        },
+        // Notfound page specific
+        notfound: {
+            zh: {
+                title: '404 - 页面未找到',
+                heading: '页面未找到',
+                description: '抱歉，您访问的页面不存在。',
+                homeLink: '返回首页'
+            },
+            en: {
+                title: '404 - Page Not Found',
+                heading: 'Page Not Found',
+                description: 'Sorry, the page you are looking for does not exist.',
+                homeLink: 'Return home'
+            },
+            ja: {
+                title: '404 - ページが見つかりません',
+                heading: 'ページが見つかりません',
+                description: '申し訳ありません、お探しのページは存在しません。',
+                homeLink: 'ホームに戻る'
+            }
+        },
         // Music page specific
         music: {
             zh: {
@@ -768,7 +840,9 @@
     // Detect current page
     function detectPage() {
         const path = window.location.pathname;
-        if (path === '/' || path === '/index.html' || path.endsWith('/index.html') && !path.includes('/projects') && !path.includes('/blog') && !path.includes('/music') && !path.includes('/travel') && !path.includes('/resume') && !path.includes('/anime')) return 'index';
+        if (path === '/404.html' || path === '/404') return 'notfound';
+        if (path.includes('/skill')) return 'skill';
+        if (path === '/' || path === '/index.html' || (path.endsWith('/index.html') && !path.includes('/projects') && !path.includes('/blog') && !path.includes('/music') && !path.includes('/travel') && !path.includes('/resume') && !path.includes('/anime') && !path.includes('/skill'))) return 'index';
         if (path.includes('/projects')) return 'projects';
         if (path.includes('/blog')) return 'blog';
         if (path.includes('/music')) return 'music';
