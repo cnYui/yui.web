@@ -188,15 +188,15 @@
 <div class="max-w-7xl mx-auto flex flex-col gap-12">
 <div class="flex flex-col md:flex-row justify-between items-end border-b border-gray-200 dark:border-dark-border pb-6 gap-4">
 <div>
-<span class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-2 block">日志</span>
-<h2 class="section-title dark:text-dark-text">最新想法</h2>
+<span class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-2 block" data-i18n="journal">日志</span>
+<h2 class="section-title dark:text-dark-text" data-i18n="latestThoughts">最新想法</h2>
 </div>
 <a class="text-text-main dark:text-dark-text font-medium text-sm flex items-center gap-2 hover:opacity-60 transition-opacity border-b border-black dark:border-dark-text pb-0.5" href="/blog/">
-<span>查看全部文章</span> <span class="material-symbols-outlined text-sm">arrow_forward</span>
+<span data-i18n="viewAllArticles">查看全部文章</span> <span class="material-symbols-outlined text-sm">arrow_forward</span>
 </a>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-<a class="group flex gap-6 items-start" href="/blog/ai-image-video.html">
+<a class="group flex gap-6 items-start" href="/blog/ai-image-video.html" id="homePostAi">
 <div class="w-32 h-24 md:w-40 md:h-28 bg-gray-200 dark:bg-dark-card shrink-0 overflow-hidden rounded-md" style='background-image: url("/images/blog/ai-image-video-guide.jpg"); background-size: cover; background-position: center;'>
 </div>
 <div class="flex flex-col gap-2">
@@ -205,7 +205,7 @@
 <p class="text-sm text-text-muted dark:text-dark-text-muted font-light line-clamp-2 leading-relaxed">AI只是工具，人之所以为人是因为会使用工具。从Sora2到Nano Banana Pro的创作经历。</p>
 </div>
 </a>
-<a class="group flex gap-6 items-start" href="/blog/vibe-coding.html">
+<a class="group flex gap-6 items-start" href="/blog/vibe-coding.html" id="homePostVibe">
 <div class="w-32 h-24 md:w-40 md:h-28 bg-gray-200 dark:bg-dark-card shrink-0 overflow-hidden rounded-md" style='background-image: url("/images/blog/vibe-coding-guide.png"); background-size: cover; background-position: center;'>
 </div>
 <div class="flex flex-col gap-2">
@@ -222,7 +222,7 @@
     <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
         <div class="flex flex-col gap-1 text-center md:text-left">
             <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold">Yui的作品集</h2>
-            <p class="text-text-tertiary dark:text-dark-text-muted text-xs">© 2026 个人主页.</p>
+            <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="homeFooterCopyright">© 2026 个人主页.</p>
         </div>
         <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
             <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
@@ -232,4 +232,79 @@
 </footer>
 </div>
 
+<script>
+const homeLocalizedContent = {
+    zh: {
+        featuredWorks: [
+            { title: '渝客松 Google GDG - 第一名', type: '获奖', desc: '在渝客松黑客松 Google GDG 赛道获得第一名。' },
+            { title: 'TRAE SOLO 黑客松上海站', type: '获奖', desc: '在 TRAE SOLO 黑客松上海站获得第二名。' },
+            { title: '无锡 Rokid AR AI - 三等奖', type: '获奖', desc: '在无锡 Rokid AR AI 比赛中获得三等奖。' }
+        ],
+        posts: {
+            ai: { meta: 'AI — 1月4日', title: 'AI生图生视频使用经历和经验', desc: 'AI只是工具，人之所以为人是因为会使用工具。从Sora2到Nano Banana Pro的创作经历。' },
+            vibe: { meta: 'AI — 12月31日', title: 'Vibe Coding 实战指南', desc: '一年多 AI Coding 实战经验总结，从构思设计到纠错技巧，帮助你减少"屎山代码"。' }
+        }
+    },
+    en: {
+        featuredWorks: [
+            { title: 'Yukesong Google GDG - 1st Place', type: 'Award', desc: 'Won first place in the Google GDG track at Yukesong Hackathon.' },
+            { title: 'TRAE SOLO Hackathon Shanghai', type: 'Award', desc: 'Won second place at the TRAE SOLO Hackathon Shanghai edition.' },
+            { title: 'Wuxi Rokid AR AI - 3rd Place', type: 'Award', desc: 'Won third place at the Wuxi Rokid AR AI competition.' }
+        ],
+        posts: {
+            ai: { meta: 'AI — Jan 4', title: 'My Experience with AI Image and Video Generation', desc: 'AI is a tool, and what makes us human is knowing how to use it. From Sora2 to Nano Banana Pro.' },
+            vibe: { meta: 'AI — Dec 31', title: 'Vibe Coding Practical Guide', desc: 'A year of AI coding lessons on design thinking, debugging, and reducing messy code.' }
+        }
+    },
+    ja: {
+        featuredWorks: [
+            { title: '渝客松 Google GDG トラック 優勝', type: '受賞', desc: '渝客松ハッカソンの Google GDG トラックで 1 位を獲得。' },
+            { title: 'TRAE SOLO ハッカソン上海', type: '受賞', desc: 'TRAE SOLO ハッカソン上海大会で 2 位を獲得。' },
+            { title: '無錫 Rokid AR AI 3 位', type: '受賞', desc: '無錫 Rokid AR AI コンテストで 3 位を受賞。' }
+        ],
+        posts: {
+            ai: { meta: 'AI — 1月4日', title: 'AI画像・動画生成の体験と実践メモ', desc: 'AI は道具にすぎず、人間らしさはその使い方にある。Sora2 から Nano Banana Pro までの制作記録。' },
+            vibe: { meta: 'AI — 12月31日', title: 'Vibe Coding 実践ガイド', desc: '1年以上の AI コーディング実践から整理した、設計とデバッグでコード品質を上げる方法。' }
+        }
+    }
+};
+
+function applyHomeLocalizedContent(lang) {
+    const data = homeLocalizedContent[lang] || homeLocalizedContent.zh;
+    const workCards = document.querySelectorAll('#work .grid .group.flex.flex-col');
+    data.featuredWorks.forEach((item, index) => {
+        const card = workCards[index];
+        if (!card) return;
+        const title = card.querySelector('h3');
+        const type = card.querySelector('span.text-\\[10px\\]');
+        const desc = card.querySelector('p');
+        if (title) title.textContent = item.title;
+        if (type) type.textContent = item.type;
+        if (desc) desc.textContent = item.desc;
+    });
+
+    const aiPost = document.getElementById('homePostAi');
+    const vibePost = document.getElementById('homePostVibe');
+    [
+        [aiPost, data.posts.ai],
+        [vibePost, data.posts.vibe]
+    ].forEach(([el, item]) => {
+        if (!el || !item) return;
+        const meta = el.querySelector('span.text-xs');
+        const title = el.querySelector('h3');
+        const desc = el.querySelector('p');
+        if (meta) meta.textContent = item.meta;
+        if (title) title.textContent = item.title;
+        if (desc) desc.textContent = item.desc;
+    });
+}
+
+window.addEventListener('languageChanged', (event) => {
+    if (event.detail.page === 'index') {
+        applyHomeLocalizedContent(event.detail.lang);
+    }
+});
+
+applyHomeLocalizedContent(window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh');
+</script>
 </body></html>

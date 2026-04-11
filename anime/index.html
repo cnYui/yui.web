@@ -256,20 +256,44 @@
         const loadMoreContainer = document.getElementById('loadMoreContainer');
         const showingCount = document.getElementById('showingCount');
         const filterButtons = document.querySelectorAll('.filter-btn');
+        const animeGenreLabels = {
+            zh: { 'Action': '动作', 'Romance': '恋爱', 'Slice of Life': '日常', 'Fantasy': '奇幻', 'Drama': '剧情', 'Music': '音乐' },
+            en: { 'Action': 'Action', 'Romance': 'Romance', 'Slice of Life': 'Slice of Life', 'Fantasy': 'Fantasy', 'Drama': 'Drama', 'Music': 'Music' },
+            ja: { 'Action': 'アクション', 'Romance': '恋愛', 'Slice of Life': '日常', 'Fantasy': 'ファンタジー', 'Drama': 'ドラマ', 'Music': '音楽' }
+        };
+
+        function currentLang() {
+            return window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
+        }
+
+        function localizedAnimeTitle(item) {
+            const lang = currentLang();
+            const index = animeData.indexOf(item) + 1;
+            if (lang === 'zh') return `番剧收藏 ${index}`;
+            if (lang === 'ja') return `アニメコレクション ${index}`;
+            return item.title;
+        }
+
+        function localizedAnimeGenre(genre) {
+            const lang = currentLang();
+            return (animeGenreLabels[lang] && animeGenreLabels[lang][genre]) || genre;
+        }
 
         function createCard(item) {
+            const title = localizedAnimeTitle(item);
+            const genre = localizedAnimeGenre(item.genre);
             return `
                 <div class="anime-item group flex flex-col gap-4 cursor-pointer">
                     <div class="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-gray-100 dark:bg-dark-card">
-                        <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${item.title}" src="${item.image}"/>
+                        <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${title}" src="${item.image}"/>
                         <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
                     </div>
                     <div class="flex flex-col gap-1">
                         <div class="flex justify-between items-start">
-                            <h3 class="text-primary dark:text-dark-text text-lg font-bold leading-tight group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors">${item.title}</h3>
+                            <h3 class="text-primary dark:text-dark-text text-lg font-bold leading-tight group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors">${title}</h3>
                             <span class="flex items-center gap-1 text-xs font-bold text-primary dark:text-dark-text bg-secondary dark:bg-dark-card px-1.5 py-0.5 rounded">${item.rating}</span>
                         </div>
-                        <p class="text-sm text-text-muted dark:text-dark-text-muted">${item.genre}</p>
+                        <p class="text-sm text-text-muted dark:text-dark-text-muted">${genre}</p>
                     </div>
                 </div>
             `;
@@ -290,8 +314,8 @@
 
         function updateShowingCount() {
             const showing = Math.min(currentIndex, filteredData.length);
-            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
-            const showingText = lang === 'zh' ? '显示' : 'Showing';
+            const lang = currentLang();
+            const showingText = lang === 'zh' ? '显示' : lang === 'ja' ? '表示中' : 'Showing';
             showingCount.textContent = `${showingText} ${showing} / ${filteredData.length}`;
         }
 
@@ -307,8 +331,8 @@
 
             gallery.innerHTML = '';
 
-            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
-            const loadMoreText = lang === 'zh' ? '加载更多番剧' : 'Load More Titles';
+            const lang = currentLang();
+            const loadMoreText = lang === 'zh' ? '加载更多番剧' : lang === 'ja' ? 'もっとタイトルを見る' : 'Load More Titles';
             loadMoreContainer.innerHTML = `
                 <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle bg-white px-8 py-3 text-sm font-medium text-text-main hover:bg-gray-50 transition-colors">
                     ${loadMoreText}
@@ -347,10 +371,10 @@
             updateShowingCount();
 
             if (currentIndex >= filteredData.length) {
-                const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
-                const endTitle = lang === 'zh' ? '收藏到底了！' : 'That\'s the collection!';
-                const endDesc = lang === 'zh' ? '持续追番中，敬请期待更新。' : 'Always watching new anime. Check back for updates.';
-                const suggestText = lang === 'zh' ? '推荐番剧' : 'Suggest an Anime';
+                const lang = currentLang();
+                const endTitle = lang === 'zh' ? '收藏到底了！' : lang === 'ja' ? 'コレクションの終わりです！' : 'That\'s the collection!';
+                const endDesc = lang === 'zh' ? '持续追番中，敬请期待更新。' : lang === 'ja' ? '新しいアニメを視聴中です。更新をお楽しみに。' : 'Always watching new anime. Check back for updates.';
+                const suggestText = lang === 'zh' ? '推荐番剧' : lang === 'ja' ? 'アニメを推薦する' : 'Suggest an Anime';
                 loadMoreContainer.innerHTML = `
                     <div class="group flex flex-col h-full bg-background-soft border border-accent-soft p-8 items-center justify-center text-center transition-all hover:bg-gray-100 rounded-lg">
                         <div class="w-12 h-12 flex items-center justify-center mb-6 text-primary">
@@ -375,6 +399,12 @@
         // 初始化时绑定加载更多按钮事件
         document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
         loadMore();
+
+        window.addEventListener('languageChanged', (event) => {
+            if (event.detail.page === 'anime') {
+                filterGallery(currentFilter);
+            }
+        });
     </script>
 </body>
 </html>

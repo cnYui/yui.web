@@ -281,6 +281,94 @@
         const gallery = document.getElementById('gallery');
         const loadMoreContainer = document.getElementById('loadMoreContainer');
         const filterButtons = document.querySelectorAll('.filter-btn');
+        const cityLabels = {
+            zh: { Tokyo: '东京', Kyoto: '京都', Osaka: '大阪', Nagoya: '名古屋', Hiroshima: '广岛', Yokohama: '横滨', Hangzhou: '杭州', Nanjing: '南京', Beijing: '北京', Food: '美食', Others: '其他' },
+            en: { Tokyo: 'Tokyo', Kyoto: 'Kyoto', Osaka: 'Osaka', Nagoya: 'Nagoya', Hiroshima: 'Hiroshima', Yokohama: 'Yokohama', Hangzhou: 'Hangzhou', Nanjing: 'Nanjing', Beijing: 'Beijing', Food: 'Food', Others: 'Others' },
+            ja: { Tokyo: '東京', Kyoto: '京都', Osaka: '大阪', Nagoya: '名古屋', Hiroshima: '広島', Yokohama: '横浜', Hangzhou: '杭州', Nanjing: '南京', Beijing: '北京', Food: 'グルメ', Others: 'その他' }
+        };
+        const travelJaContent = {
+            'Tokyo Skytree': ['東京スカイツリー', '高さ634mの東京を象徴する電波塔'],
+            'Skytree Base': ['スカイツリーの足元', 'スカイツリーの真下から見上げた景色'],
+            'Kaminarimon Gate': ['雷門', '浅草寺の有名な雷門'],
+            'Inside Senso-ji': ['浅草寺の参道', '仲見世通りを歩いた記録'],
+            'Tokyo Night View': ['東京の夜景', '夜に輝く東京の街並み'],
+            'Sunshine Aquarium': ['サンシャイン水族館', '池袋の屋上水族館'],
+            'Shibuya District': ['渋谷エリア', '東京の若者文化が集まる場所'],
+            'Aquarium': ['水族館', '海の生き物を眺める時間'],
+            'Rooftop Penguins': ['屋上のペンギン', 'サンシャイン水族館のペンギンたち'],
+            'Green Fish': ['緑色の魚', '水槽で見つけた鮮やかな魚'],
+            'Big Fish': ['大きな魚', '水族館で見た迫力のある魚'],
+            'Small Fish': ['小さな魚', 'かわいい小魚たち'],
+            'Anime Building': ['アニメビル', 'オタク文化を感じるランドマーク'],
+            'Anime Paradise': ['二次元の聖地', '秋葉原らしい風景'],
+            'Pokemon Wall': ['ポケモンウォール', 'ポケモンセンターの装飾'],
+            'Pokemon Store': ['ポケモンストア', '公式グッズが並ぶショップ'],
+            'Kamen Rider Store': ['仮面ライダーストア', '特撮グッズの専門店'],
+            'Monster Hunter Store': ['モンハンストア', 'ゲームグッズのショップ'],
+            'Gundam Store': ['ガンダムストア', 'ガンダムグッズの専門店'],
+            'Imperial Palace Station': ['皇居近くの駅天井', '美しい駅構内の天井'],
+            'Near Imperial Palace': ['皇居付近', '皇居周辺の地下鉄駅外観'],
+            'Kinkaku-ji Temple': ['金閣寺', '美しく輝く金色の楼閣'],
+            'Tea at Kinkaku-ji': ['金閣寺でのお茶', '伝統的なお茶の体験'],
+            'Ninenzaka Street': ['二年坂', '石畳が続く趣のある坂道'],
+            'Fushimi Inari Shrine': ['伏見稲荷大社', '朱色の鳥居が連なる神社'],
+            'Kyoto Tower': ['京都タワー', '古都を見渡す展望スポット'],
+            'Kyoto University': ['京都大学', '落ち着いた美しいキャンパス'],
+            'Hyakki Yagyo Festival': ['百鬼夜行', '京都らしい妖怪行列の雰囲気'],
+            'Matcha Milk': ['抹茶ミルク', '京都で飲んだ抹茶ドリンク'],
+            'Tsutenkaku Tower': ['通天閣', '大阪を象徴するレトロな塔'],
+            'Osaka Castle': ['大阪城', '大阪の歴史を感じる城'],
+            'Nipponbashi': ['日本橋', '大阪のオタク文化エリア'],
+            'Kuromon Market': ['黒門市場', '新鮮な海鮮が集まる大阪の台所'],
+            'LV Sail Building': ['LV帆船ビル', '水辺に立つ印象的な建築'],
+            'Osaka Skyline': ['大阪の俯瞰', '上から眺めた大阪の街'],
+            'Osaka Panorama': ['大阪パノラマ', '広がる大阪の街並み'],
+            'Osaka University Mascot': ['大阪大学マスコット', 'かわいい大学マスコット'],
+            'Osaka Police HQ': ['大阪府警本部', '歴史を感じる警察庁舎'],
+            'Glico Sign': ['グリコサイン', '道頓堀の有名なランドマーク'],
+            'Love Live!': ['Love Live!', 'アニメコラボイベントの記録'],
+            'MyGO!!!!!': ['MyGO!!!!!', 'BanG Dream! コラボの記録'],
+            'Souls Game Store': ['ソウル系ゲームショップ', 'FromSoftware コラボショップ'],
+            'Nagoya Castle': ['名古屋城', '金のしゃちほこで有名な城'],
+            'Inside Nagoya Castle': ['名古屋城内部', '城内展示を見学した記録'],
+            'Nagoya Castle Mascot': ['名古屋城マスコット', 'かわいい城のマスコット'],
+            'Nagoya Blue Hour': ['名古屋のブルーアワー', '夕暮れ時の幻想的な瞬間'],
+            'Atomic Bomb Dome': ['原爆ドーム', '世界遺産として残る平和の象徴'],
+            'Itsukushima Island': ['厳島', '海に浮かぶ鳥居で有名な島'],
+            'Floating Shrine': ['水上の神社', '満潮時の厳島神社'],
+            'Mountain Top': ['山頂', '宮島の山から見た景色'],
+            'Yokohama National University': ['横浜国立大学', '落ち着いた国立大学のキャンパス'],
+            'Yokohama Waterfront': ['横浜ウォーターフロント', '港町らしい橋と水辺の景色'],
+            'Hangzhou Normal University': ['杭州師範大学', '歴史ある大学キャンパス'],
+            'Hotel near HZNU': ['杭師大近くのホテル', 'キャンパス近くの宿泊先'],
+            'Hangzhou Coffee Culture': ['杭州のカフェ文化', '居心地のよいコーヒーショップ'],
+            'Hangzhou Streets': ['杭州の街角', '街を歩きながら見つけた風景'],
+            'Jiming Temple': ['鶏鳴寺', '南京にある古い仏教寺院'],
+            'AdventureX 2026': ['AdventureX 2026', 'テック系ハッカソンイベント'],
+            'AdventureX Event': ['AdventureX イベント', 'ハッカソンの思い出'],
+            'AdventureX 2025': ['AdventureX 2025', '最新のハッカソン記録'],
+            'Yunqi Conference': ['雲栖大会', 'Alibaba Cloud カンファレンス'],
+            'Ichiran Ramen': ['一蘭ラーメン', '有名な豚骨ラーメン'],
+            'Ramen Shop': ['ラーメン店', '地元で見つけたラーメン屋'],
+            'Karaage': ['唐揚げ', '日本のフライドチキン'],
+            'Pizza Hut Japan': ['日本のピザハット', '日本風アレンジのピザ'],
+            'Cute Cat': ['かわいい猫', '街角で出会った猫'],
+            'Phoenix': ['フェニックス', '旅先で見つけた面白いもの'],
+            'Cheap Mascot': ['安すぎるマスコット', '思わず目に留まった掘り出し物'],
+            'Interesting Project': ['面白いプロジェクト', 'クリエイティブな発見'],
+            'Mysterious Sign': ['読めない看板', '意味が気になった看板'],
+            'Beautiful Decor': ['美しい内装', '雰囲気のよいインテリア'],
+            'School After Rain': ['雨上がりの学校', '静かなキャンパスの風景'],
+            'Bus Journey': ['バスの途中', '移動中に見た景色'],
+            'Mt. Fuji': ['富士山', '車窓から見えた象徴的な山'],
+            'Pachinko': ['初めて見たパチンコ', 'パチンコ店を初めて見た記録'],
+            'Earthquake Aftermath': ['地震後の断水', '地震後に水が止まった時の記録'],
+            'All Connected': ['すべてはつながっている', 'ふと哲学的になった瞬間']
+        };
+
+        function currentLang() {
+            return window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
+        }
 
         function getRandomAspect(index) {
             return aspectRatios[index % aspectRatios.length];
@@ -288,15 +376,18 @@
 
         function createCard(item, index) {
             const aspect = getRandomAspect(index);
+            const jaContent = currentLang() === 'ja' ? travelJaContent[item.title] : null;
+            const title = jaContent ? jaContent[0] : item.title;
+            const desc = jaContent ? jaContent[1] : item.desc;
             return `
                 <div class="masonry-item gallery-item">
                     <div class="group relative ${aspect} overflow-hidden rounded-lg cursor-pointer bg-gray-100 dark:bg-dark-card">
-                        <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="${item.image}" alt="${item.title}"/>
+                        <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="${item.image}" alt="${title}"/>
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <div class="absolute bottom-0 left-0 right-0 p-5 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
-                            <p class="text-white/60 text-xs uppercase tracking-widest mb-1">${item.city}</p>
-                            <h3 class="text-white text-lg font-display font-medium">${item.title}</h3>
-                            <p class="text-white/70 text-sm mt-1">${item.desc}</p>
+                            <p class="text-white/60 text-xs uppercase tracking-widest mb-1">${(cityLabels[currentLang()] && cityLabels[currentLang()][item.city]) || item.city}</p>
+                            <h3 class="text-white text-lg font-display font-medium">${title}</h3>
+                            <p class="text-white/70 text-sm mt-1">${desc}</p>
                         </div>
                     </div>
                 </div>
@@ -328,9 +419,11 @@
             
             gallery.innerHTML = '';
             
+            const lang = currentLang();
+            const loadMoreText = lang === 'zh' ? '加载更多照片' : lang === 'ja' ? 'もっと写真を見る' : 'Load More Photos';
             loadMoreContainer.innerHTML = `
                 <button id="loadMoreBtn" class="group flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-full hover:bg-primary/90 transition-all hover:scale-105">
-                    <span class="font-medium">加载更多照片</span>
+                    <span class="font-medium">${loadMoreText}</span>
                     <span class="material-symbols-outlined group-hover:translate-y-1 transition-transform">expand_more</span>
                 </button>
             `;
@@ -360,11 +453,14 @@
             currentIndex = endIndex;
             
             if (currentIndex >= filteredData.length) {
+                const lang = currentLang();
+                const whereNext = lang === 'zh' ? '下一站去哪？' : lang === 'ja' ? '次はどこへ？' : 'Where to next?';
+                const planning = lang === 'zh' ? '正在规划下一次冒险...' : lang === 'ja' ? '次の冒険を計画中...' : 'Planning the next adventure...';
                 loadMoreContainer.innerHTML = `
                     <div class="text-center py-12">
                         <span class="material-symbols-outlined text-4xl text-text-light mb-4 block">flight_takeoff</span>
-                        <p class="text-text-muted font-display text-xl italic">下一站去哪？</p>
-                        <p class="text-text-light text-sm mt-2">正在规划下一次冒险...</p>
+                        <p class="text-text-muted font-display text-xl italic">${whereNext}</p>
+                        <p class="text-text-light text-sm mt-2">${planning}</p>
                     </div>
                 `;
             }
@@ -379,6 +475,12 @@
         // 初始化时绑定加载更多按钮事件
         document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
         loadMore();
+
+        window.addEventListener('languageChanged', (event) => {
+            if (event.detail.page === 'travel') {
+                filterGallery(currentFilter);
+            }
+        });
     </script>
 </body>
 </html>

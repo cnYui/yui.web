@@ -238,11 +238,76 @@
         const timeline = document.getElementById('timeline');
         const loadMoreContainer = document.getElementById('loadMoreContainer');
         const filterButtons = document.querySelectorAll('.filter-btn');
+        const projectCategoryLabels = {
+            zh: { Award: '获奖', Hackathon: '黑客松', Meetup: '聚会', Project: '项目', 'AI Video/Comic': 'AI视频/漫画' },
+            en: { Award: 'Award', Hackathon: 'Hackathon', Meetup: 'Meetup', Project: 'Project', 'AI Video/Comic': 'AI Video/Comic' },
+            ja: { Award: '受賞', Hackathon: 'ハッカソン', Meetup: 'ミートアップ', Project: 'プロジェクト', 'AI Video/Comic': 'AI動画/漫画' }
+        };
+        const cityLabels = {
+            zh: { Nanjing: '南京', Shanghai: '上海', Online: '线上', Chongqing: '重庆', Wuxi: '无锡', Anhui: '安徽', Hangzhou: '杭州', Suzhou: '苏州' },
+            en: { Nanjing: 'Nanjing', Shanghai: 'Shanghai', Online: 'Online', Chongqing: 'Chongqing', Wuxi: 'Wuxi', Anhui: 'Anhui', Hangzhou: 'Hangzhou', Suzhou: 'Suzhou' },
+            ja: { Nanjing: '南京', Shanghai: '上海', Online: 'オンライン', Chongqing: '重慶', Wuxi: '無錫', Anhui: '安徽', Hangzhou: '杭州', Suzhou: '蘇州' }
+        };
+        const monthLabels = {
+            zh: { Jan: '1月', Feb: '2月', Jun: '6月', Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' },
+            en: { Jan: 'Jan', Feb: 'Feb', Jun: 'Jun', Jul: 'Jul', Aug: 'Aug', Sep: 'Sep', Oct: 'Oct', Nov: 'Nov', Dec: 'Dec' },
+            ja: { Jan: '1月', Feb: '2月', Jun: '6月', Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' }
+        };
+        const badgeLabels = {
+            zh: { '🥇 Gold Award': '🥇 金奖', '🥇 1st Place': '🥇 第一名', '🥉 3rd Place': '🥉 第三名', '🏆 Winner': '🏆 获奖', '🥈 2nd Place': '🥈 第二名', '👀 First Hackathon': '👀 第一次黑客松' },
+            en: { '🥇 Gold Award': '🥇 Gold Award', '🥇 1st Place': '🥇 1st Place', '🥉 3rd Place': '🥉 3rd Place', '🏆 Winner': '🏆 Winner', '🥈 2nd Place': '🥈 2nd Place', '👀 First Hackathon': '👀 First Hackathon' },
+            ja: { '🥇 Gold Award': '🥇 金賞', '🥇 1st Place': '🥇 1位', '🥉 3rd Place': '🥉 3位', '🏆 Winner': '🏆 受賞', '🥈 2nd Place': '🥈 2位', '👀 First Hackathon': '👀 初めてのハッカソン' }
+        };
+        const projectJaContent = {
+            'Tangquan Hackathon': ['湯泉ハッカソン', '南京の湯泉ハッカソンに参加し、温泉地でコードを書く独特の空気を体験しました。'],
+            'Global Hackathon': ['グローバルハッカソン', 'グローバルハッカソンで金賞を獲得し、アイデアを形にしました。'],
+            'OpenClaw Feishu Plugin - Crazy Thursday': ['OpenClaw Feishu プラグイン - Crazy Thursday', 'Crazy Thursday 向けの OpenClaw Feishu プラグインを開発し、チーム協業の効率を高めました。'],
+            'Nanjing OPC Hackathon': ['南京 OPC ハッカソン', '南京 OPC ハッカソンに参加し、AI とゲームの組み合わせを探りました。'],
+            'AI Video/Comic Project': ['AI動画・漫画プロジェクト', 'AI生成動画と漫画を通じて、新しいデジタルストーリーテリングを試しました。'],
+            'Nanjing MoFa Hackathon': ['南京 MoFa ハッカソン', '南京で開催された MoFa（Model Factory）ハッカソンに参加しました。'],
+            'Shanghai Christmas Hackathon': ['上海クリスマスハッカソン', 'クリスマステーマの上海ハッカソンに参加しました。'],
+            'Volcano Engine Force Conference': ['Volcano Engine Force カンファレンス', '上海で開催された Volcano Engine Force カンファレンスに参加しました。'],
+            'Yukesong Google GDG Track': ['渝客松 Google GDG トラック', '渝客松ハッカソンの Google GDG トラックで 1 位を獲得しました。'],
+            'Wuxi Rokid AR AI Competition': ['無錫 Rokid AR AI コンテスト', '無錫 Rokid AR AI コンテストで 3 位を獲得し、AR アプリのアイデアを発表しました。'],
+            'Huikesong Hackathon': ['徽客松ハッカソン', '安徽のハッカソンで「随口成曲」プロジェクトを制作しました。'],
+            'Alibaba Yunqi Conference': ['Alibaba 雲栖大会', '杭州・雲栖小鎮で開催された Alibaba Cloud 雲栖大会に参加しました。'],
+            'Tencent Cloud Online Hackathon': ['Tencent Cloud オンラインハッカソン', 'ペット健康コンパニオンのミニアプリで Tencent Cloud ハッカソンの評価を獲得しました。'],
+            'n8n + Xiaohongshu MCP Auto-posting': ['n8n + Xiaohongshu MCP 自動投稿', 'n8n ワークフローで小紅書アカウント運用を自動化しました。'],
+            'Douyin Creator Competition': ['抖音クリエイターコンテスト', 'Coze ワークフローを使ったリーガルシアターアシスタントを制作しました。'],
+            'TRAE SOLO Hackathon Shanghai': ['TRAE SOLO ハッカソン上海', 'TRAE SOLO ハッカソン上海大会で 2 位を獲得しました。'],
+            'Nanckathon S1': ['Nanckathon S1', '南京で開催された Nanckathon S1 ハッカソンに参加しました。'],
+            'TRAE Friends Nanjing': ['TRAE Friends 南京', 'TRAE Friends 南京で技術共有を行いました。'],
+            'TRAE Friends Suzhou': ['TRAE Friends 蘇州', 'TRAE Friends 蘇州で技術共有を行いました。'],
+            '2025 AdventureX': ['2025 AdventureX', '来場者として参加し、初めて近い距離でハッカソン文化を観察しました。'],
+            'Trae Solo Hackathon Hangzhou': ['Trae Solo ハッカソン杭州', '新卒として WeChat ミニアプリの経験を持って参加しました。'],
+            '2024 AdventureX': ['2024 AdventureX', '観客として初めてハッカソンを見学し、コミュニティから多くを学びました。']
+        };
+
+        function currentLang() {
+            return window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
+        }
+
+        function localizedDate(date, lang) {
+            const match = date.match(/^([A-Za-z]{3}) (\d{4})$/);
+            if (!match) return date;
+            const month = (monthLabels[lang] && monthLabels[lang][match[1]]) || match[1];
+            if (lang === 'en') return `${month} ${match[2]}`;
+            return `${match[2]}年${month}`;
+        }
 
         function createTimelineItem(item, index) {
             const isEven = index % 2 === 0;
-            const badgeHtml = item.badge ? `<span class="inline-block px-3 py-1 bg-accent-gold/10 dark:bg-accent-gold/20 text-accent-gold text-xs font-semibold rounded-full mb-3">${item.badge}</span>` : '';
-            const linkHtml = item.link ? `<a href="${item.link}" target="_blank" class="inline-flex items-center gap-1 text-sm text-primary dark:text-dark-text hover:underline mt-3"><span>查看项目</span><span class="material-symbols-outlined text-sm">arrow_outward</span></a>` : '';
+            const lang = currentLang();
+            const badge = item.badge && badgeLabels[lang] ? (badgeLabels[lang][item.badge] || item.badge) : item.badge;
+            const badgeHtml = badge ? `<span class="inline-block px-3 py-1 bg-accent-gold/10 dark:bg-accent-gold/20 text-accent-gold text-xs font-semibold rounded-full mb-3">${badge}</span>` : '';
+            const linkText = lang === 'zh' ? '查看项目' : lang === 'ja' ? 'プロジェクトを見る' : 'View Project';
+            const localizedCategory = (projectCategoryLabels[lang] && projectCategoryLabels[lang][item.category]) || item.category;
+            const localizedCity = (cityLabels[lang] && cityLabels[lang][item.city]) || item.city;
+            const displayDate = localizedDate(item.date, lang);
+            const jaContent = lang === 'ja' ? projectJaContent[item.title] : null;
+            const title = jaContent ? jaContent[0] : item.title;
+            const desc = jaContent ? jaContent[1] : item.desc;
+            const linkHtml = item.link ? `<a href="${item.link}" target="_blank" class="inline-flex items-center gap-1 text-sm text-primary dark:text-dark-text hover:underline mt-3"><span>${linkText}</span><span class="material-symbols-outlined text-sm">arrow_outward</span></a>` : '';
             
             // 处理多图片
             const images = item.images || [item.image];
@@ -257,7 +322,7 @@
                             ${images.map((img, imgIndex) => `
                                 <img class="carousel-image w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ${imgIndex === 0 ? '' : 'hidden'}" 
                                      src="${img}" 
-                                     alt="${item.title} - ${imgIndex + 1}"
+                                     alt="${title} - ${imgIndex + 1}"
                                      data-carousel="${carouselId}"
                                      data-index="${imgIndex}"/>
                             `).join('')}
@@ -278,7 +343,7 @@
             } else {
                 imageHtml = `
                     <div class="aspect-[4/3] overflow-hidden">
-                        <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="${images[0]}" alt="${item.title}"/>
+                        <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="${images[0]}" alt="${title}"/>
                     </div>
                 `;
             }
@@ -287,10 +352,10 @@
                 <div class="timeline-item flex flex-col md:flex-row gap-6 md:gap-12 items-start">
                     <!-- Date Column -->
                     <div class="md:w-[120px] shrink-0 text-right hidden md:block">
-                        <p class="text-lg font-display font-medium text-primary dark:text-dark-text">${item.date}</p>
+                        <p class="text-lg font-display font-medium text-primary dark:text-dark-text">${displayDate}</p>
                         <p class="text-sm text-text-light dark:text-dark-text-muted flex items-center justify-end gap-1 mt-1">
                             <span class="material-symbols-outlined text-sm">location_on</span>
-                            ${item.city}
+                            ${localizedCity}
                         </p>
                     </div>
                     
@@ -303,9 +368,9 @@
                     <div class="flex-1 group">
                         <!-- Mobile Date -->
                         <div class="md:hidden flex items-center gap-2 text-sm text-text-light dark:text-dark-text-muted mb-3">
-                            <span class="font-medium text-primary dark:text-dark-text">${item.date}</span>
+                            <span class="font-medium text-primary dark:text-dark-text">${displayDate}</span>
                             <span>•</span>
-                            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">location_on</span>${item.city}</span>
+                            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">location_on</span>${localizedCity}</span>
                         </div>
                         
                         <div class="flex flex-col md:flex-row gap-6 items-start">
@@ -319,9 +384,9 @@
                                 <span class="text-2xl text-text-light dark:text-dark-text-muted font-light hidden md:block">—</span>
                                 <div class="flex-1">
                                     ${badgeHtml}
-                                    <span class="text-xs uppercase tracking-widest text-text-light dark:text-dark-text-muted">${item.category}</span>
-                                    <h3 class="text-xl font-display font-semibold text-primary dark:text-dark-text mt-2 group-hover:text-text-muted dark:group-hover:text-dark-text-muted transition-colors">${item.title}</h3>
-                                    <p class="text-text-muted dark:text-dark-text-muted text-sm leading-relaxed mt-3">${item.desc}</p>
+                                    <span class="text-xs uppercase tracking-widest text-text-light dark:text-dark-text-muted">${localizedCategory}</span>
+                                    <h3 class="text-xl font-display font-semibold text-primary dark:text-dark-text mt-2 group-hover:text-text-muted dark:group-hover:text-dark-text-muted transition-colors">${title}</h3>
+                                    <p class="text-text-muted dark:text-dark-text-muted text-sm leading-relaxed mt-3">${desc}</p>
                                     ${linkHtml}
                                 </div>
                             </div>
@@ -356,9 +421,11 @@
             
             timeline.innerHTML = '';
             
+            const lang = currentLang();
+            const loadMoreText = lang === 'zh' ? '加载更多里程碑' : lang === 'ja' ? 'もっとマイルストーンを見る' : 'Load More Milestones';
             loadMoreContainer.innerHTML = `
                 <button id="loadMoreBtn" class="group flex items-center gap-3 px-8 py-4 border-2 border-primary text-primary rounded-full hover:bg-primary hover:text-white transition-all">
-                    <span class="font-medium">加载更多里程碑</span>
+                    <span class="font-medium">${loadMoreText}</span>
                     <span class="material-symbols-outlined group-hover:translate-y-1 transition-transform">expand_more</span>
                 </button>
             `;
@@ -388,13 +455,16 @@
             currentIndex = endIndex;
             
             if (currentIndex >= filteredData.length) {
+                const lang = currentLang();
+                const journeyText = lang === 'zh' ? '旅程继续...' : lang === 'ja' ? '旅は続きます...' : 'The journey continues...';
+                const moreText = lang === 'zh' ? '更多里程碑即将到来' : lang === 'ja' ? 'さらに多くのマイルストーンを準備中です' : 'More milestones coming soon';
                 loadMoreContainer.innerHTML = `
                     <div class="text-center py-8">
                         <div class="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
                             <span class="material-symbols-outlined text-3xl text-primary">rocket_launch</span>
                         </div>
-                        <p class="font-display text-xl text-primary">旅程继续...</p>
-                        <p class="text-text-light text-sm mt-2">更多里程碑即将到来</p>
+                        <p class="font-display text-xl text-primary">${journeyText}</p>
+                        <p class="text-text-light text-sm mt-2">${moreText}</p>
                     </div>
                 `;
             }
@@ -409,6 +479,12 @@
         // 初始化时绑定加载更多按钮事件
         document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
         loadMore();
+
+        window.addEventListener('languageChanged', (event) => {
+            if (event.detail.page === 'projects') {
+                filterTimeline(currentFilter);
+            }
+        });
 
         // 轮播图控制
         document.addEventListener('click', function(e) {
