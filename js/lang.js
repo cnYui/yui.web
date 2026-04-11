@@ -796,7 +796,7 @@
     // Get current language
     function getCurrentLang() {
         const saved = localStorage.getItem(LANG_KEY);
-        return saved || 'zh'; // Default to Chinese
+        return saved || 'en'; // Default to English
     }
     
     // Save language preference
