@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html class="light" lang="zh-CN">
+<html class="light" lang="en">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>音乐推荐 - Yui的作品集</title>
+    <title>Music - Yui's Portfolio</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -54,18 +54,18 @@
         <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
             <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
                 <div class="flex items-center gap-4">
-                    <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">作品集.</a>
+                    <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
                 </div>
                 <div class="flex items-center gap-10">
                     <nav class="hidden md:flex items-center gap-8">
-                        <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
-                        <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">博客</a>
-                        <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
-                        <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/music/">音乐</a>
-                        <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">动漫</a>
+                        <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
+                        <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
+                        <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
+                        <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/music/">Music</a>
+                        <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
                     </nav>
                     <div class="flex gap-2">
-                        <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="中/EN/日">
+                        <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Chinese/English/Japanese">
                             <span class="text-xs font-bold">EN</span>
                         </button>
                         <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
@@ -87,61 +87,61 @@
                     <div class="flex flex-col gap-4 max-w-2xl">
                         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background-soft dark:bg-dark-card border border-accent-soft dark:border-dark-border w-fit">
                             <span class="material-symbols-outlined text-[16px] text-text-muted dark:text-dark-text-muted">library_music</span>
-                            <span class="text-xs font-medium text-text-muted dark:text-dark-text-muted uppercase tracking-wider" data-i18n="collection">音乐收藏</span>
+                            <span class="text-xs font-medium text-text-muted dark:text-dark-text-muted uppercase tracking-wider" data-i18n="collection">Music Collection</span>
                         </div>
-                        <h1 class="text-primary dark:text-dark-text text-5xl md:text-6xl font-display font-medium leading-tight"><span data-i18n="mainTitle">音乐与</span><br/><i class="font-display italic text-text-muted dark:text-dark-text-muted" data-i18n="mainTitleItalic">氛围.</i></h1>
+                        <h1 class="text-primary dark:text-dark-text text-5xl md:text-6xl font-display font-medium leading-tight"><span data-i18n="mainTitle">Music &</span><br/><i class="font-display italic text-text-muted dark:text-dark-text-muted" data-i18n="mainTitleItalic">Vibes.</i></h1>
                     </div>
                     <p class="text-text-muted dark:text-dark-text-muted text-lg font-light leading-relaxed max-w-md" data-i18n="description">
-                        精心挑选的跨流派音乐收藏。从日本流行到爵士，从嘻哈到数学摇滚。
+                        A curated collection of music across genres. From J-Pop to Jazz, Hip-Hop to Math Rock.
                     </p>
                 </div>
 
                 <!-- Stats Grid -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 py-4">
                     <div class="flex flex-col gap-1">
-                        <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="tracks">曲目</p>
+                        <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="tracks">Tracks</p>
                         <p class="text-primary dark:text-dark-text text-4xl font-display font-medium">24</p>
                     </div>
                     <div class="flex flex-col gap-1">
-                        <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="artists">艺术家</p>
+                        <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="artists">Artists</p>
                         <p class="text-primary dark:text-dark-text text-4xl font-display font-medium">24</p>
                     </div>
                     <div class="flex flex-col gap-1">
-                        <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="genres">流派</p>
+                        <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="genres">Genres</p>
                         <p class="text-primary dark:text-dark-text text-4xl font-display font-medium">8+</p>
                     </div>
                     <div class="flex flex-col gap-1">
-                        <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="mood">心情</p>
-                        <p class="text-primary dark:text-dark-text text-4xl font-display font-medium italic" data-i18n="moodValue">放松</p>
+                        <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="mood">Mood</p>
+                        <p class="text-primary dark:text-dark-text text-4xl font-display font-medium italic" data-i18n="moodValue">Chill</p>
                     </div>
                 </div>
 
                 <!-- Browse by Genre -->
                 <div class="flex flex-col gap-6">
                     <div class="flex items-center justify-between border-b border-border-subtle dark:border-dark-border pb-4">
-                        <h3 class="text-primary dark:text-dark-text text-2xl font-semibold tracking-tight" data-i18n="browseByGenre">按流派浏览</h3>
+                        <h3 class="text-primary dark:text-dark-text text-2xl font-semibold tracking-tight" data-i18n="browseByGenre">Browse by Genre</h3>
                     </div>
                     <div class="flex flex-wrap gap-3 pb-2">
                         <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-primary dark:bg-dark-text text-white dark:text-dark-bg px-6 transition-transform active:scale-95" data-filter="All">
-                            <span class="text-sm font-medium" data-i18n="all">全部</span>
+                            <span class="text-sm font-medium" data-i18n="all">All</span>
                         </button>
                         <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary dark:bg-dark-card hover:bg-gray-200 dark:hover:bg-dark-border text-text-main dark:text-dark-text px-6 transition-colors" data-filter="J-Pop">
-                            <span class="text-sm font-medium" data-i18n="jpop">日本流行</span>
+                            <span class="text-sm font-medium" data-i18n="jpop">J-Pop</span>
                         </button>
                         <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary dark:bg-dark-card hover:bg-gray-200 dark:hover:bg-dark-border text-text-main dark:text-dark-text px-6 transition-colors" data-filter="Rock">
-                            <span class="text-sm font-medium" data-i18n="rock">摇滚</span>
+                            <span class="text-sm font-medium" data-i18n="rock">Rock</span>
                         </button>
                         <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary dark:bg-dark-card hover:bg-gray-200 dark:hover:bg-dark-border text-text-main dark:text-dark-text px-6 transition-colors" data-filter="Hip-Hop">
-                            <span class="text-sm font-medium" data-i18n="hiphop">嘻哈</span>
+                            <span class="text-sm font-medium" data-i18n="hiphop">Hip-Hop</span>
                         </button>
                         <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary dark:bg-dark-card hover:bg-gray-200 dark:hover:bg-dark-border text-text-main dark:text-dark-text px-6 transition-colors" data-filter="Jazz">
-                            <span class="text-sm font-medium" data-i18n="jazz">爵士</span>
+                            <span class="text-sm font-medium" data-i18n="jazz">Jazz</span>
                         </button>
                         <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary dark:bg-dark-card hover:bg-gray-200 dark:hover:bg-dark-border text-text-main dark:text-dark-text px-6 transition-colors" data-filter="C-Pop">
-                            <span class="text-sm font-medium" data-i18n="cpop">华语流行</span>
+                            <span class="text-sm font-medium" data-i18n="cpop">C-Pop</span>
                         </button>
                         <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary dark:bg-dark-card hover:bg-gray-200 dark:hover:bg-dark-border text-text-main dark:text-dark-text px-6 transition-colors" data-filter="Electronic">
-                            <span class="text-sm font-medium" data-i18n="electronic">电子</span>
+                            <span class="text-sm font-medium" data-i18n="electronic">Electronic</span>
                         </button>
                     </div>
                 </div>
@@ -154,7 +154,7 @@
                         </div>
                         <div class="flex flex-col justify-center gap-6 md:w-1/2">
                             <div class="flex items-center gap-3">
-                                <span class="px-2 py-1 rounded bg-black dark:bg-dark-text text-white dark:text-dark-bg text-xs font-semibold uppercase tracking-wider" data-i18n="editorChoice">编辑推荐</span>
+                                <span class="px-2 py-1 rounded bg-black dark:bg-dark-text text-white dark:text-dark-bg text-xs font-semibold uppercase tracking-wider" data-i18n="editorChoice">Editor's Choice</span>
                                 <div class="flex items-center gap-1 text-primary dark:text-dark-text">
                                     <span class="material-symbols-outlined text-lg">star</span>
                                     <span class="text-sm font-bold">9.8</span>
@@ -162,15 +162,15 @@
                             </div>
                             <div class="flex flex-col gap-4">
                                 <h2 class="text-primary dark:text-dark-text text-3xl md:text-4xl font-bold leading-tight tracking-tight" data-i18n="currentFavorite">
-                                    当前最爱: Feather
+                                    Current Favorite: Feather
                                 </h2>
                                 <p class="text-text-muted dark:text-dark-text-muted text-base md:text-lg font-light leading-relaxed" data-i18n="editorDesc">
-                                    来自 Nujabes。这位传奇爵士嘻哈制作人与 Cise Starr 合作的杰作。流畅的爵士采样与嘻哈节拍的完美融合，定义了一个时代。
+                                    By Nujabes. A masterpiece collaboration with Cise Starr from the legendary jazz-hop producer. Smooth jazz samples blended with hip-hop beats that defined an era.
                                 </p>
                             </div>
                             <div class="flex gap-4 pt-2">
                                 <button class="flex items-center justify-center h-12 px-8 rounded-md bg-primary dark:bg-dark-text hover:bg-primary/90 dark:hover:bg-dark-text/90 text-white dark:text-dark-bg text-sm font-medium transition-all" data-i18n="listenNow">
-                                    立即收听
+                                    Listen Now
                                 </button>
                                 <button class="flex items-center justify-center size-12 rounded-md border border-border-subtle dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-card text-text-main dark:text-dark-text transition-colors">
                                     <span class="material-symbols-outlined">bookmark</span>
@@ -182,8 +182,8 @@
 
                 <!-- The Collection -->
                 <div class="flex items-end justify-between pt-8 border-b border-border-subtle dark:border-dark-border pb-6">
-                    <h2 class="text-primary dark:text-dark-text text-2xl font-bold tracking-tight" data-i18n="theCollection">音乐合集</h2>
-                    <span id="showingCount" class="text-text-muted dark:text-dark-text-muted text-sm"><span data-i18n="showing">显示</span> 8 / 24</span>
+                    <h2 class="text-primary dark:text-dark-text text-2xl font-bold tracking-tight" data-i18n="theCollection">The Collection</h2>
+                    <span id="showingCount" class="text-text-muted dark:text-dark-text-muted text-sm"><span data-i18n="showing">Showing</span> 8 / 24</span>
                 </div>
 
                 <!-- Music Grid -->
@@ -193,7 +193,7 @@
                 <!-- Load More -->
                 <div id="loadMoreContainer" class="flex justify-center mt-8">
                     <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card px-8 py-3 text-sm font-medium text-text-main dark:text-dark-text hover:bg-gray-50 dark:hover:bg-dark-border transition-colors">
-                        <span data-i18n="loadMore">加载更多曲目</span>
+                        <span data-i18n="loadMore">Load More Tracks</span>
                         <span class="material-symbols-outlined text-lg">expand_more</span>
                     </button>
                 </div>
@@ -204,8 +204,8 @@
         <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
             <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div class="flex flex-col gap-1 text-center md:text-left">
-                    <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui的作品集</h2>
-                    <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 音乐收藏.</p>
+                    <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui's Portfolio</h2>
+                    <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 Music Collection.</p>
                 </div>
                 <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
                     <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
@@ -217,30 +217,30 @@
 
     <script>
         const musicData = [
-            { image: '/images/music_pic/截屏2025-08-23 14.26.27.png', title: '麥恩莉', artist: '方大同', genre: 'C-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.26.27.png', title: 'Mai Enli', artist: 'Khalil Fong', genre: 'C-Pop' },
             { image: '/images/music_pic/截屏2025-08-23 14.32.33.png', title: '400 metres', artist: 'Chinese Football', genre: 'Rock' },
             { image: '/images/music_pic/截屏2025-08-23 14.33.50.png', title: 'Feather', artist: 'Nujabes', genre: 'Jazz' },
             { image: '/images/music_pic/截屏2025-08-23 14.34.24.png', title: 'Sonny Boy', artist: 'Toe', genre: 'Rock' },
             { image: '/images/music_pic/截屏2025-08-23 14.34.50.png', title: 'Time', artist: 'Pink Floyd', genre: 'Rock' },
             { image: '/images/music_pic/截屏2025-08-23 14.35.19.png', title: 'Give Me The Gun', artist: 'American Football', genre: 'Rock' },
             { image: '/images/music_pic/截屏2025-08-23 14.37.41.png', title: '4', artist: 'aesthetics across the color line', genre: 'Electronic' },
-            { image: '/images/music_pic/截屏2025-08-23 14.38.46.png', title: 'more than words', artist: '羊文学', genre: 'J-Pop' },
-            { image: '/images/music_pic/截屏2025-08-23 14.39.09.png', title: '简单爱', artist: '周杰伦', genre: 'C-Pop' },
-            { image: '/images/music_pic/截屏2025-08-23 14.39.42.png', title: '踊り子', artist: 'Vaundy', genre: 'J-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.38.46.png', title: 'more than words', artist: 'Hitsujibungaku', genre: 'J-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.39.09.png', title: 'Simple Love', artist: 'Jay Chou', genre: 'C-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.39.42.png', title: 'Odoriko', artist: 'Vaundy', genre: 'J-Pop' },
             { image: '/images/music_pic/截屏2025-08-23 14.40.14.png', title: 'The Other Side Of Paradise', artist: 'Glass Animals', genre: 'Electronic' },
-            { image: '/images/music_pic/截屏2025-08-23 14.40.37.png', title: '多分、風', artist: '魚韻 (Sakanaction)', genre: 'J-Pop' },
-            { image: '/images/music_pic/截屏2025-08-23 14.41.05.png', title: 'オトノケ', artist: 'Creepy Nuts', genre: 'Hip-Hop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.40.37.png', title: 'Maybe the Wind', artist: 'Sakanaction', genre: 'J-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.41.05.png', title: 'Otonoke', artist: 'Creepy Nuts', genre: 'Hip-Hop' },
             { image: '/images/music_pic/截屏2025-08-23 14.41.39.png', title: 'Graduation song', artist: 'Murphy Radio', genre: 'Rock' },
             { image: '/images/music_pic/截屏2025-08-23 14.42.02.png', title: 'Just the Two of Us', artist: 'Grover Washington Jr.', genre: 'Jazz' },
             { image: '/images/music_pic/截屏2025-08-23 14.42.38.png', title: 'All My Life', artist: 'Lil Durk, J. Cole', genre: 'Hip-Hop' },
             { image: '/images/music_pic/截屏2025-08-23 14.43.11.png', title: 'ANTENNA', artist: 'Supercar', genre: 'Rock' },
             { image: '/images/music_pic/截屏2025-08-23 14.43.41.png', title: 'hong kong milk tea', artist: 'core wave', genre: 'Electronic' },
-            { image: '/images/music_pic/截屏2025-08-23 14.44.28.png', title: '白日', artist: 'King Gnu', genre: 'J-Pop' },
-            { image: '/images/music_pic/截屏2025-08-23 14.45.29.png', title: 'Vanilla', artist: '落日飞车', genre: 'C-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.44.28.png', title: 'Hakujitsu', artist: 'King Gnu', genre: 'J-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.45.29.png', title: 'Vanilla', artist: 'Sunset Rollercoaster', genre: 'C-Pop' },
             { image: '/images/music_pic/截屏2025-08-23 14.46.02.png', title: 'You\'re Beautiful', artist: 'James Blunt', genre: 'Rock' },
             { image: '/images/music_pic/截屏2025-08-23 14.46.32.png', title: 'Talking Box', artist: 'Wurs', genre: 'Electronic' },
             { image: '/images/music_pic/截屏2025-08-23 14.47.15.png', title: 'Yellow', artist: 'Coldplay', genre: 'Rock' },
-            { image: '/images/music_pic/截屏2025-08-23 14.47.41.png', title: '又三郎', artist: 'ヨルシカ (Yorushika)', genre: 'J-Pop' },
+            { image: '/images/music_pic/截屏2025-08-23 14.47.41.png', title: 'Matasaburo', artist: 'Yorushika', genre: 'J-Pop' },
         ];
 
         let currentIndex = 0;
@@ -290,8 +290,7 @@
 
         function updateShowingCount() {
             const showing = Math.min(currentIndex, filteredData.length);
-            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
-            const showingText = lang === 'zh' ? '显示' : 'Showing';
+            const showingText = getPageText('showing', 'Showing');
             showingCount.textContent = `${showingText} ${showing} / ${filteredData.length}`;
         }
 
@@ -307,8 +306,7 @@
 
             gallery.innerHTML = '';
 
-            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
-            const loadMoreText = lang === 'zh' ? '加载更多曲目' : 'Load More Tracks';
+            const loadMoreText = getPageText('loadMore', 'Load More Tracks');
             loadMoreContainer.innerHTML = `
                 <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle bg-white px-8 py-3 text-sm font-medium text-text-main hover:bg-gray-50 transition-colors">
                     ${loadMoreText}
@@ -347,10 +345,9 @@
             updateShowingCount();
 
             if (currentIndex >= filteredData.length) {
-                const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
-                const endTitle = lang === 'zh' ? '播放列表到底了！' : 'End of playlist!';
-                const endDesc = lang === 'zh' ? '持续发现新音乐，敬请期待更新。' : 'Always discovering new music. Stay tuned for updates.';
-                const suggestText = lang === 'zh' ? '推荐曲目' : 'Suggest a Track';
+                const endTitle = getPageText('endTitle', 'End of playlist!');
+                const endDesc = getPageText('endDesc', 'Always discovering new music. Stay tuned for updates.');
+                const suggestText = getPageText('suggestTrack', 'Suggest a Track');
                 loadMoreContainer.innerHTML = `
                     <div class="group flex flex-col h-full bg-background-soft border border-accent-soft p-8 items-center justify-center text-center transition-all hover:bg-gray-100 rounded-lg">
                         <div class="w-12 h-12 flex items-center justify-center mb-6 text-primary">
@@ -372,7 +369,12 @@
             });
         });
 
-        // 初始化时绑定加载更多按钮事件
+        function getPageText(key, fallback) {
+            const pageText = window.YuiLang ? window.YuiLang.getPageTranslations() : null;
+            return pageText && pageText[key] ? pageText[key] : fallback;
+        }
+
+        // Bind the initial load-more button
         document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
         loadMore();
     </script>

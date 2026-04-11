@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html class="light" lang="zh-CN">
+<html class="light" lang="en">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>番剧推荐 - Yui's Portfolio</title>
+    <title>Anime - Yui's Portfolio</title>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
@@ -67,7 +67,7 @@
                     <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/anime/">Anime</a>
                 </nav>
                 <div class="flex gap-2">
-                        <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="中/EN/日">
+                        <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Chinese/English/Japanese">
                             <span class="text-xs font-bold">EN</span>
                         </button>
                         <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
@@ -88,31 +88,31 @@
                 <div class="flex flex-col gap-4 max-w-2xl">
                     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background-soft dark:bg-dark-card border border-accent-soft dark:border-dark-border w-fit">
                         <span class="material-symbols-outlined text-[16px] text-text-muted dark:text-dark-text-muted">movie</span>
-                        <span class="text-xs font-medium text-text-muted dark:text-dark-text-muted uppercase tracking-wider" data-i18n="collection">番剧收藏</span>
+                        <span class="text-xs font-medium text-text-muted dark:text-dark-text-muted uppercase tracking-wider" data-i18n="collection">Anime Collection</span>
                     </div>
-                    <h1 class="text-primary dark:text-dark-text text-5xl md:text-6xl font-display font-medium leading-tight"><span data-i18n="mainTitle">番剧与</span><br/><i class="font-display italic text-text-muted dark:text-dark-text-muted" data-i18n="mainTitleItalic">推荐.</i></h1>
+                    <h1 class="text-primary dark:text-dark-text text-5xl md:text-6xl font-display font-medium leading-tight"><span data-i18n="mainTitle">Anime &</span><br/><i class="font-display italic text-text-muted dark:text-dark-text-muted" data-i18n="mainTitleItalic">Recommendations.</i></h1>
                 </div>
                 <p class="text-text-muted dark:text-dark-text-muted text-lg font-light leading-relaxed max-w-md" data-i18n="description">
-                    精心挑选的番剧收藏。从经典到冷门佳作，塑造了我的品味。
+                    A curated collection of anime. From classics to hidden gems that shaped my taste.
                 </p>
             </div>
 
             <!-- Stats Grid -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 py-4">
                 <div class="flex flex-col gap-1">
-                    <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="total">总数</p>
+                    <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="total">Total</p>
                     <p class="text-primary dark:text-dark-text text-4xl font-display font-medium">31</p>
                 </div>
                 <div class="flex flex-col gap-1">
-                    <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="types">类型</p>
+                    <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="types">Types</p>
                     <p class="text-primary dark:text-dark-text text-4xl font-display font-medium">10+</p>
                 </div>
                 <div class="flex flex-col gap-1">
-                    <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="favorites">最爱</p>
+                    <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="favorites">Favorites</p>
                     <p class="text-primary dark:text-dark-text text-4xl font-display font-medium">5</p>
                 </div>
                 <div class="flex flex-col gap-1">
-                    <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="watching">在追</p>
+                    <p class="text-text-tertiary dark:text-dark-text-muted text-xs font-medium uppercase tracking-widest" data-i18n="watching">Watching</p>
                     <p class="text-primary dark:text-dark-text text-4xl font-display font-medium italic">3</p>
                 </div>
             </div>
@@ -120,29 +120,29 @@
             <!-- Browse by Genre -->
             <div class="flex flex-col gap-6">
                 <div class="flex items-center justify-between border-b border-border-subtle dark:border-dark-border pb-4">
-                    <h3 class="text-primary dark:text-dark-text text-2xl font-semibold tracking-tight" data-i18n="browseByGenre">按类型浏览</h3>
+                    <h3 class="text-primary dark:text-dark-text text-2xl font-semibold tracking-tight" data-i18n="browseByGenre">Browse by Genre</h3>
                 </div>
                 <div class="flex flex-wrap gap-3 pb-2">
                     <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-primary dark:bg-dark-text text-white dark:text-dark-bg px-6 transition-transform active:scale-95" data-filter="All">
-                        <span class="text-sm font-medium" data-i18n="all">全部</span>
+                        <span class="text-sm font-medium" data-i18n="all">All</span>
                     </button>
                     <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary dark:bg-dark-card hover:bg-gray-200 dark:hover:bg-dark-border text-text-main dark:text-dark-text px-6 transition-colors" data-filter="Action">
-                        <span class="text-sm font-medium" data-i18n="action">动作</span>
+                        <span class="text-sm font-medium" data-i18n="action">Action</span>
                     </button>
                     <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary dark:bg-dark-card hover:bg-gray-200 dark:hover:bg-dark-border text-text-main dark:text-dark-text px-6 transition-colors" data-filter="Slice of Life">
-                        <span class="text-sm font-medium" data-i18n="sliceOfLife">日常</span>
+                        <span class="text-sm font-medium" data-i18n="sliceOfLife">Slice of Life</span>
                     </button>
                     <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary dark:bg-dark-card hover:bg-gray-200 dark:hover:bg-dark-border text-text-main dark:text-dark-text px-6 transition-colors" data-filter="Romance">
-                        <span class="text-sm font-medium" data-i18n="romance">恋爱</span>
+                        <span class="text-sm font-medium" data-i18n="romance">Romance</span>
                     </button>
                     <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary dark:bg-dark-card hover:bg-gray-200 dark:hover:bg-dark-border text-text-main dark:text-dark-text px-6 transition-colors" data-filter="Fantasy">
-                        <span class="text-sm font-medium" data-i18n="fantasy">奇幻</span>
+                        <span class="text-sm font-medium" data-i18n="fantasy">Fantasy</span>
                     </button>
                     <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary dark:bg-dark-card hover:bg-gray-200 dark:hover:bg-dark-border text-text-main dark:text-dark-text px-6 transition-colors" data-filter="Drama">
-                        <span class="text-sm font-medium" data-i18n="drama">剧情</span>
+                        <span class="text-sm font-medium" data-i18n="drama">Drama</span>
                     </button>
                     <button class="filter-btn flex h-10 shrink-0 items-center justify-center rounded-md bg-secondary dark:bg-dark-card hover:bg-gray-200 dark:hover:bg-dark-border text-text-main dark:text-dark-text px-6 transition-colors" data-filter="Music">
-                        <span class="text-sm font-medium" data-i18n="music">音乐</span>
+                        <span class="text-sm font-medium" data-i18n="music">Music</span>
                     </button>
                 </div>
             </div>
@@ -155,21 +155,21 @@
                     </div>
                     <div class="flex flex-col justify-center gap-6 md:w-1/2">
                         <div class="flex items-center gap-3">
-                            <span class="px-2 py-1 rounded bg-black dark:bg-dark-text text-white dark:text-dark-bg text-xs font-semibold uppercase tracking-wider" data-i18n="editorChoice">编辑推荐</span>
+                            <span class="px-2 py-1 rounded bg-black dark:bg-dark-text text-white dark:text-dark-bg text-xs font-semibold uppercase tracking-wider" data-i18n="editorChoice">Editor's Choice</span>
                             <div class="flex items-center gap-1 text-primary dark:text-dark-text">
                                 <span class="material-symbols-outlined text-lg">star</span>
                                 <span class="text-sm font-bold">9.8</span>
                             </div>
                         </div>
                         <div class="flex flex-col gap-4">
-                            <h2 class="text-primary dark:text-dark-text text-3xl md:text-4xl font-bold leading-tight tracking-tight" data-i18n="currentFavorite">当前最爱</h2>
+                            <h2 class="text-primary dark:text-dark-text text-3xl md:text-4xl font-bold leading-tight tracking-tight" data-i18n="currentFavorite">Current Favorite</h2>
                             <p class="text-text-muted dark:text-dark-text-muted text-base md:text-lg font-light leading-relaxed" data-i18n="editorDesc">
-                                探索我个人收藏中的最佳番剧。每一部作品都代表着不同类型和叙事风格的独特旅程。
+                                Explore the best anime from my personal collection. Each title represents a unique journey through different genres and storytelling styles.
                             </p>
                         </div>
                         <div class="flex gap-4 pt-2">
                             <button class="flex items-center justify-center h-12 px-8 rounded-md bg-primary dark:bg-dark-text hover:bg-primary/90 dark:hover:bg-dark-text/90 text-white dark:text-dark-bg text-sm font-medium transition-all" data-i18n="viewDetails">
-                                查看详情
+                                View Details
                             </button>
                             <button class="flex items-center justify-center size-12 rounded-md border border-border-subtle dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-card text-text-main dark:text-dark-text transition-colors">
                                 <span class="material-symbols-outlined">bookmark</span>
@@ -181,8 +181,8 @@
 
             <!-- The Collection -->
             <div class="flex items-end justify-between pt-8 border-b border-border-subtle dark:border-dark-border pb-6">
-                <h2 class="text-primary dark:text-dark-text text-2xl font-bold tracking-tight" data-i18n="theCollection">番剧合集</h2>
-                <span id="showingCount" class="text-text-muted dark:text-dark-text-muted text-sm"><span data-i18n="showing">显示</span> 8 / 31</span>
+                <h2 class="text-primary dark:text-dark-text text-2xl font-bold tracking-tight" data-i18n="theCollection">The Collection</h2>
+                <span id="showingCount" class="text-text-muted dark:text-dark-text-muted text-sm"><span data-i18n="showing">Showing</span> 8 / 31</span>
             </div>
 
             <!-- Anime Grid -->
@@ -192,7 +192,7 @@
             <!-- Load More -->
             <div id="loadMoreContainer" class="flex justify-center mt-8">
                 <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card px-8 py-3 text-sm font-medium text-text-main dark:text-dark-text hover:bg-gray-50 dark:hover:bg-dark-border transition-colors">
-                    <span data-i18n="loadMore">加载更多番剧</span>
+                    <span data-i18n="loadMore">Load More Titles</span>
                     <span class="material-symbols-outlined text-lg">expand_more</span>
                 </button>
             </div>
@@ -203,8 +203,8 @@
     <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
         <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="flex flex-col gap-1 text-center md:text-left">
-                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui的作品集</h2>
-                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 番剧收藏.</p>
+                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui's Portfolio</h2>
+                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 Anime Collection.</p>
             </div>
             <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
                 <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
@@ -290,8 +290,7 @@
 
         function updateShowingCount() {
             const showing = Math.min(currentIndex, filteredData.length);
-            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
-            const showingText = lang === 'zh' ? '显示' : 'Showing';
+            const showingText = getPageText('showing', 'Showing');
             showingCount.textContent = `${showingText} ${showing} / ${filteredData.length}`;
         }
 
@@ -307,8 +306,7 @@
 
             gallery.innerHTML = '';
 
-            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
-            const loadMoreText = lang === 'zh' ? '加载更多番剧' : 'Load More Titles';
+            const loadMoreText = getPageText('loadMore', 'Load More Titles');
             loadMoreContainer.innerHTML = `
                 <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle bg-white px-8 py-3 text-sm font-medium text-text-main hover:bg-gray-50 transition-colors">
                     ${loadMoreText}
@@ -347,10 +345,9 @@
             updateShowingCount();
 
             if (currentIndex >= filteredData.length) {
-                const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
-                const endTitle = lang === 'zh' ? '收藏到底了！' : 'That\'s the collection!';
-                const endDesc = lang === 'zh' ? '持续追番中，敬请期待更新。' : 'Always watching new anime. Check back for updates.';
-                const suggestText = lang === 'zh' ? '推荐番剧' : 'Suggest an Anime';
+                const endTitle = getPageText('endTitle', 'That\'s the collection!');
+                const endDesc = getPageText('endDesc', 'Always watching new anime. Check back for updates.');
+                const suggestText = getPageText('suggestAnime', 'Suggest an Anime');
                 loadMoreContainer.innerHTML = `
                     <div class="group flex flex-col h-full bg-background-soft border border-accent-soft p-8 items-center justify-center text-center transition-all hover:bg-gray-100 rounded-lg">
                         <div class="w-12 h-12 flex items-center justify-center mb-6 text-primary">
@@ -372,7 +369,12 @@
             });
         });
 
-        // 初始化时绑定加载更多按钮事件
+        function getPageText(key, fallback) {
+            const pageText = window.YuiLang ? window.YuiLang.getPageTranslations() : null;
+            return pageText && pageText[key] ? pageText[key] : fallback;
+        }
+
+        // Bind the initial load-more button
         document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
         loadMore();
     </script>
