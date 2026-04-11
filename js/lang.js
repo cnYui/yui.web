@@ -65,7 +65,9 @@
                 learnMore: '了解更多',
                 journal: '日志',
                 latestThoughts: '最新想法',
+                viewAllArticles: '查看全部文章',
                 footerDesc: '用心和代码打造数字体验。坐标旧金山。专注于简洁、实用、用户友好的设计。',
+                homeFooterCopyright: '© 2026 个人主页.',
                 menu: '菜单',
                 about: '关于',
                 work: '作品',
@@ -101,7 +103,9 @@
                 learnMore: 'Learn More',
                 journal: 'Journal',
                 latestThoughts: 'Latest Thoughts',
+                viewAllArticles: 'View All Articles',
                 footerDesc: 'Crafting digital experiences with heart and code. Based in San Francisco. Focused on clean, practical, user-friendly design.',
+                homeFooterCopyright: '© 2026 Personal Homepage.',
                 menu: 'Menu',
                 about: 'About',
                 work: 'Work',
@@ -137,7 +141,9 @@
                 learnMore: '詳しく見る',
                 journal: 'ジャーナル',
                 latestThoughts: '最新の考え',
+                viewAllArticles: 'すべての記事を見る',
                 footerDesc: '心とコードでデジタル体験を創造。サンフランシスコ在住。クリーンで実用的、ユーザーフレンドリーなデザインに注力。',
+                homeFooterCopyright: '© 2026 個人ホームページ.',
                 menu: 'メニュー',
                 about: '概要',
                 work: '作品',
@@ -687,8 +693,8 @@
                 award4Source: '渝客松 Google GDG トラック • 2025',
                 award5Title: 'Rokid AIメガネ 3位',
                 award5Source: '無錫 Rokid AR AI • 2025',
-                award6Title: 'テンセントクラウドハッカソン受賞',
-                award6Source: 'テンセントクラウド Hackathon • 2025',
+                award6Title: 'Tencent Cloud ハッカソン受賞',
+                award6Source: 'Tencent Cloud Hackathon • 2025',
                 footerDesc: '心とコードでデジタル体験を創造。サンフランシスコ在住。クリーンで実用的、ユーザーフレンドリーなデザインに注力。',
                 menu: 'メニュー',
                 menuAbout: '概要',
@@ -796,6 +802,55 @@
                 footerTitle: 'Yuiのポートフォリオ',
                 footerText: '© 2026 アニメコレクション.'
             }
+        },
+        notfound: {
+            zh: {
+                title: '404 - 页面未找到',
+                heading: '页面未找到',
+                description: '抱歉，您访问的页面不存在。',
+                backHome: '返回首页'
+            },
+            en: {
+                title: '404 - Page Not Found',
+                heading: 'Page Not Found',
+                description: 'Sorry, the page you are looking for does not exist.',
+                backHome: 'Back Home'
+            },
+            ja: {
+                title: '404 - ページが見つかりません',
+                heading: 'ページが見つかりません',
+                description: '申し訳ありません。お探しのページは存在しません。',
+                backHome: 'ホームへ戻る'
+            }
+        },
+        skill: {
+            zh: {
+                title: 'Yui Intro Skill',
+                rawMarkdown: '原始 Markdown',
+                portfolio: '作品集',
+                eyebrowPrimary: '面向 Agent 的资料',
+                eyebrowSecondary: 'Markdown 实时渲染',
+                loading: '正在加载 /SKILL.md...',
+                loadError: '加载 /SKILL.md 失败:'
+            },
+            en: {
+                title: 'Yui Intro Skill',
+                rawMarkdown: 'Raw Markdown',
+                portfolio: 'Portfolio',
+                eyebrowPrimary: 'Agent-readable profile',
+                eyebrowSecondary: 'Markdown rendered live',
+                loading: 'Loading /SKILL.md...',
+                loadError: 'Failed to load /SKILL.md:'
+            },
+            ja: {
+                title: 'Yui Intro Skill',
+                rawMarkdown: '生の Markdown',
+                portfolio: 'ポートフォリオ',
+                eyebrowPrimary: 'Agent 向けプロフィール',
+                eyebrowSecondary: 'Markdown をライブ表示',
+                loading: '/SKILL.md を読み込み中...',
+                loadError: '/SKILL.md の読み込みに失敗しました:'
+            }
         }
     };
     
@@ -828,7 +883,7 @@
     // Detect current page
     function detectPage() {
         const path = window.location.pathname;
-        if (path === '/404.html' || path === '/404') return 'notfound';
+        if (path === '/404.html' || path === '/404' || document.querySelector('[data-i18n="backHome"]')) return 'notfound';
         if (path === '/skill' || path.startsWith('/skill/')) return 'skill';
         if (path === '/' || path === '/index.html' || (path.endsWith('/index.html') && !path.includes('/projects') && !path.includes('/blog') && !path.includes('/music') && !path.includes('/travel') && !path.includes('/resume') && !path.includes('/anime'))) return 'index';
         if (path.includes('/projects')) return 'projects';
@@ -854,6 +909,8 @@
         const page = detectPage();
         const common = translations.common[lang];
         const pageData = translations[page] ? translations[page][lang] : null;
+        const htmlLangMap = { zh: 'zh-CN', en: 'en', ja: 'ja' };
+        document.documentElement.lang = htmlLangMap[lang] || 'zh-CN';
         
         // Update document title if page data exists
         if (pageData && pageData.title && !(page === 'blog' && isBlogArticlePage())) {
@@ -886,6 +943,11 @@
         
         // Dispatch custom event for dynamic content
         window.dispatchEvent(new CustomEvent('languageChanged', { detail: { lang, page, translations: pageData, common } }));
+    }
+
+    function getText(page, key, lang = getCurrentLang()) {
+        const pageData = translations[page] ? translations[page][lang] : null;
+        return pageData ? pageData[key] : undefined;
     }
     
     // Update common elements across all pages
@@ -949,6 +1011,7 @@
             const lang = getCurrentLang();
             return translations[page] ? translations[page][lang] : null;
         },
+        getText,
         applyTranslations,
         toggleLang,
         LANGUAGES

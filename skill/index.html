@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/js/lang.js"></script>
   <style>
     :root {
       --ink: #201c17;
@@ -229,8 +230,8 @@
     <div class="topbar-inner">
       <a href="/" class="brand">Yui Skill.</a>
       <nav class="nav">
-        <a href="/SKILL.md">Raw Markdown</a>
-        <a href="/" class="button">Portfolio</a>
+        <a href="/SKILL.md" data-i18n="rawMarkdown">Raw Markdown</a>
+        <a href="/" class="button" data-i18n="portfolio">Portfolio</a>
       </nav>
     </div>
   </header>
@@ -238,11 +239,11 @@
   <main class="page">
     <section class="card">
       <div class="eyebrow">
-        <span>Agent-readable profile</span>
+        <span data-i18n="eyebrowPrimary">Agent-readable profile</span>
         <span class="eyebrow-line"></span>
-        <span>Markdown rendered live</span>
+        <span data-i18n="eyebrowSecondary">Markdown rendered live</span>
       </div>
-      <div id="status" class="status">Loading /SKILL.md...</div>
+      <div id="status" class="status" data-i18n="loading">Loading /SKILL.md...</div>
       <article id="content" class="markdown-body"></article>
     </section>
   </main>
@@ -266,7 +267,9 @@
         contentEl.innerHTML = marked.parse(removeFrontmatter(markdown));
       })
       .catch((error) => {
-        statusEl.textContent = `Failed to load /SKILL.md: ${error.message}`;
+        const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : "zh";
+        const prefix = window.YuiLang ? window.YuiLang.getText("skill", "loadError", lang) : "Failed to load /SKILL.md:";
+        statusEl.textContent = `${prefix} ${error.message}`;
       });
   </script>
 </body>

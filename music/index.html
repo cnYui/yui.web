@@ -251,6 +251,20 @@
         const loadMoreContainer = document.getElementById('loadMoreContainer');
         const showingCount = document.getElementById('showingCount');
         const filterButtons = document.querySelectorAll('.filter-btn');
+        const musicGenreLabels = {
+            zh: { 'C-Pop': '华语流行', 'Rock': '摇滚', 'Jazz': '爵士', 'Electronic': '电子', 'J-Pop': '日本流行', 'Hip-Hop': '嘻哈' },
+            en: { 'C-Pop': 'C-Pop', 'Rock': 'Rock', 'Jazz': 'Jazz', 'Electronic': 'Electronic', 'J-Pop': 'J-Pop', 'Hip-Hop': 'Hip-Hop' },
+            ja: { 'C-Pop': 'C-Pop', 'Rock': 'ロック', 'Jazz': 'ジャズ', 'Electronic': 'エレクトロニック', 'J-Pop': 'J-Pop', 'Hip-Hop': 'ヒップホップ' }
+        };
+
+        function currentLang() {
+            return window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
+        }
+
+        function localizedMusicGenre(genre) {
+            const lang = currentLang();
+            return (musicGenreLabels[lang] && musicGenreLabels[lang][genre]) || genre;
+        }
 
         function createCard(item) {
             return `
@@ -269,7 +283,7 @@
                             <h3 class="text-primary dark:text-dark-text text-lg font-bold leading-tight group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors">${item.title}</h3>
                         </div>
                         <p class="text-sm text-text-muted dark:text-dark-text-muted">${item.artist}</p>
-                        <span class="text-xs text-text-tertiary dark:text-dark-text-muted">${item.genre}</span>
+                        <span class="text-xs text-text-tertiary dark:text-dark-text-muted">${localizedMusicGenre(item.genre)}</span>
                     </div>
                 </div>
             `;
@@ -377,6 +391,12 @@
         // Bind the initial load-more button
         document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
         loadMore();
+
+        window.addEventListener('languageChanged', (event) => {
+            if (event.detail.page === 'music') {
+                filterGallery(currentFilter);
+            }
+        });
     </script>
 </body>
 </html>

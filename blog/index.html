@@ -157,8 +157,60 @@
 
     <script>
         const blogData = [
-            { id: 8, image: '/images/blog/ai-image-video-guide.jpg', title: 'Experiences and Lessons from AI Image and Video Generation', category: 'AI', date: 'Jan 4, 2026', readTime: '8 min read', excerpt: 'AI is only a tool; humans are human because we know how to use tools. From Sora 2 to Nano Banana Pro, here are my AI creation experiences.', author: 'Yui', link: '/blog/ai-image-video.html' },
-            { id: 7, image: '/images/blog/vibe-coding-guide.png', title: 'A Practical Guide to Vibe Coding', category: 'AI', date: 'Dec 31, 2025', readTime: '12 min read', excerpt: 'Lessons from over a year of hands-on AI coding, from planning and design to debugging techniques, to help you reduce messy code and improve development efficiency.', author: 'Yui', link: '/blog/vibe-coding.html' },
+            {
+                id: 8,
+                image: '/images/blog/ai-image-video-guide.jpg',
+                category: 'AI',
+                author: 'Yui',
+                link: '/blog/ai-image-video.html',
+                title: {
+                    zh: 'AI生图生视频使用经历和经验',
+                    en: 'My Experience with AI Image and Video Generation',
+                    ja: 'AI画像・動画生成の体験と実践メモ'
+                },
+                date: {
+                    zh: '2026年1月4日',
+                    en: 'Jan 4, 2026',
+                    ja: '2026年1月4日'
+                },
+                readTime: {
+                    zh: '8 分钟阅读',
+                    en: '8 min read',
+                    ja: '8分で読める'
+                },
+                excerpt: {
+                    zh: 'AI只是工具，人之所以为人是因为会使用工具。从Sora2到Nano Banana Pro，分享我的AI创作经历。',
+                    en: 'AI is a tool, and what makes us human is knowing how to use it. From Sora2 to Nano Banana Pro, this is my creative journey.',
+                    ja: 'AI はあくまで道具であり、人間らしさはその使い方にある。Sora2 から Nano Banana Pro までの制作体験をまとめました。'
+                }
+            },
+            {
+                id: 7,
+                image: '/images/blog/vibe-coding-guide.png',
+                category: 'AI',
+                author: 'Yui',
+                link: '/blog/vibe-coding.html',
+                title: {
+                    zh: 'Vibe Coding 实战指南',
+                    en: 'Vibe Coding Practical Guide',
+                    ja: 'Vibe Coding 実践ガイド'
+                },
+                date: {
+                    zh: '2025年12月31日',
+                    en: 'Dec 31, 2025',
+                    ja: '2025年12月31日'
+                },
+                readTime: {
+                    zh: '12 分钟阅读',
+                    en: '12 min read',
+                    ja: '12分で読める'
+                },
+                excerpt: {
+                    zh: '一年多 AI Coding 实战经验总结，从构思设计到纠错技巧，帮助你减少"屎山代码"、提升开发效率。',
+                    en: 'Lessons from more than a year of AI coding, from design thinking to debugging tricks that reduce messy code.',
+                    ja: '1年以上の AI コーディング実践から、設計の考え方とデバッグのコツを整理し、コード品質を高める方法を紹介します。'
+                }
+            },
         ];
 
         let currentIndex = 0;
@@ -173,20 +225,25 @@
             const articleLink = item.link || `/blog/article.html?id=${item.id}`;
             const translations = window.YuiLang ? window.YuiLang.getPageTranslations() : null;
             const readText = translations?.readArticle || 'Read Article';
+            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
+            const title = item.title[lang] || item.title.zh;
+            const date = item.date[lang] || item.date.zh;
+            const readTime = item.readTime[lang] || item.readTime.zh;
+            const excerpt = item.excerpt[lang] || item.excerpt.zh;
             return `
                 <a href="${articleLink}" class="blog-item group flex flex-col md:flex-row gap-6 p-6 border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card hover:border-primary/30 dark:hover:border-dark-text/30 hover:shadow-sm transition-all">
                     <div class="w-full md:w-48 h-32 shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-dark-surface">
-                        <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="${item.image}" alt="${item.title}"/>
+                        <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="${item.image}" alt="${title}"/>
                     </div>
                     <div class="flex-1 flex flex-col gap-3">
                         <div class="flex items-center gap-3 text-xs">
                             <span class="px-2 py-1 rounded bg-primary dark:bg-dark-text text-white dark:text-dark-bg font-semibold uppercase tracking-wider">${item.category}</span>
-                            <span class="text-text-muted dark:text-dark-text-muted">${item.date}</span>
+                            <span class="text-text-muted dark:text-dark-text-muted">${date}</span>
                             <span class="text-text-muted dark:text-dark-text-muted">•</span>
-                            <span class="text-text-muted dark:text-dark-text-muted">${item.readTime}</span>
+                            <span class="text-text-muted dark:text-dark-text-muted">${readTime}</span>
                         </div>
-                        <h2 class="text-xl font-bold text-primary dark:text-dark-text group-hover:text-text-muted dark:group-hover:text-dark-text-muted transition-colors">${item.title}</h2>
-                        <p class="text-sm text-text-muted dark:text-dark-text-muted leading-relaxed line-clamp-2">${item.excerpt}</p>
+                        <h2 class="text-xl font-bold text-primary dark:text-dark-text group-hover:text-text-muted dark:group-hover:text-dark-text-muted transition-colors">${title}</h2>
+                        <p class="text-sm text-text-muted dark:text-dark-text-muted leading-relaxed line-clamp-2">${excerpt}</p>
                         <div class="flex items-center justify-between mt-auto pt-2">
                             <div class="flex items-center gap-2">
                                 <div class="w-6 h-6 rounded-full overflow-hidden shrink-0">
@@ -287,6 +344,12 @@
         // Bind the load-more button on initial render.
         document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
         loadMore();
+
+        window.addEventListener('languageChanged', (event) => {
+            if (event.detail.page === 'blog') {
+                filterBlog(currentFilter);
+            }
+        });
     </script>
 </body>
 </html>
