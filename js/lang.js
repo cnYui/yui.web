@@ -842,7 +842,11 @@
 
     function isBlogArticlePage() {
         const path = window.location.pathname;
-        return path.startsWith('/blog/') && path !== '/blog/' && !path.endsWith('/index.html');
+        return [
+            '/blog/article.html',
+            '/blog/ai-image-video.html',
+            '/blog/vibe-coding.html'
+        ].includes(path);
     }
     
     // Apply translations to page
