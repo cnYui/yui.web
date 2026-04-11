@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html class="light" lang="zh-CN">
+<html class="light" lang="en">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>技术博客 - Yui的作品集</title>
+    <title>Tech Blog - Yui's Portfolio</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -53,18 +53,18 @@
     <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
         <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
             <div class="flex items-center gap-4">
-                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">作品集.</a>
+                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
             </div>
             <div class="flex items-center gap-10">
                 <nav class="hidden md:flex items-center gap-8">
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
-                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/blog/">博客</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">音乐</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">动漫</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
+                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/blog/">Blog</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">Music</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
                 </nav>
                 <div class="flex gap-2">
-                        <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="中/EN/日">
+                        <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Language: Chinese / English / Japanese">
                             <span class="text-xs font-bold">EN</span>
                         </button>
                         <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
@@ -84,23 +84,23 @@
             <aside class="lg:w-72 shrink-0">
                 <!-- Search -->
                 <div class="mb-8">
-                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-4" data-i18n="search">搜索</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-4" data-i18n="search">Search</h3>
                     <div class="relative">
                         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted dark:text-dark-text-muted text-lg">search</span>
-                        <input type="text" placeholder="搜索文章..." data-i18n-placeholder="searchPlaceholder" class="w-full h-10 pl-10 pr-4 rounded-md border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card text-sm text-text-main dark:text-dark-text focus:outline-none focus:border-primary dark:focus:border-dark-text transition-colors"/>
+                        <input type="text" placeholder="Search articles..." data-i18n-placeholder="searchPlaceholder" class="w-full h-10 pl-10 pr-4 rounded-md border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card text-sm text-text-main dark:text-dark-text focus:outline-none focus:border-primary dark:focus:border-dark-text transition-colors"/>
                     </div>
                 </div>
 
                 <!-- Topics -->
                 <div class="mb-8">
-                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-4" data-i18n="topics">主题</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-4" data-i18n="topics">Topics</h3>
                     <div class="flex flex-wrap gap-2">
-                        <button class="filter-btn px-4 py-2 rounded-md bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-sm font-medium transition-all" data-filter="All" data-i18n="allPosts">全部文章</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Frontend" data-i18n="frontend">前端</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Backend" data-i18n="backend">后端</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="DevOps" data-i18n="devops">运维</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Design" data-i18n="design">设计</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="AI" data-i18n="ai">人工智能</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-sm font-medium transition-all" data-filter="All" data-i18n="allPosts">All Posts</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Frontend" data-i18n="frontend">Frontend</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Backend" data-i18n="backend">Backend</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="DevOps" data-i18n="devops">DevOps</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Design" data-i18n="design">Design</button>
+                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="AI" data-i18n="ai">AI</button>
                     </div>
                 </div>
 
@@ -112,11 +112,11 @@
                         </div>
                         <div>
                             <h4 class="font-semibold text-primary dark:text-dark-text">Yui</h4>
-                            <p class="text-xs text-text-muted dark:text-dark-text-muted" data-i18n="authorRole">开发者 & 创作者</p>
+                            <p class="text-xs text-text-muted dark:text-dark-text-muted" data-i18n="authorRole">Developer & Creator</p>
                         </div>
                     </div>
                     <p class="text-sm text-text-muted dark:text-dark-text-muted leading-relaxed mb-4" data-i18n="authorBio">
-                        热衷于构建无障碍的 Web 应用，并乐于分享编程知识。
+                        Passionate about building accessible web apps and sharing programming knowledge.
                     </p>
                     <div class="flex gap-4 text-text-muted dark:text-dark-text-muted">
                         <a href="#" class="hover:text-primary dark:hover:text-dark-text transition-colors"><span class="material-symbols-outlined text-lg">link</span></a>
@@ -133,7 +133,7 @@
                 <!-- Load More -->
                 <div id="loadMoreContainer" class="flex justify-center mt-12">
                     <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card px-8 py-3 text-sm font-medium text-text-main dark:text-dark-text hover:bg-gray-50 dark:hover:bg-dark-border transition-colors">
-                        <span data-i18n="loadMore">加载更多文章</span>
+                        <span data-i18n="loadMore">Load More Articles</span>
                         <span class="material-symbols-outlined text-lg">expand_more</span>
                     </button>
                 </div>
@@ -145,8 +145,8 @@
     <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
         <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="flex flex-col gap-1 text-center md:text-left">
-                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui的作品集</h2>
-                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 技术博客.</p>
+                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui's Portfolio</h2>
+                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 Tech Blog.</p>
             </div>
             <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
                 <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
@@ -157,8 +157,8 @@
 
     <script>
         const blogData = [
-            { id: 8, image: '/images/blog/ai-image-video-guide.jpg', title: 'AI生图生视频使用经历和经验', category: 'AI', date: 'Jan 4, 2026', readTime: '8 min read', excerpt: 'AI只是工具，人之所以为人是因为会使用工具。从Sora2到Nano Banana Pro，分享我的AI创作经历。', author: 'Yui', link: '/blog/ai-image-video.html' },
-            { id: 7, image: '/images/blog/vibe-coding-guide.png', title: 'Vibe Coding 实战指南', category: 'AI', date: 'Dec 31, 2025', readTime: '12 min read', excerpt: '一年多 AI Coding 实战经验总结，从构思设计到纠错技巧，帮助你减少"屎山代码"、提升开发效率。', author: 'Yui', link: '/blog/vibe-coding.html' },
+            { id: 8, image: '/images/blog/ai-image-video-guide.jpg', title: 'Experiences and Lessons from AI Image and Video Generation', category: 'AI', date: 'Jan 4, 2026', readTime: '8 min read', excerpt: 'AI is only a tool; humans are human because we know how to use tools. From Sora 2 to Nano Banana Pro, here are my AI creation experiences.', author: 'Yui', link: '/blog/ai-image-video.html' },
+            { id: 7, image: '/images/blog/vibe-coding-guide.png', title: 'A Practical Guide to Vibe Coding', category: 'AI', date: 'Dec 31, 2025', readTime: '12 min read', excerpt: 'Lessons from over a year of hands-on AI coding, from planning and design to debugging techniques, to help you reduce messy code and improve development efficiency.', author: 'Yui', link: '/blog/vibe-coding.html' },
         ];
 
         let currentIndex = 0;
@@ -171,8 +171,8 @@
 
         function createCard(item) {
             const articleLink = item.link || `/blog/article.html?id=${item.id}`;
-            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
-            const readText = lang === 'zh' ? '阅读文章' : 'Read Article';
+            const translations = window.YuiLang ? window.YuiLang.getPageTranslations() : null;
+            const readText = translations?.readArticle || 'Read Article';
             return `
                 <a href="${articleLink}" class="blog-item group flex flex-col md:flex-row gap-6 p-6 border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card hover:border-primary/30 dark:hover:border-dark-text/30 hover:shadow-sm transition-all">
                     <div class="w-full md:w-48 h-32 shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-dark-surface">
@@ -228,8 +228,8 @@
 
             blogList.innerHTML = '';
 
-            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
-            const loadMoreText = lang === 'zh' ? '加载更多文章' : 'Load More Articles';
+            const translations = window.YuiLang ? window.YuiLang.getPageTranslations() : null;
+            const loadMoreText = translations?.loadMore || 'Load More Articles';
             loadMoreContainer.innerHTML = `
                 <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle bg-white px-8 py-3 text-sm font-medium text-text-main hover:bg-gray-50 transition-colors">
                     ${loadMoreText}
@@ -267,8 +267,8 @@
             currentIndex = endIndex;
 
             if (currentIndex >= filteredData.length) {
-                const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
-                const noMoreText = lang === 'zh' ? '已经到底啦，没有更多文章了。' : 'That\'s all! No more articles.';
+                const translations = window.YuiLang ? window.YuiLang.getPageTranslations() : null;
+                const noMoreText = translations?.noMore || 'That\'s all! No more articles.';
                 loadMoreContainer.innerHTML = `
                     <div class="text-center text-text-muted text-sm py-8">
                         <span class="material-symbols-outlined text-2xl mb-2 block">check_circle</span>
@@ -284,7 +284,7 @@
             });
         });
 
-        // 初始化时绑定加载更多按钮事件
+        // Bind the load-more button on initial render.
         document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
         loadMore();
     </script>
