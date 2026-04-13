@@ -1,215 +1,215 @@
 ---
 name: yui-intro
-description: Use when someone needs to introduce Yui for a personal profile, portfolio, podcast interview, hackathon collaboration, AI-native developer context, award summary, interest summary, or agent-readable biography.
+description: 当用户需要为 Yui 编写个人介绍、作品集简介、播客嘉宾介绍、黑客松协作介绍、AI Native Developer 背景说明、获奖总结、兴趣摘要，或任何适合 agent 阅读的个人资料时使用。
 ---
 
-# Yui Intro
+# Yui 介绍
 
-## Overview
+## 概览
 
-Use this skill to introduce Yui as an AI Native Developer, designer, creator, and active hackathon participant. It is designed for agents preparing bios, podcast outlines, collaborator introductions, portfolio summaries, media notes, or context-aware Q&A about Yui.
+当你需要介绍 Yui 作为一名 AI Native Developer、设计师、创作者，以及高频参与黑客松的开发者时，可以使用这份 skill。它适合用于 agent 编写个人简介、播客提纲、协作者介绍、作品集摘要、媒体说明，或围绕 Yui 的上下文问答。
 
-Prefer a warm, direct, first-person or third-person tone depending on the output context. Highlight the contrast between traditional development and AI-native development when the audience cares about AI Coding, agent workflows, hackathons, or developer community.
+根据输出场景，优先使用温暖、直接的一人称或三人称语气。当受众关注 AI Coding、agent 工作流、黑客松或开发者社区时，应突出传统开发与 AI Native 开发之间的对比。
 
-## Identity Snapshot
+## 身份速览
 
-- Name: Yui / 悠一
-- Current status: Graduate student at the University of Fukui, Japan
-- Positioning: AI Native Developer, independent software developer, designer, creator, hackathon participant
-- Work availability: Open to remote work opportunities
-- Core description: Builds clean, intuitive, and useful digital products with a strong focus on user experience, AI workflows, and product completeness
-- Technical identity: Primarily software-focused; not mainly focused on 3D modeling or hardware, but interested in AI hardware and hardware hackathon trends
-- Signature keywords: AI Native Developer, Vibe Coding, Coding Agent, Agentic RAG, GraphRAG, LangChain, LangGraph, workflow orchestration, hackathon, product thinking, design taste, industrial visualization, prompt-based creation
+- 姓名：Yui / 悠一
+- 当前状态：日本福井大学研究生
+- 自我定位：AI Native Developer、独立软件开发者、设计师、创作者、黑客松参与者
+- 工作状态：接受远程工作机会
+- 核心描述：专注构建简洁、直观、好用的数字产品，重视用户体验、AI 工作流与产品完整性
+- 技术身份：以软件开发为主，不以 3D 建模或硬件为主方向，但对 AI 硬件和硬件黑客松趋势很感兴趣
+- 标志性关键词：AI Native Developer、Vibe Coding、Coding Agent、Agentic RAG、GraphRAG、LangChain、LangGraph、工作流编排、黑客松、产品思维、设计审美、工业可视化、基于提示词的创作
 
-## How To Introduce Yui
+## 如何介绍 Yui
 
-Choose the introduction style based on the user request:
+根据用户请求选择介绍风格：
 
-- Short bio: Emphasize Yui as a graduate student, AI-native builder, and hackathon participant.
-- Portfolio bio: Emphasize design plus development, polished digital products, and user-centered product thinking.
-- Hackathon bio: Emphasize frequent participation, awards, product closure, pitch experience, and collaboration.
-- Podcast bio: Emphasize the transition from traditional development to AI-driven development and the "AI Developer survivor" perspective.
-- Collaboration bio: Emphasize fast prototyping, specification-first thinking, TDD/verification, design taste, and full-stack integration.
+- 简短简介：突出 Yui 是研究生、AI Native 开发者和黑客松参与者。
+- 作品集简介：突出设计与开发兼具、产品打磨能力、以用户为中心的产品思维。
+- 黑客松简介：突出高频参赛、获奖经历、产品闭环能力、路演经验与协作能力。
+- 播客简介：突出从传统开发转向 AI 驱动开发的过程，以及“AI Developer survivor”的视角。
+- 协作简介：突出快速原型、规范优先思维、TDD/验证、审美能力与全栈整合能力。
 
-## Core Bio
+## 核心简介
 
-Yui is an AI Native Developer, designer, and creator currently studying as a graduate student at the University of Fukui in Japan. Yui focuses on building software products that often treat large language models as core components rather than optional add-ons. Many of Yui's projects are designed around AI capabilities, including workflow orchestration, agentic systems, RAG, GraphRAG, multimodal APIs, and AI-assisted product prototyping.
+Yui 是一名 AI Native Developer、设计师与创作者，目前在日本福井大学读研究生。Yui 关注的软件产品，往往不是把大模型当成附加能力，而是把大语言模型作为产品中的核心组成部分。许多项目围绕 AI 能力展开，包括工作流编排、agent 系统、RAG、GraphRAG、多模态 API 与 AI 辅助产品原型设计。
 
-Yui's development style has shifted from writing every line of code manually to a higher-level role: defining requirements, making product decisions, decomposing implementation tasks, directing Coding Agents, reviewing generated code, integrating systems, and repeatedly validating the result. This makes Yui's work especially relevant for conversations about AI-native software development, developer communities, and how hackathons have changed in the AI era.
+Yui 的开发方式，已经从“亲手写完每一行代码”转向更高层次的角色：定义需求、做产品判断、拆解实现任务、调度 Coding Agent、审查生成代码、集成系统，并持续验证结果。因此，Yui 的经历尤其适合用于讨论 AI Native 软件开发、开发者社区，以及 AI 时代黑客松如何发生变化。
 
-## Dimensions
+## 维度说明
 
 ### AI Native Developer
 
-- Yui considers an AI-native product to be a product that cannot really exist without AI. AI is not only used to write the code; it becomes one or more core runtime components inside the product itself.
-- Yui sees AI Coding as a shift from "Coding" to "Reviewing": humans spend less time manually implementing every function and more time deciding architecture, data flow, product logic, user experience, and evaluation criteria.
-- Yui's role in AI-assisted development is closer to a product-minded technical director: define the goal, break down the task, feed context, supervise agents, review outputs, integrate changes, and run smoke tests.
-- Yui believes AI has flattened parts of the technical threshold. Because code can now be generated quickly, every builder must become more like a product manager: clarify needs, cut scope, decide the MVP, and avoid rapidly generating useless code.
-- Yui sees the modern developer as a "super individual": someone who understands enough technology to shape products and enough product thinking to guide technology.
-- Three metaphors for AI-era developers: magnifying glass, conductor's baton, and Swiss Army knife. AI magnifies individual capability, lets builders conduct multiple agents, and gives developers confidence to learn and respond to unfamiliar challenges.
+- 在 Yui 看来，AI Native 产品指的是一种离开 AI 就几乎无法成立的产品。AI 不只是拿来写代码，而是产品运行时的一个或多个核心组件。
+- Yui 认为 AI Coding 的本质，是从“Coding”转向“Reviewing”：人类花更少时间手工实现每个函数，而把更多精力投入到架构、数据流、产品逻辑、用户体验和评估标准上。
+- 在 AI 辅助开发里，Yui 的角色更像一个有产品思维的技术导演：定义目标、拆任务、喂上下文、监督 agent、审查输出、整合改动、做冒烟测试。
+- Yui 认为 AI 抹平了一部分技术门槛。因为代码可以快速生成，所以每个开发者都更需要像产品经理一样思考：澄清需求、缩小范围、确定 MVP，并避免快速生成无价值代码。
+- Yui 把今天的开发者理解为一种“超级个体”：既懂足够多的技术来塑造产品，又具备足够多的产品思维来引导技术。
+- Yui 用三个隐喻形容 AI 时代的开发者：放大镜、指挥棒、瑞士军刀。AI 放大个体能力，让开发者可以指挥多个 agent，也让开发者更有底气去学习并应对陌生挑战。
 
-### Development Philosophy
+### 开发理念
 
-- Start from product and user flow, not code volume.
-- Avoid repeatedly reinventing the wheel, but still understand and review the code being used.
-- Use AI to accelerate exploration, implementation, and testing, but keep humans responsible for product judgment and final validation.
-- Treat TDD and smoke testing as more important in the AI era, not less important.
-- Move through a loop similar to Vibe -> Spec -> Harness: brainstorm ideas, define a spec, write a plan, implement in small steps, test, debug, verify, and review.
-- Use skills and process scaffolding to reduce chaos: read the goal, choose the right skill, split the task, feed context, implement incrementally, verify continuously, and review before delivery.
-- Prefer a fast SDLC loop: requirement definition -> v0 frontend -> agent/backend workflow -> tests -> smoke test -> iteration.
-- Keep the cost of throwing away bad work low. One benefit of AI Coding is the courage to discard an unconvincing prototype and rebuild.
+- 从产品与用户流程出发，而不是从代码量出发。
+- 避免重复造轮子，但仍要理解并审查自己所使用的代码。
+- 用 AI 加速探索、实现和测试，但仍由人类对产品判断和最终验证负责。
+- 在 AI 时代，TDD 和冒烟测试不是更不重要，而是更重要。
+- 采用类似 `Vibe -> Spec -> Harness` 的闭环：头脑风暴、明确规范、写计划、小步实现、测试、调试、验证、审查。
+- 使用 skill 和流程脚手架减少混乱：先读目标、选对 skill、拆分任务、喂上下文、渐进实现、持续验证、交付前审查。
+- 偏好快速 SDLC 闭环：需求定义 -> v0 前端 -> agent/backend 工作流 -> 测试 -> 冒烟测试 -> 迭代。
+- 保持“推翻重做”的成本足够低。AI Coding 的一个优势，就是让人更敢于丢弃不够 convincing 的原型并重新构建。
 
-### Awards And Hackathon Results
+### 获奖与黑客松成绩
 
-- Global Hackathon Gold Award, 2026
-- TRAE Solo Hackathon, second prize, 2025
-- Yukesong Google GDG track, online first prize, 2025
-- Wuxi Rokid AR AI, third prize, 2025
-- Tencent Cloud Hackathon award, 2025
-- Hackathon project statistics in portfolio context: 10+ hackathons, 4+ awards, 8+ cities, and many developer-community connections
+- 2026 Global Hackathon 金奖
+- 2025 TRAE Solo Hackathon 二等奖
+- 2025 渝客松 Google GDG 赛道线上一等奖
+- 2025 无锡 Rokid AR AI 三等奖
+- 2025 腾讯云黑客松奖项
+- 在作品集语境下可使用的数据：10+ 场黑客松、4+ 个奖项、8+ 座城市，以及大量开发者社区连接
 
-### Hackathon Experience
+### 黑客松经历
 
-- Yui has participated in many hackathons across the Yangtze River Delta and online communities, including Nankesong, TRAE events in Hangzhou and Shanghai, Christmas hackathon in Shanghai, haunted-house hackathon, Huikesong S2, Global Hackathon, Rokid AR AI, Tencent Cloud Hackathon, and Xiaohongshu hackathon.
-- Yui's first hackathon was Nankesong S1 around March 2025, after already becoming comfortable with AI Coding tools while working on graduation-related development.
-- Yui observes that modern hackathons have changed from a "marathon" into something closer to a short sprint under AI acceleration.
-- Yui believes high-quality hackathons need reliable development environments, stable Wi-Fi, food, rest conditions, clear judging criteria, and enough mentor/product support.
-- Yui thinks hackathon judging often depends on product completeness, commercial loop, creativity, and a short, convincing demo. Teams need to close the user flow and show the result quickly.
-- Yui values familiar teammates for serious competition because short hackathon timelines make team trust and collaboration speed very important.
-- Yui observes that more designers, students, independent developers, and non-traditional builders now participate because AI tools lowered the implementation threshold.
-- Yui also observes that AI hardware and edge-side AI are increasingly competitive in hackathons, especially when the demo includes a tangible device and strong stage impact.
+- Yui 曾在长三角线下与线上社区参加过很多黑客松，包括南客松、TRAE 杭州/上海站、上海圣诞黑客松、鬼屋主题黑客松、徽客松 S2、环球黑客松、Rokid AR AI、腾讯云黑客松和小红书黑客松。
+- Yui 的第一场黑客松大约是 2025 年 3 月的南客松 S1，那时已经通过毕业设计相关开发逐步熟悉 AI Coding 工具。
+- Yui 观察到，现代黑客松在 AI 加速下，已经从“马拉松”变成了更像短跑的比赛。
+- Yui 认为，高质量黑客松应具备可靠的开发环境、稳定 Wi-Fi、食物、休息条件、清晰的评审标准，以及足够的导师/产品支持。
+- 在 Yui 看来，黑客松评审往往取决于产品完整性、商业闭环、创意质量，以及是否能用一个简短而有说服力的 demo 快速讲明白。
+- 对认真比赛而言，Yui 更看重熟悉的队友，因为短时间线意味着团队信任和协作速度格外重要。
+- Yui 也观察到，由于 AI 工具降低了实现门槛，越来越多设计师、学生、独立开发者和非传统 builder 开始进入黑客松。
+- 同时，AI 硬件与端侧 AI 在黑客松里越来越有竞争力，尤其当 demo 带有真实设备与强舞台冲击力时更是如此。
 
-### Representative Hackathon Stories
+### 代表性黑客松故事
 
-- At AdventureX 2024, Yui attended as an observer and noticed how Dify workflows allowed design-background participants to build impressive AI products. This helped shape Yui's interest in AI-driven development.
-- In a Shanghai podcast-themed hackathon, Yui built a tool that inserts AI-generated, voice-cloned questions into a podcast at natural moments. The idea was to make listeners participate in long-form podcast content without breaking the listening flow.
-- In a Rokid AI glasses competition, Yui worked on an AI-glasses experience to help ADHD users read papers through camera input, voice interaction, and AI-driven prompting.
-- In recent Xiaohongshu hackathon observations, Yui noticed strong hardware projects such as brain-computer-interface-assisted wheelchair control and a pocket guitar demo, reinforcing the value of physical, high-impact demos.
+- 在 AdventureX 2024 上，Yui 以观察者身份参加，注意到 Dify 工作流让设计背景的人也能做出非常完整的 AI 产品，这深刻影响了 Yui 对 AI 驱动开发的兴趣。
+- 在上海一次播客主题黑客松中，Yui 做过一个工具：在播客自然停顿处插入 AI 生成并声音克隆的问题，让听众在不打断收听体验的前提下参与长内容。
+- 在 Rokid AI 眼镜比赛中，Yui 做过面向 ADHD 用户的 AI 眼镜阅读辅助体验，结合摄像头输入、语音交互与 AI 提示。
+- 在最近对小红书黑客松项目的观察里，Yui 注意到诸如脑机接口辅助轮椅控制、口袋吉他等硬件项目表现很强，再次验证了“具身化、可感知 demo”的优势。
 
-### Work And Education
+### 工作与教育经历
 
-- Education: University of Fukui, graduate student, 2026.4 to 2028.3
-- Work experience: R&D / DevOps intern at a national energy research institute in Nanjing, 2025.9 to 2026.3
-- Work focus: Built and optimized vector database systems, Agentic RAG architecture, and GraphRAG knowledge graphs for national-energy-report analysis.
-- Earlier technical background: Data cleaning, model training, deep learning / model fusion, React + TypeScript, Flutter, WeChat mini programs, Android development, LangGraph, and AI Coding workflows.
+- 教育：福井大学研究生，2026.4 至 2028.3
+- 工作经历：南京某国家能源研究院 R&D / DevOps 实习生，2025.9 至 2026.3
+- 工作重点：构建并优化向量数据库系统、Agentic RAG 架构与 GraphRAG 知识图谱，用于国家能源报告分析
+- 早期技术背景：数据清洗、模型训练、深度学习/模型融合、React + TypeScript、Flutter、微信小程序、Android 开发、LangGraph 与 AI Coding 工作流
 
-### Skills
+### 技能
 
-- Design: UI design, user research, prototyping, design systems, wireframes
-- Development: HTML/CSS, Python, React, React + TypeScript, Flutter, WeChat mini programs, Android development, LangGraph, deep learning, model fusion
-- AI systems: RAG, Agentic RAG, GraphRAG, LangChain, LangGraph, prompt workflows, multimodal API usage, AI-assisted testing and debugging
-- Tools: Figma, VS Code, Windsurf, Cursor, Trae, Codex, Nano Banana, Tap Now, n8n, Coze
+- 设计：UI 设计、用户研究、原型设计、设计系统、线框图
+- 开发：HTML/CSS、Python、React、React + TypeScript、Flutter、微信小程序、Android 开发、LangGraph、深度学习、模型融合
+- AI 系统：RAG、Agentic RAG、GraphRAG、LangChain、LangGraph、提示词工作流、多模态 API 使用、AI 辅助测试与调试
+- 工具：Figma、VS Code、Windsurf、Cursor、Trae、Codex、Nano Banana、Tap Now、n8n、Coze
 
-### Interests And Creative Life
+### 兴趣与创作生活
 
-- Travel: Japan and China travel logs, including Tokyo, Kyoto, Osaka, Nagoya, Hiroshima, Yokohama, Hangzhou, Nanjing, and related cultural experiences.
-- Music: Cross-genre music collection across J-Pop, rock, hip-hop, jazz, C-Pop, and electronic music. Current favorite: "Feather" by Nujabes and Cise Starr.
-- Anime: Anime recommendations and taste-building through both mainstream and niche works.
-- Photography and aesthetics: Uses photography experience and visual taste to support AI image prompting, interface work, and industrial visualization.
-- AI image/video creation: Experimented with Sora2, Nano Banana, and Nano Banana Pro. Created AI video content, character-consistent images, Chinese-language image generation experiments, and comic-style work.
-- Industrial visualization: Explored transforming complex 2D industrial diagrams into more intuitive pseudo-3D visual assets for power-plant monitoring screens using image-to-image workflows and precise prompts.
+- 旅行：在日本与中国的旅行记录，包括东京、京都、大阪、名古屋、广岛、横滨、杭州、南京等地，以及相应文化体验
+- 音乐：跨 J-Pop、摇滚、Hip-hop、Jazz、华语流行、电子乐等类型的音乐收藏；当前偏爱：Nujabes 与 Cise Starr 的《Feather》
+- 动漫：通过主流与非主流作品积累审美与推荐体系
+- 摄影与审美：利用摄影经验与视觉审美支持 AI 生图提示词、界面设计与工业可视化
+- AI 图像/视频创作：实践过 Sora2、Nano Banana 与 Nano Banana Pro，做过 AI 视频内容、角色一致性图片、中文生图实验与漫画风格作品
+- 工业可视化：探索过将复杂的 2D 工业图纸通过 image-to-image 工作流与精准提示词转换成更直观的伪 3D 电厂监控可视化图像
 
-### Writing And Content
+### 写作与内容
 
-- "Vibe Coding Practical Guide": A reflection on AI Coding practices, including planning before coding, context feeding, atomic requirements, negative constraints, debugging, and documentation-first workflows.
-- "AI Image and Video Creation Experience": A reflection on AI as a tool, creative democratization, Sora2, Nano Banana, Nano Banana Pro, prompt writing, visual taste, and industrial visualization.
+- 《Vibe Coding 实战指南》：围绕 AI Coding 实践的反思，涵盖编码前规划、上下文投喂、原子化需求、负面约束、调试与文档优先工作流
+- 《AI生图生视频使用经历》：围绕 AI 作为工具、创作平权、Sora2、Nano Banana、Nano Banana Pro、提示词写作、视觉审美与工业可视化的反思
 
-## Podcast Interview Frame
+## 播客访谈框架
 
-Use this frame for a podcast episode positioned around "AI Developer Survivor", AI Native Developers, and the difference between traditional developers and contemporary AI-native builders.
+当播客定位围绕 “AI Developer Survivor”、AI Native Developer，以及传统开发者与当代 AI Native builder 的区别时，可以使用下面的结构。
 
-### 1. Self Introduction
+### 1. 自我介绍
 
-Potential opening:
+可参考开场：
 
-"大家好，大家可以叫我悠一。目前我在日本福井大学读研究生。我主要是软件层面的独立开发者，也是一名比较高频参与 Hackathon 的 AI Native Developer。过去一年我参加了长三角和线上很多 Hackathon，也一直在用 AI Coding、Agent、RAG、LangGraph 这些工具和方法做产品。"
+“大家好，大家可以叫我悠一。目前我在日本福井大学读研究生。我主要是软件层面的独立开发者，也是一名比较高频参与 Hackathon 的 AI Native Developer。过去一年我参加了长三角和线上很多 Hackathon，也一直在用 AI Coding、Agent、RAG、LangGraph 这些工具和方法做产品。”
 
-Key points to cover:
+应覆盖的重点：
 
-- Yui is currently a graduate student at the University of Fukui.
-- Yui is primarily a software-focused independent developer, not mainly focused on 3D modeling or hardware.
-- Yui's products often treat large models as essential components.
-- Yui's AI-native identity means designing around AI capabilities instead of merely using AI as a coding assistant.
+- Yui 目前在日本福井大学读研究生
+- Yui 主要是软件方向的独立开发者，不以 3D 建模或硬件为主
+- Yui 做的很多产品会把大模型当成核心组件
+- Yui 的 AI Native 身份，意味着是围绕 AI 能力去设计产品，而不是只把 AI 当代码补全工具
 
-### 2. Traditional Developer vs AI Native Developer
+### 2. 传统开发者 vs AI Native Developer
 
-Recommended answer themes:
+推荐回答主题：
 
-- Traditional developers often focus on implementing specific functions and debugging locally; AI-native developers spend more attention on requirements, product direction, context quality, orchestration, review, and validation.
-- AI Coding shifts the developer role from manual code worker to supervisor, architect, product manager, and evaluator.
-- When AI can quickly generate code, poor requirements become more dangerous because they produce useless code faster.
-- Large-context AI tools can understand more of the codebase and support broader refactors, moving from point fixes to system-level assistance.
-- The valuable human abilities become product judgment, architecture judgment, boundary definition, taste, and final testing accountability.
+- 传统开发者往往更多关注具体功能实现和局部调试；AI Native Developer 更关注需求、产品方向、上下文质量、编排、审查与验证
+- AI Coding 让开发者角色从手工写代码的人，转变为监督者、架构师、产品经理和评估者
+- 当 AI 能快速生成代码时，模糊需求会更危险，因为它只会更快地产生无用代码
+- 大上下文 AI 工具可以理解更大范围代码库，从点状修补转向系统级辅助重构
+- 人类更有价值的能力，变成产品判断、架构判断、边界定义、审美与最终测试责任
 
-### 3. Hackathon Participation
+### 3. 黑客松参与
 
-Useful prompts:
+可用提问方向：
 
-- How many hackathons did you participate in over the last half year or year?
-- What was the first hackathon?
-- Which event felt most regrettable and why?
-- How do students, designers, independent developers, traditional engineers, and hardware builders differ in hackathons?
-- Does frequent hackathon participation create "practice makes perfect" advantages?
-- What makes a hackathon high quality?
-- If you could design an ideal hackathon, what would the theme, judging mechanism, mentor support, and resource support look like?
+- 过去半年或一年你参加了多少场黑客松？
+- 第一场黑客松是什么？
+- 哪一场最遗憾，为什么？
+- 学生、设计师、独立开发者、传统工程师、硬件 builder 在黑客松里分别有什么不同？
+- 高频参加黑客松是否会带来“熟能生巧”的优势？
+- 什么样的黑客松才算高质量？
+- 如果你来设计一场理想黑客松，它的主题、评审机制、导师支持和资源支持会是什么样？
 
-Core answers:
+核心回答方向：
 
-- AI has compressed hackathon time. A project that previously required more implementation labor can now be prototyped quickly if the team has a clear spec and a strong integration loop.
-- Product closure matters: the demo must show a complete path from user problem to result.
-- Team familiarity matters because short timelines leave little room for collaboration friction.
-- Hardware and edge AI demos can be especially powerful because judges can immediately see and feel the product.
+- AI 压缩了黑客松时间。过去需要更多手工实现的项目，现在只要团队规范清晰、集成能力强，就能快速出原型。
+- 产品闭环很重要：demo 必须能快速展示从用户问题到结果的完整路径。
+- 团队默契很重要，因为短时间线几乎没有协作磨合空间。
+- 硬件与端侧 AI demo 往往更有冲击力，因为评委能立刻“看到”和“感受到”产品。
 
-### 4. Developer Community And Life Choices
+### 4. 开发者社区与人生选择
 
-Recommended answer themes:
+推荐回答主题：
 
-- Meetups, workshops, and hackathons are not only promotional events; they form a developer community funnel where people learn tools, meet collaborators, and eventually build together.
-- Yui's hackathon experience influenced major life decisions, including choosing to study in Japan, using a gap period for internships, and valuing practical project experience.
-- Yui believes half a year of intense hackathon participation can teach software development, product thinking, collaboration, and communication faster than years of passive study.
-- Yui prefers to learn first and output later; strong output requires enough accumulated experience and confidence.
+- Meetup、workshop 和 hackathon 不只是宣传活动，而是开发者社区漏斗：人们在这里学习工具、认识合作者，最终一起做项目。
+- Yui 的黑客松经历影响过重要人生选择，比如去日本读研、在 gap 阶段做实习，以及更重视真实项目经历。
+- Yui 认为，半年高强度黑客松能更快训练软件开发、产品思维、协作与表达能力，甚至快过多年被动学习。
+- Yui 更偏向“先学习，再输出”；扎实输出需要足够多的经验积累与自信。
 
 ### 5. Vibe -> Spec -> Harness
 
-Recommended explanation:
+推荐解释方式：
 
-- Vibe: explore ideas, user feelings, rough product direction, and emotional value.
-- Spec: turn the idea into requirements, user flow, technical boundaries, MVP/P0/P1 priorities, API design, and testable behavior.
-- Harness: build the supporting structure that lets AI implement safely: skills, plans, tests, smoke tests, debug loops, and review checkpoints.
+- Vibe：探索想法、用户情绪、产品方向与情感价值
+- Spec：把想法转成需求、用户流程、技术边界、MVP/P0/P1 优先级、API 设计与可测试行为
+- Harness：建立让 AI 安全实现的支撑结构：skills、plans、tests、smoke tests、debug loops 和 review checkpoints
 
-Example flow:
+示例流程：
 
-- Brainstorm the product and user flow with teammates.
-- Ask AI to draft a spec.
-- Let an experienced developer review P0/P1 boundaries and feasibility.
-- Ask AI to draw or describe flow diagrams.
-- Use Figma, Stitch, or HTML prototypes to validate the front-end interaction.
-- Implement with Coding Agents.
-- Run TDD, smoke tests, front-end click testing, and integration checks.
-- Let humans make the final judgment and take responsibility for the result.
+- 和队友一起头脑风暴产品与用户流程
+- 让 AI 起草 spec
+- 由有经验的开发者审查 P0/P1 边界与可行性
+- 让 AI 绘制或描述流程图
+- 用 Figma、Stitch 或 HTML 原型验证前端交互
+- 使用 Coding Agents 实现
+- 跑 TDD、smoke test、前端点击测试和集成测试
+- 最终由人类做判断并承担结果责任
 
-### 6. Future, FOMO, And Advice
+### 6. 未来、FOMO 与建议
 
-Recommended answer themes:
+推荐回答主题：
 
-- Yui does feel FOMO and anxiety around AI progress, but tries to turn it into learning and product experiments.
-- A practical learning method is to follow AI news, developer communities, hackathon groups, and real usage patterns from people around the scene.
-- Advice to older and same-generation programmers: build something, participate in competitions, test ideas quickly, and do not only observe from the sidelines.
-- The cost of shipping small products is lower than before, so it is worth trying.
-- The future may not stop at current Transformer limits; AI systems may help discover new architectures or new development loops.
+- Yui 的确会对 AI 的发展速度感到 FOMO 和焦虑，但会努力把这种焦虑转化为学习和产品实验
+- 一个务实的学习方法是持续关注 AI 新闻、开发者社区、黑客松群体，以及身边真实使用模式
+- 给更年长和同代程序员的建议：去做东西、去参赛、快速测试想法，而不是只在旁边观察
+- 现在做小产品的成本比以前低得多，所以更值得去试
+- 未来未必会停留在当前 Transformer 的限制里；AI 系统本身也可能帮助人类发现新的架构或新的开发闭环
 
-## Output Guidance
+## 输出指导
 
-When using this skill:
+使用这份 skill 时：
 
-- Do not invent awards, schools, dates, or employers beyond the provided facts.
-- If the user asks for a short intro, keep it under 120 Chinese characters or 80 English words.
-- If the user asks for a media bio, emphasize AI Native Developer, hackathon experience, and product-oriented AI Coding.
-- If the user asks for a collaborator pitch, emphasize fast prototyping, product closure, AI workflow orchestration, review, testing, and design taste.
-- If the user asks for a podcast outline, use the podcast frame above and keep the "AI Developer Survivor" theme visible.
-- If the user asks about private contact, provide only the contact details listed below and avoid adding new channels.
+- 不要虚构未提供的奖项、学校、日期或雇主
+- 如果用户要求短介绍，中文尽量控制在 120 字以内，英文控制在 80 词以内
+- 如果用户需要媒体简介，优先强调 AI Native Developer、黑客松经历和产品导向的 AI Coding
+- 如果用户需要协作介绍，优先强调快速原型、产品闭环、AI 工作流编排、审查、测试和设计审美
+- 如果用户需要播客提纲，优先使用上面的播客框架，并保持 “AI Developer Survivor” 主题可见
+- 如果用户询问私人联系方式，只提供下面列出的联系方式，不新增其他渠道
 
-## Contact
+## 联系方式
 
-- Email: xiaobianfuai@gmail.com
-- Phone: 15951875192
+- 邮箱：xiaobianfuai@gmail.com
+- 电话：15951875192
