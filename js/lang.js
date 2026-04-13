@@ -900,7 +900,8 @@
         return [
             '/blog/article.html',
             '/blog/ai-image-video.html',
-            '/blog/vibe-coding.html'
+            '/blog/vibe-coding.html',
+            '/blog/ai-native-hackathon.html'
         ].includes(path);
     }
     
