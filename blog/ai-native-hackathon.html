@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AI Native Developer：黑客松赛场上的开发者生存范式 - Tech Blog</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#222222",
+                        "secondary": "#f4f4f5",
+                        "text-main": "#222222",
+                        "text-muted": "#71717a",
+                        "text-tertiary": "#9ca3af",
+                        "background": "#ffffff",
+                        "background-soft": "#f9fafb",
+                        "border-subtle": "#e5e5e5",
+                        "accent-soft": "#e5e7eb",
+                        "dark-bg": "#0f0f0f",
+                        "dark-surface": "#1a1a1a",
+                        "dark-card": "#242424",
+                        "dark-border": "#333333",
+                        "dark-text": "#e5e5e5",
+                        "dark-text-muted": "#a0a0a0",
+                    },
+                    fontFamily: {
+                        "display": ["Playfair Display", "serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+    <script src="/js/theme.js"></script>
+    <script src="/js/lang.js"></script>
+    <script src="/js/mobile-menu.js"></script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .prose, article {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        .prose h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; }
+        .prose h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .prose p { margin-bottom: 1rem; line-height: 1.8; }
+        .prose ul, .prose ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .prose li { margin-bottom: 0.5rem; line-height: 1.7; }
+        .prose strong { font-weight: 600; color: inherit; }
+        .prose blockquote { border-left: 4px solid #e5e5e5; padding-left: 1rem; margin: 1.5rem 0; font-style: italic; color: #71717a; }
+        .dark .prose blockquote { border-left-color: #333; color: #a0a0a0; }
+        .dark .prose strong { color: #ffffff; }
+        .prose hr { border: none; border-top: 1px solid #e5e5e5; margin: 2rem 0; }
+        .dark .prose hr { border-top-color: #333; }
+        .prose .article-card-block {
+            border: 1px solid #e5e5e5;
+            border-radius: 0.75rem;
+            background: linear-gradient(180deg, #fbfbfb, #f7f7f8);
+            padding: 1rem 1.1rem;
+            margin: 1rem 0;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+        }
+        .dark .prose .article-card-block {
+            border-color: #333333;
+            background: linear-gradient(180deg, #232323, #1d1d1d);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+        .prose .article-card-block p:last-child { margin-bottom: 0; }
+        .prose .article-card-block strong { display: block; margin-bottom: 0.2rem; font-size: 0.98rem; }
+        .gallery-grid img { transition: transform 0.5s ease; }
+        .gallery-grid .group:hover img { transform: scale(1.04); }
+    </style>
+</head>
+<body class="bg-background dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col overflow-x-hidden antialiased transition-colors duration-300">
+    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
+        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
+            <div class="flex items-center gap-4">
+                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">作品集.</a>
+            </div>
+            <div class="flex items-center gap-10">
+                <nav class="hidden md:flex items-center gap-8">
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
+                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/blog/">博客</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">音乐</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">动漫</a>
+                </nav>
+                <div class="flex gap-2">
+                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="中/EN/日">
+                        <span class="text-xs font-bold">EN</span>
+                    </button>
+                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
+                        <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
+                    </button>
+                    <button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card transition-colors" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu">
+                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <nav id="mobileMenu" class="hidden md:hidden border-t border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
+            <div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
+                <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 w-fit" href="/blog/">博客</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">音乐</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">动漫</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-1 w-full">
+        <div class="w-full bg-background-soft dark:bg-dark-surface py-16">
+            <div class="max-w-3xl mx-auto px-6">
+                <a href="/blog/" class="inline-flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors mb-8">
+                    <span class="material-symbols-outlined text-lg">arrow_back</span>
+                    <span data-i18n="backToBlog">返回博客</span>
+                </a>
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="px-3 py-1 rounded bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-xs font-semibold uppercase tracking-wider">AI</span>
+                    <span id="articleMetaDate" class="text-sm text-text-muted dark:text-dark-text-muted">2026年4月13日</span>
+                    <span class="text-text-muted dark:text-dark-text-muted">•</span>
+                    <span id="articleMetaReadTime" class="text-sm text-text-muted dark:text-dark-text-muted">15 分钟阅读</span>
+                </div>
+                <h1 id="articleTitle" class="text-4xl md:text-5xl font-display font-bold text-primary dark:text-dark-text leading-tight mb-6">
+                    AI Native Developer：黑客松赛场上的开发者生存范式
+                </h1>
+                <p id="articleExcerpt" class="text-xl text-text-muted dark:text-dark-text-muted font-light leading-relaxed">
+                    从黑客松实战、Vibe Coding 到 AI Native Developer，记录 AI 时代作品如何更容易拿奖，以及普通开发者如何重构自己的能力边界。
+                </p>
+                <div class="flex items-center gap-4 mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
+                    <div class="w-12 h-12 rounded-full overflow-hidden">
+                        <img src="/images/profile/avatar-small.jpg" alt="Yui" class="w-full h-full object-cover"/>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-primary dark:text-dark-text">Yui</p>
+                        <p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="authorRole">开发者 & 创作者</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full max-w-4xl mx-auto px-6 -mt-0">
+            <div class="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-lg">
+                <img class="w-full h-full object-cover" src="/images/blog/ai-native-hackathon/hackathon-01.jpg" alt="黑客松现场照片"/>
+            </div>
+        </div>
+
+        <article class="w-full max-w-3xl mx-auto px-6 py-16">
+            <div id="articleBody" class="prose prose-lg max-w-none text-text-main dark:text-dark-text">
+                <p>从去年4 月到现在，作为一名03 年的开发者，我辗转了南客松、Trae 黑客松、徽客松、渝客松、圣诞黑客松、模法黑客松、Rokid 黑客松、环球黑客松以及高校黑客松等大大小小的赛事。</p>
+                <p>我的技术背景原本纯粹是软件开发。但在过去这一年高强度的比赛与日常开发中，我发现自己身上的标签正在被重构。有了AI 的加持，现在的竞争语境已经不再是“你会什么”，而是“你的熟练度以及你还有什么不会”——因为跨界学习的门槛被无限拉低，非技术背景的普通人借助AI 上手写代码、甚至跨界降维打击的例子比比皆是。</p>
+                <p>所以，今天想借着这篇文章，和大家聊聊这段时间我在黑客松赛场上的真实观察：<strong>到底具备哪些关键点的作品更容易拿奖？</strong>以及在AI 狂飙的当下，<strong>我们普通开发者的生存范式究竟发生了怎样的巨变。</strong></p>
+
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 my-8 gallery-grid">
+                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-01.jpg" alt="黑客松现场照片"/></div>
+                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-02.jpg" alt="黑客松现场照片"/></div>
+                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-03.jpg" alt="黑客松现场照片"/></div>
+                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-04.jpg" alt="黑客松现场照片"/></div>
+                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-05.jpg" alt="黑客松现场照片"/></div>
+                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-06.jpg" alt="黑客松现场照片"/></div>
+                </div>
+
+                <h2 class="text-primary dark:text-dark-text">01 从 Coding 到 Reviewing 的角色重构</h2>
+                <p>以前，我一直信奉一个原则：“从零到一亲手敲下每一行代码，才算对技术有深刻的理解。”遇到Bug 时，我会在CSDN 或GitHub 上苦苦搜寻别人的开源项目和报错方案。</p>
+                <p>但到了24 年，当ChatGPT、Dify、Windsurf 这些工具成规模涌现后，我的开发信仰被彻底重构了。</p>
+                <p>我一开始的震撼来自于低代码：通过工作流编排，配合AI 生成的代码节点，居然能以极低的成本实现曾经看起来很复杂的功能。我的日常从“寻找答案”变成了“维护与调试AI 逻辑”。</p>
+                <p>不过在深度使用后，我也发现了这种模式的局限：有时候工作流会过于庞杂，节点堆砌过多，导致一些极其简单的功能反而需要绕很多弯子才能实现。正是为了解决这些痛点，我后来开始学习LangChain，一边学，一边用AI 辅助编写测试代码，从此便一发不可收拾。</p>
+                <p>当代码可以被自然语言批量生成时，这已经不仅是编程语言到自然语言的转换，而是一场彻底的思维革命：<strong>我们正在经历从亲手的“Coding”到基于产品的“Reviewing”的质变。</strong></p>
+                <p>以前的开发团队里，只有专门的产品经理去抠需求、卡时间线。现在，AI 把技术实现门槛踩平了，<strong>每个人都必须成为自己项目的产品经理。</strong>道理很简单：如果不去控需求、不做需求分析，AI 生成代码的速度再快，也只是在快速制造一堆没有商业价值和实用价值的代码垃圾。</p>
+                <p>既然具体的函数实现、接口调用都已经下放给了Coding Agent，人类的精力就应该被彻底释放出来。你不再是流水线上的敲砖工人，而是变成了这条流水线的监工与设计者。以前遇到Bug，我们只能局部排查；而现在的AI 工具能瞬间读取整个代码库，理解接口前后的依赖关系，进行“外科手术式”的精准重构。</p>
+                <p>在这场行业大洗牌中，懂技术的产品经理和懂产品的开发者，最终将汇聚成一种全新的超级个体—— <strong>AI Native Developer（AI 原生开发者）</strong>。</p>
+                <p>在我看来，一个真正的AI Native Developer 做出来的产品，必须是<strong>“离开了AI 就无法存在”</strong>的。大模型不再是帮我补全几行代码的辅助工具，而是整个产品的“核心心脏”。我们不再是单向地向机器下达死指令，而是和AI 探讨产品的走向，让AI 辅助设计，协助开发，让它真正成为我的得力员工和创业伙伴。</p>
+                <p>在这个时代，我们需要站得更高，用产品经理的眼光去审视：这个功能真的需要吗？数据流向合理吗？ UI 交互顺畅吗？ AI 的响应延迟用户能接受吗？</p>
+                <blockquote>
+                    <p>当实现成本被 AI 压缩之后，真正稀缺的已经不是“会不会写”，而是“你能否定义清楚什么值得被写出来”。</p>
+                </blockquote>
+                <p>如果用三个词来形容AI 给开发者带来的意义，我觉得是：</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-8">
+                    <div class="article-card-block"><strong>放大镜</strong><p>它无限放大了我们个体的能力边界与产出极限。</p></div>
+                    <div class="article-card-block"><strong>指挥棒</strong><p>它让我们能用自然语言，精准调度“千军万马”的智能体。</p></div>
+                    <div class="article-card-block"><strong>瑞士军刀</strong><p>它给了我们随时随地应对各种跨界挑战的底气。</p></div>
+                </div>
+
+                <hr/>
+
+                <h2 class="text-primary dark:text-dark-text">02 Vibe Coding 重构软件开发生命周期（SDLC）</h2>
+                <blockquote><p>有了这种“超级个体”的底气，我们再来看具体的开发落地。</p></blockquote>
+                <p>在过去，跑完一个完整的软件开发生命周期，团队可能需要花上两周的时间去死磕一个Sprint。但在AI 时代，我一个人带着AI 工具链，一个下午就能跑完一轮完整的闭环。</p>
+                <p>如今业界常常提起一种叫 <strong>Vibe Coding</strong> 的开发路径，我的理解是，它本质上是一条从 <strong>Vibe（头脑风暴与探索）</strong> 到 <strong>Spec（明确规范）</strong>，再到 <strong>Harness（测试驱动落地）</strong> 的高速公路。</p>
+                <p>在实际的黑客松或日常开发中，我会借助类似Superpower Skill 这样的工具与提示词框架，跑通这样一套极速SOP：</p>
+
+                <ol class="list-decimal">
+                    <li><strong>头脑风暴（Vibe）：</strong>先给AI 喂入充分的全局上下文，让它主动反问我技术细节，和我一起碰撞、敲定需求文档。</li>
+                    <li><strong>规范确立（Spec）：</strong>AI 根据需求产出详细的系统规范，交由我来进行第一轮Review。</li>
+                    <li><strong>开发计划（Plan）：</strong>AI 进一步输出精确到每个接口和方法的开发计划，我进行第二轮Review。</li>
+                    <li><strong>测试驱动（TDD）与验证：</strong>进入实际开发阶段，AI 生成代码并做初步跑通，我来进行整体的链路验证。</li>
+                    <li><strong>审查与合并：</strong>提交分支后，由AI 完成代码仓库的审查与合并，最后再由我来进行全局调试。</li>
+                </ol>
+
+                <p>走完这套流程，我最大的感触是：<strong>在AI 开发时代，敲代码的时间被无限压缩，开发者绝大部分的精力，其实都被转移到了“调试（Debugging）”上。</strong></p>
+                <p>在这个极其轻量的迭代过程中，<strong>廉价的“废弃成本”成为了我们最大的创新优势。</strong>跑完一次短平快的闭环后，如果发现冒烟测试效果不好，或者察觉到这个需求本身就是个伪命题，我可以毫不心疼地把刚刚生成的代码全部删掉重来。这种“敢于随时推翻重做”的底气，在过去动辄几万行手写代码的传统开发时代，是根本无法想象的。</p>
+                <p>但是，这绝不意味着我们可以当甩手掌柜。</p>
+                <p>正因为AI 生成代码的速度极快，像雪球一样越滚越大，<strong>代码评审（Reviewing）和测试反而变得前所未有的重要。</strong>软件交付的最后一步，永远需要人来兜底。因为不管AI 跑得有多快，产品测试的好坏、UI 交互的微妙体感，终究需要真实的人类去体验，并由人类来承担最终的责任。</p>
+                <blockquote>
+                    <p>AI 可以极快地产出一个版本，但只有人类能判断这是不是一个值得继续演化的版本。</p>
+                </blockquote>
+
+                <hr/>
+
+                <h2 class="text-primary dark:text-dark-text">03 黑客松：这是一场极度考验节奏的黑客“短跑”</h2>
+                <p><strong>正是基于这套被重构的极速开发流，我才敢在过去大半年里，密集地去打大大小小的黑客松。而赛场上的真实情况是：</strong>在AI 的加持下，黑客松已经不再是一场比拼熬夜敲代码耐力的“马拉松”，而是变成了一场极度考验节奏把控的“短跑”。</p>
+                <p>现在的大多数比赛，通常要求在48 小时内提交作品。如果想保证基本的睡眠和精力，团队真实的开发时间其实往往不足30 小时。想在这么短的时间内杀出重围拿到名次，我有以下几点血泪经验：</p>
+
+                <div class="article-card-block"><strong>第一，用“技术型产品经理”的思维去死磕需求拆解。</strong><p>在不到30 小时的窗口期里，拿到需求后怎么拆解和落地尤为关键。你必须跳出单一的“码农”视角，深入思考每一个版本（MVP、V1、V2）的演进路线。你得非常明确哪些是绝对不能妥协的P0 级核心链路，哪些是可以延后的P1、P2 级功能，甚至要提前预判边界情况。懂宏观系统结构的节奏把控，比盲目让AI 写一堆无用代码重要得多。</p></div>
+                <div class="article-card-block"><strong>第二，审美与交互，正在赛场上形成“降维打击”。</strong><p>现在很多参赛团队还在满世界寻找全栈开发者，但我发现，那些队伍里坐镇着优秀设计师的团队，往往能在路演时形成绝对的碾压。当底层技术的实现不再是坚不可摧的壁垒时，人类独有的审美和品味就成了最难被自动化的护城河。你的界面能否让用户一上来就知道怎么用？你的体验流程是否足够丝滑？这些极具“人味”的细节，直接决定了评委对你作品的第一印象。</p></div>
+                <div class="article-card-block"><strong>第三，逃离同质化：瞄准AIoT 与软硬结合的新风口。</strong><p>如果现在还去做纯软件的AI 对话或效率工具，很容易陷入严重的Idea 同质化泥沼。最近不管是小红书的巅峰赛，还是各地的其他黑客松，<strong>硬件结合端侧部署的AI</strong>正在成为绝对的香饽饽。虽然现阶段做硬件的调试成本很高，赛场上的不确定性也极大（比如网络或接口突然罢工），但它能提供极其直观的物理交互体验，这是破局同质化、吸引评委眼球的最佳利器。</p></div>
+
+                <blockquote>
+                    <p>黑客松不是把功能堆满的比赛，而是把判断力浓缩到几十小时里的比赛。</p>
+                </blockquote>
+
+                <hr/>
+
+                <h2 class="text-primary dark:text-dark-text">04 告别焦虑，去创造真实的产品</h2>
+                <p>不管是追逐软硬件结合的新风口，还是面对不断涌现的新框架（比如之前的MCP 协议、各种Skill、现在的harness）层出不穷，技术圈的迭代速度快得令人窒息。身处其中，很多开发者都会不可避免地产生FOMO（错失恐惧症）情绪。每天一睁眼，大家都在焦虑：我是不是又落后了？</p>
+
+                <blockquote>
+                    <p>之前我看过影视飓风的一期视频《去了一趟广西。 》，里面提到了一个极其通透的观点：绝大部分人其实不需要去死磕某一个具体的AI 技术，你只需要像玩“123 木头人”一样，时不时回头看一眼AI 到底发展到了哪一步，看看大家都在用AI 解决什么实际问题，这就足够了。</p>
+                </blockquote>
+
+                <p>但对于我们这些身在局中的开发者来说，仅仅“回头看”是不够的。面对焦虑，我的解法非常直接：<strong>去打比赛，去动手做。</strong></p>
+                <p>与其焦虑地去学那些看似“有用”但实则纸上谈兵的理论知识，不如趁着现在试错成本极低，亲自动手去跑通一个真实的产品。这大半年的黑客松实战经历，带给我的真实成长远超过去两三年的枯燥学习。因为在这短短几十个小时里，你经历的是真实的跨领域人际沟通与协作、高压下的快速决策，以及对AI 工具链成本与开发效率的极致把控。</p>
+                <p>在这个AI 把技术门槛彻底踩平的时代，不要害怕自己的想法幼稚，也不要总觉得“还没准备好”。<strong>行动力本身，就是对抗焦虑最好的解药。</strong></p>
+
+                <div class="article-card-block text-center">
+                    <p class="text-xl font-semibold text-primary dark:text-dark-text">去创造，去试错，去完成你的第一个AI Native 产品吧！</p>
+                </div>
+
+                <div class="w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card my-8 shadow-md">
+                    <img class="w-full h-auto object-cover" src="/images/blog/ai-native-hackathon/finale.png" alt="文章结尾图片"/>
+                </div>
+            </div>
+
+            <div id="articleTags" class="flex flex-wrap gap-2 mt-12 pt-8 border-t border-border-subtle dark:border-dark-border">
+                <span class="text-sm text-text-muted dark:text-dark-text-muted mr-2" data-i18n="tags">标签:</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">AI Native</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Hackathon</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Vibe Coding</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Reviewing</span>
+            </div>
+
+            <div class="flex items-center justify-between mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
+                <span class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="shareArticle">分享文章:</span>
+                <div class="flex gap-4">
+                    <button id="shareBtn" class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text" title="复制链接">
+                        <span class="material-symbols-outlined text-lg">share</span>
+                    </button>
+                </div>
+            </div>
+        </article>
+    </main>
+
+    <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
+        <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex flex-col gap-1 text-center md:text-left">
+                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui的作品集</h2>
+                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 技术博客.</p>
+            </div>
+            <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
+                <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
+                <span class="cursor-default">15951875192</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const zhArticleBody = document.getElementById('articleBody').innerHTML;
+        const articleLocales = {
+            zh: {
+                title: 'AI Native Developer：黑客松赛场上的开发者生存范式',
+                date: '2026年4月13日',
+                readTime: '15 分钟阅读',
+                excerpt: '从黑客松实战、Vibe Coding 到 AI Native Developer，记录 AI 时代作品如何更容易拿奖，以及普通开发者如何重构自己的能力边界。',
+                tags: ['AI Native', 'Hackathon', 'Vibe Coding', 'Reviewing'],
+                shareTitle: '复制链接',
+                copied: '复制成功',
+                copyFailed: '复制失败',
+                body: zhArticleBody
+            },
+            en: {
+                title: 'AI Native Developer: A Survival Paradigm from the Hackathon Field',
+                date: 'Apr 13, 2026',
+                readTime: '15 min read',
+                excerpt: 'From hackathon field notes to Vibe Coding, this essay explores how AI is reshaping what makes projects stand out and how developers must adapt.',
+                tags: ['AI Native', 'Hackathon', 'Vibe Coding', 'Reviewing'],
+                shareTitle: 'Copy link',
+                copied: 'Link copied',
+                copyFailed: 'Copy failed',
+                body: `
+                    <p>Since April last year, as a developer born in 2003, I have moved through hackathons of many sizes, from local community events to larger themed competitions. Over that stretch, I started to feel that my identity as a developer was being rewritten.</p>
+                    <p>My background was originally pure software development. But after a year of intense competitions and day-to-day building, the question is no longer simply “what can you do?” In the age of AI, the more relevant question is closer to “how fast can you learn, and how much range can you cover?”</p>
+                    <p>This article is a field note from that shift: <strong>what kind of projects are more likely to win at hackathons now</strong>, and <strong>how the survival paradigm for ordinary developers is changing in the AI era</strong>.</p>
+                    <h2 class="text-primary dark:text-dark-text">01 From Coding to Reviewing</h2>
+                    <p>I used to believe that true technical understanding only came from writing every line by hand. Bugs meant digging through CSDN, GitHub, and documentation for scattered fixes.</p>
+                    <p>That belief was deeply challenged once tools like ChatGPT, Dify, and Windsurf matured. Development stopped feeling like pure implementation and started feeling more like orchestration, debugging, and product judgment.</p>
+                    <p>When code can be generated in bulk from natural language, the shift is not only technical. It is cognitive. <strong>We are moving from hand-crafted coding toward product-centered reviewing.</strong></p>
+                    <blockquote><p>Once implementation gets cheaper, the scarce skill is no longer writing faster, but deciding more clearly what deserves to be written.</p></blockquote>
+                    <p>In that world, every developer has to become a product manager for their own project. If you cannot control requirements, AI will only help you generate low-value code more quickly.</p>
+                    <p>To me, the end state of this shift is the <strong>AI Native Developer</strong>: someone building products that would not meaningfully exist without AI as a core part of the experience.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-8">
+                        <div class="article-card-block"><strong>Magnifier</strong><p>AI expands our personal output ceiling and capability boundaries.</p></div>
+                        <div class="article-card-block"><strong>Conductor</strong><p>It lets us coordinate many agents through natural language.</p></div>
+                        <div class="article-card-block"><strong>Swiss army knife</strong><p>It gives us confidence to move across disciplines with less friction.</p></div>
+                    </div>
+                    <hr/>
+                    <h2 class="text-primary dark:text-dark-text">02 Vibe Coding and the SDLC</h2>
+                    <blockquote><p>With that kind of leverage, the software lifecycle itself starts to compress.</p></blockquote>
+                    <p>What used to take a team two weeks to grind through in a sprint can sometimes be compressed into a single afternoon when one person works with the right AI toolchain.</p>
+                    <p>My mental model for <strong>Vibe Coding</strong> is a fast lane that moves from <strong>Vibe</strong> to <strong>Spec</strong> to <strong>Harness</strong>. You ideate, clarify, plan, test, and review at a much higher cadence than before.</p>
+                    <ol class="list-decimal">
+                        <li><strong>Vibe:</strong> feed the AI enough context so it can ask back and co-define the requirements.</li>
+                        <li><strong>Spec:</strong> let the AI draft a structured specification, then review it carefully.</li>
+                        <li><strong>Plan:</strong> narrow that into concrete implementation steps and interface-level detail.</li>
+                        <li><strong>TDD and validation:</strong> let AI help generate code, but keep human verification over the whole flow.</li>
+                        <li><strong>Review and merge:</strong> treat review as a first-class step rather than a formality.</li>
+                    </ol>
+                    <p>The biggest feeling after using this loop is that <strong>coding time shrinks while debugging and judgment expand</strong>.</p>
+                    <blockquote><p>AI can produce a version very quickly, but only humans can decide whether it is a version worth continuing.</p></blockquote>
+                    <hr/>
+                    <h2 class="text-primary dark:text-dark-text">03 Hackathons Become a Sprint of Judgment</h2>
+                    <p>Because of this rebuilt development loop, I became willing to enter hackathons much more frequently. And the reality on the ground is clear: with AI support, hackathons are no longer an endurance marathon of late-night coding. They are a sprint that heavily tests rhythm and decision-making.</p>
+                    <div class="article-card-block"><strong>Think like a technical product manager.</strong><p>In a 30-hour real work window, requirement decomposition matters more than blind implementation volume.</p></div>
+                    <div class="article-card-block"><strong>Taste and interaction now create outsized leverage.</strong><p>When implementation becomes easier, the first impression created by interface quality matters even more.</p></div>
+                    <div class="article-card-block"><strong>Escape homogenization.</strong><p>Pure software ideas are increasingly crowded, while AIoT and hardware-linked experiences feel more distinctive and memorable.</p></div>
+                    <blockquote><p>Hackathons are not contests about piling on features. They are contests about compressing judgment into a few dozen hours.</p></blockquote>
+                    <hr/>
+                    <h2 class="text-primary dark:text-dark-text">04 Stop Panicking, Build Real Products</h2>
+                    <p>The pace of change in AI can easily trigger FOMO. New frameworks, new protocols, new skills, new toolchains, and new workflows seem to appear every week.</p>
+                    <blockquote><p>Most people do not need to obsess over every specific AI technique. It is often enough to keep turning around and checking what AI can now solve in the real world.</p></blockquote>
+                    <p>But for developers inside the wave, just watching is not enough. My answer to anxiety is simple: <strong>join competitions and build things</strong>.</p>
+                    <p>In the AI era, action itself is the most effective antidote to anxiety. Build, test, discard, rebuild, and finish your first truly AI Native product.</p>
+                    <div class="article-card-block text-center"><p class="text-xl font-semibold text-primary dark:text-dark-text">Build, experiment, and finish your first AI Native product.</p></div>
+                    <div class="w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card my-8 shadow-md">
+                        <img class="w-full h-auto object-cover" src="/images/blog/ai-native-hackathon/finale.png" alt="Closing image"/>
+                    </div>
+                `
+            },
+            ja: {
+                title: 'AI Native Developer: ハッカソン時代の開発者の生存戦略',
+                date: '2026年4月13日',
+                readTime: '15分で読める',
+                excerpt: 'ハッカソンの実戦、Vibe Coding、そして AI Native Developer への変化を通して、AI 時代に開発者がどう戦うべきかを整理します。',
+                tags: ['AI Native', 'ハッカソン', 'Vibe Coding', 'レビュー'],
+                shareTitle: 'リンクをコピー',
+                copied: 'リンクをコピーしました',
+                copyFailed: 'コピーに失敗しました',
+                body: `
+                    <p>昨年4月から今に至るまで、私は大小さまざまなハッカソンを渡り歩いてきました。その中で強く感じたのは、開発者という自分の役割そのものが変わり始めていることです。</p>
+                    <p>もともと私の背景は純粋なソフトウェア開発でした。しかし AI が実装コストを大きく下げたことで、競争の軸は「何が書けるか」だけではなく、「どれだけ素早く学び、どれだけ広く動けるか」へ移っています。</p>
+                    <p>この文章では、<strong>今のハッカソンで評価されやすい作品の条件</strong>と、<strong>AI 時代に普通の開発者の生存様式がどう変わっているか</strong>を、自分の実感ベースで整理します。</p>
+                    <h2 class="text-primary dark:text-dark-text">01 Coding から Reviewing へ</h2>
+                    <p>以前の私は、1行ずつ自分の手で書いてこそ技術理解が深まると信じていました。バグが出れば CSDN や GitHub を掘り続ける、そんなやり方が当たり前でした。</p>
+                    <p>ところが ChatGPT、Dify、Windsurf のようなツールが広がるにつれて、その前提が大きく揺らぎました。開発は実装そのものよりも、要求整理、判断、デバッグ、そしてレビューの比重が高くなっていったからです。</p>
+                    <p><strong>自然言語から大量にコードが生まれる時代では、私たちは手作業の Coding から、製品中心の Reviewing へ移行している</strong>のだと思います。</p>
+                    <blockquote><p>実装が安くなるほど、希少になるのは「速く書く力」ではなく、「何を書く価値があるかを定義する力」です。</p></blockquote>
+                    <p>だからこそ、いまの開発者は自分のプロジェクトのプロダクトマネージャーでもなければなりません。要件を制御できなければ、AI は価値の低いコードをより速く増やすだけです。</p>
+                    <p>その先にあるのが、私の考える <strong>AI Native Developer</strong> です。AI がなければ成立しない体験を、製品の中心に据えて作れる人です。</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-8">
+                        <div class="article-card-block"><strong>拡大鏡</strong><p>個人の能力境界とアウトプット上限を大きく押し広げます。</p></div>
+                        <div class="article-card-block"><strong>指揮棒</strong><p>自然言語で複数のエージェントを動かせるようになります。</p></div>
+                        <div class="article-card-block"><strong>スイスアーミーナイフ</strong><p>分野横断の挑戦に踏み出す心理的コストを下げます。</p></div>
+                    </div>
+                    <hr/>
+                    <h2 class="text-primary dark:text-dark-text">02 Vibe Coding が SDLC を圧縮する</h2>
+                    <blockquote><p>このレバレッジがあるからこそ、開発ライフサイクル自体が短く圧縮されます。</p></blockquote>
+                    <p>以前ならチームで2週間かけていたスプリント相当の作業を、今は AI ツールチェーンと一緒に動くことで、個人でも非常に短いサイクルで回せる場面があります。</p>
+                    <p>私の中での <strong>Vibe Coding</strong> は、<strong>Vibe</strong> から <strong>Spec</strong>、そして <strong>Harness</strong> へ進む高速道路です。発想、仕様化、計画、テスト、レビューを高密度に回していきます。</p>
+                    <ol class="list-decimal">
+                        <li><strong>Vibe:</strong> 十分な文脈を渡し、AI に問い返させながら要件を固める。</li>
+                        <li><strong>Spec:</strong> AI に仕様を書かせ、人間がレビューする。</li>
+                        <li><strong>Plan:</strong> それをさらに実装単位へ落とし込む。</li>
+                        <li><strong>TDD と検証:</strong> AI にコード生成を手伝わせつつ、人間が全体の整合性を確認する。</li>
+                        <li><strong>レビューと統合:</strong> レビューを形式ではなく中核工程として扱う。</li>
+                    </ol>
+                    <p>この流れで最も強く感じるのは、<strong>コーディング時間が縮み、判断とデバッグの比重が一気に増える</strong>ことです。</p>
+                    <blockquote><p>AI はすばやく1つの版を作れますが、その版を育てる価値があるかどうかを決めるのは人間です。</p></blockquote>
+                    <hr/>
+                    <h2 class="text-primary dark:text-dark-text">03 ハッカソンは判断力の短距離走になる</h2>
+                    <p>この再構成された開発フローがあったからこそ、私はより高い頻度でハッカソンに参加できるようになりました。そして現場で見えたのは、AI の支援によってハッカソンが徹夜耐久戦ではなく、リズムと判断を競う短距離走に変わっているということです。</p>
+                    <div class="article-card-block"><strong>技術型 PM の視点で要件を切る。</strong><p>30時間前後の実作業時間では、実装量よりも要求分解の精度が重要です。</p></div>
+                    <div class="article-card-block"><strong>審美眼と操作体験が差になる。</strong><p>実装の壁が下がるほど、UI と体験の第一印象がより大きく効きます。</p></div>
+                    <div class="article-card-block"><strong>同質化から逃げる。</strong><p>純ソフトウェア案は飽和しやすく、AIoT やハード連携の方が記憶に残りやすいです。</p></div>
+                    <blockquote><p>ハッカソンは機能を積み上げる競技ではなく、数十時間の中に判断力を圧縮する競技です。</p></blockquote>
+                    <hr/>
+                    <h2 class="text-primary dark:text-dark-text">04 焦らず、実物の製品を作る</h2>
+                    <p>AI 分野の変化はとても速く、FOMO を引き起こしやすいです。新しいフレームワーク、プロトコル、スキル、ワークフローが次々に現れます。</p>
+                    <blockquote><p>すべての AI 技術を細かく追い続ける必要はありません。大事なのは、AI が現実の問題を今どこまで解けるのかを定期的に見返すことです。</p></blockquote>
+                    <p>ただ、波の中にいる開発者にとって、眺めるだけでは足りません。私にとって不安への最も直接的な処方箋は、<strong>競技に出て、実際に作ること</strong>でした。</p>
+                    <p>AI 時代において、行動力そのものが不安への最良の解毒剤です。作って、試して、壊して、作り直して、自分の最初の AI Native 製品を完成させることです。</p>
+                    <div class="article-card-block text-center"><p class="text-xl font-semibold text-primary dark:text-dark-text">作って、試して、自分の最初の AI Native 製品を完成させよう。</p></div>
+                    <div class="w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card my-8 shadow-md">
+                        <img class="w-full h-auto object-cover" src="/images/blog/ai-native-hackathon/finale.png" alt="締めの画像"/>
+                    </div>
+                `
+            }
+        };
+
+        function renderArticleLocale(lang) {
+            const locale = articleLocales[lang] || articleLocales.zh;
+            document.getElementById('articleTitle').textContent = locale.title;
+            document.getElementById('articleMetaDate').textContent = locale.date;
+            document.getElementById('articleMetaReadTime').textContent = locale.readTime;
+            document.getElementById('articleExcerpt').textContent = locale.excerpt;
+            document.title = `${locale.title} - Tech Blog`;
+            document.getElementById('articleBody').innerHTML = locale.body;
+            document.getElementById('shareBtn').title = locale.shareTitle;
+            document.getElementById('articleTags').innerHTML =
+                `<span class="text-sm text-text-muted dark:text-dark-text-muted mr-2">${window.YuiLang ? window.YuiLang.getText('blog', 'tags', lang) : '标签:'}</span>` +
+                locale.tags.map(tag => `<span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">${tag}</span>`).join('');
+        }
+
+        document.getElementById('shareBtn').addEventListener('click', async () => {
+            const url = window.location.origin + window.location.pathname;
+            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
+            const locale = articleLocales[lang] || articleLocales.zh;
+            try {
+                await navigator.clipboard.writeText(url);
+                showToast(locale.copied);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                showToast(locale.copyFailed);
+            }
+        });
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 dark:bg-white/90 text-white dark:text-black px-6 py-3 rounded-full text-sm font-medium shadow-lg transition-all duration-300 opacity-0 translate-y-2 z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            });
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        window.addEventListener('languageChanged', (event) => {
+            renderArticleLocale(event.detail.lang);
+        });
+
+        renderArticleLocale(window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh');
+    </script>
+</body>
+</html>
