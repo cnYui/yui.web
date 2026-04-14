@@ -1,48 +1,44 @@
 <!DOCTYPE html>
-<html class="light" lang="en">
+<html lang="en">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Travel - Yui's Portfolio</title>
+    <script>
+        (function() {
+            const html = document.documentElement;
+            html.setAttribute('data-ui-ready', 'false');
+            try {
+                const theme = localStorage.getItem('yui-portfolio-theme');
+                const lang = localStorage.getItem('yui-portfolio-lang');
+                const langMap = { zh: 'zh-CN', en: 'en', ja: 'ja' };
+                const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+                html.classList.toggle('dark', resolvedTheme === 'dark');
+                html.style.colorScheme = resolvedTheme;
+                html.style.backgroundColor = resolvedTheme === 'dark' ? '#0f0f0f' : '#ffffff';
+                html.lang = langMap[lang] || 'en';
+            } catch (error) {
+                html.style.colorScheme = 'light';
+                html.style.backgroundColor = '#ffffff';
+                html.lang = 'en';
+            }
+        })();
+    </script>
+    <style>
+        html { background-color: #ffffff; }
+        html.dark { background-color: #0f0f0f; }
+        html[data-ui-ready="false"] body { opacity: 0; }
+        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
+    </style>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Inter:wght@300..600&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#1a1a1a",
-                        "secondary": "#f5f5f0",
-                        "text-main": "#1a1a1a",
-                        "text-muted": "#666666",
-                        "text-light": "#999999",
-                        "border-subtle": "#e8e8e8",
-                        "cream": "#faf9f6",
-                        // Dark mode colors
-                        "dark-bg": "#0f0f0f",
-                        "dark-surface": "#1a1a1a",
-                        "dark-card": "#242424",
-                        "dark-border": "#333333",
-                        "dark-text": "#e5e5e5",
-                        "dark-text-muted": "#a0a0a0",
-                    },
-                    fontFamily: {
-                        "display": ["Playfair Display", "serif"],
-                        "body": ["Inter", "sans-serif"],
-                    },
-                },
-            },
-        }
-    </script>
+    <link href="/styles/site.css" rel="stylesheet"/>
     <script src="/js/theme.js"></script>
     <script src="/js/lang.js"></script>
     <script src="/js/mobile-menu.js"></script>
     <style>
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
         .gallery-item { opacity: 0; transform: scale(0.95); transition: opacity 0.6s ease, transform 0.6s ease; }
         .gallery-item.visible { opacity: 1; transform: scale(1); }
         .masonry { column-count: 3; column-gap: 1.5rem; }
@@ -395,7 +391,7 @@
             return `
                 <div class="masonry-item gallery-item">
                     <div class="group relative ${aspect} overflow-hidden rounded-lg cursor-pointer bg-gray-100 dark:bg-dark-card">
-                        <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="${item.image}" alt="${title}"/>
+                        <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="${item.image}" alt="${title}" loading="lazy" decoding="async"/>
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <div class="absolute bottom-0 left-0 right-0 p-5 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
                             <p class="text-white/60 text-xs uppercase tracking-widest mb-1">${(cityLabels[currentLang()] && cityLabels[currentLang()][item.city]) || item.city}</p>

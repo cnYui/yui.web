@@ -1,48 +1,43 @@
 <!DOCTYPE html>
-<html class="light" lang="zh-CN">
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Vibe Coding 实战指南 - Tech Blog</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography"></script>
+    <script>
+        (function() {
+            const html = document.documentElement;
+            html.setAttribute('data-ui-ready', 'false');
+            try {
+                const theme = localStorage.getItem('yui-portfolio-theme');
+                const lang = localStorage.getItem('yui-portfolio-lang');
+                const langMap = { zh: 'zh-CN', en: 'en', ja: 'ja' };
+                const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+                html.classList.toggle('dark', resolvedTheme === 'dark');
+                html.style.colorScheme = resolvedTheme;
+                html.style.backgroundColor = resolvedTheme === 'dark' ? '#0f0f0f' : '#ffffff';
+                html.lang = langMap[lang] || 'en';
+            } catch (error) {
+                html.style.colorScheme = 'light';
+                html.style.backgroundColor = '#ffffff';
+                html.lang = 'en';
+            }
+        })();
+    </script>
+    <style>
+        html { background-color: #ffffff; }
+        html.dark { background-color: #0f0f0f; }
+        html[data-ui-ready="false"] body { opacity: 0; }
+        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
+    </style>
+    <link href="/styles/site.css" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#222222",
-                        "secondary": "#f4f4f5",
-                        "text-main": "#222222",
-                        "text-muted": "#71717a",
-                        "text-tertiary": "#9ca3af",
-                        "background": "#ffffff",
-                        "background-soft": "#f9fafb",
-                        "border-subtle": "#e5e5e5",
-                        "accent-soft": "#e5e7eb",
-                        "dark-bg": "#0f0f0f",
-                        "dark-surface": "#1a1a1a",
-                        "dark-card": "#242424",
-                        "dark-border": "#333333",
-                        "dark-text": "#e5e5e5",
-                        "dark-text-muted": "#a0a0a0",
-                    },
-                    fontFamily: {
-                        "display": ["Playfair Display", "serif"],
-                        "body": ["Inter", "sans-serif"],
-                    },
-                },
-            },
-        }
-    </script>
     <script src="/js/theme.js"></script>
     <script src="/js/lang.js"></script>
     <style>
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
         .prose, article { 
             -webkit-user-select: none;
             -moz-user-select: none;
@@ -110,7 +105,7 @@
                 </p>
                 <div class="flex items-center gap-4 mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
                     <div class="w-12 h-12 rounded-full overflow-hidden">
-                        <img src="/images/profile/avatar-small.jpg" alt="Yui" class="w-full h-full object-cover"/>
+                        <img src="/images/profile/avatar-small.jpg" alt="Yui" class="w-full h-full object-cover" decoding="async"/>
                     </div>
                     <div>
                         <p class="font-semibold text-primary dark:text-dark-text">Yui</p>
@@ -123,7 +118,7 @@
         <!-- Featured Image -->
         <div class="w-full max-w-4xl mx-auto px-6 -mt-0">
             <div class="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-lg">
-                <img class="w-full h-full object-cover" src="/images/blog/vibe-coding-guide.png" alt="Vibe Coding 实战指南"/>
+                <img class="w-full h-full object-cover" src="/images/blog/vibe-coding-guide.jpg" alt="Vibe Coding 实战指南"/>
             </div>
         </div>
 

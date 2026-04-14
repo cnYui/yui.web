@@ -857,7 +857,7 @@
     // Get current language
     function getCurrentLang() {
         const saved = localStorage.getItem(LANG_KEY);
-        return saved || 'en'; // Default to English
+        return LANGUAGES.includes(saved) ? saved : 'en'; // Default to English
     }
     
     // Save language preference
@@ -995,6 +995,7 @@
     function init() {
         const lang = getCurrentLang();
         applyTranslations(lang);
+        document.documentElement.setAttribute('data-ui-ready', 'true');
         
         // Bind toggle button
         const toggleBtn = document.getElementById('langToggle');

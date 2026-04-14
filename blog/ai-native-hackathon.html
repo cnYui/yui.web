@@ -1,49 +1,44 @@
 <!DOCTYPE html>
-<html class="light" lang="zh-CN">
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>AI Native Developer：黑客松赛场上的开发者生存范式 - Tech Blog</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography"></script>
+    <script>
+        (function() {
+            const html = document.documentElement;
+            html.setAttribute('data-ui-ready', 'false');
+            try {
+                const theme = localStorage.getItem('yui-portfolio-theme');
+                const lang = localStorage.getItem('yui-portfolio-lang');
+                const langMap = { zh: 'zh-CN', en: 'en', ja: 'ja' };
+                const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+                html.classList.toggle('dark', resolvedTheme === 'dark');
+                html.style.colorScheme = resolvedTheme;
+                html.style.backgroundColor = resolvedTheme === 'dark' ? '#0f0f0f' : '#ffffff';
+                html.lang = langMap[lang] || 'en';
+            } catch (error) {
+                html.style.colorScheme = 'light';
+                html.style.backgroundColor = '#ffffff';
+                html.lang = 'en';
+            }
+        })();
+    </script>
+    <style>
+        html { background-color: #ffffff; }
+        html.dark { background-color: #0f0f0f; }
+        html[data-ui-ready="false"] body { opacity: 0; }
+        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
+    </style>
+    <link href="/styles/site.css" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#222222",
-                        "secondary": "#f4f4f5",
-                        "text-main": "#222222",
-                        "text-muted": "#71717a",
-                        "text-tertiary": "#9ca3af",
-                        "background": "#ffffff",
-                        "background-soft": "#f9fafb",
-                        "border-subtle": "#e5e5e5",
-                        "accent-soft": "#e5e7eb",
-                        "dark-bg": "#0f0f0f",
-                        "dark-surface": "#1a1a1a",
-                        "dark-card": "#242424",
-                        "dark-border": "#333333",
-                        "dark-text": "#e5e5e5",
-                        "dark-text-muted": "#a0a0a0",
-                    },
-                    fontFamily: {
-                        "display": ["Playfair Display", "serif"],
-                        "body": ["Inter", "sans-serif"],
-                    },
-                },
-            },
-        }
-    </script>
     <script src="/js/theme.js"></script>
     <script src="/js/lang.js"></script>
     <script src="/js/mobile-menu.js"></script>
     <style>
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
         .prose, article {
             -webkit-user-select: none;
             -moz-user-select: none;
@@ -61,23 +56,6 @@
         .dark .prose strong { color: #ffffff; }
         .prose hr { border: none; border-top: 1px solid #e5e5e5; margin: 2rem 0; }
         .dark .prose hr { border-top-color: #333; }
-        .prose .article-card-block {
-            border: 1px solid #e5e5e5;
-            border-radius: 0.75rem;
-            background: linear-gradient(180deg, #fbfbfb, #f7f7f8);
-            padding: 1rem 1.1rem;
-            margin: 1rem 0;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-        }
-        .dark .prose .article-card-block {
-            border-color: #333333;
-            background: linear-gradient(180deg, #232323, #1d1d1d);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
-        }
-        .prose .article-card-block p:last-child { margin-bottom: 0; }
-        .prose .article-card-block strong { display: block; margin-bottom: 0.2rem; font-size: 0.98rem; }
-        .gallery-grid img { transition: transform 0.5s ease; }
-        .gallery-grid .group:hover img { transform: scale(1.04); }
     </style>
 </head>
 <body class="bg-background dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col overflow-x-hidden antialiased transition-colors duration-300">
@@ -139,7 +117,7 @@
                 </p>
                 <div class="flex items-center gap-4 mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
                     <div class="w-12 h-12 rounded-full overflow-hidden">
-                        <img src="/images/profile/avatar-small.jpg" alt="Yui" class="w-full h-full object-cover"/>
+                        <img src="/images/profile/avatar-small.jpg" alt="Yui" class="w-full h-full object-cover" decoding="async"/>
                     </div>
                     <div>
                         <p class="font-semibold text-primary dark:text-dark-text">Yui</p>
@@ -162,12 +140,12 @@
                 <p>所以，今天想借着这篇文章，和大家聊聊这段时间我在黑客松赛场上的真实观察：<strong>到底具备哪些关键点的作品更容易拿奖？</strong>以及在AI 狂飙的当下，<strong>我们普通开发者的生存范式究竟发生了怎样的巨变。</strong></p>
 
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4 my-8 gallery-grid">
-                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-01.jpg" alt="黑客松现场照片"/></div>
-                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-02.jpg" alt="黑客松现场照片"/></div>
-                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-03.jpg" alt="黑客松现场照片"/></div>
-                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-04.jpg" alt="黑客松现场照片"/></div>
-                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-05.jpg" alt="黑客松现场照片"/></div>
-                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-06.jpg" alt="黑客松现场照片"/></div>
+                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-01.jpg" alt="黑客松现场照片" loading="lazy" decoding="async"/></div>
+                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-02.jpg" alt="黑客松现场照片" loading="lazy" decoding="async"/></div>
+                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-03.jpg" alt="黑客松现场照片" loading="lazy" decoding="async"/></div>
+                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-04.jpg" alt="黑客松现场照片" loading="lazy" decoding="async"/></div>
+                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-05.jpg" alt="黑客松现场照片" loading="lazy" decoding="async"/></div>
+                    <div class="group rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm"><img class="w-full h-48 object-cover" src="/images/blog/ai-native-hackathon/hackathon-06.jpg" alt="黑客松现场照片" loading="lazy" decoding="async"/></div>
                 </div>
 
                 <h2 class="text-primary dark:text-dark-text">01 从 Coding 到 Reviewing 的角色重构</h2>
@@ -248,7 +226,7 @@
                 </div>
 
                 <div class="w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card my-8 shadow-md">
-                    <img class="w-full h-auto object-cover" src="/images/blog/ai-native-hackathon/finale.png" alt="文章结尾图片"/>
+                    <img class="w-full h-auto object-cover" src="/images/blog/ai-native-hackathon/finale.jpg" alt="文章结尾图片" loading="lazy" decoding="async"/>
                 </div>
             </div>
 
@@ -352,7 +330,7 @@
                     <p>In the AI era, action itself is the most effective antidote to anxiety. Build, test, discard, rebuild, and finish your first truly AI Native product.</p>
                     <div class="article-card-block text-center"><p class="text-xl font-semibold text-primary dark:text-dark-text">Build, experiment, and finish your first AI Native product.</p></div>
                     <div class="w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card my-8 shadow-md">
-                        <img class="w-full h-auto object-cover" src="/images/blog/ai-native-hackathon/finale.png" alt="Closing image"/>
+                        <img class="w-full h-auto object-cover" src="/images/blog/ai-native-hackathon/finale.jpg" alt="Closing image" loading="lazy" decoding="async"/>
                     </div>
                 `
             },
@@ -410,7 +388,7 @@
                     <p>AI 時代において、行動力そのものが不安への最良の解毒剤です。作って、試して、壊して、作り直して、自分の最初の AI Native 製品を完成させることです。</p>
                     <div class="article-card-block text-center"><p class="text-xl font-semibold text-primary dark:text-dark-text">作って、試して、自分の最初の AI Native 製品を完成させよう。</p></div>
                     <div class="w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card my-8 shadow-md">
-                        <img class="w-full h-auto object-cover" src="/images/blog/ai-native-hackathon/finale.png" alt="締めの画像"/>
+                        <img class="w-full h-auto object-cover" src="/images/blog/ai-native-hackathon/finale.jpg" alt="締めの画像" loading="lazy" decoding="async"/>
                     </div>
                 `
             }

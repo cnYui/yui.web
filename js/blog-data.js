@@ -69,7 +69,7 @@
         {
             id: 7,
             publishedAt: '2025-12-31',
-            image: '/images/blog/vibe-coding-guide.png',
+            image: '/images/blog/vibe-coding-guide.jpg',
             category: 'AI',
             author: 'Yui',
             link: '/blog/vibe-coding.html',
