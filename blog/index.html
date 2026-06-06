@@ -36,7 +36,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <script src="/js/theme.js"></script>
-    <script src="/js/lang.js"></script>
+    <script src="/js/lang.js?v=20260419-2"></script>
     <script src="/js/blog-data.js"></script>
     <script src="/js/mobile-menu.js"></script>
     <style>
@@ -56,6 +56,7 @@
                     <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
                     <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">Music</a>
                     <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
                 </nav>
                 <div class="flex gap-2">
                         <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Language: Chinese / English / Japanese">
@@ -77,6 +78,7 @@
                 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
                 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">Music</a>
                 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
             </div>
         </nav>
     </header>
@@ -170,7 +172,7 @@
         const filterButtons = document.querySelectorAll('.filter-btn');
 
         function createCard(item) {
-            const articleLink = item.link || `/blog/article.html?id=${item.id}`;
+            const articleLink = item.link || `/blog/article?id=${item.id}`;
             const translations = window.YuiLang ? window.YuiLang.getPageTranslations() : null;
             const readText = translations?.readArticle || 'Read Article';
             const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';

@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>我开源了一个又快又准的云输入软件：SpeakMore 是怎么做出来的 - Tech Blog</title>
+    <meta name="description" content="从 SenseVoiceSmall、FunASR、LLM 后处理、音频链路到自动粘贴，记录 SpeakMore 这个开源云输入软件的实现细节。"/>
+    <script>
+        (function() {
+            const html = document.documentElement;
+            html.setAttribute('data-ui-ready', 'false');
+            try {
+                const theme = localStorage.getItem('yui-portfolio-theme');
+                const lang = localStorage.getItem('yui-portfolio-lang');
+                const langMap = { zh: 'zh-CN', en: 'en', ja: 'ja' };
+                const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+                html.classList.toggle('dark', resolvedTheme === 'dark');
+                html.style.colorScheme = resolvedTheme;
+                html.style.backgroundColor = resolvedTheme === 'dark' ? '#0f0f0f' : '#ffffff';
+                html.lang = langMap[lang] || 'zh-CN';
+            } catch (error) {
+                html.style.colorScheme = 'light';
+                html.style.backgroundColor = '#ffffff';
+                html.lang = 'zh-CN';
+            }
+        })();
+    </script>
+    <style>
+        html { background-color: #ffffff; }
+        html.dark { background-color: #0f0f0f; }
+        html[data-ui-ready="false"] body { opacity: 0; }
+        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
+    </style>
+    <link href="/styles/site.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="/js/theme.js"></script>
+    <script src="/js/lang.js?v=20260419-2"></script>
+    <script src="/js/mobile-menu.js"></script>
+    <style>
+        .prose, article {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        .prose h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; }
+        .prose h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .prose p { margin-bottom: 1rem; line-height: 1.8; }
+        .prose ul, .prose ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .prose li { margin-bottom: 0.5rem; line-height: 1.7; }
+        .prose strong { font-weight: 600; color: inherit; }
+        .prose a { text-decoration: underline; text-underline-offset: 4px; }
+        .prose code { border-radius: 0.25rem; background: rgba(229, 229, 229, 0.7); padding: 0.12rem 0.35rem; font-size: 0.92em; }
+        .dark .prose code { background: rgba(51, 51, 51, 0.9); }
+        .prose blockquote { border-left: 4px solid #e5e5e5; padding-left: 1rem; margin: 1.5rem 0; font-style: italic; color: #71717a; }
+        .dark .prose blockquote { border-left-color: #333; color: #a0a0a0; }
+        .dark .prose strong { color: #ffffff; }
+        .prose hr { border: none; border-top: 1px solid #e5e5e5; margin: 2rem 0; }
+        .dark .prose hr { border-top-color: #333; }
+    </style>
+</head>
+<body class="bg-background dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col overflow-x-hidden antialiased transition-colors duration-300">
+    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
+        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
+            <div class="flex items-center gap-4">
+                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">作品集.</a>
+            </div>
+            <div class="flex items-center gap-10">
+                <nav class="hidden md:flex items-center gap-8">
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
+                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/blog/">博客</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">音乐</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">动漫</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
+                </nav>
+                <div class="flex gap-2">
+                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="中/EN/日">
+                        <span class="text-xs font-bold">EN</span>
+                    </button>
+                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
+                        <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
+                    </button>
+                    <button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card transition-colors" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu">
+                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <nav id="mobileMenu" class="hidden md:hidden border-t border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
+            <div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
+                <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 w-fit" href="/blog/">博客</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">音乐</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">动漫</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-1 w-full">
+        <div class="w-full bg-background-soft dark:bg-dark-surface py-16">
+            <div class="max-w-3xl mx-auto px-6">
+                <a href="/blog/" class="inline-flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors mb-8">
+                    <span class="material-symbols-outlined text-lg">arrow_back</span>
+                    <span data-i18n="backToBlog">返回博客</span>
+                </a>
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="px-3 py-1 rounded bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-xs font-semibold uppercase tracking-wider">AI</span>
+                    <span id="articleMetaDate" class="text-sm text-text-muted dark:text-dark-text-muted">2026年6月4日</span>
+                    <span class="text-text-muted dark:text-dark-text-muted">•</span>
+                    <span id="articleMetaReadTime" class="text-sm text-text-muted dark:text-dark-text-muted">12 分钟阅读</span>
+                </div>
+                <h1 id="articleTitle" class="text-4xl md:text-5xl font-display font-bold text-primary dark:text-dark-text leading-tight mb-6">
+                    我开源了一个又快又准的云输入软件：SpeakMore 是怎么做出来的
+                </h1>
+                <p id="articleExcerpt" class="text-xl text-text-muted dark:text-dark-text-muted font-light leading-relaxed">
+                    从 SenseVoiceSmall、FunASR、LLM 后处理、音频链路到自动粘贴，记录 SpeakMore 这个开源云输入软件的实现细节。
+                </p>
+                <div class="flex items-center gap-4 mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
+                    <div class="w-12 h-12 rounded-full overflow-hidden">
+                        <img src="/images/profile/avatar-small.jpg" alt="Yui" class="w-full h-full object-cover" decoding="async"/>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-primary dark:text-dark-text">Yui</p>
+                        <p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="authorRole">开发者 & 创作者</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full max-w-4xl mx-auto px-6">
+            <div class="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-lg">
+                <img id="articleHeroImage" class="w-full h-full object-cover" src="/images/blog/speakmore-note-cover-guizang.png" alt="SpeakMore 文章封面"/>
+            </div>
+        </div>
+
+        <article class="w-full max-w-3xl mx-auto px-6 py-16">
+            <div id="articleBody" class="prose prose-lg max-w-none text-text-main dark:text-dark-text"></div>
+
+            <div id="articleTags" class="flex flex-wrap gap-2 mt-12 pt-8 border-t border-border-subtle dark:border-dark-border">
+                <span class="text-sm text-text-muted dark:text-dark-text-muted mr-2" data-i18n="tags">标签:</span>
+            </div>
+
+            <div class="flex items-center justify-between mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
+                <span class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="shareArticle">分享文章:</span>
+                <div class="flex gap-4">
+                    <button id="shareBtn" class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text" title="复制链接">
+                        <span class="material-symbols-outlined text-lg">share</span>
+                    </button>
+                </div>
+            </div>
+        </article>
+    </main>
+
+    <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
+        <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex flex-col gap-1 text-center md:text-left">
+                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui的作品集</h2>
+                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 技术博客.</p>
+            </div>
+            <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
+                <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
+                <span class="cursor-default">15951875192</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const articleLocales = {
+            zh: {
+                title: '我开源了一个又快又准的云输入软件：SpeakMore 是怎么做出来的',
+                date: '2026年6月4日',
+                readTime: '12 分钟阅读',
+                excerpt: '从 SenseVoiceSmall、FunASR、LLM 后处理、音频链路到自动粘贴，记录 SpeakMore 这个开源云输入软件的实现细节。',
+                tags: ['SpeakMore', 'ASR', 'FunASR', 'Electron', 'FastAPI', 'AI Native'],
+                shareTitle: '复制链接',
+                copied: '复制成功',
+                copyFailed: '复制失败',
+                heroAlt: 'SpeakMore 云输入软件封面',
+                body: `
+                    <p>最近这段时间，我开发并开源了一个叫 SpeakMore 的输入软件。项目地址在这里：<a href="https://github.com/cnYui/SpeakMore" target="_blank" rel="noopener">https://github.com/cnYui/SpeakMore</a>。</p>
+                    <p>它的目标很直接：让用户按下快捷键，说一句话，然后尽可能快、尽可能准地把结果输入到当前应用里。我把它称作云输入，并不是说把所有原始语音都丢到云端，而是把本地 ASR、可配置的云端 LLM 后处理、桌面输入工作流组合成一个闭环。声音在本地被识别，文本再由大模型整理成真正能输入的内容。</p>
+                    <p>一开始我以为这只是一个语音转文字工具。但真正做下去以后，我发现这里面的核心不是接一个 ASR 模型那么简单，而是把语音识别、LLM 文本整理、快捷键、焦点判断、剪贴板恢复和悬浮面板全部串成一个稳定闭环。换句话说，我想做的不是一个识别 demo，而是一个每天真的可以打开用的输入工具。</p>
+                    <p>所以，今天想借着 SpeakMore 这个开源项目，和大家聊聊一个又快又准的云输入软件到底是怎么做出来的：开源语音模型只是起点，真正重要的是把模型能力接进桌面场景，并且让用户敢用、能用、长期用。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">01 从“语音转文字”到“桌面工作流”</h2>
+                    <p>我一开始做 SpeakMore 时，最直接的目标是让用户按下快捷键，说一段话，然后把文字自动输入到当前应用里。Windows 上是 <code>Right Alt</code>，macOS 开发态是右侧 <code>Option</code>。听起来很简单，但只要真正接入桌面环境，就会发现这不是一个单纯的模型问题。</p>
+                    <p>我的理解是，SpeakMore 的核心链路其实分成三段：</p>
+                    <ol class="list-decimal">
+                        <li>桌面端负责感知用户意图：快捷键、焦点、选区、窗口、悬浮 UI。</li>
+                        <li>本地后端负责处理语音和文本：ASR 转写、LLM 清洗、问答和翻译。</li>
+                        <li>结果交付负责最后一步：能粘贴就粘贴，不能粘贴就展示悬浮面板。</li>
+                    </ol>
+                    <p>这也是为什么我最后选择 Electron + FastAPI 的结构。Electron 擅长处理桌面能力，FastAPI 更适合承载 Python 语音模型和大模型请求。把这两层拆开以后，边界会清楚很多：Electron 不需要硬扛 FunASR、PyTorch 这些依赖，Python 后端也不用理解托盘、剪贴板和 Accessibility。</p>
+                    <blockquote><p>真正稀缺的不是“会不会接一个模型”，而是能不能把模型能力落进用户每天真实发生的场景里。</p></blockquote>
+
+                    <h2 class="text-primary dark:text-dark-text">02 ASR：SenseVoiceSmall 是起点，不是终点</h2>
+                    <p>SpeakMore 当前正式支持的 ASR 模型是 <code>FunAudioLLM/SenseVoiceSmall</code>，通过 FunASR 的 <code>AutoModel</code> 加载。这个选择很直接：它是开源模型，本地可运行，适合做一个本地优先的语音输入工具。</p>
+                    <p>但落地时我没有把模型直接塞进发布包。模型文件比较大，而且用户机器、网络和缓存目录都不一样，所以 SpeakMore 采用“发布包不内置模型，初始化页触发下载”的策略。后端会按顺序查找模型：显式环境变量目录、用户设置的缓存目录、平台默认目录、Hugging Face cache，最后才下载。这样普通用户可以点按钮初始化，离线用户也可以提前准备模型目录。</p>
+                    <p>设备选择上也踩过一些典型坑。CUDA、MPS、CPU 看起来只是一个参数，但真正在不同机器上跑，稳定性差异很明显。所以后端通过 <code>FUNASR_DEVICE</code> 支持 <code>cpu</code>、<code>cuda</code>、<code>cuda:0</code>、<code>mps</code> 和 <code>auto</code>，默认策略不主动启用 macOS MPS，显式选择加速设备失败时再回退 CPU，并在 <code>/model/status</code> 暴露 <code>fallback_reason</code>。</p>
+                    <p>这绝不意味着加速不重要。我的判断是：<strong>对本地工具来说，默认稳定性比默认激进优化更重要。</strong> 用户第一次打开应用时，最需要的不是跑分，而是它别莫名其妙挂掉。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">03 音频链路：不要把不确定性留给后端</h2>
+                    <p>做语音输入时，一个很容易被低估的问题是音频格式。浏览器可以录 WebM、Ogg，也可以给你不同采样率、不同声道数的音频。如果后端每次都要猜容器、猜声道、猜采样率，整个链路会变得非常脆。</p>
+                    <p>所以 SpeakMore 在 renderer 里提前把音频整理干净。简单来说，流程就是：</p>
+                    <ol class="list-decimal">
+                        <li>读取用户选择的麦克风，不可用时回退默认设备。</li>
+                        <li>多声道混成单声道，避免部分耳机人声落在非第 0 声道。</li>
+                        <li>去掉 DC offset，对有效但偏弱的人声做受控增益。</li>
+                        <li>重采样到 <code>16kHz</code>。</li>
+                        <li>编码成 <code>pcm_s16le</code>，通过 WebSocket 直接发送二进制 chunk。</li>
+                    </ol>
+                    <p>后端收到的不是一个“可能是什么格式”的文件，而是明确声明的 <code>{ type: "pcm_s16le", sample_rate: 16000, channels: 1 }</code>。这让 ASR 输入变得可控，也让测试边界更清楚。</p>
+                    <p>这里还有一个工程取舍：SpeakMore 没有把 SenseVoiceSmall 描述成原生在线 streaming 模型。现在的做法是后端创建一个语音会话，按约 <code>1200ms</code> chunk 接收 PCM，并累计完整音频多次调用 FunASR 生成阶段性结果。用户体验上可以看到逐步转写，但模型侧保持稳定简单。</p>
+                    <blockquote><p>demo 可以追求“看起来实时”，真实产品必须知道自己每一个“不确定性”放在哪里。</p></blockquote>
+
+                    <h2 class="text-primary dark:text-dark-text">04 LLM 后处理：ASR 原文不是最终答案</h2>
+                    <p>语音识别只解决第一步：把声音变成原始文字。但真实输入里有口语填充词、断句错误、术语误识别、中英文空格、标点、命令意图和上下文。也就是说，ASR 原文通常不是最终可用文本。</p>
+                    <p>SpeakMore 在 ASR 后面接了一层 LLM 后处理，并且根据三种模式使用不同 Prompt。</p>
+                    <div class="article-card-block"><strong>听写模式</strong><p>只做无损清洗：去掉“呃、嗯、那个”这类口语噪声，修正 ASR 错词，补标点，整理技术词写法，但不回答问题、不翻译、不扩写。如果 LLM 调用失败，听写可以降级返回 ASR 原文。</p></div>
+                    <div class="article-card-block"><strong>自由提问模式</strong><p>它不是“把话粘进去”，而是把语音变成一个临时助手。用户可以选中一段文本后提问，SpeakMore 会把可信选区作为 <code>selected_text</code> 发给后端，让 LLM 围绕这段内容解释、总结、改写或解题。</p></div>
+                    <div class="article-card-block"><strong>翻译模式</strong><p>设置页里的目标语言会跟随本轮 <code>start_audio.parameters.output_language</code> 一起发送。用户不需要每次都说“翻译成英文”或“翻译成日语”，快捷键本身就是模式边界。</p></div>
+                    <p>走完这套流程，我最大的感触是：Prompt 不是一句“请优化文本”就结束了。它本质上是在定义产品边界。什么能做，什么不能做，失败时怎么降级，都必须提前写清楚。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">05 自动粘贴：最危险的不是识别错，而是贴错地方</h2>
+                    <p>如果说 ASR 和 LLM 是 SpeakMore 的能力核心，那么自动粘贴就是它的信任核心。用户敢不敢长期开一个语音输入工具，很大程度取决于它会不会误操作。</p>
+                    <p>我没有让 SpeakMore 简单粗暴地“写剪贴板 + Ctrl+V”。在 Windows 上，主进程会先用 UI Automation 判断当前焦点是否是可信文本输入目标；失败后再看 Win32 caret；仍然不确定时，只对微信、QQ、Discord、VS Code、Cursor、Slack、Notion 等明确 allowlist 应用做弱可信兼容。macOS 则通过 Accessibility API 读取前台应用、焦点控件、选区和文本目标。</p>
+                    <p>只有目标可信时，SpeakMore 才会临时写入剪贴板并触发粘贴。粘贴前创建剪贴板快照，结束后在 <code>finally</code> 中恢复用户原剪贴板。目标不可用、焦点漂移或粘贴失败时，结果不会丢，而是进入悬浮面板。</p>
+                    <p>这也是自由提问永远走悬浮面板的原因。听写和翻译是在生成“要输入的文本”，自由提问是在生成“给用户看的答案”。如果把这两个交付方式混在一起，很容易制造灾难。</p>
+                    <blockquote><p>语音输入工具的底气，不来自它识别得多快，而来自它知道什么时候不该粘贴。</p></blockquote>
+
+                    <h2 class="text-primary dark:text-dark-text">06 本地词典和自动学习：让工具越来越像自己的工具</h2>
+                    <p>做语音输入还有一个很现实的问题：每个人都有自己的词。项目名、品牌名、代码术语、人名、口头习惯，这些东西通用 ASR 很难一次就识别准。</p>
+                    <p>所以 SpeakMore 做了本地词典。正式词条会作为 <code>dictionary_terms</code> 跟随本轮语音请求进入后端，Prompt 会优先根据词典修正专有名词和短语。为了避免把整个词典塞爆上下文，后端最多接受 40 条词典项。</p>
+                    <p>自动学习则更谨慎。它只在自动粘贴成功后短时观察本轮目标输入框，看看用户是否马上把某个短词或短语改掉。观察到候选后进入本地词典流程，而不是直接替用户大规模改写。这里的边界很重要：不要做无差别全局文本采集，更不要把整句改写当成词典学习。</p>
+                    <p>在我看来，本地词典不是一个附加功能，而是语音输入工具的长期护城河。因为越用越贴近自己，才是本地工具相比一次性 demo 最有价值的地方。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">07 我从 SpeakMore 里提炼出的几个判断</h2>
+                    <p>做完这条核心链路后，我对 AI 工具开发有几个更明确的判断。</p>
+                    <ol class="list-decimal">
+                        <li>AI Native 工具不是把模型套进产品，而是重新分配人的注意力。ASR 负责听，LLM 负责整理，Electron 负责把结果放回工作流，人则负责判断、编辑和继续创造。</li>
+                        <li>真实产品里的大量复杂度，不在模型本身，而在模型周围。模型下载、设备回退、音频格式、会话取消、迟到消息、剪贴板恢复、焦点漂移，这些才是决定能不能落地的细节。</li>
+                        <li>不要把“自动化”理解成甩手掌柜。越是自动化工具，越要有边界感。能粘贴时粘贴，不能粘贴时展示；能降级时降级，不能编造时就明确停下。</li>
+                        <li>本地优先仍然很有价值。SpeakMore 的语音原始数据在本地 ASR 完成，历史、设置、词典和学习候选也保存在本机。LLM 可以由用户选择 provider，但原始工作流不应该天然绑定某个云服务。</li>
+                    </ol>
+
+                    <h2 class="text-primary dark:text-dark-text">结尾：去做一个能每天打开的工具</h2>
+                    <p>SpeakMore 对我来说，不只是一个语音输入项目。它更像是一次关于 AI 工具落地的实践：模型能力很重要，但把模型能力做成稳定、可信、可长期使用的工作流，才是真正的产品能力。</p>
+                    <p>如果你也在做 AI 工具，我会建议你不要只盯着“模型能不能完成任务”。更要问自己：这个功能真的需要自动执行吗？失败时用户能不能拿回控制权？数据流向是否清楚？这个工具有没有一天被打开十几次的理由？</p>
+                    <p>行动力本身，就是对抗焦虑最好的解药。与其一直观望 AI 工具时代会怎么变，不如亲手做一个真实产品，把每一个看似微小的链路跑通。跑通以后，你会更清楚地知道，新的开发范式到底改变了什么。</p>
+                    <div class="article-card-block">
+                        <strong>参考链接</strong>
+                        <p>SpeakMore GitHub：<a href="https://github.com/cnYui/SpeakMore" target="_blank" rel="noopener">https://github.com/cnYui/SpeakMore</a></p>
+                        <p>SenseVoiceSmall 模型：<a href="https://huggingface.co/FunAudioLLM/SenseVoiceSmall" target="_blank" rel="noopener">https://huggingface.co/FunAudioLLM/SenseVoiceSmall</a></p>
+                        <p>FunASR 项目：<a href="https://github.com/modelscope/FunASR" target="_blank" rel="noopener">https://github.com/modelscope/FunASR</a></p>
+                    </div>
+                `
+            },
+            en: {
+                title: 'I Open-Sourced a Fast, Accurate Cloud Dictation App: How SpeakMore Was Built',
+                date: 'Jun 4, 2026',
+                readTime: '12 min read',
+                excerpt: 'From SenseVoiceSmall and FunASR to LLM post-processing, audio pipelines, and safe auto-paste, this is how SpeakMore was built.',
+                tags: ['SpeakMore', 'ASR', 'FunASR', 'Electron', 'FastAPI', 'AI Native'],
+                shareTitle: 'Copy link',
+                copied: 'Link copied',
+                copyFailed: 'Copy failed',
+                heroAlt: 'SpeakMore cloud dictation cover',
+                body: `
+                    <p>Recently, I built and open-sourced an input tool called SpeakMore. The project is here: <a href="https://github.com/cnYui/SpeakMore" target="_blank" rel="noopener">https://github.com/cnYui/SpeakMore</a>.</p>
+                    <p>The goal is very direct: press a shortcut, speak a sentence, and get the result into the current app as quickly and accurately as possible. I call it a cloud dictation tool, but that does not mean throwing every raw audio stream into the cloud. The real workflow is local ASR, configurable cloud LLM post-processing, and desktop delivery stitched into one loop. Speech is recognized locally, then the language model turns rough text into something actually worth inserting.</p>
+                    <p>At first, I thought this was just a speech-to-text tool. But once I kept building, I realized the core was not merely connecting one ASR model. The real product is the loop around it: speech recognition, LLM cleanup, shortcuts, focus detection, clipboard restoration, and a floating panel that does not lose the result when paste is unsafe.</p>
+                    <p>So this article is a field note from SpeakMore: how a fast and accurate open-source cloud dictation app is actually built. The open-source speech model is only the starting point. What really matters is bringing model capability into a desktop workflow that people can trust and use every day.</p>
+
+                    <h2 class="text-primary dark:text-dark-text">01 From Speech-to-Text to a Desktop Workflow</h2>
+                    <p>When I started SpeakMore, the most obvious goal was simple: the user presses a shortcut, speaks, and the text appears in the app they are already using. On Windows the shortcut is <code>Right Alt</code>; in the macOS development build it is the right-side <code>Option</code>. It sounds simple, but the moment you connect it to a real desktop environment, it stops being a pure model problem.</p>
+                    <p>In my mind, SpeakMore has three core layers:</p>
+                    <ol class="list-decimal">
+                        <li>The desktop client reads user intent: shortcuts, focus, selection, windows, and the floating UI.</li>
+                        <li>The local backend handles audio and text: ASR transcription, LLM cleanup, Q&amp;A, and translation.</li>
+                        <li>The delivery layer finishes the job: paste when it is safe, otherwise show the result in a floating panel.</li>
+                    </ol>
+                    <p>This is why I chose Electron + FastAPI. Electron is strong at desktop capabilities, while FastAPI is a better home for Python speech models and LLM requests. Once the two layers are separated, the boundary becomes much cleaner. Electron does not need to carry FunASR or PyTorch dependencies, and the Python backend does not need to understand trays, clipboards, or Accessibility APIs.</p>
+                    <blockquote><p>The scarce skill is not connecting a model. It is placing model capability into the real situations users face every day.</p></blockquote>
+
+                    <h2 class="text-primary dark:text-dark-text">02 ASR: SenseVoiceSmall Is the Starting Point, Not the Finish Line</h2>
+                    <p>The ASR model SpeakMore officially supports today is <code>FunAudioLLM/SenseVoiceSmall</code>, loaded through FunASR's <code>AutoModel</code>. The reason is straightforward: it is open source, can run locally, and fits a local-first dictation tool.</p>
+                    <p>But I did not bundle the model directly into the app package. The model is large, and every user's machine, network, and cache directory can be different. SpeakMore uses an initialization flow instead: the release package does not embed the model, and the setup page triggers the download. The backend searches explicit environment paths, user cache paths, platform defaults, Hugging Face cache, and only then downloads. Normal users can click a button; offline users can prepare a model directory in advance.</p>
+                    <p>Device selection also exposed real-world traps. CUDA, MPS, and CPU look like simple parameters, but stability changes a lot across machines. The backend supports <code>cpu</code>, <code>cuda</code>, <code>cuda:0</code>, <code>mps</code>, and <code>auto</code> through <code>FUNASR_DEVICE</code>. By default, macOS MPS is not aggressively enabled. If an explicitly selected accelerator fails, the backend falls back to CPU and exposes the <code>fallback_reason</code> through <code>/model/status</code>.</p>
+                    <p>This does not mean speed is unimportant. My judgment is that <strong>for a local tool, default stability matters more than aggressive default optimization</strong>. The first thing users need is not a benchmark number. They need the app to not randomly fall over.</p>
+
+                    <h2 class="text-primary dark:text-dark-text">03 Audio Pipeline: Do Not Leave Uncertainty to the Backend</h2>
+                    <p>Audio format is one of the most underestimated parts of dictation. Browsers can record WebM or Ogg, and sample rates or channel counts can vary. If the backend has to guess the container, channel layout, and sampling rate every time, the whole chain becomes fragile.</p>
+                    <p>SpeakMore cleans the audio in the renderer first:</p>
+                    <ol class="list-decimal">
+                        <li>Read the selected microphone and fall back to the default device if needed.</li>
+                        <li>Mix multiple channels into mono, avoiding headset cases where the voice is not on channel 0.</li>
+                        <li>Remove DC offset and apply controlled gain to valid but quiet speech.</li>
+                        <li>Resample to <code>16kHz</code>.</li>
+                        <li>Encode as <code>pcm_s16le</code> and send binary chunks over WebSocket.</li>
+                    </ol>
+                    <p>The backend receives a clearly declared stream, not a mystery audio file: <code>{ type: "pcm_s16le", sample_rate: 16000, channels: 1 }</code>. That makes ASR input controllable and test boundaries much clearer.</p>
+                    <p>There is also an engineering tradeoff here. SpeakMore does not pretend SenseVoiceSmall is a native online streaming model. The backend creates a speech session, receives PCM chunks of about <code>1200ms</code>, accumulates the full audio, and calls FunASR multiple times to produce staged results. The user sees progressive transcription, while the model path stays stable and simple.</p>
+                    <blockquote><p>A demo can chase something that looks real-time. A real product has to know where each uncertainty lives.</p></blockquote>
+
+                    <h2 class="text-primary dark:text-dark-text">04 LLM Post-Processing: The ASR Text Is Not the Final Answer</h2>
+                    <p>Speech recognition only solves the first step: turning sound into raw text. Real input contains fillers, restarts, broken punctuation, misheard technical terms, mixed-language spacing, command intent, and surrounding context. In other words, the ASR text is often not the text the user actually wants.</p>
+                    <p>SpeakMore puts an LLM layer after ASR and uses different prompts for three modes.</p>
+                    <div class="article-card-block"><strong>Dictation mode</strong><p>It performs lossless cleanup only: remove filler words, fix ASR mistakes, add punctuation, and normalize technical terms. It does not answer questions, translate, or expand. If the LLM call fails, dictation can fall back to the raw ASR text.</p></div>
+                    <div class="article-card-block"><strong>Free Q&amp;A mode</strong><p>This is not about pasting spoken words. It turns speech into a temporary assistant. When the user selects text and asks a question, SpeakMore sends trusted selection text as <code>selected_text</code>, so the LLM can explain, summarize, rewrite, or solve around that context.</p></div>
+                    <div class="article-card-block"><strong>Translation mode</strong><p>The target language from settings travels with the current <code>start_audio.parameters.output_language</code>. The user does not have to say "translate into English" or "translate into Japanese" every time. The shortcut itself is the mode boundary.</p></div>
+                    <p>After building this flow, my strongest feeling is that a prompt is not just "please improve this text." A prompt defines product boundaries. What can it do, what must it not do, and how should it degrade when things fail? Those decisions have to be written down in advance.</p>
+
+                    <h2 class="text-primary dark:text-dark-text">05 Auto-Paste: The Real Danger Is Not Misrecognition, but Pasting to the Wrong Place</h2>
+                    <p>If ASR and LLM are the capability core of SpeakMore, auto-paste is the trust core. Whether users can leave a dictation tool running depends heavily on whether it avoids accidental operations.</p>
+                    <p>I did not make SpeakMore blindly write to the clipboard and press Ctrl+V. On Windows, the main process first uses UI Automation to decide whether the current focus target is a trusted text input. If that fails, it checks the Win32 caret. If it is still uncertain, only explicit allowlist apps such as WeChat, QQ, Discord, VS Code, Cursor, Slack, and Notion get weak-trust compatibility. On macOS, Accessibility APIs read the foreground app, focused control, selection, and text target.</p>
+                    <p>Only when the target is trusted does SpeakMore temporarily write to the clipboard and trigger paste. Before paste, it snapshots the clipboard; afterward, it restores the user's original clipboard in <code>finally</code>. If the target is unavailable, focus drifts, or paste fails, the result is not lost. It moves into the floating panel.</p>
+                    <p>This is also why free Q&amp;A always goes to the floating panel. Dictation and translation generate text to insert. Free Q&amp;A generates an answer for the user to read. Mixing those two delivery paths is an easy way to create accidents.</p>
+                    <blockquote><p>The confidence of a dictation tool does not come from recognizing faster. It comes from knowing when not to paste.</p></blockquote>
+
+                    <h2 class="text-primary dark:text-dark-text">06 Local Dictionary and Learning: Making the Tool More Like Your Own</h2>
+                    <p>Dictation has another very real problem: everyone has their own words. Project names, brand names, code terms, personal names, and speaking habits are hard for a general ASR model to get right the first time.</p>
+                    <p>That is why SpeakMore has a local dictionary. Confirmed entries travel with each request as <code>dictionary_terms</code>, and the prompt gives priority to correcting proper nouns and phrases through those terms. To avoid filling the whole context window with dictionary data, the backend accepts at most 40 entries.</p>
+                    <p>Automatic learning is more careful. After a successful auto-paste, SpeakMore briefly observes the current input target to see whether the user immediately corrected a short word or phrase. If it finds a candidate, it enters the local dictionary flow rather than rewriting aggressively for the user. The boundary matters: do not collect global text indiscriminately, and do not treat whole-sentence rewriting as dictionary learning.</p>
+                    <p>To me, the local dictionary is not a bonus feature. It is the long-term moat of a dictation tool. The more it becomes like your own tool, the more value it has beyond a one-off demo.</p>
+
+                    <h2 class="text-primary dark:text-dark-text">07 What SpeakMore Taught Me</h2>
+                    <p>After finishing the core loop, a few judgments about AI tool development became much clearer.</p>
+                    <ol class="list-decimal">
+                        <li>An AI Native tool is not a model wrapped in a product. It is a redistribution of human attention. ASR listens, the LLM organizes, Electron returns the result to the workflow, and the human judges, edits, and keeps creating.</li>
+                        <li>Much of the complexity in a real product is around the model, not inside the model. Model download, device fallback, audio format, session cancellation, late messages, clipboard restoration, and focus drift decide whether the tool can actually land.</li>
+                        <li>Automation is not abdication. The more automatic a tool is, the clearer its boundaries must be. Paste when safe, show when unsafe, degrade when possible, and stop clearly when it should not fabricate.</li>
+                        <li>Local-first still matters. SpeakMore handles raw speech through local ASR, and keeps history, settings, dictionary entries, and learning candidates on the machine. Users can choose their LLM provider, but the base workflow should not be naturally locked to one cloud service.</li>
+                    </ol>
+
+                    <h2 class="text-primary dark:text-dark-text">Closing: Build a Tool You Would Open Every Day</h2>
+                    <p>SpeakMore is not just a dictation project for me. It is a practical experiment in landing AI tools. Model capability matters, but turning that capability into a stable, trustworthy, long-term workflow is the real product capability.</p>
+                    <p>If you are building AI tools too, I would not only ask whether the model can finish the task. Ask instead: should this feature execute automatically? Can users regain control when it fails? Is the data flow clear? Does this tool have a reason to be opened more than ten times a day?</p>
+                    <p>Action itself is the best antidote to anxiety. Instead of watching the AI tooling era from the sidelines, build one real product yourself and connect every tiny part of the chain. Once you run the loop end to end, you will understand much more clearly what the new development paradigm has changed.</p>
+                    <div class="article-card-block">
+                        <strong>References</strong>
+                        <p>SpeakMore GitHub: <a href="https://github.com/cnYui/SpeakMore" target="_blank" rel="noopener">https://github.com/cnYui/SpeakMore</a></p>
+                        <p>SenseVoiceSmall model: <a href="https://huggingface.co/FunAudioLLM/SenseVoiceSmall" target="_blank" rel="noopener">https://huggingface.co/FunAudioLLM/SenseVoiceSmall</a></p>
+                        <p>FunASR project: <a href="https://github.com/modelscope/FunASR" target="_blank" rel="noopener">https://github.com/modelscope/FunASR</a></p>
+                    </div>
+                `
+            },
+            ja: {
+                title: '高速・高精度なクラウド音声入力ソフトを開発してオープンソース化した：SpeakMore はどう作ったのか',
+                date: '2026年6月4日',
+                readTime: '12分で読める',
+                excerpt: 'SenseVoiceSmall、FunASR、LLM 後処理、音声チェーン、自動貼り付けまで、SpeakMore の実装を整理します。',
+                tags: ['SpeakMore', 'ASR', 'FunASR', 'Electron', 'FastAPI', 'AI Native'],
+                shareTitle: 'リンクをコピー',
+                copied: 'リンクをコピーしました',
+                copyFailed: 'コピーに失敗しました',
+                heroAlt: 'SpeakMore クラウド音声入力ソフトのカバー',
+                body: `
+                    <p>最近、私は SpeakMore という入力ソフトを開発し、オープンソースとして公開しました。プロジェクト URL はここです：<a href="https://github.com/cnYui/SpeakMore" target="_blank" rel="noopener">https://github.com/cnYui/SpeakMore</a>。</p>
+                    <p>目標はとてもシンプルです。ショートカットキーを押して一言話すだけで、できるだけ速く、できるだけ正確に、その結果を今開いているアプリへ入力できるようにすることです。ここで言うクラウド音声入力は、すべての生音声をクラウドへ投げるという意味ではありません。ローカル ASR、設定可能なクラウド LLM 後処理、デスクトップ入力ワークフローを一つの閉ループにするという意味です。音声はローカルで認識し、その後 LLM が実際に入力できる文章へ整えます。</p>
+                    <p>最初は、これはただの「音声を文字に変換するツール」だと思っていました。でも実際に作り込んでいくと、核心は ASR モデルを一つつなぐことではありませんでした。音声認識、LLM によるテキスト整理、ショートカット、フォーカス判定、クリップボード復元、フローティングパネルをすべて一つの安定した閉ループにすることが本質でした。</p>
+                    <p>なので今日は、SpeakMore というオープンソースプロジェクトを通して、高速で高精度なクラウド音声入力ソフトが実際にはどう作られているのかを話したいと思います。オープンソースの音声モデルは出発点にすぎません。本当に重要なのは、モデルの能力をデスクトップの文脈に接続し、ユーザーが安心して使えて、長く使い続けられる形にすることです。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">01 「音声を文字にする」から「デスクトップワークフロー」へ</h2>
+                    <p>SpeakMore を作り始めたとき、私の一番直接的な目標は、ユーザーがショートカットキーを押して話すと、その文字が今開いているアプリへ自動入力されることでした。Windows では <code>Right Alt</code>、macOS の開発版では右側の <code>Option</code> を入口にしています。聞くだけなら簡単そうですが、実際にデスクトップ環境へ接続すると、これは単純なモデルの問題ではないことがすぐに分かります。</p>
+                    <p>私の理解では、SpeakMore のコアチェーンは大きく三つに分かれます。</p>
+                    <ol class="list-decimal">
+                        <li>デスクトップ側がユーザーの意図を読み取る：ショートカット、フォーカス、選択範囲、ウィンドウ、フローティング UI。</li>
+                        <li>ローカルバックエンドが音声とテキストを処理する：ASR 書き起こし、LLM による整形、質問応答、翻訳。</li>
+                        <li>結果の配送が最後の一歩を担う：貼り付けられるなら貼り付ける。無理ならフローティングパネルに表示する。</li>
+                    </ol>
+                    <p>だから私は最終的に Electron + FastAPI の構成を選びました。Electron はデスクトップ機能を扱うのに向いていて、FastAPI は Python の音声モデルや大規模言語モデルのリクエストを載せるのに向いています。この二層を分けると境界がかなり明確になります。Electron が FunASR や PyTorch の依存関係を抱え込む必要はなく、Python バックエンドもトレイ、クリップボード、Accessibility を理解する必要がありません。</p>
+                    <blockquote><p>本当に希少なのは「モデルをつなげるかどうか」ではなく、モデルの能力をユーザーが毎日使う現実の場面に落とし込めるかどうかです。</p></blockquote>
+
+                    <h2 class="text-primary dark:text-dark-text">02 ASR：SenseVoiceSmall は出発点であって、終点ではない</h2>
+                    <p>SpeakMore が現在正式に対応している ASR モデルは <code>FunAudioLLM/SenseVoiceSmall</code> で、FunASR の <code>AutoModel</code> から読み込んでいます。この選択はかなり素直です。オープンソースモデルで、ローカル実行ができ、ローカル優先の音声入力ツールに向いているからです。</p>
+                    <p>ただし、実装ではモデルをそのまま配布パッケージに入れていません。モデルファイルは大きく、ユーザーのマシン、ネットワーク、キャッシュディレクトリもそれぞれ違います。そこで SpeakMore は「配布パッケージにはモデルを含めず、初期化ページでユーザーがダウンロードを開始する」方式を採用しています。バックエンドは、明示された環境変数のディレクトリ、ユーザー設定のキャッシュディレクトリ、プラットフォーム既定のディレクトリ、Hugging Face cache の順にモデルを探し、最後にダウンロードを試みます。</p>
+                    <p>デバイス選択でも、典型的な落とし穴を踏みました。CUDA、MPS、CPU は一見ただのパラメータに見えますが、実際にいろいろなマシンで動かすと安定性が大きく変わります。そのためバックエンドでは <code>FUNASR_DEVICE</code> によって <code>cpu</code>、<code>cuda</code>、<code>cuda:0</code>、<code>mps</code>、<code>auto</code> をサポートし、デフォルトでは macOS MPS を積極的には有効化しません。明示的にアクセラレータを選んで失敗した場合は CPU にフォールバックし、<code>/model/status</code> で <code>fallback_reason</code> を見られるようにしています。</p>
+                    <p>これは高速化が重要ではないという意味ではありません。私の判断はこうです。<strong>ローカルツールにとって、デフォルトの安定性はデフォルトの攻めた最適化より重要です。</strong> ユーザーが初めてアプリを開いたときに一番必要なのはベンチマークの数字ではなく、理由も分からず落ちないことです。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">03 音声チェーン：不確実性をバックエンドに残さない</h2>
+                    <p>音声入力を作るとき、意外と軽視されがちなのが音声フォーマットです。ブラウザは WebM や Ogg を録音できますし、サンプリングレートやチャンネル数も環境によって変わります。もしバックエンドが毎回コンテナ形式、チャンネル数、サンプリングレートを推測しなければならないなら、チェーン全体がかなり脆くなります。</p>
+                    <p>そのため SpeakMore では、renderer 側で先に音声をきれいに整えています。簡単に言うと、流れはこうです。</p>
+                    <ol class="list-decimal">
+                        <li>ユーザーが選択したマイクを読み取り、使えない場合はデフォルトデバイスに戻す。</li>
+                        <li>複数チャンネルをモノラルにまとめ、一部のヘッドセットで声が 0 番以外のチャンネルに入る問題を避ける。</li>
+                        <li>DC offset を除去し、有効だが小さい音声には制御されたゲインをかける。</li>
+                        <li><code>16kHz</code> にリサンプリングする。</li>
+                        <li><code>pcm_s16le</code> にエンコードし、WebSocket でバイナリ chunk として直接送る。</li>
+                    </ol>
+                    <p>バックエンドが受け取るのは「たぶん何かの音声ファイル」ではなく、明確に宣言された <code>{ type: "pcm_s16le", sample_rate: 16000, channels: 1 }</code> です。これによって ASR の入力は制御しやすくなり、テスト境界もはっきりします。</p>
+                    <p>ここにはもう一つの工程上の判断があります。SpeakMore は SenseVoiceSmall をネイティブなオンライン streaming モデルとして説明していません。現在の実装では、バックエンドが音声セッションを作り、およそ <code>1200ms</code> ごとの PCM chunk を受け取り、音声全体を蓄積しながら FunASR を複数回呼び出して段階的な結果を生成します。ユーザー体験としては途中の書き起こしが見えますが、モデル側は安定してシンプルなままです。</p>
+                    <blockquote><p>デモは「リアルタイムっぽく見える」ことを追求できます。でも本物のプロダクトは、自分がどの不確実性をどこに置いているのかを理解していなければなりません。</p></blockquote>
+
+                    <h2 class="text-primary dark:text-dark-text">04 LLM 後処理：ASR の原文は最終回答ではない</h2>
+                    <p>音声認識が解決するのは最初の一歩だけです。音を原文テキストに変えることです。でも実際の入力には、口癖、言い直し、区切りの誤り、専門用語の誤認識、日本語と英語の間隔、句読点、命令意図、文脈があります。つまり ASR の原文は、多くの場合そのままでは最終的に使える文章ではありません。</p>
+                    <p>SpeakMore では ASR の後ろに LLM 後処理を接続し、三つのモードごとに異なる Prompt を使っています。</p>
+                    <div class="article-card-block"><strong>書き起こしモード</strong><p>意味を変えない整形だけを行います。「えー」「うん」「あの」などの口語ノイズを削り、ASR の誤りを直し、句読点を補い、技術用語の表記を整えます。ただし質問には答えず、翻訳せず、勝手に拡張もしません。</p></div>
+                    <div class="article-card-block"><strong>自由質問モード</strong><p>これは「話した内容を貼り付ける」ものではなく、音声を一時的なアシスタントに変えるモードです。ユーザーが一段落を選択して質問すると、SpeakMore は信頼できる選択範囲を <code>selected_text</code> としてバックエンドに送り、LLM がその内容を説明、要約、書き換え、解答できます。</p></div>
+                    <div class="article-card-block"><strong>翻訳モード</strong><p>設定ページにある対象言語を、その回の <code>start_audio.parameters.output_language</code> として一緒に送ります。ユーザーは毎回「英語に翻訳して」「日本語に翻訳して」と話す必要がありません。ショートカット自体がモードの境界になるからです。</p></div>
+                    <p>この一連の流れを作ってみて、私が一番強く感じたのは、Prompt は「この文章を改善してください」という一文で終わるものではないということです。Prompt は本質的にはプロダクトの境界を定義します。何ができるのか、何をしてはいけないのか、失敗したときにどう降格するのかを、あらかじめ書いておく必要があります。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">05 自動貼り付け：一番危険なのは認識ミスではなく、貼り付け先を間違えること</h2>
+                    <p>ASR と LLM が SpeakMore の能力の中心だとすると、自動貼り付けは信頼の中心です。ユーザーが音声入力ツールを長く常駐させられるかどうかは、それが誤操作しないと信じられるかにかなり左右されます。</p>
+                    <p>私は SpeakMore に、単純な「クリップボードへ書き込む + Ctrl+V」をさせていません。Windows では、主プロセスがまず UI Automation で現在のフォーカスが信頼できるテキスト入力対象かを判断します。失敗した場合は Win32 caret を見ます。それでも不確かな場合は、WeChat、QQ、Discord、VS Code、Cursor、Slack、Notion など、明示的な許可リストに入れたアプリだけを弱い信頼の互換対象にします。macOS では Accessibility API で前面アプリ、フォーカスコントロール、選択範囲、テキスト対象を読み取ります。</p>
+                    <p>対象が信頼できると確認できたときだけ、SpeakMore は一時的にクリップボードへ書き込み、貼り付けショートカットを送ります。貼り付け前にはクリップボードのスナップショットを作り、終了後は <code>finally</code> の中でユーザー本来のクリップボードを復元します。対象が使えない、フォーカスが移動した、貼り付けが失敗した場合でも、結果は消えません。フローティングパネルに表示されます。</p>
+                    <p>自由質問が常にフローティングパネルへ出るのも、この理由です。書き起こしと翻訳は「入力すべきテキスト」を生成します。一方、自由質問は「ユーザーが読む答え」を生成します。この二つの配送方法を混ぜると、簡単に事故が起きます。</p>
+                    <blockquote><p>音声入力ツールの底力は、どれだけ速く認識するかではなく、いつ貼り付けてはいけないかを知っていることにあります。</p></blockquote>
+
+                    <h2 class="text-primary dark:text-dark-text">06 ローカル辞書と自動学習：だんだん自分のツールになっていく</h2>
+                    <p>音声入力にはもう一つ現実的な問題があります。人それぞれ、自分だけの単語があります。プロジェクト名、ブランド名、コード用語、人名、口癖。こうしたものは汎用 ASR では一発で正しく認識しにくいです。</p>
+                    <p>そこで SpeakMore にはローカル辞書を入れました。正式な辞書項目は <code>dictionary_terms</code> としてその回の音声リクエストに入り、Prompt は専門用語や短いフレーズを優先して修正します。コンテキストを辞書全体で埋め尽くさないように、バックエンドでは最大 40 件までに制限しています。</p>
+                    <p>自動学習はさらに慎重です。自動貼り付けが成功した後、短時間だけ今回の入力対象を観察し、ユーザーがすぐに特定の短い語句を修正したかを見ます。候補を検出したらローカル辞書のフローに入りますが、ユーザーの代わりに大規模な書き換えを勝手に行うわけではありません。この境界はとても重要です。無差別なグローバルテキスト収集をしてはいけませんし、文全体の書き換えを辞書学習として扱うべきでもありません。</p>
+                    <p>私にとって、ローカル辞書は追加機能ではなく、音声入力ツールの長期的な堀です。使えば使うほど自分に近づくことこそ、ローカルツールが一回限りのデモと違う価値だからです。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">07 SpeakMore から得た判断</h2>
+                    <p>このコアチェーンを作り終えて、AI ツール開発についていくつかの判断がよりはっきりしました。</p>
+                    <ol class="list-decimal">
+                        <li>AI Native なツールとは、モデルをプロダクトに被せることではありません。人の注意力の配分を組み替えることです。ASR が聞き、LLM が整理し、Electron が結果をワークフローへ戻し、人間は判断し、編集し、さらに作り続ける。</li>
+                        <li>本物のプロダクトにある大量の複雑さは、モデルそのものではなくモデルの周辺にあります。モデルのダウンロード、デバイスフォールバック、音声フォーマット、セッションキャンセル、遅れて届くメッセージ、クリップボード復元、フォーカス移動。これらこそが、実際に落とし込めるかどうかを決める細部です。</li>
+                        <li>「自動化」を丸投げと理解してはいけません。自動化ツールであればあるほど、境界感が必要です。貼り付けられるときは貼り付ける。貼り付けられないときは表示する。降格できるときは降格する。捏造してはいけないときは明確に止まる。</li>
+                        <li>ローカル優先にはまだ大きな価値があります。SpeakMore の音声原データはローカル ASR で処理され、履歴、設定、辞書、学習候補もローカルに保存されます。LLM provider はユーザーが選べますが、元のワークフローが最初から特定のクラウドサービスに縛られるべきではありません。</li>
+                    </ol>
+
+                    <h2 class="text-primary dark:text-dark-text">終わりに：毎日開きたくなるツールを作る</h2>
+                    <p>私にとって SpeakMore は、単なる音声入力プロジェクトではありません。AI ツールを現実に落とし込むための実践でもあります。モデル能力は重要です。でも、その能力を安定して、信頼できて、長く使えるワークフローにすることこそ、本当のプロダクト能力です。</p>
+                    <p>もしあなたも AI ツールを作っているなら、「モデルがこのタスクを完了できるか」だけを見ない方がいいと思います。むしろ、この機能は本当に自動実行すべきなのか。失敗したときにユーザーは制御権を取り戻せるのか。データの流れは明確か。このツールには一日に十数回開かれる理由があるのか。そこを問い続けるべきです。</p>
+                    <p>行動力そのものが、不安に対抗する一番良い解毒剤です。AI ツール時代がどう変わるのかを眺め続けるより、自分の手で一つの本物のプロダクトを作り、細かいチェーンを一つずつ通してみる。その後で初めて、新しい開発パラダイムが何を変えたのかが、もっとはっきり見えてきます。</p>
+                    <div class="article-card-block">
+                        <strong>参考リンク</strong>
+                        <p>SpeakMore GitHub：<a href="https://github.com/cnYui/SpeakMore" target="_blank" rel="noopener">https://github.com/cnYui/SpeakMore</a></p>
+                        <p>SenseVoiceSmall モデル：<a href="https://huggingface.co/FunAudioLLM/SenseVoiceSmall" target="_blank" rel="noopener">https://huggingface.co/FunAudioLLM/SenseVoiceSmall</a></p>
+                        <p>FunASR プロジェクト：<a href="https://github.com/modelscope/FunASR" target="_blank" rel="noopener">https://github.com/modelscope/FunASR</a></p>
+                    </div>
+                `
+            }
+        };
+
+        function renderArticleLocale(lang) {
+            const locale = articleLocales[lang] || articleLocales.zh;
+            document.documentElement.lang = { zh: 'zh-CN', en: 'en', ja: 'ja' }[lang] || 'zh-CN';
+            document.getElementById('articleTitle').textContent = locale.title;
+            document.getElementById('articleMetaDate').textContent = locale.date;
+            document.getElementById('articleMetaReadTime').textContent = locale.readTime;
+            document.getElementById('articleExcerpt').textContent = locale.excerpt;
+            document.getElementById('articleBody').innerHTML = locale.body;
+            document.getElementById('articleHeroImage').alt = locale.heroAlt;
+            document.getElementById('shareBtn').title = locale.shareTitle;
+            document.title = `${locale.title} - Tech Blog`;
+            document.querySelector('meta[name="description"]').setAttribute('content', locale.excerpt);
+            document.getElementById('articleTags').innerHTML =
+                `<span class="text-sm text-text-muted dark:text-dark-text-muted mr-2">${window.YuiLang ? window.YuiLang.getText('blog', 'tags', lang) : '标签:'}</span>` +
+                locale.tags.map(tag => `<span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">${tag}</span>`).join('');
+        }
+
+        document.getElementById('shareBtn').addEventListener('click', async () => {
+            const url = window.location.origin + window.location.pathname;
+            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
+            const locale = articleLocales[lang] || articleLocales.zh;
+            try {
+                await navigator.clipboard.writeText(url);
+                showToast(locale.copied);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                showToast(locale.copyFailed);
+            }
+        });
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 dark:bg-white/90 text-white dark:text-black px-6 py-3 rounded-full text-sm font-medium shadow-lg transition-all duration-300 opacity-0 translate-y-2 z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            });
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        window.addEventListener('languageChanged', (event) => {
+            renderArticleLocale(event.detail.lang);
+        });
+
+        renderArticleLocale(window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh');
+    </script>
+</body>
+</html>

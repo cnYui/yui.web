@@ -39,6 +39,7 @@ logs
 *.log
 
 # Runtime data
+data/
 pids
 *.pid
 *.seed
@@ -94,6 +95,7 @@ dist
 tmp/
 temp/
 .worktrees/
+superpowers/
 
 # Large media files
 # Removed exclusions for image directories to fix 404 errors in deployment

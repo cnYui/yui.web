@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Several Ways to Use Codex Tokens at Lower Cost - Tech Blog</title>
+    <meta name="description" content="A practical note on using Codex tokens at lower cost with Codex CLI, CPA/CLIProxyAPI, account pools, public endpoints, and troubleshooting boundaries."/>
+    <script>
+        (function() {
+            const html = document.documentElement;
+            html.setAttribute('data-ui-ready', 'false');
+            try {
+                const theme = localStorage.getItem('yui-portfolio-theme');
+                const lang = localStorage.getItem('yui-portfolio-lang');
+                const langMap = { zh: 'zh-CN', en: 'en', ja: 'ja' };
+                const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+                html.classList.toggle('dark', resolvedTheme === 'dark');
+                html.style.colorScheme = resolvedTheme;
+                html.style.backgroundColor = resolvedTheme === 'dark' ? '#0f0f0f' : '#ffffff';
+                html.lang = langMap[lang] || 'en';
+            } catch (error) {
+                html.style.colorScheme = 'light';
+                html.style.backgroundColor = '#ffffff';
+                html.lang = 'en';
+            }
+        })();
+    </script>
+    <style>
+        html { background-color: #ffffff; }
+        html.dark { background-color: #0f0f0f; }
+        html[data-ui-ready="false"] body { opacity: 0; }
+        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
+    </style>
+    <link href="/styles/site.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="/js/theme.js"></script>
+    <script src="/js/lang.js?v=20260419-2"></script>
+    <script src="/js/mobile-menu.js"></script>
+    <style>
+        .prose, article {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        .prose h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; }
+        .prose h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .prose p { margin-bottom: 1rem; line-height: 1.8; }
+        .prose ul, .prose ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .prose li { margin-bottom: 0.5rem; line-height: 1.7; }
+        .prose strong { font-weight: 600; color: inherit; }
+        .prose a { text-decoration: underline; text-underline-offset: 4px; }
+        .prose code { border-radius: 0.25rem; background: rgba(229, 229, 229, 0.7); padding: 0.12rem 0.35rem; font-size: 0.92em; }
+        .dark .prose code { background: rgba(51, 51, 51, 0.9); }
+        .prose blockquote { border-left: 4px solid #e5e5e5; padding-left: 1rem; margin: 1.5rem 0; font-style: italic; color: #71717a; }
+        .dark .prose blockquote { border-left-color: #333; color: #a0a0a0; }
+        .dark .prose strong { color: #ffffff; }
+        .prose hr { border: none; border-top: 1px solid #e5e5e5; margin: 2rem 0; }
+        .dark .prose hr { border-top-color: #333; }
+    </style>
+</head>
+<body class="bg-background dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col overflow-x-hidden antialiased transition-colors duration-300">
+    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
+        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
+            <div class="flex items-center gap-4">
+                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
+            </div>
+            <div class="flex items-center gap-10">
+                <nav class="hidden md:flex items-center gap-8">
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
+                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/blog/">Blog</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">Music</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
+                </nav>
+                <div class="flex gap-2">
+                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Language: Chinese / English / Japanese">
+                        <span class="text-xs font-bold">EN</span>
+                    </button>
+                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
+                        <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
+                    </button>
+                    <button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card transition-colors" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu">
+                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <nav id="mobileMenu" class="hidden md:hidden border-t border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
+            <div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
+                <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 w-fit" href="/blog/">Blog</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">Music</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-1 w-full">
+        <div class="w-full bg-background-soft dark:bg-dark-surface py-16">
+            <div class="max-w-3xl mx-auto px-6">
+                <a href="/blog/" class="inline-flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors mb-8">
+                    <span class="material-symbols-outlined text-lg">arrow_back</span>
+                    <span data-i18n="backToBlog">Back to Blog</span>
+                </a>
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="px-3 py-1 rounded bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-xs font-semibold uppercase tracking-wider">AI</span>
+                    <span id="articleMetaDate" class="text-sm text-text-muted dark:text-dark-text-muted">Jun 6, 2026</span>
+                    <span class="text-text-muted dark:text-dark-text-muted">•</span>
+                    <span id="articleMetaReadTime" class="text-sm text-text-muted dark:text-dark-text-muted">7 min read</span>
+                </div>
+                <h1 id="articleTitle" class="text-4xl md:text-5xl font-display font-bold text-primary dark:text-dark-text leading-tight mb-6">
+                    Several Ways to Use Codex Tokens at Lower Cost
+                </h1>
+                <p id="articleExcerpt" class="text-xl text-text-muted dark:text-dark-text-muted font-light leading-relaxed">
+                    A practical note on using Codex tokens at lower cost with Codex CLI, CPA/CLIProxyAPI, account pools, public endpoints, and troubleshooting boundaries.
+                </p>
+                <div class="flex items-center gap-4 mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
+                    <div class="w-12 h-12 rounded-full overflow-hidden">
+                        <img src="/images/profile/avatar-small.jpg" alt="Yui" class="w-full h-full object-cover" decoding="async"/>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-primary dark:text-dark-text">Yui</p>
+                        <p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="authorRole">Developer & Creator</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full max-w-4xl mx-auto px-6">
+            <div class="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-lg">
+                <img id="articleHeroImage" class="w-full h-full object-cover" src="/images/blog/codex-token-low-cost-cover.png" alt="Codex Token low-cost usage cover"/>
+            </div>
+        </div>
+
+        <article class="w-full max-w-3xl mx-auto px-6 py-16">
+            <div id="articleBody" class="prose prose-lg max-w-none text-text-main dark:text-dark-text"></div>
+
+            <div id="articleTags" class="flex flex-wrap gap-2 mt-12 pt-8 border-t border-border-subtle dark:border-dark-border">
+                <span class="text-sm text-text-muted dark:text-dark-text-muted mr-2" data-i18n="tags">Tags:</span>
+            </div>
+
+            <div class="flex items-center justify-between mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
+                <span class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="shareArticle">Share this article:</span>
+                <div class="flex gap-4">
+                    <button id="shareBtn" class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text" title="Copy link">
+                        <span class="material-symbols-outlined text-lg">share</span>
+                    </button>
+                </div>
+            </div>
+        </article>
+    </main>
+
+    <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
+        <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex flex-col gap-1 text-center md:text-left">
+                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui's Portfolio</h2>
+                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 Tech Blog.</p>
+            </div>
+            <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
+                <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
+                <span class="cursor-default">15951875192</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const articleLocales = {
+            zh: {
+                title: '低成本使用 Codex Token 的几种方法',
+                date: '2026年6月6日',
+                readTime: '7 分钟阅读',
+                excerpt: '从 Codex CLI、CPA/CLIProxyAPI、账号池、公网入口和排障方法出发，整理低成本使用 Codex Token 的可行路径和边界。',
+                tags: ['Codex', 'OpenAI', 'AI Coding', 'CLIProxyAPI', 'API Gateway', 'CPA'],
+                shareTitle: '复制链接',
+                copied: '复制成功',
+                copyFailed: '复制失败',
+                heroAlt: '低成本使用 Codex Token 的文章封面',
+                body: `
+                    <p>过去一段时间，我一直在整理 Codex 相关的使用方式。最开始的问题很简单：如果一个人每天都大量写代码，直接烧 API Token 会很贵；如果只靠一个 ChatGPT Plus 账号，额度又很容易不够。更麻烦的是，手里有多个账号时，Codex CLI 里来回退出、登录、确认当前账号，真的很打断工作流。</p>
+                    <p>所以我开始看 CPA，也就是 CLIProxyAPI。它不是浏览器代理，也不是 VPN。它更像一个夹在 Codex CLI 和上游模型服务之间的 API 网关。你在本地 Codex CLI 里配置一个 Base URL 和一个 API Key，请求先到 CPA，CPA 再去决定该用哪个上游账号、哪个模型、哪种协议。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">01 先说为什么这件事能成立</h2>
+                    <p>Codex CLI 的工作方式，本质上就是本地工具把上下文发给云端模型，再把结果拿回来。这里的通讯可能是 HTTP、SSE，也可能是 WebSocket。API Key 或 OAuth access token 只是用来证明“这个请求是谁发的”，它本身不是一个必须固定在某台机器上的会话。</p>
+                    <p>这就是反代理能工作的原因。它改变的是请求路径：从“Codex CLI 直连上游”，变成“Codex CLI 先连 CPA，再由 CPA 请求上游”。但这不代表可以随便共享账号、绕过限制或批量薅试用。真正会带来账号风险的，通常是异常并发、异常共享、凭据泄露、滥用试用、IP 异常和违反服务条款。反代理只是网络链路上的一层。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">02 真正的需求不是白嫖，而是管理成本</h2>
+                    <p>我觉得“白嫖奥特曼”这个说法很有传播力，但如果认真写技术文章，它会把重点带偏。真正值得讲的不是如何薅免费试用，而是为什么大家开始需要一个账号池和统一入口。</p>
+                    <p>比如 Codex Plus 账号本身有额度限制，高强度编码时一个账号很容易用完。某些地区或某些时期可能会有 Plus 试用、促销或邀请活动，比如有人会讨论日区 Plus 首月免费的现象。但这种信息必须以官方页面、邮件或应用内显示为准，不能写成长期稳定规则，更不能写成跨区支付、批量注册或规避风控教程。</p>
+                    <blockquote><p>更稳妥的路径，是准备自己有权使用的 ChatGPT Plus、Pro、Team 或其他具备 Codex 权限的账号，确认 Codex CLI 能正常使用，再通过 CPA 支持的 OAuth、auth-dir 或 codex-api-key 加入上游账号池。</p></blockquote>
+                    <p>管理者要记录套餐、地区、到期时间和账号状态。过期、长期 429、长期超时、无法刷新的账号，就及时禁用。低成本化不是找漏洞，而是把可用额度管理好。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">03 CPA 解决的是入口和调度</h2>
+                    <p>CPA 对下游用户暴露的是 OpenAI-compatible 的 <code>/v1</code> 入口。普通用户只需要知道 Base URL 和客户端 API Key。上游具体是 OAuth 账号，还是 Codex API Key，应该由代理内部处理，不应该直接交给下游用户。</p>
+                    <p>请求进入 CPA 后，它会先校验下游 API Key，再根据模型名、前缀、provider 和账号状态选择凭据。默认策略是 round-robin，也可以使用 fill-first。带 prefix 的账号可以让请求固定到某一组账号。选出上游凭据后，Codex executor 会把请求发到上游 <code>/responses</code>，流式响应按 SSE 转发，WebSocket 请求则由 Codex WebSocket executor 处理。</p>
+                    <p>这就是为什么用户只配置一个 Base URL 和 API Key，却能在背后使用多个上游账号。它不是魔法，只是把认证、路由、账号选择和协议处理收到了一个服务里。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">04 真正难的是公网入口和坏账号</h2>
+                    <p>本地自用其实很简单。CPA 跑在本机，Codex CLI 指向 <code>http://127.0.0.1:8317/v1</code>，先测 <code>/v1/models</code>，再跑一次真实请求。</p>
+                    <p>麻烦通常出现在公网。你通过 Cloudflare Tunnel、Nginx 或 Caddy 把 <code>/v1</code> 映射出去之后，就会有爬虫、扫描器和无认证请求来打各种端点。我的建议是给 API 域名单独做 WAF 规则，只允许真正用户带 <code>Authorization: Bearer &lt;API_KEY&gt;</code> 访问，不要对 API 域名使用浏览器 Challenge，因为 CLI 客户端没法完成这种挑战。</p>
+                    <p>另一类慢请求来自账号池本身。坏账号太多时，请求可能会不断选到不可用账号。CPA 为了支持长推理、流式响应和 Codex 上游连接，部分链路不会过早超时，这会让坏账号把一次请求拖很久。管理者需要定期清理账号池，必要时降低 request-retry、max-retry-credentials 和 max-retry-interval，让请求更快失败并切走坏账号。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">05 不要把所有工具都叫反代理</h2>
+                    <p>我顺手也看了一些相关项目。Codex 是官方 CLI，不是反代理。GPTSession2CPAandSub2API 更像凭据格式转换器，它解决的是不同工具之间 auth JSON 格式不兼容的问题。CPA / CLIProxyAPI 才是本文主要讨论的代理网关。Cockpit Tools 和 Codex-Manager 偏账号管理，9router 偏本地多 provider 路由，sub2api 和 AxonHub 更接近平台化 API 网关。</p>
+                    <p>这些工具看起来都在处理“账号”和“API”，但层次不一样。有人负责凭据来源，有人负责格式转换，有人负责账号管理，有人负责网关转发，还有人负责限流、计费、日志和 tracing。把层次分清楚，才不容易把一个格式转换器误认为反代理服务。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">最后</h2>
+                    <p>如果只是个人使用，我会建议先从本地 CPA 开始，不要一上来就做公网共享。先确认自己的 Codex 账号可用，确认 <code>/v1/models</code> 和 <code>/v1/responses</code> 都能跑，再考虑 Cloudflare、WAF、API Key 和账号池。</p>
+                    <p>低成本使用 Codex 并不是找漏洞。更像是把自己已经有权使用的额度管好，把工具链接起来，把坏账号清掉，把入口保护好。能把这些基础动作做好，体验就会比来回切号稳定很多。</p>
+                `
+            },
+            en: {
+                title: 'Several Ways to Use Codex Tokens at Lower Cost',
+                date: 'Jun 6, 2026',
+                readTime: '7 min read',
+                excerpt: 'A practical note on using Codex tokens at lower cost with Codex CLI, CPA/CLIProxyAPI, account pools, public endpoints, and troubleshooting boundaries.',
+                tags: ['Codex', 'OpenAI', 'AI Coding', 'CLIProxyAPI', 'API Gateway', 'CPA'],
+                shareTitle: 'Copy link',
+                copied: 'Link copied',
+                copyFailed: 'Copy failed',
+                heroAlt: 'Codex Token low-cost usage cover',
+                body: `
+                    <p>For a while, I have been organizing how I use Codex in daily development.</p>
+                    <p>The starting point was very practical. If you write a lot of code every day, directly burning through API tokens can get expensive. Relying on a single ChatGPT Plus account is not always enough either, because the Codex allowance can run out quickly. And if you own multiple accounts, logging out, logging back in, and checking which account is active inside Codex CLI is a surprisingly annoying break in the workflow.</p>
+                    <p>That is why I started looking at CPA, also known as CLIProxyAPI.</p>
+                    <p>It is not a browser proxy or a VPN. It is closer to an API gateway placed between Codex CLI and the upstream model service. Locally, Codex CLI only needs a Base URL and an API Key. The request enters CPA first, then CPA decides which upstream account, model, and protocol should handle it.</p>
+
+                    <h2 class="text-primary dark:text-dark-text">01 Why a Reverse Proxy Can Work</h2>
+                    <p>Codex CLI is, in simple terms, a local tool that sends context to a cloud model and brings the result back to your machine. That communication may use HTTP, SSE, or sometimes WebSocket.</p>
+                    <p>An API Key or OAuth access token proves whose permission a request is using. It is not a heavy session that must be fixed to one specific computer forever.</p>
+                    <p>That is why a reverse proxy can exist. The path changes: Codex CLI connects to CPA first, CPA authenticates the request, selects an account, and forwards the request upstream.</p>
+                    <p>But this point is easy to misunderstand. The fact that a reverse proxy works does not mean accounts can be shared casually. The real risks usually come from abnormal concurrency, excessive sharing, credential leaks, trial abuse, unusual IP patterns, and violations of service terms. The reverse proxy itself is just one layer in the network path.</p>
+
+                    <h2 class="text-primary dark:text-dark-text">02 The Real Problem Is Management Cost</h2>
+                    <p>A catchy title about getting free usage may attract attention, but it can also move the article in the wrong direction. The real topic is why people start needing an account pool and a unified entry point.</p>
+                    <p>Codex Plus capacity is not infinite. Longer implementation work and repeated refactoring can exhaust one account. At the same time, some regions or time periods may show ChatGPT Plus trials, promotions, or invitations. For example, people sometimes discuss a first-month-free Plus offer in Japan.</p>
+                    <p>Still, that should never be written as a permanent rule. The official page, email, or in-app display is the source of truth at that moment. I do not want this to become an article about cross-region payments, mass registration, or risk avoidance.</p>
+                    <blockquote><p>The safer line is to use ChatGPT Plus, Pro, Team, or other Codex-enabled accounts that you are legitimately allowed to use, confirm they work in Codex CLI or the official Codex entry point, and then add them to CPA through OAuth, auth-dir, or codex-api-key.</p></blockquote>
+                    <p>For each account, record its plan, region, expiry date, purpose, and status. If an account expires, keeps returning 429, times out repeatedly, or cannot refresh, disable it early. Lower cost is closer to capacity management than loophole hunting.</p>
+
+                    <h2 class="text-primary dark:text-dark-text">03 What CPA Actually Does</h2>
+                    <p>CPA exposes an OpenAI-compatible <code>/v1</code> endpoint to downstream users. A normal user should only need the Base URL and a client API Key.</p>
+                    <p>Whether the upstream side is an OAuth account or a Codex API Key should be handled inside the proxy. Passing upstream credentials directly to downstream users breaks the boundary of responsibility.</p>
+                    <p>When a request enters CPA, it checks the downstream API Key first. Then it looks at the model name, prefix, provider, and account status to select credentials. The default policy can rotate accounts with round-robin, while fill-first can prefer earlier accounts. Accounts with a prefix can steer specific model names to a specific group.</p>
+                    <p>After credentials are selected, the Codex executor sends the request to the upstream <code>/responses</code> endpoint. Streaming is returned as SSE, and WebSocket requests are handled by the Codex WebSocket executor.</p>
+                    <p>From the user side, it looks like just one Base URL and one API Key. Behind it, account selection, routing, authentication, and protocol handling are centralized in one service.</p>
+
+                    <h2 class="text-primary dark:text-dark-text">04 Public Endpoints and Dead Accounts Are the Hard Parts</h2>
+                    <p>Local personal usage is fairly simple. Run CPA locally, point Codex CLI to <code>http://127.0.0.1:8317/v1</code>, test <code>/v1/models</code>, then send one real Codex request.</p>
+                    <p>The messy part begins when the endpoint is exposed publicly.</p>
+                    <p>Once <code>/v1</code> is published through Cloudflare Tunnel, Nginx, or Caddy, requests from non-users will arrive too. Crawlers and scanners may hit paths like <code>/.env</code>, <code>.git</code>, <code>wp-*</code>, or <code>*.php</code>. API domains deserve WAF rules separate from static sites.</p>
+                    <p>My default rule would be to block unauthenticated requests and obvious scanning paths. Real users should pass with <code>Authorization: Bearer &lt;API_KEY&gt;</code>. I would not use a browser Challenge on an API domain, because Codex CLI and OpenAI SDK-style clients cannot solve browser challenges.</p>
+                    <p>The other source of pain is the account pool. If many accounts are dead, requests keep selecting credentials that cannot finish. CPA has paths designed for long reasoning, streaming, and upstream Codex connections, so some parts intentionally do not cut off too early. When the upstream side is unresponsive, one request can hang for a long time.</p>
+                    <p>If slowness hurts more than fast failure, review request-retry, max-retry-credentials, and max-retry-interval. Failing sooner and switching away from bad accounts can make the experience much steadier.</p>
+
+                    <h2 class="text-primary dark:text-dark-text">05 Do Not Call Every Related Tool a Reverse Proxy</h2>
+                    <p>While researching this area, I realized that calling every surrounding tool a reverse proxy creates confusion.</p>
+                    <p>OpenAI Codex CLI is the official client. It is not a reverse proxy. GPTSession2CPAandSub2API is closer to a credential format converter. CPA / CLIProxyAPI is the API gateway at the center of this note.</p>
+                    <p>Cockpit Tools and Codex-Manager lean toward account management. 9router is closer to local multi-provider routing. sub2api and AxonHub are better understood as more platform-like AI API gateways.</p>
+                    <p>They all touch accounts and APIs, but they live at different layers: credential source, format conversion, account management, gateway exposure, routing, fallback, rate limiting, logging, and tracing. Separating those layers makes the whole ecosystem easier to reason about.</p>
+
+                    <h2 class="text-primary dark:text-dark-text">Closing</h2>
+                    <p>For personal use, I would start with local CPA first. Do not jump straight into public sharing. Confirm your own Codex account works, make sure <code>/v1/models</code> and <code>/v1/responses</code> both pass, and only then add Cloudflare, WAF, API Keys, and an account pool.</p>
+                    <p>Using Codex at lower cost is not about finding a loophole. It is about managing capacity you are allowed to use, protecting the entry point, cleaning dead accounts, and keeping upstream credentials separate from downstream API Keys.</p>
+                    <p>Even that basic discipline can make development feel much calmer than repeatedly logging in and out of different accounts.</p>
+                `
+            },
+            ja: {
+                title: 'Codex Tokenを低コストで使うためのいくつかの方法',
+                date: '2026年6月6日',
+                readTime: '7分で読める',
+                excerpt: 'Codex CLI、CPA/CLIProxyAPI、アカウントプール、公網入口、トラブルシュートから、Codex Tokenを低コストで使うための考え方を整理します。',
+                tags: ['Codex', 'OpenAI', 'AI開発', 'CLIProxyAPI', 'API Gateway', 'CPA'],
+                shareTitle: 'リンクをコピー',
+                copied: 'リンクをコピーしました',
+                copyFailed: 'コピーに失敗しました',
+                heroAlt: 'Codex Tokenを低コストで使うための記事カバー',
+                body: `
+                    <p>ここしばらく、Codexまわりの使い方を整理していました。</p>
+                    <p>最初のきっかけはかなり現実的です。毎日かなりの量のコードを書くと、API Tokenをそのまま消費するのは重い。かといって、ChatGPT Plusの1アカウントだけに頼ると、Codexの枠はすぐ足りなくなる。さらに複数アカウントを持っている場合、Codex CLIでログアウトして、またログインして、いま使っているアカウントを確認する。この動きが地味に作業を止めます。</p>
+                    <p>そこで見始めたのが、CPA、つまりCLIProxyAPIです。</p>
+                    <p>これはブラウザのプロキシでもVPNでもありません。Codex CLIと上流のモデルサービスの間に置く、AI API向けのゲートウェイに近いものです。ローカルのCodex CLIにはBase URLとAPI Keyだけを設定する。リクエストはいったんCPAに入り、CPAがどの上流アカウントを使うか、どのモデルに流すか、どのプロトコルで処理するかを決めます。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">01 なぜ反代理で動くのか</h2>
+                    <p>Codex CLIの動きは、かなり単純に言えば、ローカルの文脈をクラウドのモデルへ送り、返ってきた結果をまたローカルで使う、というものです。通信はHTTPだったり、SSEだったり、場合によってはWebSocketだったりします。</p>
+                    <p>API KeyやOAuth access tokenは、そのリクエストが誰の権限で送られているかを示すものです。特定の一台のPCに固定された、重いセッションそのものではありません。</p>
+                    <p>だから反代理が成立します。変わるのは経路です。</p>
+                    <p>Codex CLIが上流へ直接つなぐのではなく、まずCPAへつなぐ。CPAが認証し、アカウントを選び、上流へ投げる。</p>
+                    <p>ただし、ここは誤解しないほうがいいです。反代理を使えることと、アカウントを雑に共有していいことは別です。危ないのは、異常な並列利用、過度な共有、認証情報の漏洩、試用の乱用、IPまわりの不自然な使い方、そして利用規約に反する使い方です。反代理そのものは、あくまでネットワーク経路の一層です。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">02 問題は「無料で使う裏技」ではなく、管理コスト</h2>
+                    <p>「白嫖奥特曼」みたいな言い方は、たしかに目を引きます。でも技術記事として書くなら、そこを主役にすると話がずれます。</p>
+                    <p>本当に整理したいのは、なぜアカウントプールと統一入口が必要になるのか、です。</p>
+                    <p>Codex Plusの枠は無限ではありません。長めの実装やリファクタリングを何度も回すと、1アカウントでは足りなくなることがあります。一方で、地域や時期によってはChatGPT Plusの試用、プロモーション、招待のようなものが表示されることもあります。たとえば日本リージョンのPlus初月無料について話している人もいます。</p>
+                    <p>でも、これは常に存在する前提として書くべきではありません。公式ページ、メール、アプリ内表示に出ているものがその時点の正です。まして、越境決済の検証、量産登録、リスク回避の手順を書く記事にはしたくありません。</p>
+                    <blockquote><p>私が安全な線として考えているのは、自分が正当に使えるChatGPT Plus、Pro、Team、またはCodex権限のあるアカウントを用意することです。</p></blockquote>
+                    <p>まずCodex CLIや公式のCodex入口で使えることを確認する。そのうえで、CPAが対応しているOAuth、auth-dir、codex-api-keyの形で上流アカウントプールへ入れる。</p>
+                    <p>そして、アカウントごとにプラン、地域、期限、用途、状態を記録する。期限切れ、429が続く、タイムアウトが多い、更新できない。そういうアカウントは早めに無効化する。</p>
+                    <p>低コスト化は、抜け道探しよりも、管理の話に近いです。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">03 CPAがやっていること</h2>
+                    <p>CPAは下流ユーザーにOpenAI-compatibleな<code>/v1</code>入口を出します。普通の利用者が知るべきものは、Base URLとクライアント用API Keyだけです。</p>
+                    <p>上流がOAuthアカウントなのか、Codex API Keyなのかは、代理側で扱うべき情報です。ここを下流ユーザーへそのまま渡すと、責任の境界が崩れます。</p>
+                    <p>リクエストがCPAに入ると、まず下流のAPI Keyを確認します。そのあと、model名、prefix、provider、アカウント状態を見て、使う認証情報を選びます。デフォルトではround-robinで回せますし、fill-firstのように前のアカウントから使う設定もできます。prefixを付けたアカウントなら、特定のモデル名でそのグループへ寄せることもできます。</p>
+                    <p>選ばれた認証情報を使って、Codex executorが上流の<code>/responses</code>へリクエストを投げます。ストリーミングはSSEとして返し、WebSocketが必要な場合はCodex WebSocket executorが処理します。</p>
+                    <p>つまり、ユーザーから見るとBase URLとAPI Keyだけなのに、裏側では複数アカウント、モデルルーティング、プロトコル処理が動いています。魔法ではなく、面倒な判断を一か所に集めているだけです。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">04 本当に詰まるのは、公網入口と死んだアカウント</h2>
+                    <p>ローカルで自分だけが使うなら、話はかなり簡単です。CPAをローカルで起動し、Codex CLIの<code>base_url</code>を<code>http://127.0.0.1:8317/v1</code>に向ける。まず<code>/v1/models</code>を叩き、次に実際のCodexリクエストを一度流す。</p>
+                    <p>面倒になるのは、公網に出したあとです。</p>
+                    <p>Cloudflare Tunnel、Nginx、Caddyなどで<code>/v1</code>を公開すると、ユーザー以外のリクエストも飛んできます。クローラーやスキャナーが<code>/.env</code>、<code>.git</code>、<code>wp-*</code>、<code>*.php</code>のようなパスを叩くこともあります。API用のドメインには、静的サイトとは別のWAFルールを置いたほうがいいです。</p>
+                    <p>私なら、まず認証なしのリクエストと明らかなスキャンパスを落とします。正規ユーザーは<code>Authorization: Bearer &lt;API_KEY&gt;</code>だけで通す。APIドメインにブラウザChallengeは使いません。Codex CLIやOpenAI SDKのようなクライアントは、ブラウザ上のチャレンジを解けないからです。</p>
+                    <p>もう一つの詰まりどころは、アカウントプールです。</p>
+                    <p>死んだアカウントが多いと、リクエストが使えない認証情報を引き続けます。CPAは長い推論、ストリーミング、Codex上流接続を扱うため、途中で早く切りすぎない設計になっている部分があります。そのぶん、上流が無反応だと一回のリクエストが長く詰まることがあります。</p>
+                    <p>遅さが失敗よりつらい場合は、request-retry、max-retry-credentials、max-retry-intervalを見直す。早く失敗させて、悪いアカウントから切り替えるほうが体験が安定することがあります。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">05 似た名前のツールを分けて考える</h2>
+                    <p>調べていて思ったのは、周辺ツールを全部「反代理」と呼ぶと混乱する、ということです。</p>
+                    <p>OpenAIのCodex CLIは公式クライアントです。反代理ではありません。GPTSession2CPAandSub2APIは、どちらかというと認証情報フォーマットの変換器です。CPA / CLIProxyAPIは、今回の主役であるAPIゲートウェイです。</p>
+                    <p>Cockpit ToolsやCodex-Managerは、アカウント管理に寄っています。9routerはローカルのマルチproviderルーティングに近い。sub2apiやAxonHubは、より平台化されたAI APIゲートウェイとして見るほうが自然です。</p>
+                    <p>同じ「アカウント」と「API」を扱っていても、階層が違います。</p>
+                    <p>認証情報の出どころ。フォーマット変換。アカウント管理。Base URLを出すゲートウェイ。ルーティング、fallback、限流、ログ、tracing。</p>
+                    <p>どこを担当しているツールなのかを分けるだけで、かなり見通しがよくなります。</p>
+
+                    <h2 class="text-primary dark:text-dark-text">最後に</h2>
+                    <p>個人で試すなら、私はまずローカルCPAから始めます。いきなり公網共有を作らない。自分のCodexアカウントが使えることを確認し、<code>/v1/models</code>と<code>/v1/responses</code>が通ることを見る。そのあとで、Cloudflare、WAF、API Key、アカウントプールを足していく。</p>
+                    <p>Codexを低コストで使うことは、抜け穴を探すことではありません。</p>
+                    <p>自分が正当に使える枠を、ちゃんと管理すること。入口を守ること。死んだアカウントを掃除すること。上流の認証情報と下流のAPI Keyを混ぜないこと。</p>
+                    <p>ここまでできるだけでも、毎回ログインし直してアカウントを切り替えるより、ずっと落ち着いて開発できます。</p>
+                `
+            }
+        };
+
+        function renderArticleLocale(lang) {
+            const locale = articleLocales[lang] || articleLocales.en;
+            document.documentElement.lang = { zh: 'zh-CN', en: 'en', ja: 'ja' }[lang] || 'en';
+            document.getElementById('articleTitle').textContent = locale.title;
+            document.getElementById('articleMetaDate').textContent = locale.date;
+            document.getElementById('articleMetaReadTime').textContent = locale.readTime;
+            document.getElementById('articleExcerpt').textContent = locale.excerpt;
+            document.getElementById('articleBody').innerHTML = locale.body;
+            document.getElementById('articleHeroImage').alt = locale.heroAlt;
+            document.getElementById('shareBtn').title = locale.shareTitle;
+            document.title = `${locale.title} - Tech Blog`;
+            document.querySelector('meta[name="description"]').setAttribute('content', locale.excerpt);
+            document.getElementById('articleTags').innerHTML =
+                `<span class="text-sm text-text-muted dark:text-dark-text-muted mr-2">${window.YuiLang ? window.YuiLang.getText('blog', 'tags', lang) : 'Tags:'}</span>` +
+                locale.tags.map(tag => `<span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">${tag}</span>`).join('');
+        }
+
+        document.getElementById('shareBtn').addEventListener('click', async () => {
+            const url = window.location.origin + window.location.pathname;
+            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'en';
+            const locale = articleLocales[lang] || articleLocales.en;
+            try {
+                await navigator.clipboard.writeText(url);
+                showToast(locale.copied);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                showToast(locale.copyFailed);
+            }
+        });
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 dark:bg-white/90 text-white dark:text-black px-6 py-3 rounded-full text-sm font-medium shadow-lg transition-all duration-300 opacity-0 translate-y-2 z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            });
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        window.addEventListener('languageChanged', (event) => {
+            renderArticleLocale(event.detail.lang);
+        });
+
+        renderArticleLocale(window.YuiLang ? window.YuiLang.getCurrentLang() : 'en');
+    </script>
+</body>
+</html>

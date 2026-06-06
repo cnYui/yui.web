@@ -36,7 +36,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;1,400&amp;display=swap" rel="stylesheet"/>
     <link href="/styles/site.css" rel="stylesheet"/>
     <script src="/js/theme.js"></script>
-    <script src="/js/lang.js"></script>
+    <script src="/js/lang.js?v=20260419-2"></script>
     <script src="/js/mobile-menu.js"></script>
     <style>
         .timeline-item { opacity: 0; transform: translateX(-20px); transition: opacity 0.6s ease, transform 0.6s ease; }
@@ -72,6 +72,7 @@
                     <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
                     <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">Music</a>
                     <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
                 </nav>
                 <div class="flex gap-2">
                     <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="ZH/EN/JA">
@@ -93,6 +94,7 @@
                 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
                 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">Music</a>
                 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
             </div>
         </nav>
     </header>
@@ -204,6 +206,8 @@
 
     <script>
         const projectData = [
+            // Mar 2026
+            { date: 'Mar 2026', city: 'Nanjing', images: ['/images/hackathon/nanjing-campus-hackathon-finalist-2026.jpg'], title: 'Nanjing University Hackathon Finalist', category: 'Hackathon', desc: 'Reached the finals at the Nanjing University stop of the 2026 AI Hackathon Tour.', link: '', badge: '🏅 Finalist' },
             // Feb 2026
             { date: 'Feb 2026', city: 'Nanjing', images: ['/images/hackathon/tangquan-hackathon.jpg', '/images/hackathon/tangquan-poster.jpg'], title: 'Tangquan Hackathon', category: 'Hackathon', desc: 'Participated in Nanjing Tangquan Hackathon, experiencing the unique atmosphere of coding in hot springs.', link: '', badge: '' },
             // Jan 2026
@@ -256,17 +260,18 @@
             ja: { Nanjing: '南京', Shanghai: '上海', Online: 'オンライン', Chongqing: '重慶', Wuxi: '無錫', Anhui: '安徽', Hangzhou: '杭州', Suzhou: '蘇州' }
         };
         const monthLabels = {
-            zh: { Jan: '1月', Feb: '2月', Jun: '6月', Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' },
-            en: { Jan: 'Jan', Feb: 'Feb', Jun: 'Jun', Jul: 'Jul', Aug: 'Aug', Sep: 'Sep', Oct: 'Oct', Nov: 'Nov', Dec: 'Dec' },
-            ja: { Jan: '1月', Feb: '2月', Jun: '6月', Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' }
+            zh: { Jan: '1月', Feb: '2月', Mar: '3月', Jun: '6月', Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' },
+            en: { Jan: 'Jan', Feb: 'Feb', Mar: 'Mar', Jun: 'Jun', Jul: 'Jul', Aug: 'Aug', Sep: 'Sep', Oct: 'Oct', Nov: 'Nov', Dec: 'Dec' },
+            ja: { Jan: '1月', Feb: '2月', Mar: '3月', Jun: '6月', Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' }
         };
         const badgeLabels = {
-            zh: { '🥇 Gold Award': '🥇 金奖', '🥇 1st Place': '🥇 第一名', '🥉 3rd Place': '🥉 第三名', '🏆 Winner': '🏆 获奖', '🥈 2nd Place': '🥈 第二名', '👀 First Hackathon': '👀 第一次黑客松' },
-            en: { '🥇 Gold Award': '🥇 Gold Award', '🥇 1st Place': '🥇 1st Place', '🥉 3rd Place': '🥉 3rd Place', '🏆 Winner': '🏆 Winner', '🥈 2nd Place': '🥈 2nd Place', '👀 First Hackathon': '👀 First Hackathon' },
-            ja: { '🥇 Gold Award': '🥇 金賞', '🥇 1st Place': '🥇 1位', '🥉 3rd Place': '🥉 3位', '🏆 Winner': '🏆 受賞', '🥈 2nd Place': '🥈 2位', '👀 First Hackathon': '👀 初めてのハッカソン' }
+            zh: { '🥇 Gold Award': '🥇 金奖', '🥇 1st Place': '🥇 第一名', '🥉 3rd Place': '🥉 第三名', '🏆 Winner': '🏆 获奖', '🥈 2nd Place': '🥈 第二名', '🏅 Finalist': '🏅 决赛入围', '👀 First Hackathon': '👀 第一次黑客松' },
+            en: { '🥇 Gold Award': '🥇 Gold Award', '🥇 1st Place': '🥇 1st Place', '🥉 3rd Place': '🥉 3rd Place', '🏆 Winner': '🏆 Winner', '🥈 2nd Place': '🥈 2nd Place', '🏅 Finalist': '🏅 Finalist', '👀 First Hackathon': '👀 First Hackathon' },
+            ja: { '🥇 Gold Award': '🥇 金賞', '🥇 1st Place': '🥇 1位', '🥉 3rd Place': '🥉 3位', '🏆 Winner': '🏆 受賞', '🥈 2nd Place': '🥈 2位', '🏅 Finalist': '🏅 決勝進出', '👀 First Hackathon': '👀 初めてのハッカソン' }
         };
         const projectJaContent = {
             'Tangquan Hackathon': ['湯泉ハッカソン', '南京の湯泉ハッカソンに参加し、温泉地でコードを書く独特の空気を体験しました。'],
+            'Nanjing University Hackathon Finalist': ['南京高校ハッカソン 決勝進出', '2026年 AI Hackathon Tour 南京大学站で決勝進出を果たしました。'],
             'Global Hackathon': ['グローバルハッカソン', 'グローバルハッカソンで金賞を獲得し、アイデアを形にしました。'],
             'OpenClaw Feishu Plugin - Crazy Thursday': ['OpenClaw Feishu プラグイン - Crazy Thursday', 'Crazy Thursday 向けの OpenClaw Feishu プラグインを開発し、チーム協業の効率を高めました。'],
             'Nanjing OPC Hackathon': ['南京 OPC ハッカソン', '南京 OPC ハッカソンに参加し、AI とゲームの組み合わせを探りました。'],

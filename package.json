@@ -2,7 +2,14 @@
   "name": "yui-web",
   "private": true,
   "scripts": {
-    "build:css": "tailwindcss -c tailwind.config.js -i ./styles/tailwind.css -o ./styles/site.css --minify"
+    "build:css": "tailwindcss -c tailwind.config.js -i ./styles/tailwind.css -o ./styles/site.css --minify",
+    "start": "node server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",

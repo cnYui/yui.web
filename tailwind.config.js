@@ -6,6 +6,8 @@ module.exports = {
     "./music/*.html",
     "./projects/*.html",
     "./resume/*.html",
+    "./shop/**/*.html",
+    "./shop/**/*.js",
     "./travel/*.html",
     "./skill/*.html",
     "./js/*.js"

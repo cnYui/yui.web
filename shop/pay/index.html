@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Redeem - Shop</title>
+    <meta http-equiv="refresh" content="0; url=/shop/redeem/"/>
+    <script>(function(){const html=document.documentElement;html.setAttribute('data-ui-ready','false');try{const theme=localStorage.getItem('yui-portfolio-theme');const lang=localStorage.getItem('yui-portfolio-lang');const langMap={zh:'zh-CN',en:'en',ja:'ja'};const resolvedTheme=theme==='dark'?'dark':'light';html.classList.toggle('dark',resolvedTheme==='dark');html.style.colorScheme=resolvedTheme;html.style.backgroundColor=resolvedTheme==='dark'?'#0f0f0f':'#ffffff';html.lang=langMap[lang]||'en';}catch(error){html.style.colorScheme='light';html.style.backgroundColor='#ffffff';html.lang='en';}})();</script>
+    <style>html{background-color:#fff}html.dark{background-color:#0f0f0f}html[data-ui-ready="false"] body{opacity:0}html[data-ui-ready="true"] body{opacity:1;transition:opacity 120ms ease-out}</style>
+    <link href="/styles/site.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="/js/theme.js"></script>
+    <script src="/js/lang.js?v=20260419-2"></script>
+    <script src="/js/mobile-menu.js"></script>
+    <script src="/shop/shop.js?v=20260531-0823"></script>
+</head>
+<body class="bg-white dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col antialiased transition-colors duration-300">
+    <header class="sticky top-0 z-50 w-full border-b border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
+        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
+            <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
+            <div class="flex items-center gap-10">
+                <nav class="hidden md:flex items-center gap-8">
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
+                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/shop/">Shop</a>
+                </nav>
+                <div class="flex gap-2">
+                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="ZH/EN/JA"><span class="text-xs font-bold">EN</span></button>
+                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme"><span class="material-symbols-outlined font-light" style="font-size:20px;">dark_mode</span></button>
+                    <button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu"><span class="material-symbols-outlined font-light" style="font-size:24px;">menu</span></button>
+                </div>
+            </div>
+        </div>
+        <nav id="mobileMenu" class="hidden md:hidden border-t border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
+            <div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
+                <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 w-fit" href="/shop/">Shop</a>
+            </div>
+        </nav>
+    </header>
+    <main class="flex-1 max-w-[1120px] mx-auto px-6 md:px-12 py-14 md:py-20 w-full">
+        <div id="emptyOrder" class="hidden border border-border-subtle dark:border-dark-border rounded-lg p-8 text-center bg-white dark:bg-dark-card">
+            <h1 class="font-display text-4xl">还没有订单</h1>
+            <p class="mt-3 text-text-muted dark:text-dark-text-muted">请先填写手机号生成订单。</p>
+            <a class="btn-primary mt-6 inline-flex" href="/shop/order/">去下单</a>
+        </div>
+        <div id="payContent" class="grid lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16">
+            <aside id="orderSummary" class="border border-border-subtle dark:border-dark-border rounded-lg p-6 bg-white dark:bg-dark-card h-fit"></aside>
+            <section>
+                <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Payment</p>
+                <h1 class="mt-4 font-display text-4xl md:text-6xl">选择支付方式</h1>
+                <div class="mt-8 grid sm:grid-cols-2 gap-4">
+                    <button class="text-left border border-border-subtle dark:border-dark-border rounded-lg p-5 hover:border-primary dark:hover:border-dark-text transition-colors" data-pay-method="alipay" type="button">
+                        <span class="material-symbols-outlined text-3xl">account_balance_wallet</span>
+                        <span class="mt-4 block text-xl font-display">支付宝</span>
+                        <span class="mt-2 block text-sm text-text-muted dark:text-dark-text-muted">适合扫码或移动端跳转</span>
+                    </button>
+                    <button class="text-left border border-border-subtle dark:border-dark-border rounded-lg p-5 hover:border-primary dark:hover:border-dark-text transition-colors" data-pay-method="wechat" type="button">
+                        <span class="material-symbols-outlined text-3xl">chat</span>
+                        <span class="mt-4 block text-xl font-display">微信支付</span>
+                        <span class="mt-2 block text-sm text-text-muted dark:text-dark-text-muted">适合微信内或扫码支付</span>
+                    </button>
+                </div>
+                <div class="mt-8 border border-border-subtle dark:border-dark-border rounded-lg p-6 bg-background-soft dark:bg-dark-surface">
+                    <div class="flex flex-col sm:flex-row items-center gap-6">
+                        <div id="qrBox" class="size-44 shrink-0 bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border rounded-md grid grid-cols-5 gap-1 p-4" aria-label="支付二维码占位">
+                            <span class="bg-primary dark:bg-dark-text"></span><span></span><span class="bg-primary dark:bg-dark-text"></span><span></span><span class="bg-primary dark:bg-dark-text"></span>
+                            <span></span><span class="bg-primary dark:bg-dark-text"></span><span></span><span class="bg-primary dark:bg-dark-text"></span><span></span>
+                            <span class="bg-primary dark:bg-dark-text"></span><span></span><span class="bg-primary dark:bg-dark-text"></span><span></span><span class="bg-primary dark:bg-dark-text"></span>
+                            <span></span><span class="bg-primary dark:bg-dark-text"></span><span></span><span class="bg-primary dark:bg-dark-text"></span><span></span>
+                            <span class="bg-primary dark:bg-dark-text"></span><span></span><span class="bg-primary dark:bg-dark-text"></span><span></span><span class="bg-primary dark:bg-dark-text"></span>
+                        </div>
+                        <div>
+                            <p class="text-sm text-text-muted dark:text-dark-text-muted">当前方式</p>
+                            <h2 id="methodLabel" class="mt-2 text-2xl font-display">未选择</h2>
+                            <p id="paymentNotice" class="mt-3 text-sm leading-relaxed text-text-muted dark:text-dark-text-muted">选择支付方式后，页面会请求后端创建真实支付单。</p>
+                            <div id="paymentAction"></div>
+                            <a id="doneLink" class="btn-primary mt-5 inline-flex" href="/shop/result/?status=success">演示支付成功</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+    <script>window.YuiShop.initPayPage();</script>
+</body>
+</html>
