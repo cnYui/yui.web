@@ -1,52 +1,44 @@
 <!DOCTYPE html>
-<html class="light" lang="en">
+<html lang="en">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Music - Yui's Portfolio</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        (function() {
+            const html = document.documentElement;
+            html.setAttribute('data-ui-ready', 'false');
+            try {
+                const theme = localStorage.getItem('yui-portfolio-theme');
+                const lang = localStorage.getItem('yui-portfolio-lang');
+                const langMap = { zh: 'zh-CN', en: 'en', ja: 'ja' };
+                const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+                html.classList.toggle('dark', resolvedTheme === 'dark');
+                html.style.colorScheme = resolvedTheme;
+                html.style.backgroundColor = resolvedTheme === 'dark' ? '#0f0f0f' : '#ffffff';
+                html.lang = langMap[lang] || 'en';
+            } catch (error) {
+                html.style.colorScheme = 'light';
+                html.style.backgroundColor = '#ffffff';
+                html.lang = 'en';
+            }
+        })();
+    </script>
+    <style>
+        html { background-color: #ffffff; }
+        html.dark { background-color: #0f0f0f; }
+        html[data-ui-ready="false"] body { opacity: 0; }
+        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
+    </style>
+    <link href="/styles/site.css" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#222222",
-                        "secondary": "#f4f4f5",
-                        "text-main": "#222222",
-                        "text-muted": "#71717a",
-                        "text-tertiary": "#9ca3af",
-                        "background-light": "#ffffff",
-                        "background-soft": "#f9fafb",
-                        "border-subtle": "#E5E5E5",
-                        "accent-soft": "#e5e7eb",
-                        // Dark mode colors
-                        "dark-bg": "#0f0f0f",
-                        "dark-surface": "#1a1a1a",
-                        "dark-card": "#242424",
-                        "dark-border": "#333333",
-                        "dark-text": "#e5e5e5",
-                        "dark-text-muted": "#a0a0a0",
-                    },
-                    fontFamily: {
-                        "display": ["Playfair Display", "serif"],
-                        "body": ["Inter", "sans-serif"],
-                    },
-                }
-            },
-        }
-    </script>
     <script src="/js/theme.js"></script>
-    <script src="/js/lang.js"></script>
+    <script src="/js/lang.js?v=20260419-2"></script>
     <script src="/js/mobile-menu.js"></script>
     <style>
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
-        .music-item { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
-        .music-item.visible { opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body class="bg-background-light dark:bg-dark-bg text-text-main dark:text-dark-text font-body antialiased overflow-x-hidden transition-colors duration-300">
@@ -64,6 +56,7 @@
                         <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
                         <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/music/">Music</a>
                         <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
+                        <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
                     </nav>
                     <div class="flex gap-2">
                         <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Chinese/English/Japanese">
@@ -85,6 +78,7 @@
                     <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
                     <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 w-fit" href="/music/">Music</a>
                     <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
                 </div>
             </nav>
         </header>
@@ -280,7 +274,7 @@
             return `
                 <div class="music-item group flex flex-col gap-4 cursor-pointer">
                     <div class="relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-dark-card">
-                        <img class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" alt="${item.title}" src="${item.image}"/>
+                        <img class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" alt="${item.title}" src="${item.image}" loading="lazy" decoding="async"/>
                         <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
                         <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
                             <button class="size-10 rounded-full bg-white dark:bg-dark-text text-primary dark:text-dark-bg flex items-center justify-center shadow-lg hover:scale-110 transition-transform">

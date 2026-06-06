@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  .material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply h-12 px-8 flex items-center justify-center bg-primary text-white text-sm font-medium tracking-wide transition-all hover:bg-primary-hover active:scale-95 rounded-md;
+  }
+
+  .btn-secondary {
+    @apply h-12 px-8 flex items-center justify-center border border-gray-300 text-text-main text-sm font-medium tracking-wide transition-all hover:border-gray-800 hover:text-gray-900 active:scale-95 rounded-md bg-white;
+  }
+
+  .section-title {
+    @apply font-serif text-3xl md:text-4xl text-text-main mb-2;
+  }
+
+  .resume-section-heading {
+    @apply text-sm font-bold uppercase tracking-widest text-text-muted mb-8 md:mb-0 md:w-48 shrink-0 pt-2;
+  }
+
+  .blog-item,
+  .music-item,
+  .anime-item {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .blog-item.visible,
+  .music-item.visible,
+  .anime-item.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer utilities {
+  .article-card-block {
+    border: 1px solid #e5e5e5;
+    border-radius: 0.75rem;
+    padding: 1rem 1.1rem;
+    background: rgba(249, 250, 251, 0.85);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+  }
+
+  .dark .article-card-block {
+    border-color: #333333;
+    background: rgba(36, 36, 36, 0.92);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+  }
+
+  .prose .article-card-block p:last-child {
+    margin-bottom: 0;
+  }
+
+  .prose .article-card-block strong {
+    display: block;
+    margin-bottom: 0.2rem;
+    font-size: 0.98rem;
+  }
+
+  .gallery-grid img {
+    transition: transform 0.5s ease;
+  }
+
+  .gallery-grid .group:hover img {
+    transform: scale(1.04);
+  }
+}

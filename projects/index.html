@@ -1,50 +1,44 @@
 <!DOCTYPE html>
-<html class="light" lang="en">
+<html lang="en">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Projects - Yui's Portfolio</title>
+    <script>
+        (function() {
+            const html = document.documentElement;
+            html.setAttribute('data-ui-ready', 'false');
+            try {
+                const theme = localStorage.getItem('yui-portfolio-theme');
+                const lang = localStorage.getItem('yui-portfolio-lang');
+                const langMap = { zh: 'zh-CN', en: 'en', ja: 'ja' };
+                const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+                html.classList.toggle('dark', resolvedTheme === 'dark');
+                html.style.colorScheme = resolvedTheme;
+                html.style.backgroundColor = resolvedTheme === 'dark' ? '#0f0f0f' : '#ffffff';
+                html.lang = langMap[lang] || 'en';
+            } catch (error) {
+                html.style.colorScheme = 'light';
+                html.style.backgroundColor = '#ffffff';
+                html.lang = 'en';
+            }
+        })();
+    </script>
+    <style>
+        html { background-color: #ffffff; }
+        html.dark { background-color: #0f0f0f; }
+        html[data-ui-ready="false"] body { opacity: 0; }
+        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
+    </style>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;1,400&amp;display=swap" rel="stylesheet"/>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#1a1a1a",
-                        "secondary": "#f8f8f8",
-                        "text-main": "#1a1a1a",
-                        "text-muted": "#666666",
-                        "text-light": "#999999",
-                        "border-subtle": "#e5e5e5",
-                        "accent-gold": "#c9a227",
-                        "accent-silver": "#8a8a8a",
-                        "accent-bronze": "#b87333",
-                        // Dark mode colors
-                        "dark-bg": "#0f0f0f",
-                        "dark-surface": "#1a1a1a",
-                        "dark-card": "#242424",
-                        "dark-border": "#333333",
-                        "dark-text": "#e5e5e5",
-                        "dark-text-muted": "#a0a0a0",
-                    },
-                    fontFamily: {
-                        "display": ["Playfair Display", "serif"],
-                        "body": ["Inter", "sans-serif"],
-                    },
-                },
-            },
-        }
-    </script>
+    <link href="/styles/site.css" rel="stylesheet"/>
     <script src="/js/theme.js"></script>
-    <script src="/js/lang.js"></script>
+    <script src="/js/lang.js?v=20260419-2"></script>
     <script src="/js/mobile-menu.js"></script>
     <style>
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
         .timeline-item { opacity: 0; transform: translateX(-20px); transition: opacity 0.6s ease, transform 0.6s ease; }
         .timeline-item.visible { opacity: 1; transform: translateX(0); }
         .timeline-line { background: linear-gradient(to bottom, #e5e5e5 0%, #1a1a1a 10%, #1a1a1a 90%, #e5e5e5 100%); }
@@ -78,6 +72,7 @@
                     <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
                     <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">Music</a>
                     <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
                 </nav>
                 <div class="flex gap-2">
                     <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="ZH/EN/JA">
@@ -99,6 +94,7 @@
                 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
                 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">Music</a>
                 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
             </div>
         </nav>
     </header>
@@ -210,6 +206,8 @@
 
     <script>
         const projectData = [
+            // Mar 2026
+            { date: 'Mar 2026', city: 'Nanjing', images: ['/images/hackathon/nanjing-campus-hackathon-finalist-2026.jpg'], title: 'Nanjing University Hackathon Finalist', category: 'Hackathon', desc: 'Reached the finals at the Nanjing University stop of the 2026 AI Hackathon Tour.', link: '', badge: '🏅 Finalist' },
             // Feb 2026
             { date: 'Feb 2026', city: 'Nanjing', images: ['/images/hackathon/tangquan-hackathon.jpg', '/images/hackathon/tangquan-poster.jpg'], title: 'Tangquan Hackathon', category: 'Hackathon', desc: 'Participated in Nanjing Tangquan Hackathon, experiencing the unique atmosphere of coding in hot springs.', link: '', badge: '' },
             // Jan 2026
@@ -262,17 +260,18 @@
             ja: { Nanjing: '南京', Shanghai: '上海', Online: 'オンライン', Chongqing: '重慶', Wuxi: '無錫', Anhui: '安徽', Hangzhou: '杭州', Suzhou: '蘇州' }
         };
         const monthLabels = {
-            zh: { Jan: '1月', Feb: '2月', Jun: '6月', Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' },
-            en: { Jan: 'Jan', Feb: 'Feb', Jun: 'Jun', Jul: 'Jul', Aug: 'Aug', Sep: 'Sep', Oct: 'Oct', Nov: 'Nov', Dec: 'Dec' },
-            ja: { Jan: '1月', Feb: '2月', Jun: '6月', Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' }
+            zh: { Jan: '1月', Feb: '2月', Mar: '3月', Jun: '6月', Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' },
+            en: { Jan: 'Jan', Feb: 'Feb', Mar: 'Mar', Jun: 'Jun', Jul: 'Jul', Aug: 'Aug', Sep: 'Sep', Oct: 'Oct', Nov: 'Nov', Dec: 'Dec' },
+            ja: { Jan: '1月', Feb: '2月', Mar: '3月', Jun: '6月', Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' }
         };
         const badgeLabels = {
-            zh: { '🥇 Gold Award': '🥇 金奖', '🥇 1st Place': '🥇 第一名', '🥉 3rd Place': '🥉 第三名', '🏆 Winner': '🏆 获奖', '🥈 2nd Place': '🥈 第二名', '👀 First Hackathon': '👀 第一次黑客松' },
-            en: { '🥇 Gold Award': '🥇 Gold Award', '🥇 1st Place': '🥇 1st Place', '🥉 3rd Place': '🥉 3rd Place', '🏆 Winner': '🏆 Winner', '🥈 2nd Place': '🥈 2nd Place', '👀 First Hackathon': '👀 First Hackathon' },
-            ja: { '🥇 Gold Award': '🥇 金賞', '🥇 1st Place': '🥇 1位', '🥉 3rd Place': '🥉 3位', '🏆 Winner': '🏆 受賞', '🥈 2nd Place': '🥈 2位', '👀 First Hackathon': '👀 初めてのハッカソン' }
+            zh: { '🥇 Gold Award': '🥇 金奖', '🥇 1st Place': '🥇 第一名', '🥉 3rd Place': '🥉 第三名', '🏆 Winner': '🏆 获奖', '🥈 2nd Place': '🥈 第二名', '🏅 Finalist': '🏅 决赛入围', '👀 First Hackathon': '👀 第一次黑客松' },
+            en: { '🥇 Gold Award': '🥇 Gold Award', '🥇 1st Place': '🥇 1st Place', '🥉 3rd Place': '🥉 3rd Place', '🏆 Winner': '🏆 Winner', '🥈 2nd Place': '🥈 2nd Place', '🏅 Finalist': '🏅 Finalist', '👀 First Hackathon': '👀 First Hackathon' },
+            ja: { '🥇 Gold Award': '🥇 金賞', '🥇 1st Place': '🥇 1位', '🥉 3rd Place': '🥉 3位', '🏆 Winner': '🏆 受賞', '🥈 2nd Place': '🥈 2位', '🏅 Finalist': '🏅 決勝進出', '👀 First Hackathon': '👀 初めてのハッカソン' }
         };
         const projectJaContent = {
             'Tangquan Hackathon': ['湯泉ハッカソン', '南京の湯泉ハッカソンに参加し、温泉地でコードを書く独特の空気を体験しました。'],
+            'Nanjing University Hackathon Finalist': ['南京高校ハッカソン 決勝進出', '2026年 AI Hackathon Tour 南京大学站で決勝進出を果たしました。'],
             'Global Hackathon': ['グローバルハッカソン', 'グローバルハッカソンで金賞を獲得し、アイデアを形にしました。'],
             'OpenClaw Feishu Plugin - Crazy Thursday': ['OpenClaw Feishu プラグイン - Crazy Thursday', 'Crazy Thursday 向けの OpenClaw Feishu プラグインを開発し、チーム協業の効率を高めました。'],
             'Nanjing OPC Hackathon': ['南京 OPC ハッカソン', '南京 OPC ハッカソンに参加し、AI とゲームの組み合わせを探りました。'],
@@ -336,6 +335,8 @@
                                 <img class="carousel-image w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ${imgIndex === 0 ? '' : 'hidden'}" 
                                      src="${img}" 
                                      alt="${title} - ${imgIndex + 1}"
+                                     loading="lazy"
+                                     decoding="async"
                                      data-carousel="${carouselId}"
                                      data-index="${imgIndex}"/>
                             `).join('')}
@@ -356,7 +357,7 @@
             } else {
                 imageHtml = `
                     <div class="aspect-[4/3] overflow-hidden">
-                        <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="${images[0]}" alt="${title}"/>
+                        <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="${images[0]}" alt="${title}" loading="lazy" decoding="async"/>
                     </div>
                 `;
             }

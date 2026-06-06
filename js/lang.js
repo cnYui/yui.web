@@ -550,7 +550,7 @@
                 downloadPdf: '下载PDF简历',
                 experience: '工作经历',
                 job1Title: '研发/运维实习生',
-                job1Period: '2025 — 至今',
+                job1Period: '2025.9-2026.3',
                 job1Company: '国家能源科研所 • 南京',
                 job1Desc: '主导向量数据库和 Agentic RAG 系统构建，负责国能报告的 GraphRAG 知识图谱开发与优化。',
                 job1Item1: '设计并实现基于向量数据库的语义检索系统。',
@@ -563,20 +563,20 @@
                 edu2Title: '人工智能学士',
                 edu2Period: '2021 — 2025',
                 edu2School: '山东交通学院',
-                skills: '技能专长',
-                skillDesign: '设计',
-                skillDev: '开发',
-                skillTools: '工具',
-                skillUI: '用户界面',
-                skillResearch: '用户研究',
-                skillPrototype: '原型设计',
-                skillDesignSystem: '设计系统',
-                skillWireframe: '线框图',
+                thinking: '认知与方法',
+                thinking1Title: 'AI Native Developer',
+                thinking1Desc: '在我看来，AI 不是附着在产品上的插件，而往往是产品运行时的核心组件之一。离开 AI，这类产品本身就很难成立。',
+                thinking2Title: '从 Coding 到 Reviewing',
+                thinking2Desc: '开发者的价值正在从手写每一行代码，转向定义需求、喂上下文、审查输出、整合系统，以及对结果做最终验证。',
+                thinking3Title: 'Vibe -> Spec -> Harness',
+                thinking3Desc: '我偏好的闭环是：先探索想法，再写清规范与边界，让 agent 实现，并通过持续测试与调试把产品推到足够 convincing 的状态。',
+                thinking4Title: '产品判断力优先',
+                thinking4Desc: '无论是黑客松还是正式产品，真正的优势都不是堆更多功能，而是做出更好的产品判断、讲清 demo，并更快闭环。',
                 awards: '荣誉奖项',
                 award1Title: '环球黑客松金奖',
                 award1Source: 'Global Hackathon • 2026',
-                award2Title: '优秀毕业设计',
-                award2Source: '山东交通学院 • 2025',
+                award2Title: '南京高校黑客松决赛入围',
+                award2Source: 'AI Hackathon Tour 南京大学站 • 2026',
                 award3Title: 'TRAE 黑客松二等奖',
                 award3Source: 'TRAE Solo Hackathon • 2025',
                 award4Title: '渝客松线上一等奖',
@@ -605,7 +605,7 @@
                 downloadPdf: 'Download PDF Resume',
                 experience: 'Experience',
                 job1Title: 'R&D / DevOps Intern',
-                job1Period: '2025 — Present',
+                job1Period: '2025.9-2026.3',
                 job1Company: 'National Energy Research Institute • Nanjing',
                 job1Desc: 'Leading the development of vector database and Agentic RAG systems, responsible for GraphRAG knowledge graph development and optimization for national energy reports.',
                 job1Item1: 'Designed and implemented a semantic retrieval system based on vector database.',
@@ -618,20 +618,20 @@
                 edu2Title: 'B.S. Artificial Intelligence',
                 edu2Period: '2021 — 2025',
                 edu2School: 'Shandong Jiaotong University',
-                skills: 'Skills',
-                skillDesign: 'Design',
-                skillDev: 'Development',
-                skillTools: 'Tools',
-                skillUI: 'UI Design',
-                skillResearch: 'User Research',
-                skillPrototype: 'Prototyping',
-                skillDesignSystem: 'Design Systems',
-                skillWireframe: 'Wireframing',
+                thinking: 'Thinking',
+                thinking1Title: 'AI Native Developer',
+                thinking1Desc: 'For me, AI is not a plugin layered on top of a product. It is often one of the product\'s core runtime components, and the product loses meaning without it.',
+                thinking2Title: 'From Coding to Reviewing',
+                thinking2Desc: 'The developer\'s value is shifting from writing every line by hand to defining requirements, feeding context, reviewing outputs, integrating systems, and validating results.',
+                thinking3Title: 'Vibe -> Spec -> Harness',
+                thinking3Desc: 'My preferred loop is: explore the idea, write the spec, set constraints, let agents implement, and keep testing until the product is convincing enough to ship.',
+                thinking4Title: 'Product Judgment Wins',
+                thinking4Desc: 'In hackathons and real products alike, the strongest advantage is not shipping more features. It is making better product judgments, building a tighter demo, and closing the loop faster.',
                 awards: 'Awards',
                 award1Title: 'Global Hackathon Gold Award',
                 award1Source: 'Global Hackathon • 2026',
-                award2Title: 'Outstanding Graduation Project',
-                award2Source: 'Shandong Jiaotong University • 2025',
+                award2Title: 'Nanjing University Hackathon Finalist',
+                award2Source: 'AI Hackathon Tour Nanjing University • 2026',
                 award3Title: 'TRAE Hackathon 2nd Place',
                 award3Source: 'TRAE Solo Hackathon • 2025',
                 award4Title: 'Yukesong Online 1st Place',
@@ -660,7 +660,7 @@
                 downloadPdf: 'PDF履歴書をダウンロード',
                 experience: '職歴',
                 job1Title: 'R&D / DevOps インターン',
-                job1Period: '2025 — 現在',
+                job1Period: '2025.9-2026.3',
                 job1Company: '国家エネルギー研究所 • 南京',
                 job1Desc: 'ベクトルデータベースとAgentic RAGシステムの開発をリード。国家エネルギーレポートのGraphRAGナレッジグラフの開発と最適化を担当。',
                 job1Item1: 'ベクトルデータベースに基づくセマンティック検索システムを設計・実装。',
@@ -673,20 +673,20 @@
                 edu2Title: '人工知能学士',
                 edu2Period: '2021 — 2025',
                 edu2School: '山東交通学院',
-                skills: 'スキル',
-                skillDesign: 'デザイン',
-                skillDev: '開発',
-                skillTools: 'ツール',
-                skillUI: 'UIデザイン',
-                skillResearch: 'ユーザーリサーチ',
-                skillPrototype: 'プロトタイピング',
-                skillDesignSystem: 'デザインシステム',
-                skillWireframe: 'ワイヤーフレーム',
+                thinking: '認知と方法論',
+                thinking1Title: 'AI Native Developer',
+                thinking1Desc: '私にとって AI は製品に後付けする機能ではなく、しばしば製品の中核となる実行コンポーネントです。AI がなければ成立しない製品も多いと考えています。',
+                thinking2Title: 'Coding から Reviewing へ',
+                thinking2Desc: '開発者の価値は、すべてのコードを手書きすることから、要件定義、文脈投入、出力レビュー、システム統合、最終検証へと移っています。',
+                thinking3Title: 'Vibe -> Spec -> Harness',
+                thinking3Desc: '私の好むループは、アイデアを探り、仕様と境界を明確にし、agent に実装させ、継続的なテストとデバッグで出荷できる完成度まで磨くことです。',
+                thinking4Title: '勝負を分けるのは判断力',
+                thinking4Desc: 'ハッカソンでも実際の製品開発でも、本当の優位性は機能の量ではなく、より良いプロダクト判断、より強い demo、そしてより速い閉ループにあります。',
                 awards: '受賞歴',
                 award1Title: 'グローバルハッカソン金賞',
                 award1Source: 'Global Hackathon • 2026',
-                award2Title: '優秀卒業プロジェクト',
-                award2Source: '山東交通学院 • 2025',
+                award2Title: '南京高校ハッカソン 決勝進出',
+                award2Source: 'AI Hackathon Tour 南京大学站 • 2026',
                 award3Title: 'TRAE ハッカソン 2位',
                 award3Source: 'TRAE Solo Hackathon • 2025',
                 award4Title: '渝客松オンライン 1位',
@@ -857,7 +857,7 @@
     // Get current language
     function getCurrentLang() {
         const saved = localStorage.getItem(LANG_KEY);
-        return saved || 'en'; // Default to English
+        return LANGUAGES.includes(saved) ? saved : 'en'; // Default to English
     }
     
     // Save language preference
@@ -898,9 +898,13 @@
     function isBlogArticlePage() {
         const path = window.location.pathname;
         return [
+            '/blog/article',
             '/blog/article.html',
+            '/blog/ai-image-video',
             '/blog/ai-image-video.html',
+            '/blog/vibe-coding',
             '/blog/vibe-coding.html',
+            '/blog/ai-native-hackathon',
             '/blog/ai-native-hackathon.html'
         ].includes(path);
     }
@@ -995,6 +999,7 @@
     function init() {
         const lang = getCurrentLang();
         applyTranslations(lang);
+        document.documentElement.setAttribute('data-ui-ready', 'true');
         
         // Bind toggle button
         const toggleBtn = document.getElementById('langToggle');

@@ -1,12 +1,78 @@
 (function () {
     window.YuiBlogData = [
         {
+            id: 11,
+            publishedAt: '2026-06-06',
+            image: '/images/blog/codex-token-low-cost-cover.png',
+            category: 'AI',
+            author: 'Yui',
+            link: '/blog/codex-token-low-cost',
+            title: {
+                zh: '低成本使用 Codex Token 的几种方法',
+                en: 'Several Ways to Use Codex Tokens at Lower Cost',
+                ja: 'Codex Tokenを低コストで使うためのいくつかの方法'
+            },
+            date: {
+                zh: '2026年6月6日',
+                en: 'Jun 6, 2026',
+                ja: '2026年6月6日'
+            },
+            shortDate: {
+                zh: '6月6日',
+                en: 'Jun 6',
+                ja: '6月6日'
+            },
+            readTime: {
+                zh: '7 分钟阅读',
+                en: '7 min read',
+                ja: '7分で読める'
+            },
+            excerpt: {
+                zh: '从 Codex CLI、CPA/CLIProxyAPI、账号池、公网入口和排障方法出发，整理低成本使用 Codex Token 的可行路径和边界。',
+                en: 'A practical note on using Codex tokens at lower cost with Codex CLI, CPA/CLIProxyAPI, account pools, public endpoints, and troubleshooting boundaries.',
+                ja: 'Codex CLI、CPA/CLIProxyAPI、アカウントプール、公網入口、トラブルシュートから、Codex Tokenを低コストで使うための考え方を整理します。'
+            }
+        },
+        {
+            id: 10,
+            publishedAt: '2026-06-04',
+            image: '/images/blog/speakmore-note-cover-guizang.png',
+            category: 'AI',
+            author: 'Yui',
+            link: '/blog/speakmore-cloud-input',
+            title: {
+                zh: '我开源了一个又快又准的云输入软件：SpeakMore 是怎么做出来的',
+                en: 'I Open-Sourced a Fast, Accurate Cloud Dictation App: How SpeakMore Was Built',
+                ja: '高速・高精度なクラウド音声入力ソフトを開発してオープンソース化した：SpeakMore はどう作ったのか'
+            },
+            date: {
+                zh: '2026年6月4日',
+                en: 'Jun 4, 2026',
+                ja: '2026年6月4日'
+            },
+            shortDate: {
+                zh: '6月4日',
+                en: 'Jun 4',
+                ja: '6月4日'
+            },
+            readTime: {
+                zh: '12 分钟阅读',
+                en: '12 min read',
+                ja: '12分で読める'
+            },
+            excerpt: {
+                zh: '从 SenseVoiceSmall、FunASR、LLM 后处理、音频链路到自动粘贴，记录 SpeakMore 这个开源云输入软件的实现细节。',
+                en: 'From SenseVoiceSmall and FunASR to LLM post-processing, audio pipelines, and safe auto-paste, this is how SpeakMore was built.',
+                ja: 'SenseVoiceSmall、FunASR、LLM 後処理、音声チェーン、自動貼り付けまで、SpeakMore の実装を整理します。'
+            }
+        },
+        {
             id: 9,
             publishedAt: '2026-04-13',
             image: '/images/blog/ai-native-hackathon/hackathon-01.jpg',
             category: 'AI',
             author: 'Yui',
-            link: '/blog/ai-native-hackathon.html',
+            link: '/blog/ai-native-hackathon',
             title: {
                 zh: 'AI Native Developer：黑客松赛场上的开发者生存范式',
                 en: 'AI Native Developer: A Hackathon Survival Paradigm',
@@ -39,7 +105,7 @@
             image: '/images/blog/ai-image-video-guide.jpg',
             category: 'AI',
             author: 'Yui',
-            link: '/blog/ai-image-video.html',
+            link: '/blog/ai-image-video',
             title: {
                 zh: 'AI生图生视频使用经历和经验',
                 en: 'My Experience with AI Image and Video Generation',
@@ -69,10 +135,10 @@
         {
             id: 7,
             publishedAt: '2025-12-31',
-            image: '/images/blog/vibe-coding-guide.png',
+            image: '/images/blog/vibe-coding-guide.jpg',
             category: 'AI',
             author: 'Yui',
-            link: '/blog/vibe-coding.html',
+            link: '/blog/vibe-coding',
             title: {
                 zh: 'Vibe Coding 实战指南',
                 en: 'Vibe Coding Practical Guide',

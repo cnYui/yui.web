@@ -1,65 +1,42 @@
 <!DOCTYPE html>
-<html class="light" lang="en"><head>
+<html lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Yui | Portfolio</title>
+<script>
+        (function() {
+            const html = document.documentElement;
+            html.setAttribute('data-ui-ready', 'false');
+            try {
+                const theme = localStorage.getItem('yui-portfolio-theme');
+                const lang = localStorage.getItem('yui-portfolio-lang');
+                const langMap = { zh: 'zh-CN', en: 'en', ja: 'ja' };
+                const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+                html.classList.toggle('dark', resolvedTheme === 'dark');
+                html.style.colorScheme = resolvedTheme;
+                html.style.backgroundColor = resolvedTheme === 'dark' ? '#0f0f0f' : '#ffffff';
+                html.lang = langMap[lang] || 'en';
+            } catch (error) {
+                html.style.colorScheme = 'light';
+                html.style.backgroundColor = '#ffffff';
+                html.lang = 'en';
+            }
+        })();
+</script>
+<style>
+        html { background-color: #ffffff; }
+        html.dark { background-color: #0f0f0f; }
+        html[data-ui-ready="false"] body { opacity: 0; }
+        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
+</style>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Inter:wght@300..600&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#222222",
-                        "primary-hover": "#333333",
-                        "secondary": "#E0D8D0",
-                        "background-light": "#ffffff",
-                        "surface-light": "#FAFAFA",
-                        "text-main": "#222222",
-                        "text-muted": "#666666",
-                        "border-light": "#E5E5E5",
-                        // Dark mode colors
-                        "dark-bg": "#0f0f0f",
-                        "dark-surface": "#1a1a1a",
-                        "dark-card": "#242424",
-                        "dark-border": "#333333",
-                        "dark-text": "#e5e5e5",
-                        "dark-text-muted": "#a0a0a0",
-                    },
-                    fontFamily: {
-                        "serif": ["Playfair Display", "serif"],
-                        "sans": ["Inter", "sans-serif"],
-                        "display": ["Playfair Display", "serif"]
-                    },
-                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
-                    boxShadow: {
-                        "soft": "0 4px 20px rgba(0,0,0,0.03)",
-                        "soft-dark": "0 4px 20px rgba(0,0,0,0.3)",
-                    }
-                },
-            },
-        }
-    </script>
+<link href="/styles/site.css" rel="stylesheet"/>
 <script src="/js/theme.js"></script>
-<script src="/js/lang.js"></script>
+<script src="/js/lang.js?v=20260419-2"></script>
 <script src="/js/blog-data.js"></script>
-<style type="text/tailwindcss">
-    @layer utilities {
-        .btn-primary {
-            @apply h-12 px-8 flex items-center justify-center bg-primary text-white text-sm font-medium tracking-wide transition-all hover:bg-primary-hover active:scale-95 rounded-md;
-        }
-        .btn-secondary {
-            @apply h-12 px-8 flex items-center justify-center border border-gray-300 text-text-main text-sm font-medium tracking-wide transition-all hover:border-gray-800 hover:text-gray-900 active:scale-95 rounded-md bg-white;
-        }
-        .section-title {
-            @apply font-serif text-3xl md:text-4xl text-text-main mb-2;
-        }
-    }
-</style>
 </head>
 <body class="bg-background-light dark:bg-dark-bg font-sans text-text-main dark:text-dark-text antialiased overflow-x-hidden selection:bg-secondary selection:text-primary transition-colors duration-300">
 <div class="relative flex flex-col min-h-screen w-full">
@@ -77,6 +54,7 @@
 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">Music</a>
 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
+<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
 </nav>
 <div class="flex gap-2">
 <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="ZH/EN/JA">
@@ -98,6 +76,7 @@
 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">Music</a>
 <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
+<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
 </div>
 </nav>
 </header>
@@ -153,7 +132,7 @@
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
 <div class="group flex flex-col">
 <div class="aspect-[4/3] w-full bg-gray-200 dark:bg-dark-card overflow-hidden mb-5 rounded-sm relative">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" src="/images/hackathon/渝客松Google GDG赛道第一名.jpg" alt="Yukesong Google GDG 1st Place"/>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" src="/images/hackathon/渝客松Google GDG赛道第一名.jpg" alt="Yukesong Google GDG 1st Place" loading="lazy" decoding="async"/>
 <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
 </div>
 <div class="flex flex-col">
@@ -166,7 +145,7 @@
 </div>
 <div class="group flex flex-col">
 <div class="aspect-[4/3] w-full bg-gray-200 dark:bg-dark-card overflow-hidden mb-5 rounded-sm relative">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" src="/images/hackathon/trae-hackathon-08.jpg" alt="TRAE SOLO Hackathon Shanghai"/>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" src="/images/hackathon/trae-hackathon-08.jpg" alt="TRAE SOLO Hackathon Shanghai" loading="lazy" decoding="async"/>
 <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
 </div>
 <div class="flex flex-col">
@@ -179,7 +158,7 @@
 </div>
 <div class="group flex flex-col">
 <div class="aspect-[4/3] w-full bg-gray-200 dark:bg-dark-card overflow-hidden mb-5 rounded-sm relative">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" src="/images/hackathon/无锡Rokid ARAI三等奖.jpg" alt="Wuxi Rokid AR AI"/>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" src="/images/hackathon/无锡Rokid ARAI三等奖.jpg" alt="Wuxi Rokid AR AI" loading="lazy" decoding="async"/>
 <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
 </div>
 <div class="flex flex-col">

@@ -1,48 +1,43 @@
 <!DOCTYPE html>
-<html class="light" lang="zh-CN">
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>AI生图生视频使用经历和经验分享 - Tech Blog</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography"></script>
+    <script>
+        (function() {
+            const html = document.documentElement;
+            html.setAttribute('data-ui-ready', 'false');
+            try {
+                const theme = localStorage.getItem('yui-portfolio-theme');
+                const lang = localStorage.getItem('yui-portfolio-lang');
+                const langMap = { zh: 'zh-CN', en: 'en', ja: 'ja' };
+                const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+                html.classList.toggle('dark', resolvedTheme === 'dark');
+                html.style.colorScheme = resolvedTheme;
+                html.style.backgroundColor = resolvedTheme === 'dark' ? '#0f0f0f' : '#ffffff';
+                html.lang = langMap[lang] || 'en';
+            } catch (error) {
+                html.style.colorScheme = 'light';
+                html.style.backgroundColor = '#ffffff';
+                html.lang = 'en';
+            }
+        })();
+    </script>
+    <style>
+        html { background-color: #ffffff; }
+        html.dark { background-color: #0f0f0f; }
+        html[data-ui-ready="false"] body { opacity: 0; }
+        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
+    </style>
+    <link href="/styles/site.css" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#222222",
-                        "secondary": "#f4f4f5",
-                        "text-main": "#222222",
-                        "text-muted": "#71717a",
-                        "text-tertiary": "#9ca3af",
-                        "background": "#ffffff",
-                        "background-soft": "#f9fafb",
-                        "border-subtle": "#e5e5e5",
-                        "accent-soft": "#e5e7eb",
-                        "dark-bg": "#0f0f0f",
-                        "dark-surface": "#1a1a1a",
-                        "dark-card": "#242424",
-                        "dark-border": "#333333",
-                        "dark-text": "#e5e5e5",
-                        "dark-text-muted": "#a0a0a0",
-                    },
-                    fontFamily: {
-                        "display": ["Playfair Display", "serif"],
-                        "body": ["Inter", "sans-serif"],
-                    },
-                },
-            },
-        }
-    </script>
     <script src="/js/theme.js"></script>
-    <script src="/js/lang.js"></script>
+    <script src="/js/lang.js?v=20260419-2"></script>
     <style>
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
         .prose, article { 
             -webkit-user-select: none;
             -moz-user-select: none;
@@ -76,6 +71,7 @@
                     <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
                     <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">音乐</a>
                     <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">动漫</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
                 </nav>
                 <div class="flex gap-2">
                     <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="中/EN/日">
@@ -114,7 +110,7 @@
                 </p>
                 <div class="flex items-center gap-4 mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
                     <div class="w-12 h-12 rounded-full overflow-hidden">
-                        <img src="/images/profile/avatar-small.jpg" alt="Yui" class="w-full h-full object-cover"/>
+                        <img src="/images/profile/avatar-small.jpg" alt="Yui" class="w-full h-full object-cover" decoding="async"/>
                     </div>
                     <div>
                         <p class="font-semibold text-primary dark:text-dark-text">Yui</p>
@@ -178,16 +174,16 @@
                 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-8">
                     <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card">
-                        <img class="w-full h-auto object-cover" src="/images/blog/chiikawa-1.jpg" alt="小红书AI视频作品1"/>
+                        <img class="w-full h-auto object-cover" src="/images/blog/chiikawa-1.jpg" alt="小红书AI视频作品1" loading="lazy" decoding="async"/>
                     </div>
                     <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card">
-                        <img class="w-full h-auto object-cover" src="/images/blog/chiikawa-2.jpg" alt="小红书AI视频作品2"/>
+                        <img class="w-full h-auto object-cover" src="/images/blog/chiikawa-2.jpg" alt="小红书AI视频作品2" loading="lazy" decoding="async"/>
                     </div>
                     <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card">
-                        <img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-3.jpg" alt="AI生成作品3"/>
+                        <img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-3.jpg" alt="AI生成作品3" loading="lazy" decoding="async"/>
                     </div>
                     <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card">
-                        <img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-4.jpg" alt="AI生成作品4"/>
+                        <img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-4.jpg" alt="AI生成作品4" loading="lazy" decoding="async"/>
                     </div>
                 </div>
 
@@ -206,10 +202,10 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
                     <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card">
-                        <img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-1.jpg" alt="Chiikawa漫画作品1"/>
+                        <img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-1.jpg" alt="Chiikawa漫画作品1" loading="lazy" decoding="async"/>
                     </div>
                     <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card">
-                        <img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-2.jpg" alt="Chiikawa漫画作品2"/>
+                        <img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-2.jpg" alt="Chiikawa漫画作品2" loading="lazy" decoding="async"/>
                     </div>
                 </div>
 
@@ -220,7 +216,7 @@
                 <p>这种"不可名状"的创意，其实是一种知识壁垒。虽然现在的反推工具很强大，但原创的灵感和审美是独一无二的。想要提升这方面的能力，我非常推荐大家关注 <strong><a href="https://super-i.cn/" target="_blank" class="text-primary dark:text-dark-text hover:underline font-medium">刺猬星球</a></strong>。</p>
 
                 <div class="w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card my-8 shadow-md">
-                    <img class="w-full h-auto object-cover" src="/images/blog/hedgehog-homepage.jpg" alt="刺猬星球主页 - 提示词与审美积累"/>
+                    <img class="w-full h-auto object-cover" src="/images/blog/hedgehog-homepage.jpg" alt="刺猬星球主页 - 提示词与审美积累" loading="lazy" decoding="async"/>
                     <p class="text-sm text-center text-text-muted dark:text-dark-text-muted py-3 bg-gray-50 dark:bg-dark-surface border-t border-border-subtle dark:border-dark-border">刺猬星球：丰富的提示词教程与案例库</p>
                 </div>
 
@@ -247,13 +243,13 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-8">
                     <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm group">
                         <div class="relative overflow-hidden">
-                            <img class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" src="/images/blog/factory-2d-drawing.jpg" alt="原始2D设计图纸"/>
+                            <img class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" src="/images/blog/factory-2d-drawing.jpg" alt="原始2D设计图纸" loading="lazy" decoding="async"/>
                         </div>
                         <p class="text-sm text-center font-medium text-text-muted dark:text-dark-text-muted py-3 bg-gray-50 dark:bg-dark-surface">输入：原始 2D 工业图纸</p>
                     </div>
                     <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm group">
                         <div class="relative overflow-hidden">
-                            <img class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" src="/images/blog/factory-3d-render.jpg" alt="AI生成伪3D效果图"/>
+                            <img class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" src="/images/blog/factory-3d-render.jpg" alt="AI生成伪3D效果图" loading="lazy" decoding="async"/>
                         </div>
                         <p class="text-sm text-center font-medium text-text-muted dark:text-dark-text-muted py-3 bg-gray-50 dark:bg-dark-surface">输出：AI 生成伪 3D 监控图</p>
                     </div>
@@ -363,10 +359,10 @@
                     <p>もともと写真が好きで、多少の美意識と Vibe Coding 的な試行錯誤にも慣れていたので、画像生成用のプロンプトを書く楽しさをかなり感じています。</p>
                     <p><strong>実際に作った作品の一部はこちらです。</strong></p>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-8">
-                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/chiikawa-1.jpg" alt="AI作品1"/></div>
-                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/chiikawa-2.jpg" alt="AI作品2"/></div>
-                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-3.jpg" alt="AI作品3"/></div>
-                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-4.jpg" alt="AI作品4"/></div>
+                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/chiikawa-1.jpg" alt="AI作品1" loading="lazy" decoding="async"/></div>
+                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/chiikawa-2.jpg" alt="AI作品2" loading="lazy" decoding="async"/></div>
+                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-3.jpg" alt="AI作品3" loading="lazy" decoding="async"/></div>
+                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-4.jpg" alt="AI作品4" loading="lazy" decoding="async"/></div>
                     </div>
                     <hr/>
                     <h2 class="text-primary dark:text-dark-text">Chiikawa 漫画を一人で作ってみた</h2>
@@ -379,14 +375,14 @@
                         <li><strong>人物の一貫性を微調整する</strong> - 世界観を崩さないように整える</li>
                     </ol>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
-                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-1.jpg" alt="Chiikawa作品1"/></div>
-                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-2.jpg" alt="Chiikawa作品2"/></div>
+                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-1.jpg" alt="Chiikawa作品1" loading="lazy" decoding="async"/></div>
+                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-2.jpg" alt="Chiikawa作品2" loading="lazy" decoding="async"/></div>
                     </div>
                     <h2 class="text-primary dark:text-dark-text">審美眼とプロンプト設計が差になる</h2>
                     <p>私は <strong>幻想的で夢のような雰囲気</strong> を特に好みます。この空気感こそ、プロンプトで最も言語化しづらい部分です。AI で生成した写真を見て、裏側の Prompt をすぐ想像できないなら、その一枚は半分成功していると思っています。</p>
                     <p>こうした「言葉にしにくい創造性」は、いまも人間の強い武器です。参考事例や審美の蓄積を増やすために、私は <strong><a href="https://super-i.cn/" target="_blank" class="text-primary dark:text-dark-text hover:underline font-medium">刺猬星球</a></strong> のようなサイトもよく見ています。</p>
                     <div class="w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card my-8 shadow-md">
-                        <img class="w-full h-auto object-cover" src="/images/blog/hedgehog-homepage.jpg" alt="刺猬星球"/>
+                        <img class="w-full h-auto object-cover" src="/images/blog/hedgehog-homepage.jpg" alt="刺猬星球" loading="lazy" decoding="async"/>
                         <p class="text-sm text-center text-text-muted dark:text-dark-text-muted py-3 bg-gray-50 dark:bg-dark-surface border-t border-border-subtle dark:border-dark-border">刺猬星球: プロンプト事例と審美の蓄積に役立つサイト</p>
                     </div>
                     <p>フィルムシミュレーションや写真家のスタイル参照など、複数のテクニックを組み合わせることで、自分だけの絵作りに近づけます。</p>
@@ -403,11 +399,11 @@
                     <p>原図を図例と局所構造に分けて参照画像と一緒に渡し、適切な Prompt で工程の意味を理解させることで、高品質な疑似 3D 表現を直接生成できるようにしました。</p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-8">
                         <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm group">
-                            <div class="relative overflow-hidden"><img class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" src="/images/blog/factory-2d-drawing.jpg" alt="2D図面"/></div>
+                            <div class="relative overflow-hidden"><img class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" src="/images/blog/factory-2d-drawing.jpg" alt="2D図面" loading="lazy" decoding="async"/></div>
                             <p class="text-sm text-center font-medium text-text-muted dark:text-dark-text-muted py-3 bg-gray-50 dark:bg-dark-surface">入力: 元の 2D 工業図面</p>
                         </div>
                         <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm group">
-                            <div class="relative overflow-hidden"><img class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" src="/images/blog/factory-3d-render.jpg" alt="3D表示"/></div>
+                            <div class="relative overflow-hidden"><img class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" src="/images/blog/factory-3d-render.jpg" alt="3D表示" loading="lazy" decoding="async"/></div>
                             <p class="text-sm text-center font-medium text-text-muted dark:text-dark-text-muted py-3 bg-gray-50 dark:bg-dark-surface">出力: AI が生成した疑似 3D モニタリング図</p>
                         </div>
                     </div>

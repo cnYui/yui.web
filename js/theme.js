@@ -5,7 +5,7 @@
     // Get saved theme or detect system preference
     function getPreferredTheme() {
         const saved = localStorage.getItem(THEME_KEY);
-        if (saved) return saved;
+        if (saved === 'dark' || saved === 'light') return saved;
         return 'light';
     }
     
@@ -17,7 +17,7 @@
         } else {
             html.classList.remove('dark');
         }
-        updateToggleIcon(theme);
+        html.style.colorScheme = theme;
     }
     
     // Update toggle button icon
@@ -36,26 +36,32 @@
         const next = current === 'dark' ? 'light' : 'dark';
         localStorage.setItem(THEME_KEY, next);
         applyTheme(next);
+        updateToggleIcon(next);
     }
     
-    // Initialize on page load
-    function init() {
-        // Apply theme immediately to prevent flash
-        applyTheme(getPreferredTheme());
-        
-        // Bind toggle button
+    function bindThemeToggle() {
         const toggleBtn = document.getElementById('themeToggle');
         if (toggleBtn) {
             toggleBtn.addEventListener('click', toggleTheme);
+            updateToggleIcon(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
         }
-        
+    }
+
+    // Initialize on page load
+    function init() {
+        bindThemeToggle();
+
         // Listen for system theme changes
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
             if (!localStorage.getItem(THEME_KEY)) {
                 applyTheme(e.matches ? 'dark' : 'light');
+                updateToggleIcon(e.matches ? 'dark' : 'light');
             }
         });
     }
+
+    // Apply the theme before the DOM finishes loading to avoid a light flash.
+    applyTheme(getPreferredTheme());
     
     // Run init when DOM is ready
     if (document.readyState === 'loading') {

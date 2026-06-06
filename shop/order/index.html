@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Redirecting - Shop</title>
+    <meta http-equiv="refresh" content="0; url=/shop/redeem/"/>
+    <script>(function(){const html=document.documentElement;html.setAttribute('data-ui-ready','false');try{const theme=localStorage.getItem('yui-portfolio-theme');const lang=localStorage.getItem('yui-portfolio-lang');const langMap={zh:'zh-CN',en:'en',ja:'ja'};const resolvedTheme=theme==='dark'?'dark':'light';html.classList.toggle('dark',resolvedTheme==='dark');html.style.colorScheme=resolvedTheme;html.style.backgroundColor=resolvedTheme==='dark'?'#0f0f0f':'#ffffff';html.lang=langMap[lang]||'en';}catch(error){html.style.colorScheme='light';html.style.backgroundColor='#ffffff';html.lang='en';}})();</script>
+    <style>html{background-color:#fff}html.dark{background-color:#0f0f0f}html[data-ui-ready="false"] body{opacity:0}html[data-ui-ready="true"] body{opacity:1;transition:opacity 120ms ease-out}</style>
+    <link href="/styles/site.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="/js/theme.js"></script>
+    <script src="/js/lang.js?v=20260419-2"></script>
+    <script src="/js/mobile-menu.js"></script>
+    <script src="/shop/shop.js?v=20260531-0823"></script>
+</head>
+<body class="bg-white dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col antialiased transition-colors duration-300">
+    <header class="sticky top-0 z-50 w-full border-b border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
+        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
+            <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
+            <div class="flex items-center gap-10">
+                <nav class="hidden md:flex items-center gap-8">
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
+                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/shop/">Shop</a>
+                </nav>
+                <div class="flex gap-2">
+                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="ZH/EN/JA"><span class="text-xs font-bold">EN</span></button>
+                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme"><span class="material-symbols-outlined font-light" style="font-size:20px;">dark_mode</span></button>
+                    <button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu"><span class="material-symbols-outlined font-light" style="font-size:24px;">menu</span></button>
+                </div>
+            </div>
+        </div>
+        <nav id="mobileMenu" class="hidden md:hidden border-t border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
+            <div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
+                <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 w-fit" href="/shop/">Shop</a>
+            </div>
+        </nav>
+    </header>
+    <main class="flex-1 max-w-[1120px] mx-auto px-6 md:px-12 py-14 md:py-20 w-full">
+        <div class="grid lg:grid-cols-[0.95fr_1.05fr] gap-10 lg:gap-16">
+            <section>
+                <a class="inline-flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text" href="/shop/"><span class="material-symbols-outlined text-base">arrow_back</span>返回 Shop</a>
+                <h1 class="mt-6 font-display text-4xl md:text-6xl text-primary dark:text-dark-text">填写手机号</h1>
+                <p class="mt-5 text-text-muted dark:text-dark-text-muted leading-relaxed">手机号会作为这次购买的查询凭证。真实上线时，订单会写入服务端数据库。</p>
+            </section>
+            <section class="border border-border-subtle dark:border-dark-border rounded-lg p-6 md:p-8 bg-white dark:bg-dark-card shadow-soft dark:shadow-soft-dark">
+                <div class="flex items-start justify-between gap-6 border-b border-border-subtle dark:border-dark-border pb-6">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.2em] text-text-muted dark:text-dark-text-muted">Product</p>
+                        <h2 class="mt-2 text-2xl font-display">Yui Personal Digital Pack</h2>
+                    </div>
+                    <p class="text-2xl font-semibold">¥199.00</p>
+                </div>
+                <form id="orderForm" class="mt-7 space-y-5">
+                    <label class="block">
+                        <span class="text-sm font-medium text-primary dark:text-dark-text">手机号</span>
+                        <input id="phoneInput" class="mt-2 w-full h-12 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" inputmode="numeric" autocomplete="tel" placeholder="请输入 11 位手机号"/>
+                    </label>
+                    <p id="phoneError" class="min-h-5 text-sm text-red-600"></p>
+                    <button class="btn-primary w-full" type="submit">生成订单并支付</button>
+                </form>
+            </section>
+        </div>
+    </main>
+    <script>window.YuiShop.initOrderPage();</script>
+</body>
+</html>
