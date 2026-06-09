@@ -14,7 +14,8 @@
                     blog: '博客',
                     travel: '旅行',
                     music: '音乐',
-                    anime: '动漫'
+                    anime: '动漫',
+                    shop: '商店'
                 }
             },
             en: {
@@ -24,7 +25,8 @@
                     blog: 'Blog',
                     travel: 'Travel',
                     music: 'Music',
-                    anime: 'Anime'
+                    anime: 'Anime',
+                    shop: 'Shop'
                 }
             },
             ja: {
@@ -34,7 +36,8 @@
                     blog: 'ブログ',
                     travel: '旅行',
                     music: '音楽',
-                    anime: 'アニメ'
+                    anime: 'アニメ',
+                    shop: 'ショップ'
                 }
             }
         },
@@ -982,6 +985,7 @@
             else if (href.includes('/travel')) link.textContent = data.nav.travel;
             else if (href.includes('/music')) link.textContent = data.nav.music;
             else if (href.includes('/anime')) link.textContent = data.nav.anime;
+            else if (href.includes('/shop')) link.textContent = data.nav.shop;
         });
     }
     
