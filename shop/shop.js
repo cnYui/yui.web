@@ -4,6 +4,18 @@
         return /^1[3-9]\d{9}$/.test(String(value || '').trim());
     }
 
+    function bindPhoneInput(input) {
+        if (!input) return;
+        input.addEventListener('input', () => {
+            input.value = input.value.replace(/\D/g, '').slice(0, 11);
+        });
+    }
+
+    function isStrongPassword(value) {
+        const password = String(value || '');
+        return password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password);
+    }
+
     function formatDate(value) {
         if (!value) return '-';
         return new Intl.DateTimeFormat('zh-CN', {
@@ -257,9 +269,7 @@
         const message = document.getElementById('redeemMessage');
         if (!form || !phoneInput || !codeInput || !message) return;
 
-        phoneInput.addEventListener('input', () => {
-            phoneInput.value = phoneInput.value.replace(/\D/g, '').slice(0, 11);
-        });
+        bindPhoneInput(phoneInput);
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -313,9 +323,7 @@
         const result = document.getElementById('queryResult');
         if (!form || !input || !result) return;
 
-        input.addEventListener('input', () => {
-            input.value = input.value.replace(/\D/g, '').slice(0, 11);
-        });
+        bindPhoneInput(input);
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -348,6 +356,143 @@
                 result.innerHTML = `<p class="text-sm text-red-600">${error.message}</p>`;
             }
         });
+    }
+
+    function initLoginPage() {
+        const form = document.getElementById('loginForm');
+        const phoneInput = document.getElementById('loginPhone');
+        const passwordInput = document.getElementById('loginPassword');
+        const message = document.getElementById('loginMessage');
+        if (!form || !phoneInput || !passwordInput || !message) return;
+
+        bindPhoneInput(phoneInput);
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const phone = phoneInput.value.trim();
+            const password = passwordInput.value;
+            if (!isPhone(phone)) {
+                message.textContent = '请输入有效的中国大陆手机号。';
+                phoneInput.focus();
+                return;
+            }
+            if (!password) {
+                message.textContent = '请输入密码。';
+                passwordInput.focus();
+                return;
+            }
+
+            message.textContent = '正在登录...';
+            try {
+                await requestJson('/api/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ phone, password })
+                });
+                window.location.href = '/shop/account/';
+            } catch (error) {
+                message.textContent = error.message;
+            }
+        });
+    }
+
+    function initRegisterPage() {
+        const form = document.getElementById('registerForm');
+        const phoneInput = document.getElementById('registerPhone');
+        const passwordInput = document.getElementById('registerPassword');
+        const confirmInput = document.getElementById('registerConfirmPassword');
+        const message = document.getElementById('registerMessage');
+        if (!form || !phoneInput || !passwordInput || !confirmInput || !message) return;
+
+        bindPhoneInput(phoneInput);
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const phone = phoneInput.value.trim();
+            const password = passwordInput.value;
+            const confirmPassword = confirmInput.value;
+            if (!isPhone(phone)) {
+                message.textContent = '请输入有效的中国大陆手机号。';
+                phoneInput.focus();
+                return;
+            }
+            if (!isStrongPassword(password)) {
+                message.textContent = '密码至少 8 位，并包含英文大写字母、小写字母和数字。';
+                passwordInput.focus();
+                return;
+            }
+            if (password !== confirmPassword) {
+                message.textContent = '两次输入的密码不一致。';
+                confirmInput.focus();
+                return;
+            }
+
+            message.textContent = '正在注册...';
+            try {
+                await requestJson('/api/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ phone, password, confirmPassword })
+                });
+                window.location.href = '/shop/account/';
+            } catch (error) {
+                message.textContent = error.message;
+            }
+        });
+    }
+
+    async function initAccountPage() {
+        const phoneRoot = document.getElementById('accountPhone');
+        const ordersRoot = document.getElementById('accountOrders');
+        const message = document.getElementById('accountMessage');
+        const logoutButton = document.getElementById('logoutButton');
+        if (!phoneRoot || !ordersRoot || !message || !logoutButton) return;
+
+        ordersRoot.innerHTML = '<p class="text-sm text-text-muted dark:text-dark-text-muted">正在读取账户信息...</p>';
+        try {
+            const data = await requestJson('/api/account/me');
+            phoneRoot.textContent = data.user.phone;
+            const orders = data.orders || [];
+            if (!orders.length) {
+                ordersRoot.innerHTML = `
+                    <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-8 text-center">
+                        <h2 class="font-display text-3xl text-primary dark:text-dark-text">暂无订单</h2>
+                        <p class="mt-3 text-text-muted dark:text-dark-text-muted">使用邀请码兑换后，订单会显示在这里。</p>
+                        <a class="btn-primary mt-6 inline-flex" href="/shop/redeem/">去兑换</a>
+                    </section>
+                `;
+            } else {
+                ordersRoot.innerHTML = `<div class="grid gap-5">${orders.map((order) => renderOrderCard(order, { showFullKey: false })).join('')}</div>`;
+            }
+            message.textContent = '';
+        } catch (error) {
+            window.location.replace('/shop/login/');
+        }
+
+        logoutButton.addEventListener('click', async () => {
+            message.textContent = '正在退出...';
+            try {
+                await requestJson('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/shop/login/';
+            } catch (error) {
+                message.textContent = error.message;
+            }
+        });
+    }
+
+    async function initAccountLinks() {
+        const links = Array.from(document.querySelectorAll('[data-account-link]'));
+        if (!links.length) return;
+        try {
+            await requestJson('/api/account/me');
+            for (const link of links) {
+                link.href = '/shop/account/';
+                link.textContent = '我的账户';
+            }
+        } catch (error) {
+            for (const link of links) {
+                link.href = '/shop/login/';
+                link.textContent = '登录';
+            }
+        }
     }
 
     function initAdminPage() {
@@ -395,6 +540,10 @@
         initKeyPage,
         initQueryPage,
         initAdminPage,
+        initLoginPage,
+        initRegisterPage,
+        initAccountPage,
+        initAccountLinks,
         initOrderPage: () => { window.location.replace('/shop/redeem/'); },
         initPayPage: () => { window.location.replace('/shop/redeem/'); },
         initResultPage: () => { window.location.replace('/shop/key/'); },

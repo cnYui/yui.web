@@ -780,3 +780,170 @@ test('内部 API key 状态接口对未过期订单返回 active', async () => {
         assert.match(active.body.expiresAt, /^\d{4}-\d{2}-\d{2}T/);
     });
 });
+
+test('Shop 用户表支持密码字段并创建 user_sessions 会话表', async () => {
+    await withServer(async ({ db }) => {
+        const userColumns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name);
+        assert.ok(userColumns.includes('password_hash'));
+        assert.ok(userColumns.includes('password_created_at'));
+        assert.ok(userColumns.includes('updated_at'));
+
+        const sessionTable = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'user_sessions'").get();
+        assert.deepEqual(sessionTable, { name: 'user_sessions' });
+    });
+});
+
+test('用户注册校验手机号、密码规则和确认密码', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const invalidPhone = await jsonFetch(`${baseUrl}/api/auth/register`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138abc', password: 'Abcdefg1', confirmPassword: 'Abcdefg1' })
+        });
+        assert.equal(invalidPhone.response.status, 400);
+        assert.equal(invalidPhone.body.code, 'INVALID_PHONE');
+
+        const weakPassword = await jsonFetch(`${baseUrl}/api/auth/register`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138600', password: 'abcdefg1', confirmPassword: 'abcdefg1' })
+        });
+        assert.equal(weakPassword.response.status, 400);
+        assert.equal(weakPassword.body.code, 'WEAK_PASSWORD');
+
+        const mismatch = await jsonFetch(`${baseUrl}/api/auth/register`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138600', password: 'Abcdefg1', confirmPassword: 'Abcdefg2' })
+        });
+        assert.equal(mismatch.response.status, 400);
+        assert.equal(mismatch.body.code, 'PASSWORD_MISMATCH');
+    });
+});
+
+test('历史兑换手机号可以补密码注册并通过 account session 只查看自己的订单', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ apiKeys: ['sk-account-a', 'sk-account-b'] })
+        });
+        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ count: 2 })
+        });
+        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138601', code: inviteResult.body.invites[0].code })
+        });
+        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138602', code: inviteResult.body.invites[1].code })
+        });
+
+        const register = await jsonFetch(`${baseUrl}/api/auth/register`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138601', password: 'Abcdefg1', confirmPassword: 'Abcdefg1' })
+        });
+        assert.equal(register.response.status, 201);
+        assert.equal(register.body.user.phone, '13800138601');
+        const cookie = register.response.headers.get('set-cookie') || '';
+        assert.match(cookie, /yui_shop_account_session=/);
+        assert.match(cookie.toLowerCase(), /httponly/);
+        assert.doesNotMatch(db.prepare('SELECT password_hash FROM users WHERE phone = ?').get('13800138601').password_hash, /Abcdefg1/);
+
+        const me = await jsonFetch(`${baseUrl}/api/account/me`, {
+            headers: { cookie }
+        });
+        assert.equal(me.response.status, 200);
+        assert.equal(me.body.user.phone, '13800138601');
+        assert.equal(me.body.orders.length, 1);
+        assert.equal(me.body.orders[0].phone, '13800138601');
+        assert.equal(me.body.orders[0].apiKey, '');
+        assert.equal(me.body.orders[0].apiKeyPreview, 'sk-account-a...ount-a');
+    });
+});
+
+test('登录失败、重复注册、退出登录和 account 页面保护都按 session 生效', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const loggedOutPage = await fetch(`${baseUrl}/shop/account/`, { redirect: 'manual' });
+        assert.equal(loggedOutPage.status, 302);
+        assert.equal(loggedOutPage.headers.get('location'), '/shop/login/');
+
+        const register = await jsonFetch(`${baseUrl}/api/auth/register`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138603', password: 'Abcdefg1', confirmPassword: 'Abcdefg1' })
+        });
+        assert.equal(register.response.status, 201);
+
+        const duplicate = await jsonFetch(`${baseUrl}/api/auth/register`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138603', password: 'Abcdefg1', confirmPassword: 'Abcdefg1' })
+        });
+        assert.equal(duplicate.response.status, 409);
+        assert.equal(duplicate.body.code, 'USER_EXISTS');
+
+        const wrongPassword = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138603', password: 'Wrongabc1' })
+        });
+        assert.equal(wrongPassword.response.status, 401);
+        assert.equal(wrongPassword.body.code, 'INVALID_CREDENTIALS');
+
+        const login = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138603', password: 'Abcdefg1' })
+        });
+        assert.equal(login.response.status, 200);
+        const cookie = login.response.headers.get('set-cookie') || '';
+
+        const accountPage = await fetch(`${baseUrl}/shop/account/`, { headers: { cookie } });
+        assert.equal(accountPage.status, 200);
+        assert.match(await accountPage.text(), /我的账户/);
+
+        const logout = await jsonFetch(`${baseUrl}/api/auth/logout`, {
+            method: 'POST',
+            headers: { cookie }
+        });
+        assert.equal(logout.response.status, 200);
+        assert.match(logout.response.headers.get('set-cookie') || '', /yui_shop_account_session=;/);
+
+        const afterLogout = await jsonFetch(`${baseUrl}/api/account/me`, {
+            headers: { cookie }
+        });
+        assert.equal(afterLogout.response.status, 401);
+        assert.equal(afterLogout.body.code, 'ACCOUNT_LOGIN_REQUIRED');
+    });
+});
+
+test('无效过期时间的账号 session 会被拒绝', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const token = 'usr_invalid_expiry';
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+        db.prepare('INSERT INTO users (phone, created_at) VALUES (?, ?)').run('13800138604', '2026-06-09T12:00:00+08:00');
+        db.prepare(`
+            INSERT INTO user_sessions (token_hash, phone, created_at, expires_at)
+            VALUES (?, ?, ?, ?)
+        `).run(tokenHash, '13800138604', '2026-06-09T12:00:00+08:00', 'not-a-date');
+
+        const result = await jsonFetch(`${baseUrl}/api/account/me`, {
+            headers: { cookie: `yui_shop_account_session=${token}` }
+        });
+
+        assert.equal(result.response.status, 401);
+        assert.equal(result.body.code, 'ACCOUNT_LOGIN_REQUIRED');
+    });
+});
+
+test('Shop 首页和账号页面包含登录注册与退出入口', () => {
+    const home = fs.readFileSync(path.join(__dirname, '..', 'shop/index.html'), 'utf8');
+    const login = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');
+    const register = fs.readFileSync(path.join(__dirname, '..', 'shop/register/index.html'), 'utf8');
+    const account = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
+
+    assert.match(home, /href="\/shop\/login\/"/);
+    assert.match(home, /data-account-link/);
+    assert.match(login, /id="loginForm"/);
+    assert.match(register, /id="registerForm"/);
+    assert.match(register, /至少 8 位/);
+    assert.match(account, /id="logoutButton"/);
+    assert.match(account, /window\.YuiShop\.initAccountPage/);
+});

@@ -8,7 +8,13 @@ require('dotenv').config();
 const durationDays = 31;
 const resultCookieName = 'yui_shop_result_token';
 const legacyRedeemCookieName = 'yui_shop_redeemed';
+const accountCookieName = 'yui_shop_account_session';
 const redeemCookieMaxAgeMs = durationDays * 24 * 60 * 60 * 1000;
+const accountSessionMaxAgeMs = redeemCookieMaxAgeMs;
+const passwordKeyLength = 64;
+const passwordScryptN = 16384;
+const passwordScryptR = 8;
+const passwordScryptP = 1;
 const rateLimitBuckets = new Map();
 const chinaOffsetMs = 8 * 60 * 60 * 1000;
 
@@ -47,6 +53,10 @@ function createResultToken() {
     return `rst_${crypto.randomBytes(32).toString('base64url')}`;
 }
 
+function createAccountSessionToken() {
+    return `usr_${crypto.randomBytes(32).toString('base64url')}`;
+}
+
 function keyPreview(apiKey) {
     if (!apiKey) return '';
     return `${apiKey.slice(0, 12)}...${apiKey.slice(-6)}`;
@@ -54,6 +64,57 @@ function keyPreview(apiKey) {
 
 function hashApiKey(apiKey) {
     return crypto.createHash('sha256').update(String(apiKey || '').trim()).digest('hex');
+}
+
+function hashSessionToken(token) {
+    return crypto.createHash('sha256').update(String(token || '')).digest('hex');
+}
+
+function validatePassword(password) {
+    const value = String(password || '');
+    if (value.length < 8) {
+        return { ok: false, message: '密码至少 8 位。' };
+    }
+    if (!/[a-z]/.test(value)) {
+        return { ok: false, message: '密码必须包含英文小写字母。' };
+    }
+    if (!/[A-Z]/.test(value)) {
+        return { ok: false, message: '密码必须包含英文大写字母。' };
+    }
+    if (!/\d/.test(value)) {
+        return { ok: false, message: '密码必须包含数字。' };
+    }
+    return { ok: true, message: '' };
+}
+
+function hashPassword(password) {
+    const salt = crypto.randomBytes(16).toString('base64url');
+    const hash = crypto.scryptSync(String(password || ''), salt, passwordKeyLength, {
+        N: passwordScryptN,
+        r: passwordScryptR,
+        p: passwordScryptP
+    }).toString('base64url');
+    return `scrypt$${passwordScryptN}$${passwordScryptR}$${passwordScryptP}$${salt}$${hash}`;
+}
+
+function verifyPassword(password, storedHash) {
+    const parts = String(storedHash || '').split('$');
+    if (parts.length !== 6 || parts[0] !== 'scrypt') return false;
+    const n = Number(parts[1]);
+    const r = Number(parts[2]);
+    const p = Number(parts[3]);
+    const salt = parts[4];
+    const hash = Buffer.from(parts[5], 'base64url');
+    if (!Number.isFinite(n) || !Number.isFinite(r) || !Number.isFinite(p) || !salt || !hash.length) {
+        return false;
+    }
+    try {
+        const actual = crypto.scryptSync(String(password || ''), salt, hash.length, { N: n, r, p });
+        if (actual.length !== hash.length) return false;
+        return crypto.timingSafeEqual(actual, hash);
+    } catch (error) {
+        return false;
+    }
 }
 
 function parseCookies(cookieHeader) {
@@ -175,6 +236,32 @@ CREATE TABLE IF NOT EXISTS orders (
   expires_at TEXT NOT NULL,
   FOREIGN KEY (phone) REFERENCES users(phone)
 );
+`);
+    const userColumns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name);
+    if (!userColumns.includes('password_hash')) {
+        db.exec(`ALTER TABLE users ADD COLUMN password_hash TEXT;`);
+    }
+    if (!userColumns.includes('password_created_at')) {
+        db.exec(`ALTER TABLE users ADD COLUMN password_created_at TEXT;`);
+    }
+    if (!userColumns.includes('updated_at')) {
+        db.exec(`ALTER TABLE users ADD COLUMN updated_at TEXT;`);
+    }
+    db.exec(`
+CREATE TABLE IF NOT EXISTS user_sessions (
+  token_hash TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  revoked_at TEXT,
+  FOREIGN KEY (phone) REFERENCES users(phone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_sessions_phone
+ON user_sessions(phone);
+
+CREATE INDEX IF NOT EXISTS idx_user_sessions_expires
+ON user_sessions(expires_at);
 `);
     const inviteColumns = db.prepare('PRAGMA table_info(invite_codes)').all().map((column) => column.name);
     if (inviteColumns.includes('api_key')) {
@@ -413,6 +500,12 @@ function createShopApp(options = {}) {
         code: 'QUERY_RATE_LIMITED',
         message: '查询请求过于频繁，请稍后再试。'
     });
+    const limitAuthApi = createRateLimiter({
+        windowMs: 10 * 60 * 1000,
+        max: 30,
+        code: 'AUTH_RATE_LIMITED',
+        message: '登录或注册请求过于频繁，请稍后再试。'
+    });
 
     function cookieOptions(req) {
         return {
@@ -424,14 +517,33 @@ function createShopApp(options = {}) {
         };
     }
 
+    function accountCookieOptions(req) {
+        return {
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: req.secure || req.header('x-forwarded-proto') === 'https',
+            maxAge: accountSessionMaxAgeMs,
+            path: '/'
+        };
+    }
+
     function clearResultCookies(res) {
         res.clearCookie(resultCookieName, { path: '/' });
         res.clearCookie(legacyRedeemCookieName, { path: '/shop' });
     }
 
+    function clearAccountCookie(res) {
+        res.clearCookie(accountCookieName, { path: '/' });
+    }
+
     function getResultToken(req) {
         const cookies = parseCookies(req.header('cookie'));
         return String(cookies[resultCookieName] || '').trim();
+    }
+
+    function getAccountSessionToken(req) {
+        const cookies = parseCookies(req.header('cookie'));
+        return String(cookies[accountCookieName] || '').trim();
     }
 
     function requireResultToken(req, res, next) {
@@ -490,6 +602,42 @@ WHERE api_key = @apiKey AND status = 'unused'
 INSERT INTO users (phone, created_at)
 VALUES (?, ?)
 ON CONFLICT(phone) DO NOTHING
+`);
+
+    const getUserByPhone = db.prepare(`
+SELECT phone, created_at, password_hash, password_created_at, updated_at
+FROM users
+WHERE phone = ?
+`);
+
+    const insertUserWithPassword = db.prepare(`
+INSERT INTO users (phone, created_at, password_hash, password_created_at, updated_at)
+VALUES (?, ?, ?, ?, ?)
+`);
+
+    const setUserPassword = db.prepare(`
+UPDATE users
+SET password_hash = ?,
+    password_created_at = ?,
+    updated_at = ?
+WHERE phone = ?
+`);
+
+    const insertAccountSession = db.prepare(`
+INSERT INTO user_sessions (token_hash, phone, created_at, expires_at)
+VALUES (?, ?, ?, ?)
+`);
+
+    const getAccountSessionByHash = db.prepare(`
+SELECT token_hash, phone, created_at, expires_at, revoked_at
+FROM user_sessions
+WHERE token_hash = ?
+`);
+
+    const revokeAccountSession = db.prepare(`
+UPDATE user_sessions
+SET revoked_at = ?
+WHERE token_hash = ? AND revoked_at IS NULL
 `);
 
     const insertOrder = db.prepare(`
@@ -648,6 +796,88 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
 
         return order;
     });
+
+    const registerUser = db.transaction(({ phone, password }) => {
+        const now = nowIso();
+        const existing = getUserByPhone.get(phone);
+        if (existing?.password_hash) {
+            const error = new Error('该手机号已经注册。');
+            error.status = 409;
+            error.code = 'USER_EXISTS';
+            throw error;
+        }
+        const passwordHash = hashPassword(password);
+        if (!existing) {
+            insertUserWithPassword.run(phone, now, passwordHash, now, now);
+            return { phone };
+        }
+        setUserPassword.run(passwordHash, now, now, phone);
+        return { phone };
+    });
+
+    function loginUser({ phone, password }) {
+        const user = getUserByPhone.get(phone);
+        if (!user || !user.password_hash || !verifyPassword(password, user.password_hash)) {
+            const error = new Error('手机号或密码错误。');
+            error.status = 401;
+            error.code = 'INVALID_CREDENTIALS';
+            throw error;
+        }
+        return { phone: user.phone };
+    }
+
+    function createAccountSessionForPhone(phone) {
+        const createdAt = new Date();
+        let token = createAccountSessionToken();
+        while (getAccountSessionByHash.get(hashSessionToken(token))) {
+            token = createAccountSessionToken();
+        }
+        insertAccountSession.run(
+            hashSessionToken(token),
+            phone,
+            nowIso(createdAt),
+            nowIso(addDays(createdAt, durationDays))
+        );
+        return token;
+    }
+
+    function getCurrentAccountSession(req) {
+        const token = getAccountSessionToken(req);
+        if (!token) return null;
+        const row = getAccountSessionByHash.get(hashSessionToken(token));
+        if (!row || row.revoked_at) return null;
+        const expiresAt = new Date(row.expires_at).getTime();
+        if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return null;
+        return row;
+    }
+
+    function requireAccount(req, res, next) {
+        const session = getCurrentAccountSession(req);
+        if (!session) {
+            return res.status(401).json({
+                code: 'ACCOUNT_LOGIN_REQUIRED',
+                message: '请先登录。'
+            });
+        }
+        req.account = { phone: session.phone };
+        return next();
+    }
+
+    function requireAccountPage(req, res, next) {
+        const session = getCurrentAccountSession(req);
+        if (!session) {
+            return res.redirect(302, '/shop/login/');
+        }
+        req.account = { phone: session.phone };
+        return next();
+    }
+
+    function redirectLoggedInAccount(req, res, next) {
+        if (getCurrentAccountSession(req)) {
+            return res.redirect(302, '/shop/account/');
+        }
+        return next();
+    }
 
     function verifyUsageSignature(req) {
         const secret = options.usageEventHmacSecret ?? process.env.USAGE_EVENT_HMAC_SECRET;
@@ -906,6 +1136,73 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     app.use(express.urlencoded({ extended: false }));
     app.use(setSecurityHeaders);
 
+    app.post('/api/auth/register', limitAuthApi, (req, res) => {
+        const phone = String(req.body.phone || '').trim();
+        const password = String(req.body.password || '');
+        const confirmPassword = String(req.body.confirmPassword || '');
+        if (!isPhone(phone)) {
+            return res.status(400).json({ code: 'INVALID_PHONE', message: '请输入有效的中国大陆手机号。' });
+        }
+        const passwordResult = validatePassword(password);
+        if (!passwordResult.ok) {
+            return res.status(400).json({ code: 'WEAK_PASSWORD', message: passwordResult.message });
+        }
+        if (password !== confirmPassword) {
+            return res.status(400).json({ code: 'PASSWORD_MISMATCH', message: '两次输入的密码不一致。' });
+        }
+
+        try {
+            const user = registerUser({ phone, password });
+            const token = createAccountSessionForPhone(user.phone);
+            res.cookie(accountCookieName, token, accountCookieOptions(req));
+            return res.status(201).json({ user });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'REGISTER_FAILED',
+                message: error.message || '注册失败。'
+            });
+        }
+    });
+
+    app.post('/api/auth/login', limitAuthApi, (req, res) => {
+        const phone = String(req.body.phone || '').trim();
+        const password = String(req.body.password || '');
+        if (!isPhone(phone)) {
+            return res.status(400).json({ code: 'INVALID_PHONE', message: '请输入有效的中国大陆手机号。' });
+        }
+
+        try {
+            const user = loginUser({ phone, password });
+            const token = createAccountSessionForPhone(user.phone);
+            res.cookie(accountCookieName, token, accountCookieOptions(req));
+            return res.json({ user });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'LOGIN_FAILED',
+                message: error.message || '登录失败。'
+            });
+        }
+    });
+
+    app.post('/api/auth/logout', limitAuthApi, (req, res) => {
+        const token = getAccountSessionToken(req);
+        if (token) {
+            revokeAccountSession.run(nowIso(), hashSessionToken(token));
+        }
+        clearAccountCookie(res);
+        return res.json({ ok: true });
+    });
+
+    app.get('/api/account/me', limitQueryApi, requireAccount, (req, res) => {
+        const orders = listOrdersByPhone.all(req.account.phone)
+            .map(toOrder)
+            .map((order) => publicOrder(order, { includeApiKey: false }));
+        return res.json({
+            user: { phone: req.account.phone },
+            orders
+        });
+    });
+
     app.post('/api/admin/invites', limitAdminApi, requireAdmin, (req, res) => {
         const count = Math.min(Math.max(Number(req.body.count || 1), 1), 50);
         const invites = createInvites(count);
@@ -1074,6 +1371,9 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     });
 
     app.get(['/shop/key', '/shop/key/', '/shop/key/index.html'], requireResultToken, (req, res, next) => next());
+    app.get(['/shop/login', '/shop/login/', '/shop/login/index.html'], redirectLoggedInAccount, (req, res, next) => next());
+    app.get(['/shop/register', '/shop/register/', '/shop/register/index.html'], redirectLoggedInAccount, (req, res, next) => next());
+    app.get(['/shop/account', '/shop/account/', '/shop/account/index.html'], requireAccountPage, (req, res, next) => next());
 
     app.use(blockSensitiveStaticPaths);
     app.use(express.static(rootDir, { extensions: ['html'], dotfiles: 'ignore' }));
