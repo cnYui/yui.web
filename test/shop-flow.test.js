@@ -280,6 +280,58 @@ test('管理员 usage summary 返回 Shop 和未托管 key 的聚合用量', asy
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
+test('管理员可以把未托管 usage key 绑定为 local 分组和手机号', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const requestedAt = new Date().toISOString();
+        const apiKeyHash = hashApiKeyForTest('sk-LOCAL-profile');
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-local-profile',
+            api_key_hash: apiKeyHash,
+            api_key_preview: 'sk-L...file',
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            total_tokens: 42,
+            requested_at: requestedAt
+        });
+
+        const profileResponse = await fetch(`${baseUrl}/api/admin/usage-key-profiles`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-admin-token': 'test-token'
+            },
+            body: JSON.stringify({
+                apiKeyHash,
+                apiKeyPreview: 'sk-L...file',
+                group: 'local',
+                phone: '15951875192'
+            })
+        });
+        const profileBody = await profileResponse.json().catch(() => ({}));
+        assert.equal(profileResponse.status, 201);
+        assert.deepEqual(profileBody.profile, {
+            apiKeyHash,
+            apiKeyPreview: 'sk-L...file',
+            group: 'local',
+            phone: '15951875192'
+        });
+
+        const result = await jsonFetch(`${baseUrl}/api/admin/usage-summary?group=local`, {
+            headers: { 'x-admin-token': 'test-token' }
+        });
+        assert.equal(result.response.status, 200);
+        assert.equal(result.body.items.length, 1);
+        assert.equal(result.body.items[0].group, 'local');
+        assert.equal(result.body.items[0].phone, '15951875192');
+        assert.equal(result.body.items[0].api_key_preview, 'sk-L...file');
+        assert.equal(result.body.items[0].status, 'local');
+        assert.equal(result.body.items[0].total_tokens, 42);
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
 test('管理员可以从 CLIProxyAPI 月度 JSONL 手动导入 usage events', async () => {
     const logDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cliproxy-usage-log-'));
     try {
@@ -674,6 +726,7 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.match(html, /id="adminUsageSection"/);
     assert.match(html, /id="usageRefreshButton"/);
     assert.match(html, /id="usageGroupFilter"/);
+    assert.match(html, /<option value="local">Local<\/option>/);
     assert.match(html, /id="usageImportForm"/);
     assert.match(script, /function initAdminUsagePage/);
     assert.match(script, /api\/admin\/usage-summary/);
