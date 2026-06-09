@@ -52,6 +52,10 @@ function keyPreview(apiKey) {
     return `${apiKey.slice(0, 12)}...${apiKey.slice(-6)}`;
 }
 
+function hashApiKey(apiKey) {
+    return crypto.createHash('sha256').update(String(apiKey || '').trim()).digest('hex');
+}
+
 function parseCookies(cookieHeader) {
     return String(cookieHeader || '')
         .split(';')
@@ -71,6 +75,44 @@ function safeEqual(a, b) {
     const right = Buffer.from(String(b || ''));
     if (left.length !== right.length) return false;
     return crypto.timingSafeEqual(left, right);
+}
+
+function nonNegativeInteger(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number) || number < 0) return 0;
+    return Math.floor(number);
+}
+
+function normalizeUsageEvent(body = {}) {
+    const inputTokens = nonNegativeInteger(body.input_tokens);
+    const outputTokens = nonNegativeInteger(body.output_tokens);
+    const reasoningTokens = nonNegativeInteger(body.reasoning_tokens);
+    const cachedTokens = nonNegativeInteger(body.cached_tokens);
+    let totalTokens = nonNegativeInteger(body.total_tokens);
+    if (totalTokens === 0) {
+        totalTokens = inputTokens + outputTokens + reasoningTokens;
+    }
+    const failed = Boolean(body.failed);
+    const requestedAt = String(body.requested_at || '').trim();
+    return {
+        requestId: String(body.request_id || '').trim(),
+        apiKeyHash: String(body.api_key_hash || '').trim(),
+        apiKeyPreview: String(body.api_key_preview || '').trim(),
+        provider: String(body.provider || '').trim(),
+        model: String(body.model || '').trim() || 'unknown',
+        endpoint: String(body.endpoint || '').trim(),
+        source: String(body.source || '').trim(),
+        authIndex: String(body.auth_index || '').trim(),
+        success: body.success === undefined ? !failed : Boolean(body.success),
+        failed,
+        inputTokens,
+        outputTokens,
+        reasoningTokens,
+        cachedTokens,
+        totalTokens,
+        latencyMs: nonNegativeInteger(body.latency_ms),
+        requestedAt: requestedAt && !Number.isNaN(new Date(requestedAt).getTime()) ? requestedAt : nowIso()
+    };
 }
 
 function createRateLimiter({ windowMs, max, code, message }) {
@@ -158,6 +200,31 @@ DROP TABLE invite_codes;
 ALTER TABLE invite_codes_next RENAME TO invite_codes;
 `);
     }
+    const apiKeyColumns = db.prepare('PRAGMA table_info(api_keys)').all().map((column) => column.name);
+    if (!apiKeyColumns.includes('api_key_hash')) {
+        db.exec(`ALTER TABLE api_keys ADD COLUMN api_key_hash TEXT;`);
+    }
+    const missingHashRows = db.prepare(`
+SELECT api_key
+FROM api_keys
+WHERE api_key_hash IS NULL OR api_key_hash = ''
+`).all();
+    const updateApiKeyHash = db.prepare(`
+UPDATE api_keys
+SET api_key_hash = ?
+WHERE api_key = ?
+`);
+    const backfillApiKeyHashes = db.transaction((rows) => {
+        for (const row of rows) {
+            updateApiKeyHash.run(hashApiKey(row.api_key), row.api_key);
+        }
+    });
+    backfillApiKeyHashes(missingHashRows);
+    db.exec(`
+CREATE UNIQUE INDEX IF NOT EXISTS idx_api_keys_hash_unique
+ON api_keys(api_key_hash)
+WHERE api_key_hash IS NOT NULL;
+`);
     const orderColumns = db.prepare('PRAGMA table_info(orders)').all().map((column) => column.name);
     if (!orderColumns.includes('invite_code')) {
         db.exec(`ALTER TABLE orders ADD COLUMN invite_code TEXT;`);
@@ -169,6 +236,35 @@ ALTER TABLE invite_codes_next RENAME TO invite_codes;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_result_token_unique
 ON orders(result_token)
 WHERE result_token IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS usage_events (
+  request_id TEXT PRIMARY KEY,
+  api_key_hash TEXT NOT NULL,
+  api_key_preview TEXT NOT NULL,
+  provider TEXT NOT NULL DEFAULT '',
+  model TEXT NOT NULL DEFAULT 'unknown',
+  endpoint TEXT NOT NULL DEFAULT '',
+  source TEXT NOT NULL DEFAULT '',
+  auth_index TEXT NOT NULL DEFAULT '',
+  success INTEGER NOT NULL DEFAULT 1,
+  failed INTEGER NOT NULL DEFAULT 0,
+  input_tokens INTEGER NOT NULL DEFAULT 0,
+  output_tokens INTEGER NOT NULL DEFAULT 0,
+  reasoning_tokens INTEGER NOT NULL DEFAULT 0,
+  cached_tokens INTEGER NOT NULL DEFAULT 0,
+  total_tokens INTEGER NOT NULL DEFAULT 0,
+  latency_ms INTEGER NOT NULL DEFAULT 0,
+  requested_at TEXT NOT NULL,
+  received_at TEXT NOT NULL,
+  price_amount_micros INTEGER,
+  price_currency TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_usage_events_key_time
+ON usage_events(api_key_hash, requested_at);
+
+CREATE INDEX IF NOT EXISTS idx_usage_events_model_time
+ON usage_events(model, requested_at);
 `);
     return db;
 }
@@ -364,8 +460,8 @@ WHERE code = ?
 `);
 
     const insertApiKey = db.prepare(`
-INSERT INTO api_keys (api_key, api_key_preview, status, created_at)
-VALUES (?, ?, 'unused', ?)
+INSERT INTO api_keys (api_key, api_key_preview, api_key_hash, status, created_at)
+VALUES (?, ?, ?, 'unused', ?)
 `);
 
     const getApiKey = db.prepare(`
@@ -429,6 +525,36 @@ FROM orders
 WHERE api_key = ?
 `);
 
+    const insertUsageEvent = db.prepare(`
+INSERT OR IGNORE INTO usage_events (
+  request_id, api_key_hash, api_key_preview, provider, model, endpoint, source, auth_index,
+  success, failed, input_tokens, output_tokens, reasoning_tokens, cached_tokens, total_tokens,
+  latency_ms, requested_at, received_at
+)
+VALUES (
+  @requestId, @apiKeyHash, @apiKeyPreview, @provider, @model, @endpoint, @source, @authIndex,
+  @success, @failed, @inputTokens, @outputTokens, @reasoningTokens, @cachedTokens, @totalTokens,
+  @latencyMs, @requestedAt, @receivedAt
+)
+`);
+
+    const listUsageEvents = db.prepare(`
+SELECT request_id, api_key_hash, api_key_preview, provider, model, endpoint, source, auth_index,
+       success, failed, input_tokens, output_tokens, reasoning_tokens, cached_tokens, total_tokens,
+       latency_ms, requested_at, received_at
+FROM usage_events
+ORDER BY requested_at DESC
+`);
+
+    const listApiKeysForUsage = db.prepare(`
+SELECT ak.api_key_hash, ak.api_key_preview, ak.status AS key_status, ak.created_at, ak.used_at,
+       o.phone, o.redeemed_at, o.expires_at
+FROM api_keys ak
+LEFT JOIN orders o ON o.api_key = ak.api_key
+WHERE ak.api_key_hash IS NOT NULL AND ak.api_key_hash != ''
+ORDER BY ak.created_at DESC, ak.api_key_preview ASC
+`);
+
     const createInvites = db.transaction((count) => {
         const created = [];
         for (let index = 0; index < count; index += 1) {
@@ -458,7 +584,7 @@ WHERE api_key = ?
                 throw error;
             }
             const apiKeyPreview = keyPreview(apiKey);
-            insertApiKey.run(apiKey, apiKeyPreview, nowIso());
+            insertApiKey.run(apiKey, apiKeyPreview, hashApiKey(apiKey), nowIso());
             imported.push({ apiKeyPreview, status: 'unused' });
         }
         return imported;
@@ -523,7 +649,260 @@ WHERE api_key = ?
         return order;
     });
 
-    app.use(express.json());
+    function verifyUsageSignature(req) {
+        const secret = options.usageEventHmacSecret ?? process.env.USAGE_EVENT_HMAC_SECRET;
+        if (!secret) {
+            return { ok: false, status: 503, code: 'USAGE_EVENT_HMAC_NOT_CONFIGURED', message: '请先配置 USAGE_EVENT_HMAC_SECRET。' };
+        }
+        const timestamp = String(req.header('x-usage-timestamp') || '').trim();
+        const signature = String(req.header('x-usage-signature') || '').trim();
+        if (!timestamp || !signature) {
+            return { ok: false, status: 401, code: 'USAGE_EVENT_SIGNATURE_REQUIRED', message: '缺少 usage event 签名。' };
+        }
+        const timestampSeconds = Number(timestamp);
+        if (!Number.isFinite(timestampSeconds)) {
+            return { ok: false, status: 401, code: 'USAGE_EVENT_TIMESTAMP_INVALID', message: 'usage event timestamp 无效。' };
+        }
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        if (Math.abs(nowSeconds - timestampSeconds) > 300) {
+            return { ok: false, status: 401, code: 'USAGE_EVENT_TIMESTAMP_EXPIRED', message: 'usage event timestamp 已过期。' };
+        }
+        const rawBody = req.rawBody || Buffer.from('');
+        const expected = crypto.createHmac('sha256', secret).update(`${timestamp}\n`).update(rawBody).digest('hex');
+        if (!safeEqual(signature, expected)) {
+            return { ok: false, status: 401, code: 'USAGE_EVENT_SIGNATURE_INVALID', message: 'usage event 签名无效。' };
+        }
+        return { ok: true };
+    }
+
+    function storeUsageEvent(body) {
+        const event = normalizeUsageEvent(body);
+        if (!event.requestId) {
+            const error = new Error('缺少 request_id。');
+            error.status = 400;
+            error.code = 'INVALID_USAGE_EVENT';
+            throw error;
+        }
+        if (!event.apiKeyHash) {
+            const error = new Error('缺少 api_key_hash。');
+            error.status = 400;
+            error.code = 'INVALID_USAGE_EVENT';
+            throw error;
+        }
+        event.receivedAt = nowIso();
+        event.success = event.success ? 1 : 0;
+        event.failed = event.failed ? 1 : 0;
+        const result = insertUsageEvent.run(event);
+        return result.changes > 0 ? { inserted: 1, skipped: 0 } : { inserted: 0, skipped: 1 };
+    }
+
+    function emptyUsageStats() {
+        return {
+            today_tokens: 0,
+            month_tokens: 0,
+            total_tokens: 0,
+            today_requests: 0,
+            month_requests: 0,
+            success_requests: 0,
+            failed_requests: 0,
+            total_requests: 0,
+            last_seen_at: '',
+            modelsByName: new Map()
+        };
+    }
+
+    function addUsageStats(stats, row, ranges) {
+        const requestedAt = new Date(row.requested_at);
+        const isToday = requestedAt >= ranges.todayStart;
+        const isMonth = requestedAt >= ranges.monthStart;
+        const totalTokens = nonNegativeInteger(row.total_tokens);
+        stats.total_tokens += totalTokens;
+        stats.total_requests += 1;
+        if (isToday) {
+            stats.today_tokens += totalTokens;
+            stats.today_requests += 1;
+        }
+        if (isMonth) {
+            stats.month_tokens += totalTokens;
+            stats.month_requests += 1;
+        }
+        if (row.failed) {
+            stats.failed_requests += 1;
+        } else {
+            stats.success_requests += 1;
+        }
+        if (!stats.last_seen_at || new Date(stats.last_seen_at) < requestedAt) {
+            stats.last_seen_at = row.requested_at;
+        }
+
+        const model = row.model || 'unknown';
+        const modelStats = stats.modelsByName.get(model) || {
+            model,
+            month_tokens: 0,
+            total_tokens: 0,
+            total_requests: 0
+        };
+        modelStats.total_tokens += totalTokens;
+        modelStats.total_requests += 1;
+        if (isMonth) {
+            modelStats.month_tokens += totalTokens;
+        }
+        stats.modelsByName.set(model, modelStats);
+    }
+
+    function usageStatsToPublic(stats) {
+        return {
+            today_tokens: stats.today_tokens,
+            month_tokens: stats.month_tokens,
+            total_tokens: stats.total_tokens,
+            today_requests: stats.today_requests,
+            month_requests: stats.month_requests,
+            success_requests: stats.success_requests,
+            failed_requests: stats.failed_requests,
+            total_requests: stats.total_requests,
+            last_seen_at: stats.last_seen_at,
+            models: Array.from(stats.modelsByName.values()).sort((left, right) => right.total_tokens - left.total_tokens)
+        };
+    }
+
+    function getUsageStatus(row) {
+        if (!row) return 'unmanaged';
+        if (row.key_status === 'disabled') return 'disabled';
+        if (!row.phone) return row.key_status || 'unused';
+        return new Date(row.expires_at).getTime() > Date.now() ? 'active' : 'expired';
+    }
+
+    function buildUsageSummary(filters = {}) {
+        const now = new Date();
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const ranges = { todayStart, monthStart };
+        const statsByHash = new Map();
+        const summaryStats = emptyUsageStats();
+
+        for (const row of listUsageEvents.all()) {
+            const hash = row.api_key_hash;
+            if (!statsByHash.has(hash)) {
+                statsByHash.set(hash, emptyUsageStats());
+            }
+            addUsageStats(statsByHash.get(hash), row, ranges);
+            addUsageStats(summaryStats, row, ranges);
+        }
+
+        const items = [];
+        const seenHashes = new Set();
+        for (const row of listApiKeysForUsage.all()) {
+            seenHashes.add(row.api_key_hash);
+            const stats = statsByHash.get(row.api_key_hash) || emptyUsageStats();
+            const status = getUsageStatus(row);
+            items.push({
+                group: 'shop',
+                phone: row.phone || '',
+                api_key_preview: row.api_key_preview || '',
+                status,
+                redeemed_at: row.redeemed_at || '',
+                expires_at: row.expires_at || '',
+                ...usageStatsToPublic(stats)
+            });
+        }
+        for (const row of listUsageEvents.all()) {
+            if (seenHashes.has(row.api_key_hash)) continue;
+            seenHashes.add(row.api_key_hash);
+            const stats = statsByHash.get(row.api_key_hash) || emptyUsageStats();
+            items.push({
+                group: 'unmanaged',
+                phone: '',
+                api_key_preview: row.api_key_preview || '',
+                status: 'unmanaged',
+                redeemed_at: '',
+                expires_at: '',
+                ...usageStatsToPublic(stats)
+            });
+        }
+
+        const group = String(filters.group || 'all');
+        const status = String(filters.status || 'all');
+        const q = String(filters.q || '').trim().toLowerCase();
+        const filteredItems = items
+            .filter((item) => group === 'all' || item.group === group)
+            .filter((item) => status === 'all' || item.status === status)
+            .filter((item) => {
+                if (!q) return true;
+                return [item.phone, item.api_key_preview, item.status, item.group].some((value) => String(value || '').toLowerCase().includes(q));
+            })
+            .sort((left, right) => {
+                if (right.total_tokens !== left.total_tokens) return right.total_tokens - left.total_tokens;
+                return String(right.last_seen_at || '').localeCompare(String(left.last_seen_at || ''));
+            });
+
+        return {
+            summary: {
+                today_tokens: summaryStats.today_tokens,
+                month_tokens: summaryStats.month_tokens,
+                total_tokens: summaryStats.total_tokens,
+                today_requests: summaryStats.today_requests,
+                month_requests: summaryStats.month_requests,
+                total_requests: summaryStats.total_requests,
+                failed_requests: summaryStats.failed_requests
+            },
+            items: filteredItems
+        };
+    }
+
+    function importUsageEvents(month) {
+        const normalizedMonth = String(month || '').trim();
+        if (!/^\d{4}-\d{2}$/.test(normalizedMonth)) {
+            const error = new Error('月份格式必须是 YYYY-MM。');
+            error.status = 400;
+            error.code = 'INVALID_USAGE_IMPORT_MONTH';
+            throw error;
+        }
+        const configuredDir = options.cliproxyUsageLogDir ?? process.env.CLIPROXY_USAGE_LOG_DIR;
+        if (!configuredDir) {
+            const error = new Error('请先配置 CLIPROXY_USAGE_LOG_DIR。');
+            error.status = 503;
+            error.code = 'USAGE_LOG_DIR_NOT_CONFIGURED';
+            throw error;
+        }
+        const baseDir = path.resolve(configuredDir);
+        const filePath = path.resolve(baseDir, `usage-events-${normalizedMonth}.jsonl`);
+        const relativePath = path.relative(baseDir, filePath);
+        if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+            const error = new Error('usage log 路径无效。');
+            error.status = 400;
+            error.code = 'INVALID_USAGE_IMPORT_PATH';
+            throw error;
+        }
+        if (!fs.existsSync(filePath)) {
+            const error = new Error('没有找到该月份的 usage JSONL。');
+            error.status = 404;
+            error.code = 'USAGE_IMPORT_FILE_NOT_FOUND';
+            throw error;
+        }
+
+        const result = { month: normalizedMonth, inserted: 0, skipped: 0, failed_lines: 0 };
+        const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/);
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            try {
+                const parsed = JSON.parse(trimmed);
+                const stored = storeUsageEvent(parsed);
+                result.inserted += stored.inserted;
+                result.skipped += stored.skipped;
+            } catch (error) {
+                result.failed_lines += 1;
+            }
+        }
+        return result;
+    }
+
+    app.use(express.json({
+        verify: (req, res, buffer) => {
+            req.rawBody = Buffer.from(buffer);
+        }
+    }));
     app.use(express.urlencoded({ extended: false }));
     app.use(setSecurityHeaders);
 
@@ -557,6 +936,21 @@ WHERE api_key = ?
     app.get('/api/admin/invites', limitAdminApi, requireAdmin, (req, res) => {
         const invites = listInvites.all().map((row) => publicInvite(toInvite(row)));
         return res.json({ invites });
+    });
+
+    app.get('/api/admin/usage-summary', limitAdminApi, requireAdmin, (req, res) => {
+        return res.json(buildUsageSummary(req.query));
+    });
+
+    app.post('/api/admin/usage-imports', limitAdminApi, requireAdmin, (req, res) => {
+        try {
+            return res.json(importUsageEvents(req.body.month));
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'USAGE_IMPORT_FAILED',
+                message: error.message || 'usage event 导入失败。'
+            });
+        }
     });
 
     app.post('/api/invites/redeem', limitRedeemApi, (req, res) => {
@@ -653,6 +1047,25 @@ WHERE api_key = ?
             status: active ? 'active' : 'expired',
             expiresAt: order.expiresAt
         });
+    });
+
+    app.post('/api/internal/usage-events', requireInternal, (req, res) => {
+        const signatureResult = verifyUsageSignature(req);
+        if (!signatureResult.ok) {
+            return res.status(signatureResult.status).json({
+                code: signatureResult.code,
+                message: signatureResult.message
+            });
+        }
+        try {
+            const result = storeUsageEvent(req.body);
+            return res.status(result.inserted ? 201 : 200).json(result);
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'USAGE_EVENT_STORE_FAILED',
+                message: error.message || 'usage event 写入失败。'
+            });
+        }
     });
 
     app.get(['/shop/redeem', '/shop/redeem/', '/shop/redeem/index.html'], (req, res, next) => {

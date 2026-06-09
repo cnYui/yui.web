@@ -1,10 +1,40 @@
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 
 const { createShopApp } = require('../server');
+
+function hashApiKeyForTest(apiKey) {
+    return crypto.createHash('sha256').update(String(apiKey || '').trim()).digest('hex');
+}
+
+function signUsagePayload(secret, timestamp, body) {
+    return crypto.createHmac('sha256', secret).update(`${timestamp}\n`).update(body).digest('hex');
+}
+
+async function usageEventFetch(baseUrl, event, options = {}) {
+    const timestamp = options.timestamp || String(Math.floor(Date.now() / 1000));
+    const body = JSON.stringify(event);
+    const secret = options.secret ?? 'usage-hmac-secret';
+    const headers = { ...(options.headers || {}) };
+    if (options.includeToken !== false) {
+        headers['x-internal-token'] = options.token || 'internal-test-token';
+    }
+    if (options.includeTimestamp !== false) {
+        headers['x-usage-timestamp'] = timestamp;
+    }
+    if (options.includeSignature !== false) {
+        headers['x-usage-signature'] = options.signature || signUsagePayload(secret, timestamp, body);
+    }
+    return jsonFetch(`${baseUrl}/api/internal/usage-events`, {
+        method: 'POST',
+        headers,
+        body
+    });
+}
 
 async function withServer(run, appOptions = {}) {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yui-shop-test-'));
@@ -99,6 +129,210 @@ test('用户用手机号和邀请码兑换后，从未使用 API key 池分配�
         assert.equal(queryResult.body.orders.length, 1);
         assert.equal(queryResult.body.orders[0].apiKey, 'sk-test-a');
     });
+});
+
+test('Shop 数据库包含 API key hash 和 usage_events 账本表', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const seedKeys = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ apiKeys: ['sk-hash-schema'] })
+        });
+        assert.equal(seedKeys.response.status, 201);
+
+        const apiKeyColumns = db.prepare('PRAGMA table_info(api_keys)').all().map((column) => column.name);
+        assert.ok(apiKeyColumns.includes('api_key_hash'));
+
+        const usageEvents = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'usage_events'").get();
+        assert.deepEqual(usageEvents, { name: 'usage_events' });
+
+        const row = db.prepare('SELECT api_key_hash FROM api_keys WHERE api_key = ?').get('sk-hash-schema');
+        assert.equal(row.api_key_hash, hashApiKeyForTest('sk-hash-schema'));
+    });
+});
+
+test('内部 usage event 接口校验 token、HMAC、timestamp 并幂等写入', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const event = {
+            version: 1,
+            request_id: 'req-usage-internal',
+            api_key_hash: hashApiKeyForTest('sk-usage-internal'),
+            api_key_preview: 'sk-u...rnal',
+            provider: 'codex',
+            model: 'gpt-5.4',
+            endpoint: '/v1/responses',
+            source: 'account@example.com',
+            auth_index: '0',
+            success: true,
+            failed: false,
+            input_tokens: 10,
+            output_tokens: 20,
+            reasoning_tokens: 3,
+            cached_tokens: 4,
+            total_tokens: 33,
+            latency_ms: 1200,
+            requested_at: '2026-06-09T12:00:00Z'
+        };
+
+        const missingToken = await usageEventFetch(baseUrl, event, { includeToken: false });
+        assert.equal(missingToken.response.status, 401);
+
+        const missingSignature = await usageEventFetch(baseUrl, event, { includeSignature: false });
+        assert.equal(missingSignature.response.status, 401);
+
+        const oldTimestamp = String(Math.floor(Date.now() / 1000) - 600);
+        const expired = await usageEventFetch(baseUrl, event, { timestamp: oldTimestamp });
+        assert.equal(expired.response.status, 401);
+
+        const badSignature = await usageEventFetch(baseUrl, event, { signature: 'bad-signature' });
+        assert.equal(badSignature.response.status, 401);
+
+        const inserted = await usageEventFetch(baseUrl, event);
+        assert.equal(inserted.response.status, 201);
+        assert.deepEqual(inserted.body, { inserted: 1, skipped: 0 });
+
+        const duplicate = await usageEventFetch(baseUrl, event);
+        assert.equal(duplicate.response.status, 200);
+        assert.deepEqual(duplicate.body, { inserted: 0, skipped: 1 });
+
+        const row = db.prepare('SELECT request_id, api_key_hash, total_tokens, failed FROM usage_events WHERE request_id = ?').get(event.request_id);
+        assert.deepEqual(row, {
+            request_id: 'req-usage-internal',
+            api_key_hash: event.api_key_hash,
+            total_tokens: 33,
+            failed: 0
+        });
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
+test('管理员 usage summary 返回 Shop 和未托管 key 的聚合用量', async () => {
+    await withServer(async ({ baseUrl }) => {
+        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ apiKeys: ['sk-summary-shop'] })
+        });
+        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ count: 1 })
+        });
+        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138500', code: inviteResult.body.invites[0].code })
+        });
+
+        const requestedAt = new Date().toISOString();
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-summary-shop',
+            api_key_hash: hashApiKeyForTest('sk-summary-shop'),
+            api_key_preview: 'sk-s...shop',
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 5,
+            output_tokens: 10,
+            total_tokens: 15,
+            requested_at: requestedAt
+        });
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-summary-unmanaged',
+            api_key_hash: hashApiKeyForTest('sk-LOCAL-summary'),
+            api_key_preview: 'sk-L...mary',
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: false,
+            failed: true,
+            total_tokens: 7,
+            requested_at: requestedAt
+        });
+
+        const missingToken = await jsonFetch(`${baseUrl}/api/admin/usage-summary`);
+        assert.equal(missingToken.response.status, 401);
+
+        const result = await jsonFetch(`${baseUrl}/api/admin/usage-summary`, {
+            headers: { 'x-admin-token': 'test-token' }
+        });
+        assert.equal(result.response.status, 200);
+        assert.equal(result.body.summary.total_tokens, 22);
+        assert.equal(result.body.summary.month_tokens, 22);
+        assert.equal(result.body.summary.failed_requests, 1);
+
+        const shopItem = result.body.items.find((item) => item.group === 'shop' && item.phone === '13800138500');
+        assert.ok(shopItem);
+        assert.equal(shopItem.api_key_preview, 'sk-summary-s...y-shop');
+        assert.equal(shopItem.status, 'active');
+        assert.equal(shopItem.total_tokens, 15);
+        assert.equal(shopItem.success_requests, 1);
+        assert.equal(shopItem.failed_requests, 0);
+        assert.equal(shopItem.models[0].model, 'gpt-5.4');
+        assert.equal(shopItem.models[0].total_tokens, 15);
+
+        const unmanaged = result.body.items.find((item) => item.group === 'unmanaged');
+        assert.ok(unmanaged);
+        assert.equal(unmanaged.phone, '');
+        assert.equal(unmanaged.api_key_preview, 'sk-L...mary');
+        assert.equal(unmanaged.total_tokens, 7);
+        assert.equal(unmanaged.failed_requests, 1);
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
+test('管理员可以从 CLIProxyAPI 月度 JSONL 手动导入 usage events', async () => {
+    const logDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cliproxy-usage-log-'));
+    try {
+        const month = '2026-06';
+        const event = {
+            version: 1,
+            request_id: 'req-import-jsonl',
+            api_key_hash: hashApiKeyForTest('sk-import-jsonl'),
+            api_key_preview: 'sk-i...jsonl',
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 2,
+            output_tokens: 3,
+            total_tokens: 5,
+            requested_at: '2026-06-09T12:00:00Z'
+        };
+        fs.writeFileSync(
+            path.join(logDir, 'usage-events-2026-06.jsonl'),
+            `${JSON.stringify(event)}\n{bad json\n`
+        );
+
+        await withServer(async ({ baseUrl, db }) => {
+            const invalidMonth = await jsonFetch(`${baseUrl}/api/admin/usage-imports`, {
+                method: 'POST',
+                headers: { 'x-admin-token': 'test-token' },
+                body: JSON.stringify({ month: '../2026-06' })
+            });
+            assert.equal(invalidMonth.response.status, 400);
+
+            const first = await jsonFetch(`${baseUrl}/api/admin/usage-imports`, {
+                method: 'POST',
+                headers: { 'x-admin-token': 'test-token' },
+                body: JSON.stringify({ month })
+            });
+            assert.equal(first.response.status, 200);
+            assert.deepEqual(first.body, { month, inserted: 1, skipped: 0, failed_lines: 1 });
+
+            const second = await jsonFetch(`${baseUrl}/api/admin/usage-imports`, {
+                method: 'POST',
+                headers: { 'x-admin-token': 'test-token' },
+                body: JSON.stringify({ month })
+            });
+            assert.equal(second.response.status, 200);
+            assert.deepEqual(second.body, { month, inserted: 0, skipped: 1, failed_lines: 1 });
+
+            const row = db.prepare('SELECT request_id, total_tokens FROM usage_events WHERE request_id = ?').get(event.request_id);
+            assert.deepEqual(row, { request_id: event.request_id, total_tokens: 5 });
+        }, { cliproxyUsageLogDir: logDir });
+    } finally {
+        fs.rmSync(logDir, { recursive: true, force: true });
+    }
 });
 
 test('新兑换订单的兑换时间和到期时间使用中国东八区格式存储', async () => {
@@ -431,6 +665,20 @@ test('后台生成邀请码页面不渲染已经拆分的 API key 字段', () =>
     assert.match(html, /未使用的 API key 库存/);
     assert.doesNotMatch(html, /对应 API key/);
     assert.doesNotMatch(script, /invite\.apiKey/);
+});
+
+test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+
+    assert.match(html, /id="adminUsageSection"/);
+    assert.match(html, /id="usageRefreshButton"/);
+    assert.match(html, /id="usageGroupFilter"/);
+    assert.match(html, /id="usageImportForm"/);
+    assert.match(script, /function initAdminUsagePage/);
+    assert.match(script, /api\/admin\/usage-summary/);
+    assert.match(script, /api\/admin\/usage-imports/);
+    assert.doesNotMatch(html, /完整 API key/);
 });
 
 test('内部 API key 状态接口必须使用请求头 token', async () => {
