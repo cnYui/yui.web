@@ -478,17 +478,9 @@
     async function initAccountLinks() {
         const links = Array.from(document.querySelectorAll('[data-account-link]'));
         if (!links.length) return;
-        try {
-            const data = await requestJson('/api/account/me');
-            for (const link of links) {
-                link.href = data.user?.isAdmin ? '/shop/admin/' : '/shop/account/';
-                link.textContent = data.user?.isAdmin ? '管理控制台' : '我的账户';
-            }
-        } catch (error) {
-            for (const link of links) {
-                link.href = '/shop/login/';
-                link.textContent = '登录';
-            }
+        for (const link of links) {
+            link.href = '/shop/login/';
+            link.textContent = '登录';
         }
     }
 

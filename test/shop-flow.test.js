@@ -1114,7 +1114,7 @@ test('只有唯一管理员手机号登录后才能访问 Shop 管理员控制�
     });
 });
 
-test('管理员手机号登录后进入控制台，普通用户登录后进入个人中心', async () => {
+test('管理员手机号登录接口返回管理员身份，普通用户登录接口返回普通身份', async () => {
     await withServer(async ({ baseUrl, db }) => {
         seedAdminUserForTest(db);
         const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
@@ -1123,14 +1123,6 @@ test('管理员手机号登录后进入控制台，普通用户登录后进入�
         });
         assert.equal(adminLogin.response.status, 200);
         assert.equal(adminLogin.body.user.isAdmin, true);
-
-        const adminLoginCookie = adminLogin.response.headers.get('set-cookie') || '';
-        const adminLoginPage = await fetch(`${baseUrl}/shop/login/`, {
-            redirect: 'manual',
-            headers: { cookie: adminLoginCookie }
-        });
-        assert.equal(adminLoginPage.status, 302);
-        assert.equal(adminLoginPage.headers.get('location'), '/shop/admin/');
 
         const userRegister = await jsonFetch(`${baseUrl}/api/auth/register`, {
             method: 'POST',
@@ -1148,14 +1140,44 @@ test('管理员手机号登录后进入控制台，普通用户登录后进入�
         });
         assert.equal(userLogin.response.status, 200);
         assert.equal(userLogin.body.user.isAdmin, false);
+    });
+});
 
-        const userLoginCookie = userLogin.response.headers.get('set-cookie') || '';
-        const userLoginPage = await fetch(`${baseUrl}/shop/login/`, {
-            redirect: 'manual',
-            headers: { cookie: userLoginCookie }
+test('已登录管理员访问登录页仍看到登录表单', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+        const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
         });
-        assert.equal(userLoginPage.status, 302);
-        assert.equal(userLoginPage.headers.get('location'), '/shop/account/');
+        assert.equal(adminLogin.response.status, 200);
+        const cookie = adminLogin.response.headers.get('set-cookie') || '';
+
+        const loginPage = await fetch(`${baseUrl}/shop/login/`, {
+            redirect: 'manual',
+            headers: { cookie }
+        });
+        assert.equal(loginPage.status, 200);
+        assert.match(await loginPage.text(), /id="loginForm"/);
+    });
+});
+
+test('已登录管理员访问注册页仍看到注册表单', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+        const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
+        });
+        assert.equal(adminLogin.response.status, 200);
+        const cookie = adminLogin.response.headers.get('set-cookie') || '';
+
+        const registerPage = await fetch(`${baseUrl}/shop/register/`, {
+            redirect: 'manual',
+            headers: { cookie }
+        });
+        assert.equal(registerPage.status, 200);
+        assert.match(await registerPage.text(), /id="registerForm"/);
     });
 });
 
@@ -1178,7 +1200,7 @@ test('无效过期时间的账号 session 会被拒绝', async () => {
     });
 });
 
-test('Shop 首页顶部不显示账号入口且正文只保留一个登录入口', () => {
+test('Shop 首页顶部不显示账号入口且正文只保留固定登录入口', () => {
     const home = fs.readFileSync(path.join(__dirname, '..', 'shop/index.html'), 'utf8');
     const login = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');
     const register = fs.readFileSync(path.join(__dirname, '..', 'shop/register/index.html'), 'utf8');
@@ -1187,9 +1209,10 @@ test('Shop 首页顶部不显示账号入口且正文只保留一个登录入口
     const accountLinkCount = (home.match(/data-account-link/g) || []).length;
 
     assert.match(home, /href="\/shop\/login\/"/);
-    assert.equal(accountLinkCount, 1);
+    assert.equal(accountLinkCount, 0);
     assert.doesNotMatch(header, /data-account-link/);
-    assert.match(home, /<main[\s\S]*data-account-link[\s\S]*href="\/shop\/login\/"/);
+    assert.match(home, /<main[\s\S]*href="\/shop\/login\/"[\s\S]*>登录<\/a>/);
+    assert.doesNotMatch(home, /管理控制台/);
     assert.match(login, /id="loginForm"/);
     assert.match(login, /管理员账号登录后进入控制台/);
     assert.match(register, /id="registerForm"/);
