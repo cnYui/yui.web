@@ -1197,3 +1197,13 @@ test('Shop 首页顶部不显示账号入口且正文只保留一个登录入口
     assert.match(account, /id="logoutButton"/);
     assert.match(account, /window\.YuiShop\.initAccountPage/);
 });
+
+
+test('公共顶部导航支持 Shop 的中英日翻译', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'js/lang.js'), 'utf8');
+
+    assert.match(script, /shop:\s*'商店'/);
+    assert.match(script, /shop:\s*'Shop'/);
+    assert.match(script, /shop:\s*'ショップ'/);
+    assert.match(script, /href\.includes\('\/shop'\)[\s\S]*data\.nav\.shop/);
+});
