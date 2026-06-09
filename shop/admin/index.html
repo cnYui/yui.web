@@ -13,28 +13,25 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <script src="/js/theme.js"></script>
     <script src="/js/lang.js?v=20260419-2"></script>
-    <script src="/shop/shop.js?v=20260531-0823"></script>
+    <script src="/shop/shop.js?v=20260609-admin-session"></script>
 </head>
 <body class="bg-white dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col antialiased transition-colors duration-300">
     <header class="sticky top-0 z-50 w-full border-b border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
         <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
             <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
-            <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/shop/">Shop</a>
+            <div class="flex items-center gap-5">
+                <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/shop/">Shop</a>
+                <button id="logoutButton" class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button">退出登录</button>
+            </div>
         </div>
     </header>
     <main class="flex-1 max-w-[1100px] mx-auto px-6 md:px-12 py-14 md:py-20 w-full">
         <section>
             <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Admin</p>
-            <h1 class="mt-4 font-display text-4xl md:text-6xl">生成邀请码</h1>
-            <p class="mt-5 text-text-muted dark:text-dark-text-muted leading-relaxed">输入 `.env` 中配置的管理员 token，生成邀请码。用户兑换时会从未使用的 API key 库存中分配一个 key。</p>
+            <h1 class="mt-4 font-display text-4xl md:text-6xl">管理员控制台</h1>
+            <p class="mt-5 text-text-muted dark:text-dark-text-muted leading-relaxed">管理员账号登录后查看全局 API key 用量。其他账号无法进入该页面。</p>
         </section>
-        <form id="adminInviteForm" class="mt-8 grid gap-4 rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-6 md:grid-cols-[1fr_8rem_auto]">
-            <input id="adminTokenInput" class="h-12 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="password" placeholder="ADMIN_TOKEN"/>
-            <input id="inviteCountInput" class="h-12 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="number" min="1" max="50" value="1"/>
-            <button class="btn-primary" type="submit">生成</button>
-        </form>
-        <section id="adminResult" class="mt-8"></section>
-        <section id="adminUsageSection" class="mt-12 border-t border-border-subtle dark:border-dark-border pt-10">
+        <section id="adminUsageSection" class="mt-10 border-t border-border-subtle dark:border-dark-border pt-10">
             <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                 <div>
                     <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Usage</p>
@@ -68,6 +65,7 @@
             <div>
                 <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Import</p>
                 <h2 class="mt-3 font-display text-3xl md:text-4xl">日志导入</h2>
+                <p class="mt-3 text-sm text-text-muted dark:text-dark-text-muted leading-relaxed">读取 yui.web `.env` 中 `CLIPROXY_USAGE_LOG_DIR` 指向的 CLIProxyAPI 本地目录，例如 `/Users/wujianxiang/CodeSpace/CLIProxyAPI/logs/usage/usage-events-YYYY-MM.jsonl`。它用于实时同步漏掉或重启期间的 usage event 补账。</p>
             </div>
             <form id="usageImportForm" class="mt-6 grid gap-3 rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5 md:grid-cols-[12rem_auto]">
                 <input id="usageImportMonth" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="month"/>

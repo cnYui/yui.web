@@ -17,6 +17,7 @@ const passwordScryptR = 8;
 const passwordScryptP = 1;
 const rateLimitBuckets = new Map();
 const chinaOffsetMs = 8 * 60 * 60 * 1000;
+const defaultAdminAccountPhone = '15951875192';
 
 function toChinaIso(date = new Date()) {
     const value = new Date(date);
@@ -380,6 +381,7 @@ function createShopApp(options = {}) {
         name: options.productName || process.env.PRODUCT_NAME || 'Codex 每月额度',
         amount: Number(options.productAmount || process.env.PRODUCT_AMOUNT_CNY || 30)
     };
+    const adminAccountPhone = String(options.adminAccountPhone ?? process.env.SHOP_ADMIN_PHONE ?? defaultAdminAccountPhone).trim();
 
     function toOrder(row) {
         return {
@@ -445,19 +447,60 @@ function createShopApp(options = {}) {
         };
     }
 
-    function requireAdmin(req, res, next) {
+    function isAdminAccountPhone(phone) {
+        return Boolean(adminAccountPhone && String(phone || '').trim() === adminAccountPhone);
+    }
+
+    function publicUser(phone) {
+        return {
+            phone,
+            isAdmin: isAdminAccountPhone(phone)
+        };
+    }
+
+    function accountDestination(phone) {
+        return isAdminAccountPhone(phone) ? '/shop/admin/' : '/shop/account/';
+    }
+
+    function requireAdminToken(req, res, next) {
         const expected = options.adminToken ?? process.env.ADMIN_TOKEN;
         const actual = req.header('x-admin-token');
         if (!expected) {
             return res.status(503).json({
                 code: 'ADMIN_TOKEN_NOT_CONFIGURED',
-                message: '请先在 .env 中配置 ADMIN_TOKEN，再生成邀请码。'
+                message: '请先在 .env 中配置 ADMIN_TOKEN。'
             });
         }
-        if (actual !== expected) {
+        if (!actual || !safeEqual(actual, expected)) {
             return res.status(401).json({ code: 'UNAUTHORIZED', message: '管理员 token 无效。' });
         }
         return next();
+    }
+
+    function requireAdminUsageAccess(req, res, next) {
+        const actual = req.header('x-admin-token');
+        if (actual) {
+            return requireAdminToken(req, res, next);
+        }
+        const session = getCurrentAccountSession(req);
+        if (session && isAdminAccountPhone(session.phone)) {
+            req.account = { phone: session.phone };
+            return next();
+        }
+        if (session) {
+            return res.status(403).json({
+                code: 'ADMIN_ACCOUNT_REQUIRED',
+                message: '当前账号没有管理员权限。'
+            });
+        }
+        const expected = options.adminToken ?? process.env.ADMIN_TOKEN;
+        if (!expected) {
+            return res.status(503).json({
+                code: 'ADMIN_TOKEN_NOT_CONFIGURED',
+                message: '请先在 .env 中配置 ADMIN_TOKEN。'
+            });
+        }
+        return res.status(401).json({ code: 'UNAUTHORIZED', message: '请先登录管理员账号或提供管理员 token。' });
     }
 
     function requireInternal(req, res, next) {
@@ -909,9 +952,22 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     }
 
     function redirectLoggedInAccount(req, res, next) {
-        if (getCurrentAccountSession(req)) {
-            return res.redirect(302, '/shop/account/');
+        const session = getCurrentAccountSession(req);
+        if (session) {
+            return res.redirect(302, accountDestination(session.phone));
         }
+        return next();
+    }
+
+    function requireAdminPage(req, res, next) {
+        const session = getCurrentAccountSession(req);
+        if (!session) {
+            return res.redirect(302, '/shop/login/');
+        }
+        if (!isAdminAccountPhone(session.phone)) {
+            return res.status(403).send('当前账号没有管理员权限。');
+        }
+        req.account = { phone: session.phone };
         return next();
     }
 
@@ -1226,12 +1282,18 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         if (password !== confirmPassword) {
             return res.status(400).json({ code: 'PASSWORD_MISMATCH', message: '两次输入的密码不一致。' });
         }
+        if (isAdminAccountPhone(phone)) {
+            return res.status(403).json({
+                code: 'ADMIN_ACCOUNT_REGISTRATION_DISABLED',
+                message: '管理员账号不能通过公开注册创建。'
+            });
+        }
 
         try {
             const user = registerUser({ phone, password });
             const token = createAccountSessionForPhone(user.phone);
             res.cookie(accountCookieName, token, accountCookieOptions(req));
-            return res.status(201).json({ user });
+            return res.status(201).json({ user: publicUser(user.phone) });
         } catch (error) {
             return res.status(error.status || 500).json({
                 code: error.code || 'REGISTER_FAILED',
@@ -1251,7 +1313,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             const user = loginUser({ phone, password });
             const token = createAccountSessionForPhone(user.phone);
             res.cookie(accountCookieName, token, accountCookieOptions(req));
-            return res.json({ user });
+            return res.json({ user: publicUser(user.phone) });
         } catch (error) {
             return res.status(error.status || 500).json({
                 code: error.code || 'LOGIN_FAILED',
@@ -1274,18 +1336,18 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             .map(toOrder)
             .map((order) => publicOrder(order, { includeApiKey: false }));
         return res.json({
-            user: { phone: req.account.phone },
+            user: publicUser(req.account.phone),
             orders
         });
     });
 
-    app.post('/api/admin/invites', limitAdminApi, requireAdmin, (req, res) => {
+    app.post('/api/admin/invites', limitAdminApi, requireAdminToken, (req, res) => {
         const count = Math.min(Math.max(Number(req.body.count || 1), 1), 50);
         const invites = createInvites(count);
         return res.status(201).json({ invites });
     });
 
-    app.post('/api/admin/api-keys', limitAdminApi, requireAdmin, (req, res) => {
+    app.post('/api/admin/api-keys', limitAdminApi, requireAdminToken, (req, res) => {
         const apiKeys = Array.isArray(req.body.apiKeys)
             ? req.body.apiKeys.map((apiKey) => String(apiKey || '').trim()).filter(Boolean)
             : [];
@@ -1306,16 +1368,16 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
-    app.get('/api/admin/invites', limitAdminApi, requireAdmin, (req, res) => {
+    app.get('/api/admin/invites', limitAdminApi, requireAdminToken, (req, res) => {
         const invites = listInvites.all().map((row) => publicInvite(toInvite(row)));
         return res.json({ invites });
     });
 
-    app.get('/api/admin/usage-summary', limitAdminApi, requireAdmin, (req, res) => {
+    app.get('/api/admin/usage-summary', limitAdminApi, requireAdminUsageAccess, (req, res) => {
         return res.json(buildUsageSummary(req.query));
     });
 
-    app.post('/api/admin/usage-key-profiles', limitAdminApi, requireAdmin, (req, res) => {
+    app.post('/api/admin/usage-key-profiles', limitAdminApi, requireAdminUsageAccess, (req, res) => {
         try {
             const profile = saveUsageKeyProfile(req.body);
             return res.status(201).json({ profile: publicUsageKeyProfile(profile) });
@@ -1327,7 +1389,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
-    app.post('/api/admin/usage-imports', limitAdminApi, requireAdmin, (req, res) => {
+    app.post('/api/admin/usage-imports', limitAdminApi, requireAdminUsageAccess, (req, res) => {
         try {
             return res.json(importUsageEvents(req.body.month));
         } catch (error) {
@@ -1462,6 +1524,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     app.get(['/shop/login', '/shop/login/', '/shop/login/index.html'], redirectLoggedInAccount, (req, res, next) => next());
     app.get(['/shop/register', '/shop/register/', '/shop/register/index.html'], redirectLoggedInAccount, (req, res, next) => next());
     app.get(['/shop/account', '/shop/account/', '/shop/account/index.html'], requireAccountPage, (req, res, next) => next());
+    app.get(['/shop/admin', '/shop/admin/', '/shop/admin/index.html'], requireAdminPage, (req, res, next) => next());
 
     app.use(blockSensitiveStaticPaths);
     app.use(express.static(rootDir, { extensions: ['html'], dotfiles: 'ignore' }));
