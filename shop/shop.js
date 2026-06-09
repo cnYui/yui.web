@@ -204,7 +204,7 @@
         `;
     }
 
-    function initAdminUsagePage(tokenInput) {
+    function initAdminUsagePage() {
         const refreshButton = document.getElementById('usageRefreshButton');
         const searchInput = document.getElementById('usageSearchInput');
         const groupFilter = document.getElementById('usageGroupFilter');
@@ -215,14 +215,9 @@
         const importForm = document.getElementById('usageImportForm');
         const importMonth = document.getElementById('usageImportMonth');
         const importMessage = document.getElementById('usageImportMessage');
-        if (!refreshButton || !summaryRoot || !tableRoot || !message || !tokenInput) return;
+        if (!refreshButton || !summaryRoot || !tableRoot || !message) return;
 
         async function fetchUsage() {
-            const token = tokenInput.value.trim();
-            if (!token) {
-                message.textContent = '请输入管理员 token。';
-                return;
-            }
             const params = new URLSearchParams({
                 q: searchInput?.value || '',
                 group: groupFilter?.value || 'all',
@@ -230,9 +225,7 @@
             });
             message.textContent = '正在刷新...';
             try {
-                const data = await requestJson(`/api/admin/usage-summary?${params.toString()}`, {
-                    headers: { 'x-admin-token': token }
-                });
+                const data = await requestJson(`/api/admin/usage-summary?${params.toString()}`);
                 summaryRoot.innerHTML = renderUsageSummary(data.summary || {});
                 tableRoot.innerHTML = renderUsageItems(data.items || []);
                 message.textContent = `共 ${(data.items || []).length} 条。`;
@@ -250,17 +243,11 @@
         if (importForm && importMonth && importMessage) {
             importForm.addEventListener('submit', async (event) => {
                 event.preventDefault();
-                const token = tokenInput.value.trim();
-                if (!token) {
-                    importMessage.textContent = '请输入管理员 token。';
-                    return;
-                }
                 const month = importMonth.value;
                 importMessage.textContent = '正在导入...';
                 try {
                     const result = await requestJson('/api/admin/usage-imports', {
                         method: 'POST',
-                        headers: { 'x-admin-token': token },
                         body: JSON.stringify({ month })
                     });
                     importMessage.textContent = `导入 ${result.inserted}，跳过 ${result.skipped}，失败 ${result.failed_lines}。`;
@@ -394,11 +381,11 @@
 
             message.textContent = '正在登录...';
             try {
-                await requestJson('/api/auth/login', {
+                const data = await requestJson('/api/auth/login', {
                     method: 'POST',
                     body: JSON.stringify({ phone, password })
                 });
-                window.location.href = '/shop/account/';
+                window.location.href = data.user?.isAdmin ? '/shop/admin/' : '/shop/account/';
             } catch (error) {
                 message.textContent = error.message;
             }
@@ -438,11 +425,11 @@
 
             message.textContent = '正在注册...';
             try {
-                await requestJson('/api/auth/register', {
+                const data = await requestJson('/api/auth/register', {
                     method: 'POST',
                     body: JSON.stringify({ phone, password, confirmPassword })
                 });
-                window.location.href = '/shop/account/';
+                window.location.href = data.user?.isAdmin ? '/shop/admin/' : '/shop/account/';
             } catch (error) {
                 message.textContent = error.message;
             }
@@ -492,10 +479,10 @@
         const links = Array.from(document.querySelectorAll('[data-account-link]'));
         if (!links.length) return;
         try {
-            await requestJson('/api/account/me');
+            const data = await requestJson('/api/account/me');
             for (const link of links) {
-                link.href = '/shop/account/';
-                link.textContent = '我的账户';
+                link.href = data.user?.isAdmin ? '/shop/admin/' : '/shop/account/';
+                link.textContent = data.user?.isAdmin ? '管理控制台' : '我的账户';
             }
         } catch (error) {
             for (const link of links) {
@@ -506,43 +493,21 @@
     }
 
     function initAdminPage() {
-        const form = document.getElementById('adminInviteForm');
-        const tokenInput = document.getElementById('adminTokenInput');
-        const countInput = document.getElementById('inviteCountInput');
-        const result = document.getElementById('adminResult');
-        if (!form || !tokenInput || !countInput || !result) return;
-
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const token = tokenInput.value.trim();
-            const count = Number(countInput.value || 1);
-            if (!token) {
-                result.innerHTML = '<p class="text-sm text-red-600">请输入管理员 token。</p>';
-                return;
-            }
-
-            result.innerHTML = '<p class="text-sm text-text-muted dark:text-dark-text-muted">正在生成...</p>';
-            try {
-                const data = await requestJson('/api/admin/invites', {
-                    method: 'POST',
-                    headers: { 'x-admin-token': token },
-                    body: JSON.stringify({ count })
-                });
-                result.innerHTML = `
-                    <div class="grid gap-4">
-                        ${data.invites.map((invite) => `
-                            <article class="border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card p-5">
-                                <p class="text-xs uppercase tracking-[0.2em] text-text-muted dark:text-dark-text-muted">Invite code</p>
-                                <code class="mt-2 block break-all text-sm text-primary dark:text-dark-text">${invite.code}</code>
-                            </article>
-                        `).join('')}
-                    </div>
-                `;
-            } catch (error) {
-                result.innerHTML = `<p class="text-sm text-red-600">${error.message}</p>`;
-            }
-        });
-        initAdminUsagePage(tokenInput);
+        initAdminUsagePage();
+        const refreshButton = document.getElementById('usageRefreshButton');
+        if (refreshButton) {
+            refreshButton.click();
+        }
+        const logoutButton = document.getElementById('logoutButton');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', async () => {
+                try {
+                    await requestJson('/api/auth/logout', { method: 'POST' });
+                } finally {
+                    window.location.href = '/shop/login/';
+                }
+            });
+        }
     }
 
     window.YuiShop = {

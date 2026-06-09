@@ -11,6 +11,29 @@ function hashApiKeyForTest(apiKey) {
     return crypto.createHash('sha256').update(String(apiKey || '').trim()).digest('hex');
 }
 
+function hashPasswordForTest(password) {
+    const salt = 'test-admin-salt';
+    const hash = crypto.scryptSync(String(password || ''), salt, 64, {
+        N: 16384,
+        r: 8,
+        p: 1
+    }).toString('base64url');
+    return `scrypt$16384$8$1$${salt}$${hash}`;
+}
+
+function seedAdminUserForTest(db, password = 'Abcdefg1') {
+    db.prepare(`
+INSERT INTO users (phone, created_at, password_hash, password_created_at, updated_at)
+VALUES (?, ?, ?, ?, ?)
+`).run(
+        '15951875192',
+        '2026-06-09T12:00:00+08:00',
+        hashPasswordForTest(password),
+        '2026-06-09T12:00:00+08:00',
+        '2026-06-09T12:00:00+08:00'
+    );
+}
+
 function signUsagePayload(secret, timestamp, body) {
     return crypto.createHmac('sha256', secret).update(`${timestamp}\n`).update(body).digest('hex');
 }
@@ -479,6 +502,41 @@ test('管理员 token 只能通过请求头提交，不能放在 URL 查询参�
     });
 });
 
+test('邀请码和 API key 管理接口只接受后端管理员 token，不接受网页登录 session', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+        const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
+        });
+        assert.equal(adminLogin.response.status, 200);
+        const adminCookie = adminLogin.response.headers.get('set-cookie') || '';
+
+        const sessionInvite = await jsonFetch(`${baseUrl}/api/admin/invites`, {
+            method: 'POST',
+            headers: { cookie: adminCookie },
+            body: JSON.stringify({ count: 1 })
+        });
+        assert.equal(sessionInvite.response.status, 401);
+        assert.equal(sessionInvite.body.code, 'UNAUTHORIZED');
+
+        const tokenInvite = await jsonFetch(`${baseUrl}/api/admin/invites`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ count: 1 })
+        });
+        assert.equal(tokenInvite.response.status, 201);
+
+        const sessionApiKeyImport = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+            method: 'POST',
+            headers: { cookie: adminCookie },
+            body: JSON.stringify({ apiKeys: ['sk-session-import-blocked'] })
+        });
+        assert.equal(sessionApiKeyImport.response.status, 401);
+        assert.equal(sessionApiKeyImport.body.code, 'UNAUTHORIZED');
+    });
+});
+
 test('API 响应使用 no-store 且频繁查询会触发限流', async () => {
     await withServer(async ({ baseUrl }) => {
         const first = await jsonFetch(`${baseUrl}/api/orders?phone=13800138999`);
@@ -709,14 +767,26 @@ test('API key 结果页只展示订单，不再渲染使用方法', () => {
     assert.doesNotMatch(script, /renderUsageGuide/);
 });
 
-test('后台生成邀请码页面不渲染已经拆分的 API key 字段', () => {
+test('后台页面只作为管理员用量控制台，不渲染邀请码生成入口', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
     const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
 
-    assert.match(html, /生成邀请码/);
-    assert.match(html, /未使用的 API key 库存/);
+    assert.match(html, /管理员控制台/);
+    assert.match(html, /管理员账号/);
+    assert.match(html, /shop\.js\?v=20260609-admin-session/);
+    assert.doesNotMatch(html, /管理员口令/);
+    assert.doesNotMatch(html, /解锁用量监控/);
+    assert.doesNotMatch(html, /id="adminAccessForm"/);
+    assert.doesNotMatch(html, /id="adminTokenInput"/);
+    assert.doesNotMatch(html, /邀请码/);
+    assert.doesNotMatch(html, /生成邀请码/);
+    assert.doesNotMatch(html, /id="adminInviteForm"/);
+    assert.doesNotMatch(html, /id="inviteCountInput"/);
+    assert.doesNotMatch(html, /id="adminResult"/);
     assert.doesNotMatch(html, /对应 API key/);
     assert.doesNotMatch(script, /invite\.apiKey/);
+    assert.doesNotMatch(script, /api\/admin\/invites/);
+    assert.doesNotMatch(script, /x-admin-token/);
 });
 
 test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
@@ -728,6 +798,8 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.match(html, /id="usageGroupFilter"/);
     assert.match(html, /<option value="local">Local<\/option>/);
     assert.match(html, /id="usageImportForm"/);
+    assert.match(html, /CLIProxyAPI\/logs\/usage/);
+    assert.match(html, /usage-events-YYYY-MM\.jsonl/);
     assert.match(script, /function initAdminUsagePage/);
     assert.match(script, /api\/admin\/usage-summary/);
     assert.match(script, /api\/admin\/usage-imports/);
@@ -967,6 +1039,126 @@ test('登录失败、重复注册、退出登录和 account 页面保护都按 s
     });
 });
 
+test('公开注册接口不能创建唯一管理员手机号', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const register = await jsonFetch(`${baseUrl}/api/auth/register`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1', confirmPassword: 'Abcdefg1' })
+        });
+        assert.equal(register.response.status, 403);
+        assert.equal(register.body.code, 'ADMIN_ACCOUNT_REGISTRATION_DISABLED');
+
+        seedAdminUserForTest(db);
+        const login = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
+        });
+        assert.equal(login.response.status, 200);
+        assert.equal(login.body.user.isAdmin, true);
+    });
+});
+
+test('只有唯一管理员手机号登录后才能访问 Shop 管理员控制台', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const loggedOutPage = await fetch(`${baseUrl}/shop/admin/`, { redirect: 'manual' });
+        assert.equal(loggedOutPage.status, 302);
+        assert.equal(loggedOutPage.headers.get('location'), '/shop/login/');
+
+        const userRegister = await jsonFetch(`${baseUrl}/api/auth/register`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138605', password: 'Abcdefg1', confirmPassword: 'Abcdefg1' })
+        });
+        assert.equal(userRegister.response.status, 201);
+        const userCookie = userRegister.response.headers.get('set-cookie') || '';
+
+        const userPage = await fetch(`${baseUrl}/shop/admin/`, {
+            redirect: 'manual',
+            headers: { cookie: userCookie }
+        });
+        assert.equal(userPage.status, 403);
+
+        const userUsage = await jsonFetch(`${baseUrl}/api/admin/usage-summary`, {
+            headers: { cookie: userCookie }
+        });
+        assert.equal(userUsage.response.status, 403);
+        assert.equal(userUsage.body.code, 'ADMIN_ACCOUNT_REQUIRED');
+
+        seedAdminUserForTest(db);
+        const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
+        });
+        assert.equal(adminLogin.response.status, 200);
+        assert.equal(adminLogin.body.user.isAdmin, true);
+        const adminCookie = adminLogin.response.headers.get('set-cookie') || '';
+
+        const adminPage = await fetch(`${baseUrl}/shop/admin/`, {
+            headers: { cookie: adminCookie }
+        });
+        assert.equal(adminPage.status, 200);
+        assert.match(await adminPage.text(), /管理员控制台/);
+
+        const adminUsage = await jsonFetch(`${baseUrl}/api/admin/usage-summary`, {
+            headers: { cookie: adminCookie }
+        });
+        assert.equal(adminUsage.response.status, 200);
+        assert.deepEqual(adminUsage.body.summary, {
+            today_tokens: 0,
+            month_tokens: 0,
+            total_tokens: 0,
+            today_requests: 0,
+            month_requests: 0,
+            total_requests: 0,
+            failed_requests: 0
+        });
+    });
+});
+
+test('管理员手机号登录后进入控制台，普通用户登录后进入个人中心', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+        const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
+        });
+        assert.equal(adminLogin.response.status, 200);
+        assert.equal(adminLogin.body.user.isAdmin, true);
+
+        const adminLoginCookie = adminLogin.response.headers.get('set-cookie') || '';
+        const adminLoginPage = await fetch(`${baseUrl}/shop/login/`, {
+            redirect: 'manual',
+            headers: { cookie: adminLoginCookie }
+        });
+        assert.equal(adminLoginPage.status, 302);
+        assert.equal(adminLoginPage.headers.get('location'), '/shop/admin/');
+
+        const userRegister = await jsonFetch(`${baseUrl}/api/auth/register`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138606', password: 'Abcdefg1', confirmPassword: 'Abcdefg1' })
+        });
+        assert.equal(userRegister.response.status, 201);
+        await jsonFetch(`${baseUrl}/api/auth/logout`, {
+            method: 'POST',
+            headers: { cookie: userRegister.response.headers.get('set-cookie') || '' }
+        });
+
+        const userLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138606', password: 'Abcdefg1' })
+        });
+        assert.equal(userLogin.response.status, 200);
+        assert.equal(userLogin.body.user.isAdmin, false);
+
+        const userLoginCookie = userLogin.response.headers.get('set-cookie') || '';
+        const userLoginPage = await fetch(`${baseUrl}/shop/login/`, {
+            redirect: 'manual',
+            headers: { cookie: userLoginCookie }
+        });
+        assert.equal(userLoginPage.status, 302);
+        assert.equal(userLoginPage.headers.get('location'), '/shop/account/');
+    });
+});
+
 test('无效过期时间的账号 session 会被拒绝', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const token = 'usr_invalid_expiry';
@@ -986,15 +1178,20 @@ test('无效过期时间的账号 session 会被拒绝', async () => {
     });
 });
 
-test('Shop 首页和账号页面包含登录注册与退出入口', () => {
+test('Shop 首页顶部不显示账号入口且正文只保留一个登录入口', () => {
     const home = fs.readFileSync(path.join(__dirname, '..', 'shop/index.html'), 'utf8');
     const login = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');
     const register = fs.readFileSync(path.join(__dirname, '..', 'shop/register/index.html'), 'utf8');
     const account = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
+    const header = home.match(/<header[\s\S]*?<\/header>/)?.[0] || '';
+    const accountLinkCount = (home.match(/data-account-link/g) || []).length;
 
     assert.match(home, /href="\/shop\/login\/"/);
-    assert.match(home, /data-account-link/);
+    assert.equal(accountLinkCount, 1);
+    assert.doesNotMatch(header, /data-account-link/);
+    assert.match(home, /<main[\s\S]*data-account-link[\s\S]*href="\/shop\/login\/"/);
     assert.match(login, /id="loginForm"/);
+    assert.match(login, /管理员账号登录后进入控制台/);
     assert.match(register, /id="registerForm"/);
     assert.match(register, /至少 8 位/);
     assert.match(account, /id="logoutButton"/);
