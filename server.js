@@ -1521,8 +1521,8 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     });
 
     app.get(['/shop/key', '/shop/key/', '/shop/key/index.html'], requireResultToken, (req, res, next) => next());
-    app.get(['/shop/login', '/shop/login/', '/shop/login/index.html'], redirectLoggedInAccount, (req, res, next) => next());
-    app.get(['/shop/register', '/shop/register/', '/shop/register/index.html'], redirectLoggedInAccount, (req, res, next) => next());
+    app.get(['/shop/login', '/shop/login/', '/shop/login/index.html'], (req, res, next) => next());
+    app.get(['/shop/register', '/shop/register/', '/shop/register/index.html'], (req, res, next) => next());
     app.get(['/shop/account', '/shop/account/', '/shop/account/index.html'], requireAccountPage, (req, res, next) => next());
     app.get(['/shop/admin', '/shop/admin/', '/shop/admin/index.html'], requireAdminPage, (req, res, next) => next());
 
