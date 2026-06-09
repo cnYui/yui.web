@@ -352,6 +352,18 @@ ON usage_events(api_key_hash, requested_at);
 
 CREATE INDEX IF NOT EXISTS idx_usage_events_model_time
 ON usage_events(model, requested_at);
+
+CREATE TABLE IF NOT EXISTS usage_key_profiles (
+  api_key_hash TEXT PRIMARY KEY,
+  api_key_preview TEXT NOT NULL DEFAULT '',
+  group_name TEXT NOT NULL,
+  phone TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_usage_key_profiles_group
+ON usage_key_profiles(group_name);
 `);
     return db;
 }
@@ -421,6 +433,15 @@ function createShopApp(options = {}) {
             orderId: invite.orderId,
             createdAt: invite.createdAt,
             redeemedAt: invite.redeemedAt
+        };
+    }
+
+    function publicUsageKeyProfile(profile) {
+        return {
+            apiKeyHash: profile.api_key_hash,
+            apiKeyPreview: profile.api_key_preview || '',
+            group: profile.group_name,
+            phone: profile.phone || ''
         };
     }
 
@@ -692,6 +713,21 @@ SELECT request_id, api_key_hash, api_key_preview, provider, model, endpoint, sou
        latency_ms, requested_at, received_at
 FROM usage_events
 ORDER BY requested_at DESC
+`);
+
+    const listUsageKeyProfiles = db.prepare(`
+SELECT api_key_hash, api_key_preview, group_name, phone, created_at, updated_at
+FROM usage_key_profiles
+`);
+
+    const upsertUsageKeyProfile = db.prepare(`
+INSERT INTO usage_key_profiles (api_key_hash, api_key_preview, group_name, phone, created_at, updated_at)
+VALUES (@apiKeyHash, @apiKeyPreview, @groupName, @phone, @now, @now)
+ON CONFLICT(api_key_hash) DO UPDATE SET
+  api_key_preview = excluded.api_key_preview,
+  group_name = excluded.group_name,
+  phone = excluded.phone,
+  updated_at = excluded.updated_at
 `);
 
     const listApiKeysForUsage = db.prepare(`
@@ -1002,6 +1038,43 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return new Date(row.expires_at).getTime() > Date.now() ? 'active' : 'expired';
     }
 
+    function normalizeUsageKeyProfile(body = {}) {
+        const apiKeyHash = String(body.apiKeyHash || body.api_key_hash || '').trim().toLowerCase();
+        const apiKeyPreview = String(body.apiKeyPreview || body.api_key_preview || '').trim();
+        const groupName = String(body.group || body.groupName || body.group_name || '').trim().toLowerCase();
+        const phone = String(body.phone || '').trim();
+        if (!/^[a-f0-9]{64}$/.test(apiKeyHash)) {
+            const error = new Error('API key hash 无效。');
+            error.status = 400;
+            error.code = 'INVALID_API_KEY_HASH';
+            throw error;
+        }
+        if (groupName !== 'local') {
+            const error = new Error('usage key 分组无效。');
+            error.status = 400;
+            error.code = 'INVALID_USAGE_KEY_GROUP';
+            throw error;
+        }
+        if (!isPhone(phone)) {
+            const error = new Error('请输入有效的中国大陆手机号。');
+            error.status = 400;
+            error.code = 'INVALID_PHONE';
+            throw error;
+        }
+        return { apiKeyHash, apiKeyPreview, groupName, phone };
+    }
+
+    function saveUsageKeyProfile(body) {
+        const profile = normalizeUsageKeyProfile(body);
+        upsertUsageKeyProfile.run({ ...profile, now: nowIso() });
+        return {
+            api_key_hash: profile.apiKeyHash,
+            api_key_preview: profile.apiKeyPreview,
+            group_name: profile.groupName,
+            phone: profile.phone
+        };
+    }
+
     function buildUsageSummary(filters = {}) {
         const now = new Date();
         const todayStart = new Date(now);
@@ -1010,6 +1083,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         const ranges = { todayStart, monthStart };
         const statsByHash = new Map();
         const summaryStats = emptyUsageStats();
+        const profilesByHash = new Map(listUsageKeyProfiles.all().map((profile) => [profile.api_key_hash, profile]));
 
         for (const row of listUsageEvents.all()) {
             const hash = row.api_key_hash;
@@ -1040,11 +1114,13 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             if (seenHashes.has(row.api_key_hash)) continue;
             seenHashes.add(row.api_key_hash);
             const stats = statsByHash.get(row.api_key_hash) || emptyUsageStats();
+            const profile = profilesByHash.get(row.api_key_hash);
+            const groupName = profile?.group_name || 'unmanaged';
             items.push({
-                group: 'unmanaged',
-                phone: '',
-                api_key_preview: row.api_key_preview || '',
-                status: 'unmanaged',
+                group: groupName,
+                phone: profile?.phone || '',
+                api_key_preview: profile?.api_key_preview || row.api_key_preview || '',
+                status: groupName === 'local' ? 'local' : 'unmanaged',
                 redeemed_at: '',
                 expires_at: '',
                 ...usageStatsToPublic(stats)
@@ -1237,6 +1313,18 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
 
     app.get('/api/admin/usage-summary', limitAdminApi, requireAdmin, (req, res) => {
         return res.json(buildUsageSummary(req.query));
+    });
+
+    app.post('/api/admin/usage-key-profiles', limitAdminApi, requireAdmin, (req, res) => {
+        try {
+            const profile = saveUsageKeyProfile(req.body);
+            return res.status(201).json({ profile: publicUsageKeyProfile(profile) });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'USAGE_KEY_PROFILE_FAILED',
+                message: error.message || 'usage key 归属设置失败。'
+            });
+        }
     });
 
     app.post('/api/admin/usage-imports', limitAdminApi, requireAdmin, (req, res) => {

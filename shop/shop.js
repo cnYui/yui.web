@@ -133,10 +133,20 @@
             expired: '已过期',
             unused: '未使用',
             disabled: '已禁用',
+            local: '本地',
             unmanaged: '未托管',
             used: '已使用'
         };
         return map[status] || status || '-';
+    }
+
+    function usageGroupText(group) {
+        const map = {
+            shop: 'Shop',
+            local: 'Local',
+            unmanaged: '未托管'
+        };
+        return map[group] || group || '-';
     }
 
     function renderUsageSummary(summary) {
@@ -177,7 +187,7 @@
                 <tbody class="divide-y divide-border-subtle dark:divide-dark-border bg-white dark:bg-dark-card">
                     ${items.map((item) => `
                         <tr>
-                            <td class="px-4 py-3">${escapeHtml(item.group === 'shop' ? 'Shop' : '未托管')}</td>
+                            <td class="px-4 py-3">${escapeHtml(usageGroupText(item.group))}</td>
                             <td class="px-4 py-3">${escapeHtml(item.phone || '-')}</td>
                             <td class="px-4 py-3 font-mono">${escapeHtml(item.api_key_preview || '-')}</td>
                             <td class="px-4 py-3">${escapeHtml(usageStatusText(item.status))}</td>
