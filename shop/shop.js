@@ -19,6 +19,10 @@
         return `¥${Number(amount).toFixed(2)}`;
     }
 
+    function formatNumber(value) {
+        return Number(value || 0).toLocaleString('zh-CN');
+    }
+
     function statusText(status) {
         return status === 'active' ? '使用中' : '已失效';
     }
@@ -109,6 +113,141 @@
                 button.textContent = '复制 API key';
             }, 1400);
         });
+    }
+
+    function usageStatusText(status) {
+        const map = {
+            active: '使用中',
+            expired: '已过期',
+            unused: '未使用',
+            disabled: '已禁用',
+            unmanaged: '未托管',
+            used: '已使用'
+        };
+        return map[status] || status || '-';
+    }
+
+    function renderUsageSummary(summary) {
+        const cards = [
+            ['今日 token', summary.today_tokens],
+            ['本月 token', summary.month_tokens],
+            ['总 token', summary.total_tokens],
+            ['失败请求', summary.failed_requests]
+        ];
+        return cards.map(([label, value]) => `
+            <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(label)}</p>
+                <p class="mt-2 text-2xl font-display text-primary dark:text-dark-text">${escapeHtml(formatNumber(value))}</p>
+            </article>
+        `).join('');
+    }
+
+    function renderUsageItems(items) {
+        if (!items.length) {
+            return '<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">暂无用量记录。</div>';
+        }
+        return `
+            <table class="min-w-full divide-y divide-border-subtle dark:divide-dark-border text-sm">
+                <thead class="bg-background-soft dark:bg-dark-surface text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                    <tr>
+                        <th class="px-4 py-3">分组</th>
+                        <th class="px-4 py-3">手机号</th>
+                        <th class="px-4 py-3">API key</th>
+                        <th class="px-4 py-3">状态</th>
+                        <th class="px-4 py-3">今日</th>
+                        <th class="px-4 py-3">本月</th>
+                        <th class="px-4 py-3">总计</th>
+                        <th class="px-4 py-3">请求</th>
+                        <th class="px-4 py-3">最近</th>
+                        <th class="px-4 py-3">模型</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-subtle dark:divide-dark-border bg-white dark:bg-dark-card">
+                    ${items.map((item) => `
+                        <tr>
+                            <td class="px-4 py-3">${escapeHtml(item.group === 'shop' ? 'Shop' : '未托管')}</td>
+                            <td class="px-4 py-3">${escapeHtml(item.phone || '-')}</td>
+                            <td class="px-4 py-3 font-mono">${escapeHtml(item.api_key_preview || '-')}</td>
+                            <td class="px-4 py-3">${escapeHtml(usageStatusText(item.status))}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatNumber(item.today_tokens))}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatNumber(item.month_tokens))}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatNumber(item.total_tokens))}</td>
+                            <td class="px-4 py-3">${escapeHtml(`${item.success_requests || 0}/${item.failed_requests || 0}/${item.total_requests || 0}`)}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatDate(item.last_seen_at))}</td>
+                            <td class="px-4 py-3">${escapeHtml((item.models || []).map((model) => `${model.model}:${formatNumber(model.total_tokens)}`).join(' / ') || '-')}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function initAdminUsagePage(tokenInput) {
+        const refreshButton = document.getElementById('usageRefreshButton');
+        const searchInput = document.getElementById('usageSearchInput');
+        const groupFilter = document.getElementById('usageGroupFilter');
+        const statusFilter = document.getElementById('usageStatusFilter');
+        const summaryRoot = document.getElementById('usageSummaryCards');
+        const tableRoot = document.getElementById('usageTable');
+        const message = document.getElementById('usageMessage');
+        const importForm = document.getElementById('usageImportForm');
+        const importMonth = document.getElementById('usageImportMonth');
+        const importMessage = document.getElementById('usageImportMessage');
+        if (!refreshButton || !summaryRoot || !tableRoot || !message || !tokenInput) return;
+
+        async function fetchUsage() {
+            const token = tokenInput.value.trim();
+            if (!token) {
+                message.textContent = '请输入管理员 token。';
+                return;
+            }
+            const params = new URLSearchParams({
+                q: searchInput?.value || '',
+                group: groupFilter?.value || 'all',
+                status: statusFilter?.value || 'all'
+            });
+            message.textContent = '正在刷新...';
+            try {
+                const data = await requestJson(`/api/admin/usage-summary?${params.toString()}`, {
+                    headers: { 'x-admin-token': token }
+                });
+                summaryRoot.innerHTML = renderUsageSummary(data.summary || {});
+                tableRoot.innerHTML = renderUsageItems(data.items || []);
+                message.textContent = `共 ${(data.items || []).length} 条。`;
+            } catch (error) {
+                message.textContent = error.message;
+            }
+        }
+
+        refreshButton.addEventListener('click', fetchUsage);
+        [searchInput, groupFilter, statusFilter].forEach((element) => {
+            if (!element) return;
+            element.addEventListener('change', fetchUsage);
+        });
+
+        if (importForm && importMonth && importMessage) {
+            importForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const token = tokenInput.value.trim();
+                if (!token) {
+                    importMessage.textContent = '请输入管理员 token。';
+                    return;
+                }
+                const month = importMonth.value;
+                importMessage.textContent = '正在导入...';
+                try {
+                    const result = await requestJson('/api/admin/usage-imports', {
+                        method: 'POST',
+                        headers: { 'x-admin-token': token },
+                        body: JSON.stringify({ month })
+                    });
+                    importMessage.textContent = `导入 ${result.inserted}，跳过 ${result.skipped}，失败 ${result.failed_lines}。`;
+                    await fetchUsage();
+                } catch (error) {
+                    importMessage.textContent = error.message;
+                }
+            });
+        }
     }
 
     function initRedeemPage() {
@@ -248,6 +387,7 @@
                 result.innerHTML = `<p class="text-sm text-red-600">${error.message}</p>`;
             }
         });
+        initAdminUsagePage(tokenInput);
     }
 
     window.YuiShop = {
