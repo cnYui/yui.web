@@ -608,6 +608,42 @@ test('重复 usage event 不会重复扣费', async () => {
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
+test('usage event 扣费失败时不会留下未扣费事件', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800139016', 'sk-charge-rollback');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139016');
+        await submitAndApproveTopup(baseUrl, cookie, '1');
+
+        const rejected = await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-charge-rollback',
+            api_key_hash: hashApiKeyForTest(order.apiKey),
+            api_key_preview: keyPreviewForTest(order.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            endpoint: '/v1/responses',
+            success: true,
+            failed: false,
+            input_tokens: 1,
+            output_tokens: 1,
+            total_tokens: 2,
+            price_amount_micros: 100000,
+            price_currency: 'USD',
+            requested_at: '2026-06-10T12:12:00+08:00'
+        });
+
+        assert.equal(rejected.response.status, 400);
+        assert.equal(rejected.body.code, 'UNSUPPORTED_USAGE_PRICE_CURRENCY');
+        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM usage_events WHERE request_id = ?').get('req-charge-rollback').count, 0);
+        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM api_charge_records WHERE usage_event_id = ?').get('req-charge-rollback').count, 0);
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceCents, 100);
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
 test('用户账户页 API 返回自己的账户流水和扣费记录', async () => {
     await withServer(async ({ baseUrl }) => {
         const firstOrder = await createRedeemedOrder(baseUrl, '13800139014', 'sk-ledger-first');

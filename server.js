@@ -1464,7 +1464,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         };
     }
 
-    const chargeUsageEvent = db.transaction((event) => {
+    function chargeUsageEventInCurrentTransaction(event) {
         if (getApiChargeByUsageEventId.get(event.requestId)) {
             return { charged: 0, skipped: 1 };
         }
@@ -1511,6 +1511,19 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
 
         return { charged: pricing.chargeCents > 0 ? 1 : 0, skipped: 0 };
+    }
+
+    const chargeUsageEvent = db.transaction((event) => {
+        return chargeUsageEventInCurrentTransaction(event);
+    });
+
+    const storeUsageEventWithCharge = db.transaction((event) => {
+        const result = insertUsageEvent.run(event);
+        if (result.changes <= 0) {
+            return { inserted: 0, skipped: 1 };
+        }
+        chargeUsageEventInCurrentTransaction(event);
+        return { inserted: 1, skipped: 0 };
     });
 
     function loginUser({ phone, password }) {
@@ -1716,12 +1729,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         event.receivedAt = nowIso();
         event.success = event.success ? 1 : 0;
         event.failed = event.failed ? 1 : 0;
-        const result = insertUsageEvent.run(event);
-        if (result.changes <= 0) {
-            return { inserted: 0, skipped: 1 };
-        }
-        chargeUsageEvent(event);
-        return { inserted: 1, skipped: 0 };
+        return storeUsageEventWithCharge(event);
     }
 
     function emptyUsageStats() {
