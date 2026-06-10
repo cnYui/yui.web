@@ -188,6 +188,47 @@ test('Shop 数据库包含 API key hash 和 usage_events 账本表', async () =>
     });
 });
 
+test('Shop 数据库包含预充值余额、充值申请、账户流水和扣费记录表', async () => {
+    await withServer(async ({ db }) => {
+        const tableNames = db.prepare(`
+SELECT name FROM sqlite_master
+WHERE type = 'table'
+  AND name IN ('account_balances', 'topup_requests', 'account_ledger_entries', 'api_charge_records')
+ORDER BY name
+`).all().map((row) => row.name);
+
+        assert.deepEqual(tableNames, [
+            'account_balances',
+            'account_ledger_entries',
+            'api_charge_records',
+            'topup_requests'
+        ]);
+
+        const balanceColumns = db.prepare('PRAGMA table_info(account_balances)').all().map((column) => column.name);
+        assert.ok(balanceColumns.includes('phone'));
+        assert.ok(balanceColumns.includes('balance_cents'));
+        assert.ok(balanceColumns.includes('pending_topup_cents'));
+        assert.ok(balanceColumns.includes('credit_limit_cents'));
+    });
+});
+
+test('新注册用户账户余额默认为 0 且默认欠费上限为 10 元', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139001');
+
+        const result = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+
+        assert.equal(result.response.status, 200);
+        assert.equal(result.body.balance.balanceCents, 0);
+        assert.equal(result.body.balance.pendingTopupCents, 0);
+        assert.equal(result.body.balance.debtCents, 0);
+        assert.equal(result.body.balance.creditLimitCents, 1000);
+        assert.equal(result.body.balance.status, 'empty');
+    });
+});
+
 test('内部 usage event 接口校验 token、HMAC、timestamp 并幂等写入', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const event = {

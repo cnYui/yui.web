@@ -19,6 +19,8 @@ const passwordScryptP = 1;
 const rateLimitBuckets = new Map();
 const chinaOffsetMs = 8 * 60 * 60 * 1000;
 const defaultAdminAccountPhone = '15951875192';
+const defaultCreditLimitCents = 1000;
+const supportedPaymentMethods = new Set(['alipay', 'wechat']);
 
 function toChinaIso(date = new Date()) {
     const value = new Date(date);
@@ -158,6 +160,40 @@ function nonNegativeInteger(value) {
     const number = Number(value);
     if (!Number.isFinite(number) || number < 0) return 0;
     return Math.floor(number);
+}
+
+function parsePositiveCnyToCents(value) {
+    const text = String(value ?? '').trim();
+    if (!/^\d+(?:\.\d{1,2})?$/.test(text)) {
+        const error = new Error('金额必须是大于 0 的人民币数字，最多保留两位小数。');
+        error.status = 400;
+        error.code = 'INVALID_AMOUNT';
+        throw error;
+    }
+    const [yuanPart, centPart = ''] = text.split('.');
+    const cents = Number(yuanPart) * 100 + Number(centPart.padEnd(2, '0'));
+    if (!Number.isSafeInteger(cents) || cents <= 0) {
+        const error = new Error('金额必须大于 0。');
+        error.status = 400;
+        error.code = 'INVALID_AMOUNT';
+        throw error;
+    }
+    return cents;
+}
+
+function centsToCny(cents) {
+    return Number(cents || 0) / 100;
+}
+
+function normalizePaymentMethod(value) {
+    const method = String(value || '').trim().toLowerCase();
+    if (!supportedPaymentMethods.has(method)) {
+        const error = new Error('支付方式必须是支付宝或微信。');
+        error.status = 400;
+        error.code = 'INVALID_PAYMENT_METHOD';
+        throw error;
+    }
+    return method;
 }
 
 function normalizeUsageEvent(body = {}) {
@@ -397,6 +433,78 @@ CREATE TABLE IF NOT EXISTS usage_key_profiles (
 
 CREATE INDEX IF NOT EXISTS idx_usage_key_profiles_group
 ON usage_key_profiles(group_name);
+
+CREATE TABLE IF NOT EXISTS account_balances (
+  phone TEXT PRIMARY KEY,
+  balance_cents INTEGER NOT NULL DEFAULT 0,
+  pending_topup_cents INTEGER NOT NULL DEFAULT 0,
+  credit_limit_cents INTEGER NOT NULL DEFAULT 1000,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (phone) REFERENCES users(phone)
+);
+
+CREATE TABLE IF NOT EXISTS topup_requests (
+  id TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  requested_amount_cents INTEGER NOT NULL,
+  confirmed_amount_cents INTEGER,
+  payment_method TEXT NOT NULL CHECK (payment_method IN ('alipay', 'wechat')),
+  payment_time TEXT,
+  payment_note TEXT,
+  screenshot_path TEXT,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled')),
+  admin_note TEXT,
+  created_at TEXT NOT NULL,
+  confirmed_at TEXT,
+  confirmed_by_phone TEXT,
+  rejected_at TEXT,
+  rejected_by_phone TEXT,
+  FOREIGN KEY (phone) REFERENCES users(phone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_topup_requests_phone_created
+ON topup_requests(phone, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_topup_requests_status_created
+ON topup_requests(status, created_at);
+
+CREATE TABLE IF NOT EXISTS account_ledger_entries (
+  id TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  entry_type TEXT NOT NULL CHECK (entry_type IN ('topup_approved', 'api_charge', 'admin_adjustment', 'refund')),
+  amount_cents INTEGER NOT NULL,
+  balance_after_cents INTEGER NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'CNY',
+  related_id TEXT,
+  memo TEXT,
+  created_at TEXT NOT NULL,
+  created_by_phone TEXT,
+  FOREIGN KEY (phone) REFERENCES users(phone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_account_ledger_phone_created
+ON account_ledger_entries(phone, created_at);
+
+CREATE TABLE IF NOT EXISTS api_charge_records (
+  id TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  usage_event_id TEXT NOT NULL UNIQUE,
+  api_key_hash TEXT NOT NULL,
+  model TEXT,
+  input_tokens INTEGER NOT NULL DEFAULT 0,
+  output_tokens INTEGER NOT NULL DEFAULT 0,
+  total_tokens INTEGER NOT NULL DEFAULT 0,
+  price_version TEXT NOT NULL,
+  charge_cents INTEGER NOT NULL,
+  balance_before_cents INTEGER NOT NULL,
+  balance_after_cents INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('charged', 'failed_no_charge', 'unpriced_no_charge', 'adjusted')),
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (phone) REFERENCES users(phone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_charge_records_phone_created
+ON api_charge_records(phone, created_at);
 `);
     return db;
 }
@@ -414,6 +522,10 @@ function createShopApp(options = {}) {
         amount: Number(options.productAmount || process.env.PRODUCT_AMOUNT_CNY || 30)
     };
     const adminAccountPhone = String(options.adminAccountPhone ?? process.env.SHOP_ADMIN_PHONE ?? defaultAdminAccountPhone).trim();
+    const configuredCreditLimitCents = Number(options.defaultCreditLimitCents ?? process.env.SHOP_DEFAULT_CREDIT_LIMIT_CENTS ?? defaultCreditLimitCents);
+    const creditLimitCents = Number.isSafeInteger(configuredCreditLimitCents) && configuredCreditLimitCents >= 0
+        ? configuredCreditLimitCents
+        : defaultCreditLimitCents;
 
     function toOrder(row) {
         return {
@@ -487,6 +599,48 @@ function createShopApp(options = {}) {
         return {
             phone,
             isAdmin: isAdminAccountPhone(phone)
+        };
+    }
+
+    function ensureAccountBalance(phone) {
+        ensureUser.run(phone, nowIso());
+        ensureAccountBalanceRow.run(phone, creditLimitCents, nowIso());
+        return getAccountBalanceRow.get(phone);
+    }
+
+    function publicAccountBalance(row) {
+        const balanceCents = Number(row?.balance_cents || 0);
+        const pendingTopupCents = Number(row?.pending_topup_cents || 0);
+        const creditLimit = Number(row?.credit_limit_cents || creditLimitCents);
+        const debtCents = balanceCents < 0 ? Math.abs(balanceCents) : 0;
+        const status = balanceCents < 0 ? 'debt' : balanceCents === 0 ? 'empty' : 'available';
+        return {
+            phone: row.phone,
+            balanceCents,
+            balanceAmount: centsToCny(balanceCents),
+            pendingTopupCents,
+            pendingTopupAmount: centsToCny(pendingTopupCents),
+            debtCents,
+            debtAmount: centsToCny(debtCents),
+            creditLimitCents: creditLimit,
+            creditLimitAmount: centsToCny(creditLimit),
+            creditExceeded: balanceCents < -creditLimit,
+            status,
+            updatedAt: row.updated_at
+        };
+    }
+
+    function paymentReferenceForPhone(phone) {
+        const parts = chinaParts(new Date());
+        const maskedPhone = `${phone.slice(0, 3)}****${phone.slice(-4)}`;
+        return `YUI-${parts.year}${pad2(parts.month)}-${maskedPhone}`;
+    }
+
+    function accountPaymentConfig(phone) {
+        return {
+            alipayQrUrl: options.alipayQrUrl ?? process.env.SHOP_ALIPAY_QR_URL ?? '/shop/assets/pay/alipay-qr.png',
+            wechatQrUrl: options.wechatQrUrl ?? process.env.SHOP_WECHAT_QR_URL ?? '/shop/assets/pay/wechat-qr.png',
+            paymentReference: paymentReferenceForPhone(phone)
         };
     }
 
@@ -713,6 +867,18 @@ WHERE api_key = @apiKey AND status = 'unused'
 INSERT INTO users (phone, created_at)
 VALUES (?, ?)
 ON CONFLICT(phone) DO NOTHING
+`);
+
+    const ensureAccountBalanceRow = db.prepare(`
+INSERT INTO account_balances (phone, balance_cents, pending_topup_cents, credit_limit_cents, updated_at)
+VALUES (?, 0, 0, ?, ?)
+ON CONFLICT(phone) DO NOTHING
+`);
+
+    const getAccountBalanceRow = db.prepare(`
+SELECT phone, balance_cents, pending_topup_cents, credit_limit_cents, updated_at
+FROM account_balances
+WHERE phone = ?
 `);
 
     const getUserByPhone = db.prepare(`
@@ -1686,6 +1852,14 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return res.json({
             user: publicUser(req.account.phone),
             orders
+        });
+    });
+
+    app.get('/api/account/balance', limitQueryApi, requireAccount, (req, res) => {
+        const balance = ensureAccountBalance(req.account.phone);
+        return res.json({
+            balance: publicAccountBalance(balance),
+            payment: accountPaymentConfig(req.account.phone)
         });
     });
 
