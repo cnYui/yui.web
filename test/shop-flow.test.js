@@ -229,6 +229,85 @@ test('新注册用户账户余额默认为 0 且默认欠费上限为 10 元', a
     });
 });
 
+test('用户提交充值申请后进入待确认且不会增加可用余额', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139002');
+
+        const created = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({
+                amount: '30',
+                paymentMethod: 'alipay',
+                paymentTime: '2026-06-10T13:00',
+                paymentNote: 'YUI-202606-138****9002'
+            })
+        });
+
+        assert.equal(created.response.status, 201);
+        assert.equal(created.body.topup.status, 'pending');
+        assert.equal(created.body.topup.requestedAmountCents, 3000);
+        assert.equal(created.body.topup.requestedAmount, 30);
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceCents, 0);
+        assert.equal(balance.body.balance.pendingTopupCents, 3000);
+
+        const row = db.prepare('SELECT status, requested_amount_cents FROM topup_requests WHERE phone = ?').get('13800139002');
+        assert.deepEqual(row, { status: 'pending', requested_amount_cents: 3000 });
+    });
+});
+
+test('用户只能查看自己的充值申请', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const firstCookie = await registerUserAndGetCookie(baseUrl, '13800139003');
+        const secondCookie = await registerUserAndGetCookie(baseUrl, '13800139004');
+
+        await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie: firstCookie },
+            body: JSON.stringify({ amount: '10.50', paymentMethod: 'wechat', paymentNote: 'first user' })
+        });
+
+        const firstList = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            headers: { cookie: firstCookie }
+        });
+        assert.equal(firstList.response.status, 200);
+        assert.equal(firstList.body.topups.length, 1);
+        assert.equal(firstList.body.topups[0].requestedAmountCents, 1050);
+
+        const secondList = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            headers: { cookie: secondCookie }
+        });
+        assert.equal(secondList.response.status, 200);
+        assert.equal(secondList.body.topups.length, 0);
+    });
+});
+
+test('充值申请校验金额和支付方式', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139005');
+
+        const badAmount = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ amount: '0', paymentMethod: 'alipay' })
+        });
+        assert.equal(badAmount.response.status, 400);
+        assert.equal(badAmount.body.code, 'INVALID_AMOUNT');
+
+        const badMethod = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ amount: '1', paymentMethod: 'bank' })
+        });
+        assert.equal(badMethod.response.status, 400);
+        assert.equal(badMethod.body.code, 'INVALID_PAYMENT_METHOD');
+    });
+});
+
 test('内部 usage event 接口校验 token、HMAC、timestamp 并幂等写入', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const event = {

@@ -644,6 +644,48 @@ function createShopApp(options = {}) {
         };
     }
 
+    function publicTopupRequest(row) {
+        return {
+            id: row.id,
+            phone: row.phone,
+            requestedAmountCents: row.requested_amount_cents,
+            requestedAmount: centsToCny(row.requested_amount_cents),
+            confirmedAmountCents: row.confirmed_amount_cents ?? null,
+            confirmedAmount: row.confirmed_amount_cents === null || row.confirmed_amount_cents === undefined
+                ? null
+                : centsToCny(row.confirmed_amount_cents),
+            paymentMethod: row.payment_method,
+            paymentTime: row.payment_time || '',
+            paymentNote: row.payment_note || '',
+            screenshotPath: row.screenshot_path || '',
+            status: row.status,
+            adminNote: row.admin_note || '',
+            createdAt: row.created_at,
+            confirmedAt: row.confirmed_at || '',
+            confirmedByPhone: row.confirmed_by_phone || '',
+            rejectedAt: row.rejected_at || '',
+            rejectedByPhone: row.rejected_by_phone || ''
+        };
+    }
+
+    function refreshPendingTopupCents(phone) {
+        ensureAccountBalance(phone);
+        const row = sumPendingTopupsByPhone.get(phone);
+        const pendingTopupCents = Number(row?.pending_topup_cents || 0);
+        updatePendingTopupCents.run(pendingTopupCents, nowIso(), phone);
+        return pendingTopupCents;
+    }
+
+    function normalizeTopupRequestBody(body = {}) {
+        return {
+            requestedAmountCents: parsePositiveCnyToCents(body.amount ?? body.requestedAmount),
+            paymentMethod: normalizePaymentMethod(body.paymentMethod ?? body.payment_method),
+            paymentTime: String(body.paymentTime || body.payment_time || '').trim(),
+            paymentNote: String(body.paymentNote || body.payment_note || '').trim().slice(0, 500),
+            screenshotPath: String(body.screenshotPath || body.screenshot_path || '').trim().slice(0, 500)
+        };
+    }
+
     function accountDestination(phone) {
         return isAdminAccountPhone(phone) ? '/shop/admin/' : '/shop/account/';
     }
@@ -878,6 +920,40 @@ ON CONFLICT(phone) DO NOTHING
     const getAccountBalanceRow = db.prepare(`
 SELECT phone, balance_cents, pending_topup_cents, credit_limit_cents, updated_at
 FROM account_balances
+WHERE phone = ?
+`);
+
+    const insertTopupRequest = db.prepare(`
+INSERT INTO topup_requests (
+  id, phone, requested_amount_cents, payment_method, payment_time, payment_note,
+  screenshot_path, status, created_at
+)
+VALUES (
+  @id, @phone, @requestedAmountCents, @paymentMethod, @paymentTime, @paymentNote,
+  @screenshotPath, 'pending', @createdAt
+)
+`);
+
+    const listTopupRequestsByPhone = db.prepare(`
+SELECT id, phone, requested_amount_cents, confirmed_amount_cents, payment_method,
+       payment_time, payment_note, screenshot_path, status, admin_note, created_at,
+       confirmed_at, confirmed_by_phone, rejected_at, rejected_by_phone
+FROM topup_requests
+WHERE phone = ?
+ORDER BY created_at DESC
+LIMIT ?
+`);
+
+    const sumPendingTopupsByPhone = db.prepare(`
+SELECT COALESCE(SUM(requested_amount_cents), 0) AS pending_topup_cents
+FROM topup_requests
+WHERE phone = ? AND status = 'pending'
+`);
+
+    const updatePendingTopupCents = db.prepare(`
+UPDATE account_balances
+SET pending_topup_cents = ?,
+    updated_at = ?
 WHERE phone = ?
 `);
 
@@ -1128,6 +1204,20 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
         setUserPassword.run(passwordHash, now, now, phone);
         return { phone };
+    });
+
+    const createTopupRequest = db.transaction(({ phone, body }) => {
+        ensureAccountBalance(phone);
+        const normalized = normalizeTopupRequestBody(body);
+        const topup = {
+            id: createId('TOPUP'),
+            phone,
+            ...normalized,
+            createdAt: nowIso()
+        };
+        insertTopupRequest.run(topup);
+        refreshPendingTopupCents(phone);
+        return topup;
     });
 
     function loginUser({ phone, password }) {
@@ -1861,6 +1951,42 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             balance: publicAccountBalance(balance),
             payment: accountPaymentConfig(req.account.phone)
         });
+    });
+
+    app.post('/api/account/topups', limitQueryApi, requireAccount, (req, res) => {
+        try {
+            const topup = createTopupRequest({ phone: req.account.phone, body: req.body });
+            return res.status(201).json({
+                topup: publicTopupRequest({
+                    id: topup.id,
+                    phone: topup.phone,
+                    requested_amount_cents: topup.requestedAmountCents,
+                    confirmed_amount_cents: null,
+                    payment_method: topup.paymentMethod,
+                    payment_time: topup.paymentTime,
+                    payment_note: topup.paymentNote,
+                    screenshot_path: topup.screenshotPath,
+                    status: 'pending',
+                    admin_note: '',
+                    created_at: topup.createdAt,
+                    confirmed_at: '',
+                    confirmed_by_phone: '',
+                    rejected_at: '',
+                    rejected_by_phone: ''
+                })
+            });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'TOPUP_REQUEST_FAILED',
+                message: error.message || '充值申请提交失败。'
+            });
+        }
+    });
+
+    app.get('/api/account/topups', limitQueryApi, requireAccount, (req, res) => {
+        const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 100);
+        const topups = listTopupRequestsByPhone.all(req.account.phone, limit).map(publicTopupRequest);
+        return res.json({ topups });
     });
 
     app.get('/api/account/usage-summary', limitQueryApi, requireAccount, (req, res) => {
