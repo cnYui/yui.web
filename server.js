@@ -19,6 +19,8 @@ const passwordScryptP = 1;
 const rateLimitBuckets = new Map();
 const chinaOffsetMs = 8 * 60 * 60 * 1000;
 const defaultAdminAccountPhone = '15951875192';
+const defaultCreditLimitCents = 1000;
+const supportedPaymentMethods = new Set(['alipay', 'wechat']);
 
 function toChinaIso(date = new Date()) {
     const value = new Date(date);
@@ -160,6 +162,40 @@ function nonNegativeInteger(value) {
     return Math.floor(number);
 }
 
+function parsePositiveCnyToCents(value) {
+    const text = String(value ?? '').trim();
+    if (!/^\d+(?:\.\d{1,2})?$/.test(text)) {
+        const error = new Error('金额必须是大于 0 的人民币数字，最多保留两位小数。');
+        error.status = 400;
+        error.code = 'INVALID_AMOUNT';
+        throw error;
+    }
+    const [yuanPart, centPart = ''] = text.split('.');
+    const cents = Number(yuanPart) * 100 + Number(centPart.padEnd(2, '0'));
+    if (!Number.isSafeInteger(cents) || cents <= 0) {
+        const error = new Error('金额必须大于 0。');
+        error.status = 400;
+        error.code = 'INVALID_AMOUNT';
+        throw error;
+    }
+    return cents;
+}
+
+function centsToCny(cents) {
+    return Number(cents || 0) / 100;
+}
+
+function normalizePaymentMethod(value) {
+    const method = String(value || '').trim().toLowerCase();
+    if (!supportedPaymentMethods.has(method)) {
+        const error = new Error('支付方式必须是支付宝或微信。');
+        error.status = 400;
+        error.code = 'INVALID_PAYMENT_METHOD';
+        throw error;
+    }
+    return method;
+}
+
 function normalizeUsageEvent(body = {}) {
     const inputTokens = nonNegativeInteger(body.input_tokens);
     const outputTokens = nonNegativeInteger(body.output_tokens);
@@ -188,7 +224,11 @@ function normalizeUsageEvent(body = {}) {
         cachedTokens,
         totalTokens,
         latencyMs: nonNegativeInteger(body.latency_ms),
-        requestedAt: requestedAt && !Number.isNaN(new Date(requestedAt).getTime()) ? requestedAt : nowIso()
+        requestedAt: requestedAt && !Number.isNaN(new Date(requestedAt).getTime()) ? requestedAt : nowIso(),
+        priceAmountMicros: body.price_amount_micros === undefined || body.price_amount_micros === null
+            ? null
+            : nonNegativeInteger(body.price_amount_micros),
+        priceCurrency: String(body.price_currency || '').trim().toUpperCase()
     };
 }
 
@@ -397,6 +437,78 @@ CREATE TABLE IF NOT EXISTS usage_key_profiles (
 
 CREATE INDEX IF NOT EXISTS idx_usage_key_profiles_group
 ON usage_key_profiles(group_name);
+
+CREATE TABLE IF NOT EXISTS account_balances (
+  phone TEXT PRIMARY KEY,
+  balance_cents INTEGER NOT NULL DEFAULT 0,
+  pending_topup_cents INTEGER NOT NULL DEFAULT 0,
+  credit_limit_cents INTEGER NOT NULL DEFAULT 1000,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (phone) REFERENCES users(phone)
+);
+
+CREATE TABLE IF NOT EXISTS topup_requests (
+  id TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  requested_amount_cents INTEGER NOT NULL,
+  confirmed_amount_cents INTEGER,
+  payment_method TEXT NOT NULL CHECK (payment_method IN ('alipay', 'wechat')),
+  payment_time TEXT,
+  payment_note TEXT,
+  screenshot_path TEXT,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled')),
+  admin_note TEXT,
+  created_at TEXT NOT NULL,
+  confirmed_at TEXT,
+  confirmed_by_phone TEXT,
+  rejected_at TEXT,
+  rejected_by_phone TEXT,
+  FOREIGN KEY (phone) REFERENCES users(phone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_topup_requests_phone_created
+ON topup_requests(phone, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_topup_requests_status_created
+ON topup_requests(status, created_at);
+
+CREATE TABLE IF NOT EXISTS account_ledger_entries (
+  id TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  entry_type TEXT NOT NULL CHECK (entry_type IN ('topup_approved', 'api_charge', 'admin_adjustment', 'refund')),
+  amount_cents INTEGER NOT NULL,
+  balance_after_cents INTEGER NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'CNY',
+  related_id TEXT,
+  memo TEXT,
+  created_at TEXT NOT NULL,
+  created_by_phone TEXT,
+  FOREIGN KEY (phone) REFERENCES users(phone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_account_ledger_phone_created
+ON account_ledger_entries(phone, created_at);
+
+CREATE TABLE IF NOT EXISTS api_charge_records (
+  id TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  usage_event_id TEXT NOT NULL UNIQUE,
+  api_key_hash TEXT NOT NULL,
+  model TEXT,
+  input_tokens INTEGER NOT NULL DEFAULT 0,
+  output_tokens INTEGER NOT NULL DEFAULT 0,
+  total_tokens INTEGER NOT NULL DEFAULT 0,
+  price_version TEXT NOT NULL,
+  charge_cents INTEGER NOT NULL,
+  balance_before_cents INTEGER NOT NULL,
+  balance_after_cents INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('charged', 'failed_no_charge', 'unpriced_no_charge', 'adjusted')),
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (phone) REFERENCES users(phone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_charge_records_phone_created
+ON api_charge_records(phone, created_at);
 `);
     return db;
 }
@@ -414,6 +526,10 @@ function createShopApp(options = {}) {
         amount: Number(options.productAmount || process.env.PRODUCT_AMOUNT_CNY || 30)
     };
     const adminAccountPhone = String(options.adminAccountPhone ?? process.env.SHOP_ADMIN_PHONE ?? defaultAdminAccountPhone).trim();
+    const configuredCreditLimitCents = Number(options.defaultCreditLimitCents ?? process.env.SHOP_DEFAULT_CREDIT_LIMIT_CENTS ?? defaultCreditLimitCents);
+    const creditLimitCents = Number.isSafeInteger(configuredCreditLimitCents) && configuredCreditLimitCents >= 0
+        ? configuredCreditLimitCents
+        : defaultCreditLimitCents;
 
     function toOrder(row) {
         return {
@@ -487,6 +603,141 @@ function createShopApp(options = {}) {
         return {
             phone,
             isAdmin: isAdminAccountPhone(phone)
+        };
+    }
+
+    function ensureAccountBalance(phone) {
+        ensureUser.run(phone, nowIso());
+        ensureAccountBalanceRow.run(phone, creditLimitCents, nowIso());
+        return getAccountBalanceRow.get(phone);
+    }
+
+    function publicAccountBalance(row) {
+        const balanceCents = Number(row?.balance_cents || 0);
+        const pendingTopupCents = Number(row?.pending_topup_cents || 0);
+        const creditLimit = Number(row?.credit_limit_cents || creditLimitCents);
+        const debtCents = balanceCents < 0 ? Math.abs(balanceCents) : 0;
+        const status = balanceCents < 0 ? 'debt' : balanceCents === 0 ? 'empty' : 'available';
+        return {
+            phone: row.phone,
+            balanceCents,
+            balanceAmount: centsToCny(balanceCents),
+            pendingTopupCents,
+            pendingTopupAmount: centsToCny(pendingTopupCents),
+            debtCents,
+            debtAmount: centsToCny(debtCents),
+            creditLimitCents: creditLimit,
+            creditLimitAmount: centsToCny(creditLimit),
+            creditExceeded: balanceCents < -creditLimit,
+            status,
+            updatedAt: row.updated_at
+        };
+    }
+
+    function billingStatusForPhone(phone) {
+        return publicAccountBalance(ensureAccountBalance(phone));
+    }
+
+    function billingBlockedStatus(phone) {
+        const billing = billingStatusForPhone(phone);
+        if (billing.balanceCents > 0) {
+            return { blocked: false, billing };
+        }
+        return { blocked: true, billing };
+    }
+
+    function paymentReferenceForPhone(phone) {
+        const parts = chinaParts(new Date());
+        const maskedPhone = `${phone.slice(0, 3)}****${phone.slice(-4)}`;
+        return `YUI-${parts.year}${pad2(parts.month)}-${maskedPhone}`;
+    }
+
+    function accountPaymentConfig(phone) {
+        return {
+            alipayQrUrl: options.alipayQrUrl ?? process.env.SHOP_ALIPAY_QR_URL ?? '/shop/assets/pay/alipay-qr.png',
+            wechatQrUrl: options.wechatQrUrl ?? process.env.SHOP_WECHAT_QR_URL ?? '/shop/assets/pay/wechat-qr.png',
+            paymentReference: paymentReferenceForPhone(phone)
+        };
+    }
+
+    function publicTopupRequest(row) {
+        return {
+            id: row.id,
+            phone: row.phone,
+            requestedAmountCents: row.requested_amount_cents,
+            requestedAmount: centsToCny(row.requested_amount_cents),
+            confirmedAmountCents: row.confirmed_amount_cents ?? null,
+            confirmedAmount: row.confirmed_amount_cents === null || row.confirmed_amount_cents === undefined
+                ? null
+                : centsToCny(row.confirmed_amount_cents),
+            paymentMethod: row.payment_method,
+            paymentTime: row.payment_time || '',
+            paymentNote: row.payment_note || '',
+            screenshotPath: row.screenshot_path || '',
+            status: row.status,
+            adminNote: row.admin_note || '',
+            createdAt: row.created_at,
+            confirmedAt: row.confirmed_at || '',
+            confirmedByPhone: row.confirmed_by_phone || '',
+            rejectedAt: row.rejected_at || '',
+            rejectedByPhone: row.rejected_by_phone || ''
+        };
+    }
+
+    function refreshPendingTopupCents(phone) {
+        ensureAccountBalance(phone);
+        const row = sumPendingTopupsByPhone.get(phone);
+        const pendingTopupCents = Number(row?.pending_topup_cents || 0);
+        updatePendingTopupCents.run(pendingTopupCents, nowIso(), phone);
+        return pendingTopupCents;
+    }
+
+    function normalizeTopupRequestBody(body = {}) {
+        return {
+            requestedAmountCents: parsePositiveCnyToCents(body.amount ?? body.requestedAmount),
+            paymentMethod: normalizePaymentMethod(body.paymentMethod ?? body.payment_method),
+            paymentTime: String(body.paymentTime || body.payment_time || '').trim(),
+            paymentNote: String(body.paymentNote || body.payment_note || '').trim().slice(0, 500),
+            screenshotPath: String(body.screenshotPath || body.screenshot_path || '').trim().slice(0, 500)
+        };
+    }
+
+    function publicLedgerEntry(row) {
+        return {
+            id: row.id,
+            phone: row.phone,
+            entryType: row.entry_type,
+            amountCents: row.amount_cents,
+            amount: centsToCny(row.amount_cents),
+            balanceAfterCents: row.balance_after_cents,
+            balanceAfter: centsToCny(row.balance_after_cents),
+            currency: row.currency,
+            relatedId: row.related_id || '',
+            memo: row.memo || '',
+            createdAt: row.created_at,
+            createdByPhone: row.created_by_phone || ''
+        };
+    }
+
+    function publicApiChargeRecord(row) {
+        return {
+            id: row.id,
+            phone: row.phone,
+            usageEventId: row.usage_event_id,
+            apiKeyHash: row.api_key_hash,
+            model: row.model || 'unknown',
+            inputTokens: row.input_tokens,
+            outputTokens: row.output_tokens,
+            totalTokens: row.total_tokens,
+            priceVersion: row.price_version,
+            chargeCents: row.charge_cents,
+            chargeAmount: centsToCny(row.charge_cents),
+            balanceBeforeCents: row.balance_before_cents,
+            balanceBefore: centsToCny(row.balance_before_cents),
+            balanceAfterCents: row.balance_after_cents,
+            balanceAfter: centsToCny(row.balance_after_cents),
+            status: row.status,
+            createdAt: row.created_at
         };
     }
 
@@ -715,6 +966,159 @@ VALUES (?, ?)
 ON CONFLICT(phone) DO NOTHING
 `);
 
+    const ensureAccountBalanceRow = db.prepare(`
+INSERT INTO account_balances (phone, balance_cents, pending_topup_cents, credit_limit_cents, updated_at)
+VALUES (?, 0, 0, ?, ?)
+ON CONFLICT(phone) DO NOTHING
+`);
+
+    const getAccountBalanceRow = db.prepare(`
+SELECT phone, balance_cents, pending_topup_cents, credit_limit_cents, updated_at
+FROM account_balances
+WHERE phone = ?
+`);
+
+    const insertTopupRequest = db.prepare(`
+INSERT INTO topup_requests (
+  id, phone, requested_amount_cents, payment_method, payment_time, payment_note,
+  screenshot_path, status, created_at
+)
+VALUES (
+  @id, @phone, @requestedAmountCents, @paymentMethod, @paymentTime, @paymentNote,
+  @screenshotPath, 'pending', @createdAt
+)
+`);
+
+    const listTopupRequestsByPhone = db.prepare(`
+SELECT id, phone, requested_amount_cents, confirmed_amount_cents, payment_method,
+       payment_time, payment_note, screenshot_path, status, admin_note, created_at,
+       confirmed_at, confirmed_by_phone, rejected_at, rejected_by_phone
+FROM topup_requests
+WHERE phone = ?
+ORDER BY created_at DESC
+LIMIT ?
+`);
+
+    const sumPendingTopupsByPhone = db.prepare(`
+SELECT COALESCE(SUM(requested_amount_cents), 0) AS pending_topup_cents
+FROM topup_requests
+WHERE phone = ? AND status = 'pending'
+`);
+
+    const updatePendingTopupCents = db.prepare(`
+UPDATE account_balances
+SET pending_topup_cents = ?,
+    updated_at = ?
+WHERE phone = ?
+`);
+
+    const listTopupRequestsForAdmin = db.prepare(`
+SELECT id, phone, requested_amount_cents, confirmed_amount_cents, payment_method,
+       payment_time, payment_note, screenshot_path, status, admin_note, created_at,
+       confirmed_at, confirmed_by_phone, rejected_at, rejected_by_phone
+FROM topup_requests
+WHERE (? = 'all' OR status = ?)
+ORDER BY created_at DESC
+LIMIT ?
+`);
+
+    const getTopupRequestById = db.prepare(`
+SELECT id, phone, requested_amount_cents, confirmed_amount_cents, payment_method,
+       payment_time, payment_note, screenshot_path, status, admin_note, created_at,
+       confirmed_at, confirmed_by_phone, rejected_at, rejected_by_phone
+FROM topup_requests
+WHERE id = ?
+`);
+
+    const approveTopupRequestById = db.prepare(`
+UPDATE topup_requests
+SET status = 'approved',
+    confirmed_amount_cents = ?,
+    admin_note = ?,
+    confirmed_at = ?,
+    confirmed_by_phone = ?
+WHERE id = ? AND status = 'pending'
+`);
+
+    const rejectTopupRequestById = db.prepare(`
+UPDATE topup_requests
+SET status = 'rejected',
+    admin_note = ?,
+    rejected_at = ?,
+    rejected_by_phone = ?
+WHERE id = ? AND status = 'pending'
+`);
+
+    const updateBalanceCents = db.prepare(`
+UPDATE account_balances
+SET balance_cents = ?,
+    updated_at = ?
+WHERE phone = ?
+`);
+
+    const insertLedgerEntry = db.prepare(`
+INSERT INTO account_ledger_entries (
+  id, phone, entry_type, amount_cents, balance_after_cents, currency,
+  related_id, memo, created_at, created_by_phone
+)
+VALUES (
+  @id, @phone, @entryType, @amountCents, @balanceAfterCents, 'CNY',
+  @relatedId, @memo, @createdAt, @createdByPhone
+)
+`);
+
+    const getPhoneByUsageApiKeyHash = db.prepare(`
+SELECT o.phone AS phone
+FROM api_keys ak
+JOIN orders o ON o.api_key = ak.api_key
+WHERE ak.api_key_hash = ?
+UNION
+SELECT phone
+FROM usage_key_profiles
+WHERE api_key_hash = ? AND phone != ''
+LIMIT 1
+`);
+
+    const getApiChargeByUsageEventId = db.prepare(`
+SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+       total_tokens, price_version, charge_cents, balance_before_cents,
+       balance_after_cents, status, created_at
+FROM api_charge_records
+WHERE usage_event_id = ?
+`);
+
+    const insertApiChargeRecord = db.prepare(`
+INSERT INTO api_charge_records (
+  id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+  total_tokens, price_version, charge_cents, balance_before_cents,
+  balance_after_cents, status, created_at
+)
+VALUES (
+  @id, @phone, @usageEventId, @apiKeyHash, @model, @inputTokens, @outputTokens,
+  @totalTokens, @priceVersion, @chargeCents, @balanceBeforeCents,
+  @balanceAfterCents, @status, @createdAt
+)
+`);
+
+    const listLedgerEntriesByPhone = db.prepare(`
+SELECT id, phone, entry_type, amount_cents, balance_after_cents, currency,
+       related_id, memo, created_at, created_by_phone
+FROM account_ledger_entries
+WHERE phone = ?
+ORDER BY created_at DESC, rowid DESC
+LIMIT ?
+`);
+
+    const listApiChargeRecordsByPhone = db.prepare(`
+SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+       total_tokens, price_version, charge_cents, balance_before_cents,
+       balance_after_cents, status, created_at
+FROM api_charge_records
+WHERE phone = ?
+ORDER BY created_at DESC, rowid DESC
+LIMIT ?
+`);
+
     const getUserByPhone = db.prepare(`
 SELECT phone, created_at, password_hash, password_created_at, updated_at
 FROM users
@@ -811,19 +1215,19 @@ WHERE api_key = ?
 INSERT OR IGNORE INTO usage_events (
   request_id, api_key_hash, api_key_preview, provider, model, endpoint, source, auth_index,
   success, failed, input_tokens, output_tokens, reasoning_tokens, cached_tokens, total_tokens,
-  latency_ms, requested_at, received_at
+  latency_ms, requested_at, received_at, price_amount_micros, price_currency
 )
 VALUES (
   @requestId, @apiKeyHash, @apiKeyPreview, @provider, @model, @endpoint, @source, @authIndex,
   @success, @failed, @inputTokens, @outputTokens, @reasoningTokens, @cachedTokens, @totalTokens,
-  @latencyMs, @requestedAt, @receivedAt
+  @latencyMs, @requestedAt, @receivedAt, @priceAmountMicros, @priceCurrency
 )
 `);
 
     const listUsageEvents = db.prepare(`
 SELECT request_id, api_key_hash, api_key_preview, provider, model, endpoint, source, auth_index,
        success, failed, input_tokens, output_tokens, reasoning_tokens, cached_tokens, total_tokens,
-       latency_ms, requested_at, received_at
+       latency_ms, requested_at, received_at, price_amount_micros, price_currency
 FROM usage_events
 ORDER BY requested_at DESC
 `);
@@ -962,6 +1366,164 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
         setUserPassword.run(passwordHash, now, now, phone);
         return { phone };
+    });
+
+    const createTopupRequest = db.transaction(({ phone, body }) => {
+        ensureAccountBalance(phone);
+        const normalized = normalizeTopupRequestBody(body);
+        const topup = {
+            id: createId('TOPUP'),
+            phone,
+            ...normalized,
+            createdAt: nowIso()
+        };
+        insertTopupRequest.run(topup);
+        refreshPendingTopupCents(phone);
+        return topup;
+    });
+
+    const approveTopupRequest = db.transaction(({ id, confirmedAmountCents, adminNote, adminPhone }) => {
+        const row = getTopupRequestById.get(id);
+        if (!row || row.status !== 'pending') {
+            const error = new Error('充值申请不是待确认状态。');
+            error.status = 409;
+            error.code = 'TOPUP_NOT_PENDING';
+            throw error;
+        }
+        const phone = row.phone;
+        const balanceRow = ensureAccountBalance(phone);
+        const nextBalanceCents = Number(balanceRow.balance_cents || 0) + confirmedAmountCents;
+        const now = nowIso();
+        const result = approveTopupRequestById.run(confirmedAmountCents, adminNote, now, adminPhone, id);
+        if (result.changes !== 1) {
+            const error = new Error('充值申请确认失败。');
+            error.status = 409;
+            error.code = 'TOPUP_NOT_PENDING';
+            throw error;
+        }
+        updateBalanceCents.run(nextBalanceCents, now, phone);
+        refreshPendingTopupCents(phone);
+        insertLedgerEntry.run({
+            id: createId('LEDGER'),
+            phone,
+            entryType: 'topup_approved',
+            amountCents: confirmedAmountCents,
+            balanceAfterCents: nextBalanceCents,
+            relatedId: id,
+            memo: adminNote,
+            createdAt: now,
+            createdByPhone: adminPhone
+        });
+        return {
+            topup: getTopupRequestById.get(id),
+            balance: getAccountBalanceRow.get(phone)
+        };
+    });
+
+    const rejectTopupRequest = db.transaction(({ id, adminNote, adminPhone }) => {
+        const row = getTopupRequestById.get(id);
+        if (!row || row.status !== 'pending') {
+            const error = new Error('充值申请不是待确认状态。');
+            error.status = 409;
+            error.code = 'TOPUP_NOT_PENDING';
+            throw error;
+        }
+        const now = nowIso();
+        const result = rejectTopupRequestById.run(adminNote, now, adminPhone, id);
+        if (result.changes !== 1) {
+            const error = new Error('充值申请拒绝失败。');
+            error.status = 409;
+            error.code = 'TOPUP_NOT_PENDING';
+            throw error;
+        }
+        refreshPendingTopupCents(row.phone);
+        return {
+            topup: getTopupRequestById.get(id),
+            balance: getAccountBalanceRow.get(row.phone)
+        };
+    });
+
+    function chargeCentsFromUsageEvent(event) {
+        if (event.failed) {
+            return { chargeCents: 0, status: 'failed_no_charge', priceVersion: 'failed-no-charge' };
+        }
+        if (event.priceAmountMicros === null || event.priceAmountMicros === undefined || event.priceAmountMicros <= 0) {
+            return { chargeCents: 0, status: 'unpriced_no_charge', priceVersion: 'usage-event-missing-price' };
+        }
+        const currency = String(event.priceCurrency || 'CNY').toUpperCase();
+        if (currency !== 'CNY') {
+            const error = new Error('usage event 价格币种必须是 CNY。');
+            error.status = 400;
+            error.code = 'UNSUPPORTED_USAGE_PRICE_CURRENCY';
+            throw error;
+        }
+        return {
+            chargeCents: Math.ceil(Number(event.priceAmountMicros) / 10000),
+            status: 'charged',
+            priceVersion: 'usage-event-price-micros-cny-v1'
+        };
+    }
+
+    function chargeUsageEventInCurrentTransaction(event) {
+        if (getApiChargeByUsageEventId.get(event.requestId)) {
+            return { charged: 0, skipped: 1 };
+        }
+        const owner = getPhoneByUsageApiKeyHash.get(event.apiKeyHash, event.apiKeyHash);
+        if (!owner?.phone) {
+            return { charged: 0, skipped: 1 };
+        }
+        const balanceRow = ensureAccountBalance(owner.phone);
+        const pricing = chargeCentsFromUsageEvent(event);
+        const balanceBeforeCents = Number(balanceRow.balance_cents || 0);
+        const balanceAfterCents = balanceBeforeCents - pricing.chargeCents;
+        const now = nowIso();
+
+        insertApiChargeRecord.run({
+            id: createId('CHARGE'),
+            phone: owner.phone,
+            usageEventId: event.requestId,
+            apiKeyHash: event.apiKeyHash,
+            model: event.model,
+            inputTokens: event.inputTokens,
+            outputTokens: event.outputTokens,
+            totalTokens: event.totalTokens,
+            priceVersion: pricing.priceVersion,
+            chargeCents: pricing.chargeCents,
+            balanceBeforeCents,
+            balanceAfterCents,
+            status: pricing.status,
+            createdAt: now
+        });
+
+        if (pricing.chargeCents > 0) {
+            updateBalanceCents.run(balanceAfterCents, now, owner.phone);
+            insertLedgerEntry.run({
+                id: createId('LEDGER'),
+                phone: owner.phone,
+                entryType: 'api_charge',
+                amountCents: -pricing.chargeCents,
+                balanceAfterCents,
+                relatedId: event.requestId,
+                memo: `${event.model || 'unknown'} API 调用扣费`,
+                createdAt: now,
+                createdByPhone: ''
+            });
+        }
+
+        return { charged: pricing.chargeCents > 0 ? 1 : 0, skipped: 0 };
+    }
+
+    const chargeUsageEvent = db.transaction((event) => {
+        return chargeUsageEventInCurrentTransaction(event);
+    });
+
+    const storeUsageEventWithCharge = db.transaction((event) => {
+        const result = insertUsageEvent.run(event);
+        if (result.changes <= 0) {
+            return { inserted: 0, skipped: 1 };
+        }
+        chargeUsageEventInCurrentTransaction(event);
+        return { inserted: 1, skipped: 0 };
     });
 
     function loginUser({ phone, password }) {
@@ -1167,8 +1729,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         event.receivedAt = nowIso();
         event.success = event.success ? 1 : 0;
         event.failed = event.failed ? 1 : 0;
-        const result = insertUsageEvent.run(event);
-        return result.changes > 0 ? { inserted: 1, skipped: 0 } : { inserted: 0, skipped: 1 };
+        return storeUsageEventWithCharge(event);
     }
 
     function emptyUsageStats() {
@@ -1689,6 +2250,62 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         });
     });
 
+    app.get('/api/account/balance', limitQueryApi, requireAccount, (req, res) => {
+        const balance = ensureAccountBalance(req.account.phone);
+        return res.json({
+            balance: publicAccountBalance(balance),
+            payment: accountPaymentConfig(req.account.phone)
+        });
+    });
+
+    app.post('/api/account/topups', limitQueryApi, requireAccount, (req, res) => {
+        try {
+            const topup = createTopupRequest({ phone: req.account.phone, body: req.body });
+            return res.status(201).json({
+                topup: publicTopupRequest({
+                    id: topup.id,
+                    phone: topup.phone,
+                    requested_amount_cents: topup.requestedAmountCents,
+                    confirmed_amount_cents: null,
+                    payment_method: topup.paymentMethod,
+                    payment_time: topup.paymentTime,
+                    payment_note: topup.paymentNote,
+                    screenshot_path: topup.screenshotPath,
+                    status: 'pending',
+                    admin_note: '',
+                    created_at: topup.createdAt,
+                    confirmed_at: '',
+                    confirmed_by_phone: '',
+                    rejected_at: '',
+                    rejected_by_phone: ''
+                })
+            });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'TOPUP_REQUEST_FAILED',
+                message: error.message || '充值申请提交失败。'
+            });
+        }
+    });
+
+    app.get('/api/account/topups', limitQueryApi, requireAccount, (req, res) => {
+        const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 100);
+        const topups = listTopupRequestsByPhone.all(req.account.phone, limit).map(publicTopupRequest);
+        return res.json({ topups });
+    });
+
+    app.get('/api/account/ledger', limitQueryApi, requireAccount, (req, res) => {
+        const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
+        const entries = listLedgerEntriesByPhone.all(req.account.phone, limit).map(publicLedgerEntry);
+        return res.json({ entries });
+    });
+
+    app.get('/api/account/api-charges', limitQueryApi, requireAccount, (req, res) => {
+        const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
+        const charges = listApiChargeRecordsByPhone.all(req.account.phone, limit).map(publicApiChargeRecord);
+        return res.json({ charges });
+    });
+
     app.get('/api/account/usage-summary', limitQueryApi, requireAccount, (req, res) => {
         return res.json(accountUsageSummary(req.account.phone));
     });
@@ -1737,6 +2354,54 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             return res.status(error.status || 500).json({
                 code: error.code || 'USAGE_KEY_PROFILE_FAILED',
                 message: error.message || 'usage key 归属设置失败。'
+            });
+        }
+    });
+
+    app.get('/api/admin/topups', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        const status = String(req.query.status || 'pending').trim();
+        const normalizedStatus = ['pending', 'approved', 'rejected', 'cancelled', 'all'].includes(status) ? status : 'pending';
+        const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
+        const topups = listTopupRequestsForAdmin.all(normalizedStatus, normalizedStatus, limit).map(publicTopupRequest);
+        return res.json({ topups });
+    });
+
+    app.post('/api/admin/topups/:id/approve', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        try {
+            const confirmedAmountCents = parsePositiveCnyToCents(req.body.confirmedAmount ?? req.body.confirmed_amount);
+            const result = approveTopupRequest({
+                id: req.params.id,
+                confirmedAmountCents,
+                adminNote: String(req.body.adminNote || req.body.admin_note || '').trim().slice(0, 500),
+                adminPhone: req.account?.phone || defaultAdminAccountPhone
+            });
+            return res.json({
+                topup: publicTopupRequest(result.topup),
+                balance: publicAccountBalance(result.balance)
+            });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'TOPUP_APPROVE_FAILED',
+                message: error.message || '充值确认失败。'
+            });
+        }
+    });
+
+    app.post('/api/admin/topups/:id/reject', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        try {
+            const result = rejectTopupRequest({
+                id: req.params.id,
+                adminNote: String(req.body.adminNote || req.body.admin_note || '').trim().slice(0, 500),
+                adminPhone: req.account?.phone || defaultAdminAccountPhone
+            });
+            return res.json({
+                topup: publicTopupRequest(result.topup),
+                balance: publicAccountBalance(result.balance)
+            });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'TOPUP_REJECT_FAILED',
+                message: error.message || '充值拒绝失败。'
             });
         }
     });
@@ -1854,11 +2519,33 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
 
         const order = toOrder(orderRow);
         const active = getOrderStatus(order) === 'active';
+        if (!active) {
+            return res.json({
+                managed: true,
+                active: false,
+                status: 'expired',
+                expiresAt: order.expiresAt,
+                billing: billingStatusForPhone(order.phone)
+            });
+        }
+
+        const billingStatus = billingBlockedStatus(order.phone);
+        if (billingStatus.blocked) {
+            return res.json({
+                managed: true,
+                active: false,
+                status: 'insufficient_balance',
+                expiresAt: order.expiresAt,
+                billing: billingStatus.billing
+            });
+        }
+
         return res.json({
             managed: true,
-            active,
-            status: active ? 'active' : 'expired',
-            expiresAt: order.expiresAt
+            active: true,
+            status: 'active',
+            expiresAt: order.expiresAt,
+            billing: billingStatus.billing
         });
     });
 

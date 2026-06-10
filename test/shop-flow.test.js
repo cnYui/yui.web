@@ -74,6 +74,41 @@ async function usageEventFetch(baseUrl, event, options = {}) {
     });
 }
 
+async function createRedeemedOrder(baseUrl, phone, apiKey = 'sk-balance-gated') {
+    await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+        method: 'POST',
+        headers: { 'x-admin-token': 'test-token' },
+        body: JSON.stringify({ apiKeys: [apiKey] })
+    });
+    const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
+        method: 'POST',
+        headers: { 'x-admin-token': 'test-token' },
+        body: JSON.stringify({ count: 1 })
+    });
+    const redeemResult = await jsonFetch(`${baseUrl}/api/invites/redeem`, {
+        method: 'POST',
+        body: JSON.stringify({ phone, code: inviteResult.body.invites[0].code })
+    });
+    assert.equal(redeemResult.response.status, 201);
+    return redeemResult.body.order;
+}
+
+async function submitAndApproveTopup(baseUrl, cookie, amount, adminToken = 'test-token') {
+    const created = await jsonFetch(`${baseUrl}/api/account/topups`, {
+        method: 'POST',
+        headers: { cookie },
+        body: JSON.stringify({ amount, paymentMethod: 'alipay' })
+    });
+    assert.equal(created.response.status, 201);
+    const approved = await jsonFetch(`${baseUrl}/api/admin/topups/${created.body.topup.id}/approve`, {
+        method: 'POST',
+        headers: { 'x-admin-token': adminToken },
+        body: JSON.stringify({ confirmedAmount: amount })
+    });
+    assert.equal(approved.response.status, 200);
+    return approved.body;
+}
+
 async function withServer(run, appOptions = {}) {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yui-shop-test-'));
     const dbPath = path.join(tempDir, 'shop.sqlite');
@@ -186,6 +221,475 @@ test('Shop 数据库包含 API key hash 和 usage_events 账本表', async () =>
         const row = db.prepare('SELECT api_key_hash FROM api_keys WHERE api_key = ?').get('sk-hash-schema');
         assert.equal(row.api_key_hash, hashApiKeyForTest('sk-hash-schema'));
     });
+});
+
+test('Shop 数据库包含预充值余额、充值申请、账户流水和扣费记录表', async () => {
+    await withServer(async ({ db }) => {
+        const tableNames = db.prepare(`
+SELECT name FROM sqlite_master
+WHERE type = 'table'
+  AND name IN ('account_balances', 'topup_requests', 'account_ledger_entries', 'api_charge_records')
+ORDER BY name
+`).all().map((row) => row.name);
+
+        assert.deepEqual(tableNames, [
+            'account_balances',
+            'account_ledger_entries',
+            'api_charge_records',
+            'topup_requests'
+        ]);
+
+        const balanceColumns = db.prepare('PRAGMA table_info(account_balances)').all().map((column) => column.name);
+        assert.ok(balanceColumns.includes('phone'));
+        assert.ok(balanceColumns.includes('balance_cents'));
+        assert.ok(balanceColumns.includes('pending_topup_cents'));
+        assert.ok(balanceColumns.includes('credit_limit_cents'));
+    });
+});
+
+test('新注册用户账户余额默认为 0 且默认欠费上限为 10 元', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139001');
+
+        const result = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+
+        assert.equal(result.response.status, 200);
+        assert.equal(result.body.balance.balanceCents, 0);
+        assert.equal(result.body.balance.pendingTopupCents, 0);
+        assert.equal(result.body.balance.debtCents, 0);
+        assert.equal(result.body.balance.creditLimitCents, 1000);
+        assert.equal(result.body.balance.status, 'empty');
+    });
+});
+
+test('用户提交充值申请后进入待确认且不会增加可用余额', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139002');
+
+        const created = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({
+                amount: '30',
+                paymentMethod: 'alipay',
+                paymentTime: '2026-06-10T13:00',
+                paymentNote: 'YUI-202606-138****9002'
+            })
+        });
+
+        assert.equal(created.response.status, 201);
+        assert.equal(created.body.topup.status, 'pending');
+        assert.equal(created.body.topup.requestedAmountCents, 3000);
+        assert.equal(created.body.topup.requestedAmount, 30);
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceCents, 0);
+        assert.equal(balance.body.balance.pendingTopupCents, 3000);
+
+        const row = db.prepare('SELECT status, requested_amount_cents FROM topup_requests WHERE phone = ?').get('13800139002');
+        assert.deepEqual(row, { status: 'pending', requested_amount_cents: 3000 });
+    });
+});
+
+test('用户只能查看自己的充值申请', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const firstCookie = await registerUserAndGetCookie(baseUrl, '13800139003');
+        const secondCookie = await registerUserAndGetCookie(baseUrl, '13800139004');
+
+        await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie: firstCookie },
+            body: JSON.stringify({ amount: '10.50', paymentMethod: 'wechat', paymentNote: 'first user' })
+        });
+
+        const firstList = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            headers: { cookie: firstCookie }
+        });
+        assert.equal(firstList.response.status, 200);
+        assert.equal(firstList.body.topups.length, 1);
+        assert.equal(firstList.body.topups[0].requestedAmountCents, 1050);
+
+        const secondList = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            headers: { cookie: secondCookie }
+        });
+        assert.equal(secondList.response.status, 200);
+        assert.equal(secondList.body.topups.length, 0);
+    });
+});
+
+test('充值申请校验金额和支付方式', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139005');
+
+        const badAmount = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ amount: '0', paymentMethod: 'alipay' })
+        });
+        assert.equal(badAmount.response.status, 400);
+        assert.equal(badAmount.body.code, 'INVALID_AMOUNT');
+
+        const badMethod = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ amount: '1', paymentMethod: 'bank' })
+        });
+        assert.equal(badMethod.response.status, 400);
+        assert.equal(badMethod.body.code, 'INVALID_PAYMENT_METHOD');
+    });
+});
+
+test('管理员确认充值后增加余额并写入账户流水', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139006');
+        const created = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ amount: '30', paymentMethod: 'alipay', paymentNote: 'paid 30' })
+        });
+
+        const approved = await jsonFetch(`${baseUrl}/api/admin/topups/${created.body.topup.id}/approve`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ confirmedAmount: '30', adminNote: '到账' })
+        });
+
+        assert.equal(approved.response.status, 200);
+        assert.equal(approved.body.topup.status, 'approved');
+        assert.equal(approved.body.balance.balanceCents, 3000);
+        assert.equal(approved.body.balance.pendingTopupCents, 0);
+
+        const ledger = db.prepare(`
+SELECT entry_type, amount_cents, balance_after_cents, related_id
+FROM account_ledger_entries
+WHERE phone = ?
+`).get('13800139006');
+        assert.deepEqual(ledger, {
+            entry_type: 'topup_approved',
+            amount_cents: 3000,
+            balance_after_cents: 3000,
+            related_id: created.body.topup.id
+        });
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceCents, 3000);
+    });
+});
+
+test('管理员确认金额以管理员填写为准且不能重复入账', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139007');
+        const created = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ amount: '30', paymentMethod: 'wechat' })
+        });
+
+        const approved = await jsonFetch(`${baseUrl}/api/admin/topups/${created.body.topup.id}/approve`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ confirmedAmount: '20', adminNote: '实际到账 20' })
+        });
+        assert.equal(approved.response.status, 200);
+        assert.equal(approved.body.balance.balanceCents, 2000);
+
+        const duplicate = await jsonFetch(`${baseUrl}/api/admin/topups/${created.body.topup.id}/approve`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ confirmedAmount: '20' })
+        });
+        assert.equal(duplicate.response.status, 409);
+        assert.equal(duplicate.body.code, 'TOPUP_NOT_PENDING');
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceCents, 2000);
+    });
+});
+
+test('管理员拒绝充值不会改变余额', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139008');
+        const created = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ amount: '50', paymentMethod: 'alipay' })
+        });
+
+        const rejected = await jsonFetch(`${baseUrl}/api/admin/topups/${created.body.topup.id}/reject`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ adminNote: '未到账' })
+        });
+
+        assert.equal(rejected.response.status, 200);
+        assert.equal(rejected.body.topup.status, 'rejected');
+        assert.equal(rejected.body.balance.balanceCents, 0);
+        assert.equal(rejected.body.balance.pendingTopupCents, 0);
+    });
+});
+
+test('托管 API key 在账户余额为 0 时返回余额不足状态', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800139009', 'sk-balance-zero');
+
+        const status = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=${encodeURIComponent(order.apiKey)}`, {
+            headers: { 'x-internal-token': 'internal-test-token' }
+        });
+
+        assert.equal(status.response.status, 200);
+        assert.equal(status.body.managed, true);
+        assert.equal(status.body.active, false);
+        assert.equal(status.body.status, 'insufficient_balance');
+        assert.equal(status.body.billing.balanceCents, 0);
+        assert.equal(status.body.billing.debtCents, 0);
+    });
+});
+
+test('托管 API key 充值确认后恢复可用', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800139010', 'sk-balance-positive');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139010');
+        await submitAndApproveTopup(baseUrl, cookie, '5');
+
+        const status = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=${encodeURIComponent(order.apiKey)}`, {
+            headers: { 'x-internal-token': 'internal-test-token' }
+        });
+
+        assert.equal(status.response.status, 200);
+        assert.equal(status.body.managed, true);
+        assert.equal(status.body.active, true);
+        assert.equal(status.body.status, 'active');
+        assert.equal(status.body.billing.balanceCents, 500);
+    });
+});
+
+test('usage event 写入后按 price_amount_micros 扣余额并生成用户可见扣费记录', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800139011', 'sk-charge-positive');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139011');
+        await submitAndApproveTopup(baseUrl, cookie, '1');
+
+        const event = {
+            version: 1,
+            request_id: 'req-charge-001',
+            api_key_hash: hashApiKeyForTest(order.apiKey),
+            api_key_preview: keyPreviewForTest(order.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            endpoint: '/v1/responses',
+            success: true,
+            failed: false,
+            input_tokens: 100,
+            output_tokens: 200,
+            total_tokens: 300,
+            price_amount_micros: 250000,
+            price_currency: 'CNY',
+            requested_at: '2026-06-10T12:00:00+08:00'
+        };
+
+        const inserted = await usageEventFetch(baseUrl, event);
+        assert.equal(inserted.response.status, 201);
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceCents, 75);
+
+        const charge = db.prepare(`
+SELECT phone, usage_event_id, charge_cents, balance_before_cents, balance_after_cents, status
+FROM api_charge_records
+WHERE usage_event_id = ?
+`).get('req-charge-001');
+        assert.deepEqual(charge, {
+            phone: '13800139011',
+            usage_event_id: 'req-charge-001',
+            charge_cents: 25,
+            balance_before_cents: 100,
+            balance_after_cents: 75,
+            status: 'charged'
+        });
+
+        const ledger = db.prepare(`
+SELECT entry_type, amount_cents, balance_after_cents, related_id
+FROM account_ledger_entries
+WHERE related_id = ?
+`).get('req-charge-001');
+        assert.deepEqual(ledger, {
+            entry_type: 'api_charge',
+            amount_cents: -25,
+            balance_after_cents: 75,
+            related_id: 'req-charge-001'
+        });
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
+test('余额很少时本次调用可扣成负数且下一次状态检查拒绝', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800139012', 'sk-charge-negative');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139012');
+        await submitAndApproveTopup(baseUrl, cookie, '0.05');
+
+        const inserted = await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-charge-negative',
+            api_key_hash: hashApiKeyForTest(order.apiKey),
+            api_key_preview: keyPreviewForTest(order.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            endpoint: '/v1/responses',
+            success: true,
+            failed: false,
+            input_tokens: 100,
+            output_tokens: 200,
+            total_tokens: 300,
+            price_amount_micros: 200000,
+            price_currency: 'CNY',
+            requested_at: '2026-06-10T12:05:00+08:00'
+        });
+        assert.equal(inserted.response.status, 201);
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceCents, -15);
+        assert.equal(balance.body.balance.debtCents, 15);
+        assert.equal(balance.body.balance.status, 'debt');
+
+        const status = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=${encodeURIComponent(order.apiKey)}`, {
+            headers: { 'x-internal-token': 'internal-test-token' }
+        });
+        assert.equal(status.body.active, false);
+        assert.equal(status.body.status, 'insufficient_balance');
+        assert.equal(status.body.billing.debtCents, 15);
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
+test('重复 usage event 不会重复扣费', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800139013', 'sk-charge-idempotent');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139013');
+        await submitAndApproveTopup(baseUrl, cookie, '1');
+
+        const event = {
+            version: 1,
+            request_id: 'req-charge-idempotent',
+            api_key_hash: hashApiKeyForTest(order.apiKey),
+            api_key_preview: keyPreviewForTest(order.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            endpoint: '/v1/responses',
+            success: true,
+            failed: false,
+            input_tokens: 1,
+            output_tokens: 1,
+            total_tokens: 2,
+            price_amount_micros: 100000,
+            price_currency: 'CNY',
+            requested_at: '2026-06-10T12:10:00+08:00'
+        };
+
+        const first = await usageEventFetch(baseUrl, event);
+        assert.equal(first.response.status, 201);
+        const duplicate = await usageEventFetch(baseUrl, event);
+        assert.equal(duplicate.response.status, 200);
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceCents, 90);
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
+test('usage event 扣费失败时不会留下未扣费事件', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800139016', 'sk-charge-rollback');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139016');
+        await submitAndApproveTopup(baseUrl, cookie, '1');
+
+        const rejected = await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-charge-rollback',
+            api_key_hash: hashApiKeyForTest(order.apiKey),
+            api_key_preview: keyPreviewForTest(order.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            endpoint: '/v1/responses',
+            success: true,
+            failed: false,
+            input_tokens: 1,
+            output_tokens: 1,
+            total_tokens: 2,
+            price_amount_micros: 100000,
+            price_currency: 'USD',
+            requested_at: '2026-06-10T12:12:00+08:00'
+        });
+
+        assert.equal(rejected.response.status, 400);
+        assert.equal(rejected.body.code, 'UNSUPPORTED_USAGE_PRICE_CURRENCY');
+        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM usage_events WHERE request_id = ?').get('req-charge-rollback').count, 0);
+        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM api_charge_records WHERE usage_event_id = ?').get('req-charge-rollback').count, 0);
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceCents, 100);
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
+test('用户账户页 API 返回自己的账户流水和扣费记录', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const firstOrder = await createRedeemedOrder(baseUrl, '13800139014', 'sk-ledger-first');
+        await createRedeemedOrder(baseUrl, '13800139015', 'sk-ledger-second');
+        const firstCookie = await registerUserAndGetCookie(baseUrl, '13800139014');
+        const secondCookie = await registerUserAndGetCookie(baseUrl, '13800139015');
+        await submitAndApproveTopup(baseUrl, firstCookie, '1');
+
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-ledger-first',
+            api_key_hash: hashApiKeyForTest(firstOrder.apiKey),
+            api_key_preview: keyPreviewForTest(firstOrder.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            endpoint: '/v1/responses',
+            success: true,
+            failed: false,
+            input_tokens: 10,
+            output_tokens: 20,
+            total_tokens: 30,
+            price_amount_micros: 100000,
+            price_currency: 'CNY',
+            requested_at: '2026-06-10T12:15:00+08:00'
+        });
+
+        const ledger = await jsonFetch(`${baseUrl}/api/account/ledger`, {
+            headers: { cookie: firstCookie }
+        });
+        assert.equal(ledger.response.status, 200);
+        assert.equal(ledger.body.entries.length, 2);
+        assert.deepEqual(ledger.body.entries.map((entry) => entry.entryType), ['api_charge', 'topup_approved']);
+
+        const charges = await jsonFetch(`${baseUrl}/api/account/api-charges`, {
+            headers: { cookie: firstCookie }
+        });
+        assert.equal(charges.response.status, 200);
+        assert.equal(charges.body.charges.length, 1);
+        assert.equal(charges.body.charges[0].usageEventId, 'req-ledger-first');
+        assert.equal(charges.body.charges[0].chargeCents, 10);
+
+        const secondLedger = await jsonFetch(`${baseUrl}/api/account/ledger`, {
+            headers: { cookie: secondCookie }
+        });
+        assert.equal(secondLedger.body.entries.length, 0);
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
 test('内部 usage event 接口校验 token、HMAC、timestamp 并幂等写入', async () => {
@@ -1000,6 +1504,26 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.doesNotMatch(html, /完整 API key/);
 });
 
+test('Account 页面包含预充值余额、充值申请和扣费流水容器', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
+
+    assert.match(html, /id="accountBalanceCards"/);
+    assert.match(html, /id="topupForm"/);
+    assert.match(html, /id="topupAmount"/);
+    assert.match(html, /id="accountTopups"/);
+    assert.match(html, /id="accountCharges"/);
+    assert.match(html, /id="accountLedger"/);
+});
+
+test('Admin 页面包含充值审核容器', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
+
+    assert.match(html, /id="adminTopupRefreshButton"/);
+    assert.match(html, /id="adminTopupStatusFilter"/);
+    assert.match(html, /id="adminTopupTable"/);
+    assert.match(html, /id="adminTopupMessage"/);
+});
+
 test('管理员页和登录页包含密码重置入口', () => {
     const adminHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
     const loginHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');
@@ -1089,22 +1613,11 @@ WHERE api_key = ?
     });
 });
 
-test('内部 API key 状态接口对未过期订单返回 active', async () => {
+test('内部 API key 状态接口对未过期且余额充足的订单返回 active', async () => {
     await withServer(async ({ baseUrl }) => {
-        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-active-status'] })
-        });
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 1 })
-        });
-        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138301', code: inviteResult.body.invites[0].code })
-        });
+        await createRedeemedOrder(baseUrl, '13800138301', 'sk-active-status');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138301');
+        await submitAndApproveTopup(baseUrl, cookie, '1');
 
         const active = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=sk-active-status`, {
             headers: { 'x-internal-token': 'internal-test-token' }
@@ -1113,6 +1626,7 @@ test('内部 API key 状态接口对未过期订单返回 active', async () => {
         assert.equal(active.body.managed, true);
         assert.equal(active.body.active, true);
         assert.equal(active.body.status, 'active');
+        assert.equal(active.body.billing.balanceCents, 100);
         assert.match(active.body.expiresAt, /^\d{4}-\d{2}-\d{2}T/);
     });
 });
