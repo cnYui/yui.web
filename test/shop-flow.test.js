@@ -11,6 +11,10 @@ function hashApiKeyForTest(apiKey) {
     return crypto.createHash('sha256').update(String(apiKey || '').trim()).digest('hex');
 }
 
+function keyPreviewForTest(apiKey) {
+    return `${apiKey.slice(0, 12)}...${apiKey.slice(-6)}`;
+}
+
 function hashPasswordForTest(password) {
     const salt = 'test-admin-salt';
     const hash = crypto.scryptSync(String(password || ''), salt, 64, {
@@ -32,6 +36,17 @@ VALUES (?, ?, ?, ?, ?)
         '2026-06-09T12:00:00+08:00',
         '2026-06-09T12:00:00+08:00'
     );
+}
+
+async function registerUserAndGetCookie(baseUrl, phone = '13800138690', password = 'Abcdefg1') {
+    const result = await jsonFetch(`${baseUrl}/api/auth/register`, {
+        method: 'POST',
+        body: JSON.stringify({ phone, password, confirmPassword: password })
+    });
+    assert.equal(result.response.status, 201);
+    const cookie = result.response.headers.get('set-cookie') || '';
+    assert.match(cookie, /yui_shop_account_session=/);
+    return cookie;
 }
 
 function signUsagePayload(secret, timestamp, body) {
@@ -147,10 +162,9 @@ test('用户用手机号和邀请码兑换后，从未使用 API key 池分配�
             31
         );
 
-        const queryResult = await jsonFetch(`${baseUrl}/api/orders?phone=13800138000`);
-        assert.equal(queryResult.response.status, 200);
-        assert.equal(queryResult.body.orders.length, 1);
-        assert.equal(queryResult.body.orders[0].apiKey, 'sk-test-a');
+        const publicQuery = await jsonFetch(`${baseUrl}/api/orders?phone=13800138000`);
+        assert.equal(publicQuery.response.status, 401);
+        assert.equal(publicQuery.body.code, 'ACCOUNT_LOGIN_REQUIRED');
     });
 });
 
@@ -442,18 +456,11 @@ test('新兑换订单的兑换时间和到期时间使用中国东八区格式�
     });
 });
 
-test('API key 结果页需要有效订单 token 才能访问', async () => {
-    await withServer(async ({ baseUrl, db }) => {
+test('API key 结果页需要账户登录才能访问', async () => {
+    await withServer(async ({ baseUrl }) => {
         const blocked = await fetch(`${baseUrl}/shop/key/`, { redirect: 'manual' });
         assert.equal(blocked.status, 302);
-        assert.equal(blocked.headers.get('location'), '/shop/redeem/');
-
-        const invalid = await fetch(`${baseUrl}/shop/key/`, {
-            redirect: 'manual',
-            headers: { cookie: 'yui_shop_result_token=rst_invalid' }
-        });
-        assert.equal(invalid.status, 302);
-        assert.equal(invalid.headers.get('location'), '/shop/redeem/');
+        assert.equal(blocked.headers.get('location'), '/shop/login/');
 
         await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
             method: 'POST',
@@ -469,11 +476,12 @@ test('API key 结果页需要有效订单 token 才能访问', async () => {
             method: 'POST',
             body: JSON.stringify({ phone: '13800138004', code: inviteResult.body.invites[0].code })
         });
-        const token = db.prepare('SELECT result_token FROM orders WHERE phone = ?').get('13800138004').result_token;
-        assert.match(redeemResult.response.headers.get('set-cookie') || '', new RegExp(`yui_shop_result_token=${token}`));
+        assert.match(redeemResult.response.headers.get('set-cookie') || '', /yui_shop_result_token=/);
+
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138004');
 
         const allowed = await fetch(`${baseUrl}/shop/key/`, {
-            headers: { cookie: `yui_shop_result_token=${token}` }
+            headers: { cookie }
         });
         assert.equal(allowed.status, 200);
         assert.match(await allowed.text(), /API key 已生成/);
@@ -537,15 +545,20 @@ test('邀请码和 API key 管理接口只接受后端管理员 token，不接�
     });
 });
 
-test('API 响应使用 no-store 且频繁查询会触发限流', async () => {
+test('API 响应使用 no-store 且频繁账户查询会触发限流', async () => {
     await withServer(async ({ baseUrl }) => {
-        const first = await jsonFetch(`${baseUrl}/api/orders?phone=13800138999`);
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138696');
+        const first = await jsonFetch(`${baseUrl}/api/orders?phone=13800138999`, {
+            headers: { cookie }
+        });
         assert.equal(first.response.status, 200);
         assert.equal(first.response.headers.get('cache-control'), 'no-store');
 
         let limited = null;
         for (let index = 0; index < 70; index += 1) {
-            const result = await jsonFetch(`${baseUrl}/api/orders?phone=13800138999`);
+            const result = await jsonFetch(`${baseUrl}/api/orders?phone=13800138999`, {
+                headers: { cookie }
+            });
             if (result.response.status === 429) {
                 limited = result;
                 break;
@@ -602,7 +615,7 @@ test('当前订单接口只返回 result token 绑定的订单', async () => {
     });
 });
 
-test('手机号查询会持久展示已过期订单', async () => {
+test('Account 页面数据会持久展示已过期订单和完整 API key', async () => {
     await withServer(async ({ baseUrl, db }) => {
         db.prepare('INSERT INTO users (phone, created_at) VALUES (?, ?)').run('13800138200', '2000-01-01T00:00:00.000Z');
         db.prepare(`
@@ -614,14 +627,18 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             'YUI-EXPIRED-KEEP',
             'sk-expired-keep-visible',
             'sk-expired...visible',
-            'Codex 每月额度',
+            'Codex 按量计费',
             30,
             '2000-01-01T00:00:00.000Z',
             '2000-02-01T00:00:00.000Z',
             'rst_expired_keep_visible'
         );
 
-        const result = await jsonFetch(`${baseUrl}/api/orders?phone=13800138200`);
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138200');
+        const result = await jsonFetch(`${baseUrl}/api/account/me`, {
+            headers: { cookie }
+        });
+
         assert.equal(result.response.status, 200);
         assert.equal(result.body.orders.length, 1);
         assert.equal(result.body.orders[0].id, 'ORDER-EXPIRED-KEEP');
@@ -632,15 +649,16 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
 test('进入兑换页会清理当前兑换 cookie，避免继续访问上一条结果页', async () => {
     await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138697');
         const response = await fetch(`${baseUrl}/shop/redeem/`, {
-            headers: { cookie: 'yui_shop_result_token=rst_anything' }
+            headers: { cookie: `${cookie}; yui_shop_result_token=rst_anything` }
         });
         assert.equal(response.status, 200);
         assert.match(response.headers.get('set-cookie') || '', /yui_shop_result_token=;/);
     });
 });
 
-test('手机号包含字母或位数不对时，兑换和查询接口都会拒绝', async () => {
+test('手机号包含字母或位数不对时，兑换接口会拒绝', async () => {
     await withServer(async ({ baseUrl }) => {
         const invalidRedeem = await jsonFetch(`${baseUrl}/api/invites/redeem`, {
             method: 'POST',
@@ -648,11 +666,168 @@ test('手机号包含字母或位数不对时，兑换和查询接口都会拒�
         });
         assert.equal(invalidRedeem.response.status, 400);
         assert.equal(invalidRedeem.body.code, 'INVALID_PHONE');
-
-        const shortQuery = await jsonFetch(`${baseUrl}/api/orders?phone=1380013800`);
-        assert.equal(shortQuery.response.status, 400);
-        assert.equal(shortQuery.body.code, 'INVALID_PHONE');
     });
+});
+
+test('登录后的订单查询接口只返回当前 session 手机号的数据', async () => {
+    await withServer(async ({ baseUrl }) => {
+        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ apiKeys: ['sk-account-aaa-own', 'sk-account-zzz-other'] })
+        });
+        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ count: 2 })
+        });
+        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138691', code: inviteResult.body.invites[0].code })
+        });
+        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138692', code: inviteResult.body.invites[1].code })
+        });
+
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138691');
+        const result = await jsonFetch(`${baseUrl}/api/orders?phone=13800138692`, {
+            headers: { cookie }
+        });
+
+        assert.equal(result.response.status, 200);
+        assert.equal(result.body.orders.length, 1);
+        assert.equal(result.body.orders[0].phone, '13800138691');
+        assert.equal(result.body.orders[0].apiKey, 'sk-account-aaa-own');
+    });
+});
+
+test('Shop 页面除登录和注册外未登录都会跳转登录页', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const protectedPaths = [
+            '/shop/',
+            '/shop/redeem/',
+            '/shop/query/',
+            '/shop/guide/',
+            '/shop/key/',
+            '/shop/order/',
+            '/shop/pay/',
+            '/shop/result/',
+            '/shop/content/',
+            '/shop/account/',
+            '/shop/admin/'
+        ];
+
+        for (const pathname of protectedPaths) {
+            const response = await fetch(`${baseUrl}${pathname}`, { redirect: 'manual' });
+            assert.equal(response.status, 302, pathname);
+            assert.equal(response.headers.get('location'), '/shop/login/', pathname);
+        }
+
+        const login = await fetch(`${baseUrl}/shop/login/`, { redirect: 'manual' });
+        assert.equal(login.status, 200);
+        assert.match(await login.text(), /id="loginForm"/);
+
+        const register = await fetch(`${baseUrl}/shop/register/`, { redirect: 'manual' });
+        assert.equal(register.status, 200);
+        assert.match(await register.text(), /注册账户/);
+    });
+});
+
+test('已登录普通用户访问 Shop 首页和查询页会进入 Account', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138693');
+
+        const home = await fetch(`${baseUrl}/shop/`, {
+            redirect: 'manual',
+            headers: { cookie }
+        });
+        assert.equal(home.status, 302);
+        assert.equal(home.headers.get('location'), '/shop/account/');
+
+        const query = await fetch(`${baseUrl}/shop/query/`, {
+            redirect: 'manual',
+            headers: { cookie }
+        });
+        assert.equal(query.status, 302);
+        assert.equal(query.headers.get('location'), '/shop/account/');
+    });
+});
+
+test('Account usage summary 只聚合当前登录手机号关联的 token 用量', async () => {
+    await withServer(async ({ baseUrl }) => {
+        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ apiKeys: ['sk-usage-aaa-own', 'sk-usage-zzz-other'] })
+        });
+        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ count: 2 })
+        });
+        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138694', code: inviteResult.body.invites[0].code })
+        });
+        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138695', code: inviteResult.body.invites[1].code })
+        });
+
+        const requestedAt = new Date().toISOString();
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-account-own',
+            api_key_hash: hashApiKeyForTest('sk-usage-aaa-own'),
+            api_key_preview: 'sk-u...-own',
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 10,
+            output_tokens: 20,
+            reasoning_tokens: 3,
+            cached_tokens: 4,
+            total_tokens: 33,
+            requested_at: requestedAt
+        });
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-account-other',
+            api_key_hash: hashApiKeyForTest('sk-usage-zzz-other'),
+            api_key_preview: 'sk-u...ther',
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 100,
+            output_tokens: 200,
+            total_tokens: 300,
+            requested_at: requestedAt
+        });
+
+        const unauthorized = await jsonFetch(`${baseUrl}/api/account/usage-summary`);
+        assert.equal(unauthorized.response.status, 401);
+        assert.equal(unauthorized.body.code, 'ACCOUNT_LOGIN_REQUIRED');
+
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138694');
+        const result = await jsonFetch(`${baseUrl}/api/account/usage-summary`, {
+            headers: { cookie }
+        });
+
+        assert.equal(result.response.status, 200);
+        assert.equal(result.body.summary.month.totalTokens, 33);
+        assert.equal(result.body.summary.month.inputTokens, 10);
+        assert.equal(result.body.summary.month.outputTokens, 20);
+        assert.equal(result.body.summary.month.reasoningTokens, 3);
+        assert.equal(result.body.summary.month.cachedTokens, 4);
+        assert.equal(result.body.byApiKey.length, 1);
+        assert.equal(result.body.byApiKey[0].apiKeyPreview, keyPreviewForTest('sk-usage-aaa-own'));
+        assert.ok(Array.isArray(result.body.hourly));
+        assert.ok(Array.isArray(result.body.daily));
+        assert.equal(result.body.dataFreshness.maxDelayMinutes, 60);
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
 test('邀请码使用 SQLite 主键精确匹配，大小写归一后只能兑换一次', async () => {
@@ -752,10 +927,29 @@ test('商店首页提供使用方法入口，公开说明页只使用占位 API 
     assert.doesNotMatch(guide, /sk-[a-f0-9]{32}/);
 });
 
-test('手机号查询页说明过期订单仍会保留展示', () => {
+test('Shop 首页按量计费文案和按钮布局不再暴露手机号查询入口', () => {
+    const home = fs.readFileSync(path.join(__dirname, '..', 'shop/index.html'), 'utf8');
+
+    assert.match(home, /Codex[\s\S]*按量计费/);
+    assert.match(home, /按实际 token 记录/);
+    assert.match(home, /登录账户/);
+    assert.match(home, /兑换 API key/);
+    assert.match(home, /使用方法/);
+    assert.match(home, /私下开通/);
+    assert.match(home, /按量记录/);
+    assert.doesNotMatch(home, /href="\/shop\/query\/"/);
+    assert.doesNotMatch(home, /手机号查询/);
+    assert.doesNotMatch(home, /每月 30 元人民币/);
+    assert.doesNotMatch(home, /额度兑换/);
+    assert.doesNotMatch(home, /31 天有效/);
+});
+
+test('手机号查询页只作为 Account 跳转兜底，不再渲染查询表单', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/query/index.html'), 'utf8');
-    assert.match(html, /过期订单会显示为已失效/);
-    assert.match(html, /仍会保留在查询结果里/);
+    assert.match(html, /正在进入账户页/);
+    assert.doesNotMatch(html, /id="queryForm"/);
+    assert.doesNotMatch(html, /id="queryPhone"/);
+    assert.doesNotMatch(html, /过期订单会显示为已失效/);
 });
 
 test('API key 结果页只展示订单，不再渲染使用方法', () => {
@@ -982,7 +1176,7 @@ test('历史兑换手机号可以补密码注册并通过 account session 只查
         assert.equal(me.body.user.phone, '13800138601');
         assert.equal(me.body.orders.length, 1);
         assert.equal(me.body.orders[0].phone, '13800138601');
-        assert.equal(me.body.orders[0].apiKey, '');
+        assert.equal(me.body.orders[0].apiKey, 'sk-account-a');
         assert.equal(me.body.orders[0].apiKeyPreview, 'sk-account-a...ount-a');
     });
 });
@@ -1211,7 +1405,7 @@ test('Shop 首页顶部不显示账号入口且正文只保留固定登录入口
     assert.match(home, /href="\/shop\/login\/"/);
     assert.equal(accountLinkCount, 0);
     assert.doesNotMatch(header, /data-account-link/);
-    assert.match(home, /<main[\s\S]*href="\/shop\/login\/"[\s\S]*>登录<\/a>/);
+    assert.match(home, /<main[\s\S]*href="\/shop\/login\/"[\s\S]*>登录账户<\/a>/);
     assert.doesNotMatch(home, /管理控制台/);
     assert.match(login, /id="loginForm"/);
     assert.match(login, /管理员账号登录后进入控制台/);

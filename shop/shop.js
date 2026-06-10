@@ -35,6 +35,13 @@
         return Number(value || 0).toLocaleString('zh-CN');
     }
 
+    function formatCompactNumber(value) {
+        const number = Number(value || 0);
+        if (number >= 1000000) return `${(number / 1000000).toFixed(1)}M`;
+        if (number >= 1000) return `${(number / 1000).toFixed(1)}K`;
+        return number.toLocaleString('zh-CN');
+    }
+
     function statusText(status) {
         return status === 'active' ? '使用中' : '已失效';
     }
@@ -125,6 +132,59 @@
                 button.textContent = '复制 API key';
             }, 1400);
         });
+    }
+
+    function renderAccountUsageCards(summary) {
+        const month = summary.month || {};
+        const week = summary.week || {};
+        const today = summary.today || {};
+        const cards = [
+            ['今日 token', today.totalTokens],
+            ['本周 token', week.totalTokens],
+            ['本月 token', month.totalTokens],
+            ['失败请求', month.failedRequests]
+        ];
+        return cards.map(([label, value]) => `
+            <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(label)}</p>
+                <p class="mt-2 text-2xl font-display text-primary dark:text-dark-text">${escapeHtml(formatNumber(value))}</p>
+            </article>
+        `).join('');
+    }
+
+    function renderTokenBreakdown(month = {}) {
+        const items = [
+            ['Input', month.inputTokens],
+            ['Output', month.outputTokens],
+            ['Reasoning', month.reasoningTokens],
+            ['Cached', month.cachedTokens]
+        ];
+        return items.map(([label, value]) => `
+            <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(label)}</p>
+                <p class="mt-2 text-xl font-display text-primary dark:text-dark-text">${escapeHtml(formatNumber(value))}</p>
+            </article>
+        `).join('');
+    }
+
+    function renderBars(items, labelFormatter = (item) => item.bucket) {
+        if (!items.length) {
+            return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无用量记录，用量统计可能最多延迟 1 小时。</p>';
+        }
+        const maxValue = Math.max(...items.map((item) => Number(item.totalTokens || 0)), 1);
+        return `
+            <div class="flex h-48 items-end gap-2">
+                ${items.map((item) => {
+                    const height = Math.max(4, Math.round((Number(item.totalTokens || 0) / maxValue) * 100));
+                    return `
+                        <div class="flex min-w-0 flex-1 flex-col items-center gap-2">
+                            <div class="w-full rounded-t bg-primary dark:bg-dark-text" style="height:${height}%"></div>
+                            <span class="max-w-full truncate text-[10px] text-text-muted dark:text-dark-text-muted" title="${escapeHtml(`${labelFormatter(item)} ${formatCompactNumber(item.totalTokens)} tokens`)}">${escapeHtml(labelFormatter(item))}</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
     }
 
     function usageStatusText(status) {
@@ -315,44 +375,7 @@
     }
 
     function initQueryPage() {
-        const form = document.getElementById('queryForm');
-        const input = document.getElementById('queryPhone');
-        const result = document.getElementById('queryResult');
-        if (!form || !input || !result) return;
-
-        bindPhoneInput(input);
-
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const phone = input.value.trim();
-            if (!isPhone(phone)) {
-                result.innerHTML = '<p class="text-sm text-red-600">请输入有效的中国大陆手机号。</p>';
-                return;
-            }
-
-            result.innerHTML = '<p class="text-sm text-text-muted dark:text-dark-text-muted">正在查询...</p>';
-            try {
-                const data = await requestJson(`/api/orders?phone=${encodeURIComponent(phone)}`);
-                if (!data.orders.length) {
-                    result.innerHTML = '<p class="text-sm text-text-muted dark:text-dark-text-muted">没有找到该手机号对应的订单。</p>';
-                    return;
-                }
-                result.innerHTML = `
-                    <div class="mb-5 flex items-end justify-between gap-4">
-                        <div>
-                            <p class="text-xs uppercase tracking-[0.2em] text-text-muted dark:text-dark-text-muted">Orders</p>
-                            <h2 class="mt-2 text-2xl font-display text-primary dark:text-dark-text">共 ${data.orders.length} 个订单</h2>
-                        </div>
-                    </div>
-                    <div class="grid gap-5">
-                        ${data.orders.map((order) => renderOrderCard(order, { showFullKey: true })).join('')}
-                    </div>
-                `;
-                result.querySelectorAll('article').forEach(bindCopy);
-            } catch (error) {
-                result.innerHTML = `<p class="text-sm text-red-600">${error.message}</p>`;
-            }
-        });
+        window.location.replace('/shop/account/');
     }
 
     function initLoginPage() {
@@ -441,6 +464,12 @@
         const ordersRoot = document.getElementById('accountOrders');
         const message = document.getElementById('accountMessage');
         const logoutButton = document.getElementById('logoutButton');
+        const usageCards = document.getElementById('accountUsageCards');
+        const tokenBreakdown = document.getElementById('accountTokenBreakdown');
+        const hourlyChart = document.getElementById('accountHourlyChart');
+        const dailyChart = document.getElementById('accountDailyChart');
+        const usageFreshness = document.getElementById('usageFreshness');
+        const usageMessage = document.getElementById('accountUsageMessage');
         if (!phoneRoot || !ordersRoot || !message || !logoutButton) return;
 
         ordersRoot.innerHTML = '<p class="text-sm text-text-muted dark:text-dark-text-muted">正在读取账户信息...</p>';
@@ -457,11 +486,26 @@
                     </section>
                 `;
             } else {
-                ordersRoot.innerHTML = `<div class="grid gap-5">${orders.map((order) => renderOrderCard(order, { showFullKey: false })).join('')}</div>`;
+                ordersRoot.innerHTML = `<div class="grid gap-5">${orders.map((order) => renderOrderCard(order, { showFullKey: true })).join('')}</div>`;
+                ordersRoot.querySelectorAll('article').forEach(bindCopy);
             }
             message.textContent = '';
         } catch (error) {
             window.location.replace('/shop/login/');
+        }
+
+        try {
+            const usage = await requestJson('/api/account/usage-summary');
+            if (usageCards) usageCards.innerHTML = renderAccountUsageCards(usage.summary || {});
+            if (tokenBreakdown) tokenBreakdown.innerHTML = renderTokenBreakdown(usage.summary?.month || {});
+            if (hourlyChart) hourlyChart.innerHTML = renderBars(usage.hourly || [], (item) => String(item.bucket || '').slice(11, 16));
+            if (dailyChart) dailyChart.innerHTML = renderBars(usage.daily || [], (item) => String(item.bucket || '').slice(5));
+            if (usageFreshness) {
+                usageFreshness.textContent = `生成时间 ${formatDate(usage.generatedAt)}，用量统计可能最多延迟 1 小时。`;
+            }
+            if (usageMessage) usageMessage.textContent = '';
+        } catch (error) {
+            if (usageMessage) usageMessage.textContent = error.message;
         }
 
         logoutButton.addEventListener('click', async () => {
