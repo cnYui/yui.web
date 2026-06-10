@@ -31,6 +31,19 @@
             <h1 class="mt-4 font-display text-4xl md:text-6xl">管理员控制台</h1>
             <p class="mt-5 text-text-muted dark:text-dark-text-muted leading-relaxed">管理员账号登录后查看全局 API key 用量。其他账号无法进入该页面。</p>
         </section>
+        <section class="mt-10 border-t border-border-subtle dark:border-dark-border pt-10">
+            <div>
+                <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Password reset</p>
+                <h2 class="mt-3 font-display text-3xl md:text-4xl">生成密码重置码</h2>
+                <p class="mt-3 text-sm text-text-muted dark:text-dark-text-muted leading-relaxed">输入已注册用户手机号，生成 30 分钟内有效的一次性重置码。生成后通过线下渠道发给用户。</p>
+            </div>
+            <form id="passwordResetCodeForm" class="mt-6 flex flex-col sm:flex-row gap-3 rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
+                <input id="passwordResetPhone" class="h-11 flex-1 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="tel" inputmode="numeric" autocomplete="tel" minlength="11" maxlength="11" pattern="^1[3-9]\d{9}$" required placeholder="用户手机号"/>
+                <button class="btn-primary" type="submit">生成重置码</button>
+            </form>
+            <p id="passwordResetCodeMessage" class="mt-3 text-sm text-text-muted dark:text-dark-text-muted"></p>
+            <div id="passwordResetCodeResult" class="mt-4 hidden rounded-md border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface p-4"></div>
+        </section>
         <section id="adminUsageSection" class="mt-10 border-t border-border-subtle dark:border-dark-border pt-10">
             <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                 <div>

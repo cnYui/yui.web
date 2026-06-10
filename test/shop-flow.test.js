@@ -1000,6 +1000,23 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.doesNotMatch(html, /完整 API key/);
 });
 
+test('管理员页和登录页包含密码重置入口', () => {
+    const adminHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
+    const loginHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+
+    assert.match(adminHtml, /id="passwordResetCodeForm"/);
+    assert.match(adminHtml, /id="passwordResetPhone"/);
+    assert.match(adminHtml, /id="passwordResetCodeResult"/);
+    assert.match(loginHtml, /id="showPasswordResetButton"/);
+    assert.match(loginHtml, /id="passwordResetForm"/);
+    assert.match(loginHtml, /id="resetPasswordCode"/);
+    assert.match(loginHtml, /id="resetNewPassword"/);
+    assert.match(loginHtml, /id="resetConfirmPassword"/);
+    assert.match(script, /function initPasswordResetForm/);
+    assert.match(script, /function initAdminPasswordResetPage/);
+});
+
 test('内部 API key 状态接口必须使用请求头 token', async () => {
     await withServer(async ({ baseUrl }) => {
         const missing = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=sk-any`);
@@ -1112,6 +1129,24 @@ test('Shop 用户表支持密码字段并创建 user_sessions 会话表', async 
     });
 });
 
+test('Shop 数据库包含 password_reset_codes 一次性密码重置码表', async () => {
+    await withServer(async ({ db }) => {
+        const table = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'password_reset_codes'").get();
+        assert.deepEqual(table, { name: 'password_reset_codes' });
+
+        const columns = db.prepare('PRAGMA table_info(password_reset_codes)').all().map((column) => column.name);
+        assert.deepEqual(columns, [
+            'id',
+            'phone',
+            'code_hash',
+            'created_at',
+            'expires_at',
+            'used_at',
+            'created_by_phone'
+        ]);
+    });
+});
+
 test('用户注册校验手机号、密码规则和确认密码', async () => {
     await withServer(async ({ baseUrl }) => {
         const invalidPhone = await jsonFetch(`${baseUrl}/api/auth/register`, {
@@ -1178,6 +1213,190 @@ test('历史兑换手机号可以补密码注册并通过 account session 只查
         assert.equal(me.body.orders[0].phone, '13800138601');
         assert.equal(me.body.orders[0].apiKey, 'sk-account-a');
         assert.equal(me.body.orders[0].apiKeyPreview, 'sk-account-a...ount-a');
+    });
+});
+
+test('只有管理员账号可以为已注册用户生成一次性密码重置码', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const userRegister = await jsonFetch(`${baseUrl}/api/auth/register`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138620', password: 'Abcdefg1', confirmPassword: 'Abcdefg1' })
+        });
+        assert.equal(userRegister.response.status, 201);
+        const userCookie = userRegister.response.headers.get('set-cookie') || '';
+
+        const forbidden = await jsonFetch(`${baseUrl}/api/admin/password-reset-codes`, {
+            method: 'POST',
+            headers: { cookie: userCookie },
+            body: JSON.stringify({ phone: '13800138620' })
+        });
+        assert.equal(forbidden.response.status, 403);
+        assert.equal(forbidden.body.code, 'ADMIN_ACCOUNT_REQUIRED');
+
+        const tokenOnly = await jsonFetch(`${baseUrl}/api/admin/password-reset-codes`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ phone: '13800138620' })
+        });
+        assert.equal(tokenOnly.response.status, 401);
+        assert.equal(tokenOnly.body.code, 'UNAUTHORIZED');
+
+        seedAdminUserForTest(db);
+        const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
+        });
+        assert.equal(adminLogin.response.status, 200);
+        const adminCookie = adminLogin.response.headers.get('set-cookie') || '';
+
+        const invalidPhone = await jsonFetch(`${baseUrl}/api/admin/password-reset-codes`, {
+            method: 'POST',
+            headers: { cookie: adminCookie },
+            body: JSON.stringify({ phone: '13800138abc' })
+        });
+        assert.equal(invalidPhone.response.status, 400);
+        assert.equal(invalidPhone.body.code, 'INVALID_PHONE');
+
+        const missingUser = await jsonFetch(`${baseUrl}/api/admin/password-reset-codes`, {
+            method: 'POST',
+            headers: { cookie: adminCookie },
+            body: JSON.stringify({ phone: '13800138621' })
+        });
+        assert.equal(missingUser.response.status, 404);
+        assert.equal(missingUser.body.code, 'USER_NOT_FOUND');
+
+        const created = await jsonFetch(`${baseUrl}/api/admin/password-reset-codes`, {
+            method: 'POST',
+            headers: { cookie: adminCookie },
+            body: JSON.stringify({ phone: '13800138620' })
+        });
+        assert.equal(created.response.status, 201);
+        assert.equal(created.body.phone, '13800138620');
+        assert.match(created.body.code, /^RST-[A-Z0-9]{6}-[A-Z0-9]{6}$/);
+        assert.match(created.body.expiresAt, /^\d{4}-\d{2}-\d{2}T/);
+
+        const row = db.prepare('SELECT phone, code_hash, used_at, created_by_phone FROM password_reset_codes WHERE phone = ?').get('13800138620');
+        assert.equal(row.phone, '13800138620');
+        assert.equal(row.created_by_phone, '15951875192');
+        assert.equal(row.used_at, null);
+        assert.doesNotMatch(row.code_hash, /RST-/);
+        assert.notEqual(row.code_hash, created.body.code);
+    });
+});
+
+test('用户凭一次性重置码设置新密码后旧 session 失效并创建新 session', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const userRegister = await jsonFetch(`${baseUrl}/api/auth/register`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138622', password: 'Abcdefg1', confirmPassword: 'Abcdefg1' })
+        });
+        assert.equal(userRegister.response.status, 201);
+        const oldCookie = userRegister.response.headers.get('set-cookie') || '';
+
+        seedAdminUserForTest(db);
+        const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
+        });
+        const adminCookie = adminLogin.response.headers.get('set-cookie') || '';
+        const resetCodeResult = await jsonFetch(`${baseUrl}/api/admin/password-reset-codes`, {
+            method: 'POST',
+            headers: { cookie: adminCookie },
+            body: JSON.stringify({ phone: '13800138622' })
+        });
+        assert.equal(resetCodeResult.response.status, 201);
+        const resetCode = resetCodeResult.body.code;
+
+        const weakPassword = await jsonFetch(`${baseUrl}/api/auth/password-reset`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138622', code: resetCode, password: 'abcdefg1', confirmPassword: 'abcdefg1' })
+        });
+        assert.equal(weakPassword.response.status, 400);
+        assert.equal(weakPassword.body.code, 'WEAK_PASSWORD');
+
+        const mismatch = await jsonFetch(`${baseUrl}/api/auth/password-reset`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138622', code: resetCode, password: 'Abcdefg2', confirmPassword: 'Abcdefg3' })
+        });
+        assert.equal(mismatch.response.status, 400);
+        assert.equal(mismatch.body.code, 'PASSWORD_MISMATCH');
+
+        const invalidCode = await jsonFetch(`${baseUrl}/api/auth/password-reset`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138622', code: 'RST-XXXXXX-XXXXXX', password: 'Abcdefg2', confirmPassword: 'Abcdefg2' })
+        });
+        assert.equal(invalidCode.response.status, 400);
+        assert.equal(invalidCode.body.code, 'INVALID_RESET_CODE');
+
+        const reset = await jsonFetch(`${baseUrl}/api/auth/password-reset`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138622', code: resetCode.toLowerCase(), password: 'Abcdefg2', confirmPassword: 'Abcdefg2' })
+        });
+        assert.equal(reset.response.status, 200);
+        assert.equal(reset.body.user.phone, '13800138622');
+        const newCookie = reset.response.headers.get('set-cookie') || '';
+        assert.match(newCookie, /yui_shop_account_session=/);
+
+        const oldSession = await jsonFetch(`${baseUrl}/api/account/me`, {
+            headers: { cookie: oldCookie }
+        });
+        assert.equal(oldSession.response.status, 401);
+        assert.equal(oldSession.body.code, 'ACCOUNT_LOGIN_REQUIRED');
+
+        const newSession = await jsonFetch(`${baseUrl}/api/account/me`, {
+            headers: { cookie: newCookie }
+        });
+        assert.equal(newSession.response.status, 200);
+        assert.equal(newSession.body.user.phone, '13800138622');
+
+        const oldPasswordLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138622', password: 'Abcdefg1' })
+        });
+        assert.equal(oldPasswordLogin.response.status, 401);
+
+        const newPasswordLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138622', password: 'Abcdefg2' })
+        });
+        assert.equal(newPasswordLogin.response.status, 200);
+
+        const usedAgain = await jsonFetch(`${baseUrl}/api/auth/password-reset`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138622', code: resetCode, password: 'Abcdefg3', confirmPassword: 'Abcdefg3' })
+        });
+        assert.equal(usedAgain.response.status, 400);
+        assert.equal(usedAgain.body.code, 'INVALID_RESET_CODE');
+    });
+});
+
+test('过期的一次性密码重置码不能用于重置密码', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        await jsonFetch(`${baseUrl}/api/auth/register`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138623', password: 'Abcdefg1', confirmPassword: 'Abcdefg1' })
+        });
+
+        const code = 'RST-EXPIRE-000001';
+        const codeHash = crypto.createHash('sha256').update(code).digest('hex');
+        db.prepare(`
+INSERT INTO password_reset_codes (id, phone, code_hash, created_at, expires_at, created_by_phone)
+VALUES (?, ?, ?, ?, ?, ?)
+`).run(
+            'PRC_EXPIRED_TEST',
+            '13800138623',
+            codeHash,
+            '2026-06-09T12:00:00+08:00',
+            '2026-06-09T12:01:00+08:00',
+            '15951875192'
+        );
+
+        const result = await jsonFetch(`${baseUrl}/api/auth/password-reset`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138623', code, password: 'Abcdefg2', confirmPassword: 'Abcdefg2' })
+        });
+        assert.equal(result.response.status, 400);
+        assert.equal(result.body.code, 'INVALID_RESET_CODE');
     });
 });
 

@@ -11,6 +11,7 @@ const legacyRedeemCookieName = 'yui_shop_redeemed';
 const accountCookieName = 'yui_shop_account_session';
 const redeemCookieMaxAgeMs = durationDays * 24 * 60 * 60 * 1000;
 const accountSessionMaxAgeMs = redeemCookieMaxAgeMs;
+const passwordResetCodeMaxAgeMs = 30 * 60 * 1000;
 const passwordKeyLength = 64;
 const passwordScryptN = 16384;
 const passwordScryptR = 8;
@@ -58,6 +59,12 @@ function createAccountSessionToken() {
     return `usr_${crypto.randomBytes(32).toString('base64url')}`;
 }
 
+function createPasswordResetCode() {
+    const left = crypto.randomBytes(3).toString('hex').toUpperCase();
+    const right = crypto.randomBytes(3).toString('hex').toUpperCase();
+    return `RST-${left}-${right}`;
+}
+
 function keyPreview(apiKey) {
     if (!apiKey) return '';
     return `${apiKey.slice(0, 12)}...${apiKey.slice(-6)}`;
@@ -69,6 +76,14 @@ function hashApiKey(apiKey) {
 
 function hashSessionToken(token) {
     return crypto.createHash('sha256').update(String(token || '')).digest('hex');
+}
+
+function normalizePasswordResetCode(code) {
+    return String(code || '').trim().toUpperCase();
+}
+
+function hashPasswordResetCode(code) {
+    return crypto.createHash('sha256').update(normalizePasswordResetCode(code)).digest('hex');
 }
 
 function validatePassword(password) {
@@ -263,6 +278,23 @@ ON user_sessions(phone);
 
 CREATE INDEX IF NOT EXISTS idx_user_sessions_expires
 ON user_sessions(expires_at);
+
+CREATE TABLE IF NOT EXISTS password_reset_codes (
+  id TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  code_hash TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used_at TEXT,
+  created_by_phone TEXT NOT NULL,
+  FOREIGN KEY (phone) REFERENCES users(phone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_reset_codes_phone
+ON password_reset_codes(phone);
+
+CREATE INDEX IF NOT EXISTS idx_password_reset_codes_expires
+ON password_reset_codes(expires_at);
 `);
     const inviteColumns = db.prepare('PRAGMA table_info(invite_codes)').all().map((column) => column.name);
     if (inviteColumns.includes('api_key')) {
@@ -503,6 +535,21 @@ function createShopApp(options = {}) {
         return res.status(401).json({ code: 'UNAUTHORIZED', message: '请先登录管理员账号或提供管理员 token。' });
     }
 
+    function requireAdminAccount(req, res, next) {
+        const session = getCurrentAccountSession(req);
+        if (session && isAdminAccountPhone(session.phone)) {
+            req.account = { phone: session.phone };
+            return next();
+        }
+        if (session) {
+            return res.status(403).json({
+                code: 'ADMIN_ACCOUNT_REQUIRED',
+                message: '当前账号没有管理员权限。'
+            });
+        }
+        return res.status(401).json({ code: 'UNAUTHORIZED', message: '请先登录管理员账号。' });
+    }
+
     function requireInternal(req, res, next) {
         const expected = options.internalToken ?? process.env.INTERNAL_TOKEN;
         const actual = req.header('x-internal-token');
@@ -702,6 +749,29 @@ WHERE token_hash = ?
 UPDATE user_sessions
 SET revoked_at = ?
 WHERE token_hash = ? AND revoked_at IS NULL
+`);
+
+    const revokeAccountSessionsByPhone = db.prepare(`
+UPDATE user_sessions
+SET revoked_at = ?
+WHERE phone = ? AND revoked_at IS NULL
+`);
+
+    const insertPasswordResetCode = db.prepare(`
+INSERT INTO password_reset_codes (id, phone, code_hash, created_at, expires_at, created_by_phone)
+VALUES (?, ?, ?, ?, ?, ?)
+`);
+
+    const getPasswordResetCodeByHash = db.prepare(`
+SELECT id, phone, code_hash, created_at, expires_at, used_at, created_by_phone
+FROM password_reset_codes
+WHERE code_hash = ?
+`);
+
+    const markPasswordResetCodeUsed = db.prepare(`
+UPDATE password_reset_codes
+SET used_at = ?
+WHERE id = ? AND used_at IS NULL
 `);
 
     const insertOrder = db.prepare(`
@@ -919,6 +989,48 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         );
         return token;
     }
+
+    function createPasswordResetCodeForPhone({ phone, createdByPhone }) {
+        const user = getUserByPhone.get(phone);
+        if (!user || !user.password_hash) {
+            const error = new Error('没有找到可重置密码的账号。');
+            error.status = 404;
+            error.code = 'USER_NOT_FOUND';
+            throw error;
+        }
+        const createdAt = new Date();
+        let code = createPasswordResetCode();
+        while (getPasswordResetCodeByHash.get(hashPasswordResetCode(code))) {
+            code = createPasswordResetCode();
+        }
+        const expiresAt = new Date(createdAt.getTime() + passwordResetCodeMaxAgeMs);
+        insertPasswordResetCode.run(
+            createId('PRC'),
+            phone,
+            hashPasswordResetCode(code),
+            nowIso(createdAt),
+            nowIso(expiresAt),
+            createdByPhone
+        );
+        return { phone, code, expiresAt: nowIso(expiresAt) };
+    }
+
+    const resetPasswordWithCode = db.transaction(({ phone, code, password }) => {
+        const user = getUserByPhone.get(phone);
+        const row = getPasswordResetCodeByHash.get(hashPasswordResetCode(code));
+        const expiresAt = row ? new Date(row.expires_at).getTime() : NaN;
+        if (!user || !user.password_hash || !row || row.phone !== phone || row.used_at || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+            const error = new Error('重置码无效或已过期。');
+            error.status = 400;
+            error.code = 'INVALID_RESET_CODE';
+            throw error;
+        }
+        const now = nowIso();
+        setUserPassword.run(hashPassword(password), now, now, phone);
+        markPasswordResetCodeUsed.run(now, row.id);
+        revokeAccountSessionsByPhone.run(now, phone);
+        return { phone };
+    });
 
     function getCurrentAccountSession(req) {
         const token = getAccountSessionToken(req);
@@ -1529,6 +1641,35 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
+    app.post('/api/auth/password-reset', limitAuthApi, (req, res) => {
+        const phone = String(req.body.phone || '').trim();
+        const code = normalizePasswordResetCode(req.body.code);
+        const password = String(req.body.password || '');
+        const confirmPassword = String(req.body.confirmPassword || '');
+        if (!isPhone(phone)) {
+            return res.status(400).json({ code: 'INVALID_PHONE', message: '请输入有效的中国大陆手机号。' });
+        }
+        const passwordResult = validatePassword(password);
+        if (!passwordResult.ok) {
+            return res.status(400).json({ code: 'WEAK_PASSWORD', message: passwordResult.message });
+        }
+        if (password !== confirmPassword) {
+            return res.status(400).json({ code: 'PASSWORD_MISMATCH', message: '两次输入的密码不一致。' });
+        }
+
+        try {
+            const user = resetPasswordWithCode({ phone, code, password });
+            const token = createAccountSessionForPhone(user.phone);
+            res.cookie(accountCookieName, token, accountCookieOptions(req));
+            return res.json({ user: publicUser(user.phone) });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'PASSWORD_RESET_FAILED',
+                message: error.message || '密码重置失败。'
+            });
+        }
+    });
+
     app.post('/api/auth/logout', limitAuthApi, (req, res) => {
         const token = getAccountSessionToken(req);
         if (token) {
@@ -1596,6 +1737,25 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             return res.status(error.status || 500).json({
                 code: error.code || 'USAGE_KEY_PROFILE_FAILED',
                 message: error.message || 'usage key 归属设置失败。'
+            });
+        }
+    });
+
+    app.post('/api/admin/password-reset-codes', limitAdminApi, requireAdminAccount, (req, res) => {
+        const phone = String(req.body.phone || '').trim();
+        if (!isPhone(phone)) {
+            return res.status(400).json({ code: 'INVALID_PHONE', message: '请输入有效的中国大陆手机号。' });
+        }
+        try {
+            const result = createPasswordResetCodeForPhone({
+                phone,
+                createdByPhone: req.account?.phone || defaultAdminAccountPhone
+            });
+            return res.status(201).json(result);
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'PASSWORD_RESET_CODE_FAILED',
+                message: error.message || '生成密码重置码失败。'
             });
         }
     });

@@ -378,6 +378,80 @@
         window.location.replace('/shop/account/');
     }
 
+    function normalizeResetCodeInput(input) {
+        if (!input) return;
+        input.addEventListener('input', () => {
+            input.value = input.value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 18);
+        });
+    }
+
+    function initPasswordResetForm() {
+        const loginForm = document.getElementById('loginForm');
+        const resetForm = document.getElementById('passwordResetForm');
+        const showResetButton = document.getElementById('showPasswordResetButton');
+        const showLoginButton = document.getElementById('showLoginFormButton');
+        const phoneInput = document.getElementById('resetPhone');
+        const codeInput = document.getElementById('resetPasswordCode');
+        const passwordInput = document.getElementById('resetNewPassword');
+        const confirmInput = document.getElementById('resetConfirmPassword');
+        const message = document.getElementById('passwordResetMessage');
+        if (!loginForm || !resetForm || !showResetButton || !showLoginButton || !phoneInput || !codeInput || !passwordInput || !confirmInput || !message) return;
+
+        bindPhoneInput(phoneInput);
+        normalizeResetCodeInput(codeInput);
+
+        showResetButton.addEventListener('click', () => {
+            loginForm.classList.add('hidden');
+            resetForm.classList.remove('hidden');
+            message.textContent = '';
+            phoneInput.focus();
+        });
+
+        showLoginButton.addEventListener('click', () => {
+            resetForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+        });
+
+        resetForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const phone = phoneInput.value.trim();
+            const code = codeInput.value.trim();
+            const password = passwordInput.value;
+            const confirmPassword = confirmInput.value;
+            if (!isPhone(phone)) {
+                message.textContent = '请输入有效的中国大陆手机号。';
+                phoneInput.focus();
+                return;
+            }
+            if (!code) {
+                message.textContent = '请输入重置码。';
+                codeInput.focus();
+                return;
+            }
+            if (!isStrongPassword(password)) {
+                message.textContent = '密码至少 8 位，并包含英文大写字母、小写字母和数字。';
+                passwordInput.focus();
+                return;
+            }
+            if (password !== confirmPassword) {
+                message.textContent = '两次输入的密码不一致。';
+                confirmInput.focus();
+                return;
+            }
+
+            message.textContent = '正在重置密码...';
+            try {
+                const data = await requestJson('/api/auth/password-reset', {
+                    method: 'POST',
+                    body: JSON.stringify({ phone, code, password, confirmPassword })
+                });
+                window.location.href = data.user?.isAdmin ? '/shop/admin/' : '/shop/account/';
+            } catch (error) {
+                message.textContent = error.message;
+            }
+        });
+    }
+
     function initLoginPage() {
         const form = document.getElementById('loginForm');
         const phoneInput = document.getElementById('loginPhone');
@@ -386,6 +460,7 @@
         if (!form || !phoneInput || !passwordInput || !message) return;
 
         bindPhoneInput(phoneInput);
+        initPasswordResetForm();
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -528,8 +603,47 @@
         }
     }
 
+    function initAdminPasswordResetPage() {
+        const form = document.getElementById('passwordResetCodeForm');
+        const phoneInput = document.getElementById('passwordResetPhone');
+        const message = document.getElementById('passwordResetCodeMessage');
+        const result = document.getElementById('passwordResetCodeResult');
+        if (!form || !phoneInput || !message || !result) return;
+
+        bindPhoneInput(phoneInput);
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const phone = phoneInput.value.trim();
+            if (!isPhone(phone)) {
+                message.textContent = '请输入有效的中国大陆手机号。';
+                phoneInput.focus();
+                return;
+            }
+            message.textContent = '正在生成...';
+            result.classList.add('hidden');
+            result.innerHTML = '';
+            try {
+                const data = await requestJson('/api/admin/password-reset-codes', {
+                    method: 'POST',
+                    body: JSON.stringify({ phone })
+                });
+                message.textContent = '重置码已生成，只会显示这一次。';
+                result.classList.remove('hidden');
+                result.innerHTML = `
+                    <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">Reset code</p>
+                    <code class="mt-2 block break-all text-lg font-medium text-primary dark:text-dark-text">${escapeHtml(data.code)}</code>
+                    <p class="mt-3 text-sm text-text-muted dark:text-dark-text-muted">手机号：${escapeHtml(data.phone)}，有效期至 ${escapeHtml(formatDate(data.expiresAt))}。</p>
+                `;
+            } catch (error) {
+                message.textContent = error.message;
+            }
+        });
+    }
+
     function initAdminPage() {
         initAdminUsagePage();
+        initAdminPasswordResetPage();
         const refreshButton = document.getElementById('usageRefreshButton');
         if (refreshButton) {
             refreshButton.click();
