@@ -971,6 +971,47 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return next();
     }
 
+    const shopPublicPagePaths = new Set([
+        '/shop/login',
+        '/shop/login/',
+        '/shop/login/index.html',
+        '/shop/register',
+        '/shop/register/',
+        '/shop/register/index.html'
+    ]);
+
+    function isShopHtmlPagePath(requestPath) {
+        if (requestPath === '/shop' || requestPath === '/shop/') return true;
+        if (!requestPath.startsWith('/shop/')) return false;
+        if (requestPath.endsWith('/')) return true;
+        if (requestPath.endsWith('/index.html')) return true;
+        return !path.posix.extname(requestPath);
+    }
+
+    function redirectAccountHomePage(req, res) {
+        const session = getCurrentAccountSession(req);
+        if (!session) {
+            return res.redirect(302, '/shop/login/');
+        }
+        return res.redirect(302, accountDestination(session.phone));
+    }
+
+    function redirectQueryPage(req, res) {
+        const session = getCurrentAccountSession(req);
+        if (!session) {
+            return res.redirect(302, '/shop/login/');
+        }
+        return res.redirect(302, '/shop/account/');
+    }
+
+    function requireShopHtmlPage(req, res, next) {
+        const requestPath = path.posix.normalize(decodeURIComponent(req.path || '/'));
+        if (!isShopHtmlPagePath(requestPath) || shopPublicPagePaths.has(requestPath)) {
+            return next();
+        }
+        return requireAccountPage(req, res, next);
+    }
+
     function verifyUsageSignature(req) {
         const secret = options.usageEventHmacSecret ?? process.env.USAGE_EVENT_HMAC_SECRET;
         if (!secret) {
@@ -1030,6 +1071,18 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             total_requests: 0,
             last_seen_at: '',
             modelsByName: new Map()
+        };
+    }
+
+    function emptyAccountTokenStats() {
+        return {
+            inputTokens: 0,
+            outputTokens: 0,
+            reasoningTokens: 0,
+            cachedTokens: 0,
+            totalTokens: 0,
+            requests: 0,
+            failedRequests: 0
         };
     }
 
@@ -1128,6 +1181,160 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             api_key_preview: profile.apiKeyPreview,
             group_name: profile.groupName,
             phone: profile.phone
+        };
+    }
+
+    function accountUsageKeys(phone) {
+        const keysByHash = new Map();
+        for (const orderRow of listOrdersByPhone.all(phone)) {
+            const order = toOrder(orderRow);
+            const apiKeyHash = hashApiKey(order.apiKey);
+            if (!apiKeyHash) continue;
+            keysByHash.set(apiKeyHash, {
+                apiKeyHash,
+                apiKeyPreview: order.apiKeyPreview || keyPreview(order.apiKey),
+                group: 'shop'
+            });
+        }
+        for (const profile of listUsageKeyProfiles.all()) {
+            if (profile.phone !== phone) continue;
+            keysByHash.set(profile.api_key_hash, {
+                apiKeyHash: profile.api_key_hash,
+                apiKeyPreview: profile.api_key_preview || '',
+                group: profile.group_name || 'local'
+            });
+        }
+        return keysByHash;
+    }
+
+    function chinaParts(date) {
+        const value = new Date(date);
+        const shifted = new Date(value.getTime() + chinaOffsetMs);
+        return {
+            year: shifted.getUTCFullYear(),
+            month: shifted.getUTCMonth() + 1,
+            day: shifted.getUTCDate(),
+            hour: shifted.getUTCHours()
+        };
+    }
+
+    function pad2(value) {
+        return String(value).padStart(2, '0');
+    }
+
+    function chinaDateKey(date) {
+        const parts = chinaParts(date);
+        return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}`;
+    }
+
+    function chinaHourKey(date) {
+        const parts = chinaParts(date);
+        return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}T${pad2(parts.hour)}:00:00+08:00`;
+    }
+
+    function startOfChinaDay(date) {
+        const parts = chinaParts(date);
+        return new Date(Date.UTC(parts.year, parts.month - 1, parts.day) - chinaOffsetMs);
+    }
+
+    function startOfChinaMonth(date) {
+        const parts = chinaParts(date);
+        return new Date(Date.UTC(parts.year, parts.month - 1, 1) - chinaOffsetMs);
+    }
+
+    function startOfChinaWeek(date) {
+        const dayStart = startOfChinaDay(date);
+        const chinaDay = new Date(dayStart.getTime() + chinaOffsetMs).getUTCDay();
+        const mondayOffset = chinaDay === 0 ? 6 : chinaDay - 1;
+        return new Date(dayStart.getTime() - mondayOffset * 24 * 60 * 60 * 1000);
+    }
+
+    function addAccountTokenStats(stats, row) {
+        stats.inputTokens += nonNegativeInteger(row.input_tokens);
+        stats.outputTokens += nonNegativeInteger(row.output_tokens);
+        stats.reasoningTokens += nonNegativeInteger(row.reasoning_tokens);
+        stats.cachedTokens += nonNegativeInteger(row.cached_tokens);
+        stats.totalTokens += nonNegativeInteger(row.total_tokens);
+        stats.requests += 1;
+        if (row.failed) {
+            stats.failedRequests += 1;
+        }
+    }
+
+    function accountUsageSummary(phone) {
+        const now = new Date();
+        const todayStart = startOfChinaDay(now);
+        const weekStart = startOfChinaWeek(now);
+        const monthStart = startOfChinaMonth(now);
+        const visibleKeys = accountUsageKeys(phone);
+        const visibleHashes = new Set(visibleKeys.keys());
+        const summary = {
+            today: emptyAccountTokenStats(),
+            week: emptyAccountTokenStats(),
+            month: emptyAccountTokenStats()
+        };
+        const hourlyByBucket = new Map();
+        const dailyByBucket = new Map();
+        const byModel = new Map();
+        const byApiKey = new Map();
+        let lastEventAt = '';
+
+        for (const row of listUsageEvents.all()) {
+            if (!visibleHashes.has(row.api_key_hash)) continue;
+            const requestedAt = new Date(row.requested_at);
+            if (!Number.isFinite(requestedAt.getTime())) continue;
+            if (!lastEventAt || new Date(lastEventAt) < requestedAt) {
+                lastEventAt = row.requested_at;
+            }
+            if (requestedAt >= todayStart) addAccountTokenStats(summary.today, row);
+            if (requestedAt >= weekStart) addAccountTokenStats(summary.week, row);
+            if (requestedAt >= monthStart) addAccountTokenStats(summary.month, row);
+
+            const hourKey = chinaHourKey(requestedAt);
+            if (!hourlyByBucket.has(hourKey)) {
+                hourlyByBucket.set(hourKey, { bucket: hourKey, ...emptyAccountTokenStats() });
+            }
+            addAccountTokenStats(hourlyByBucket.get(hourKey), row);
+
+            const dayKey = chinaDateKey(requestedAt);
+            if (!dailyByBucket.has(dayKey)) {
+                dailyByBucket.set(dayKey, { bucket: dayKey, ...emptyAccountTokenStats() });
+            }
+            addAccountTokenStats(dailyByBucket.get(dayKey), row);
+
+            const modelName = row.model || 'unknown';
+            if (!byModel.has(modelName)) {
+                byModel.set(modelName, { model: modelName, totalTokens: 0, requests: 0 });
+            }
+            byModel.get(modelName).totalTokens += nonNegativeInteger(row.total_tokens);
+            byModel.get(modelName).requests += 1;
+
+            const keyMeta = visibleKeys.get(row.api_key_hash) || {};
+            const keyLabel = keyMeta.apiKeyPreview || row.api_key_preview || row.api_key_hash;
+            if (!byApiKey.has(row.api_key_hash)) {
+                byApiKey.set(row.api_key_hash, {
+                    apiKeyPreview: keyLabel,
+                    group: keyMeta.group || 'shop',
+                    totalTokens: 0,
+                    requests: 0
+                });
+            }
+            byApiKey.get(row.api_key_hash).totalTokens += nonNegativeInteger(row.total_tokens);
+            byApiKey.get(row.api_key_hash).requests += 1;
+        }
+
+        return {
+            generatedAt: nowIso(now),
+            dataFreshness: {
+                mode: 'delayed',
+                maxDelayMinutes: 60,
+                lastEventAt
+            },
+            summary,
+            hourly: Array.from(hourlyByBucket.values()).sort((left, right) => left.bucket.localeCompare(right.bucket)).slice(-24),
+            daily: Array.from(dailyByBucket.values()).sort((left, right) => left.bucket.localeCompare(right.bucket)),
+            byModel: Array.from(byModel.values()).sort((left, right) => right.totalTokens - left.totalTokens),
+            byApiKey: Array.from(byApiKey.values()).sort((left, right) => right.totalTokens - left.totalTokens)
         };
     }
 
@@ -1334,11 +1541,15 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     app.get('/api/account/me', limitQueryApi, requireAccount, (req, res) => {
         const orders = listOrdersByPhone.all(req.account.phone)
             .map(toOrder)
-            .map((order) => publicOrder(order, { includeApiKey: false }));
+            .map((order) => publicOrder(order, { includeApiKey: true }));
         return res.json({
             user: publicUser(req.account.phone),
             orders
         });
+    });
+
+    app.get('/api/account/usage-summary', limitQueryApi, requireAccount, (req, res) => {
+        return res.json(accountUsageSummary(req.account.phone));
     });
 
     app.post('/api/admin/invites', limitAdminApi, requireAdminToken, (req, res) => {
@@ -1423,13 +1634,8 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
-    app.get('/api/orders', limitQueryApi, (req, res) => {
-        const phone = String(req.query.phone || '').trim();
-        if (!isPhone(phone)) {
-            return res.status(400).json({ code: 'INVALID_PHONE', message: '请输入有效的中国大陆手机号。' });
-        }
-
-        const orders = listOrdersByPhone.all(phone)
+    app.get('/api/orders', limitQueryApi, requireAccount, (req, res) => {
+        const orders = listOrdersByPhone.all(req.account.phone)
             .map(toOrder)
             .map((order) => publicOrder(order, { includeApiKey: true }));
 
@@ -1515,16 +1721,16 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
-    app.get(['/shop/redeem', '/shop/redeem/', '/shop/redeem/index.html'], (req, res, next) => {
+    app.get(['/shop', '/shop/', '/shop/index.html'], redirectAccountHomePage);
+    app.get(['/shop/query', '/shop/query/', '/shop/query/index.html'], redirectQueryPage);
+    app.get(['/shop/login', '/shop/login/', '/shop/login/index.html'], (req, res, next) => next());
+    app.get(['/shop/register', '/shop/register/', '/shop/register/index.html'], (req, res, next) => next());
+    app.get(['/shop/admin', '/shop/admin/', '/shop/admin/index.html'], requireAdminPage, (req, res, next) => next());
+    app.get(['/shop/redeem', '/shop/redeem/', '/shop/redeem/index.html'], requireAccountPage, (req, res, next) => {
         clearResultCookies(res);
         return next();
     });
-
-    app.get(['/shop/key', '/shop/key/', '/shop/key/index.html'], requireResultToken, (req, res, next) => next());
-    app.get(['/shop/login', '/shop/login/', '/shop/login/index.html'], (req, res, next) => next());
-    app.get(['/shop/register', '/shop/register/', '/shop/register/index.html'], (req, res, next) => next());
-    app.get(['/shop/account', '/shop/account/', '/shop/account/index.html'], requireAccountPage, (req, res, next) => next());
-    app.get(['/shop/admin', '/shop/admin/', '/shop/admin/index.html'], requireAdminPage, (req, res, next) => next());
+    app.get(/^\/shop(?:\/.*)?$/, requireShopHtmlPage, (req, res, next) => next());
 
     app.use(blockSensitiveStaticPaths);
     app.use(express.static(rootDir, { extensions: ['html'], dotfiles: 'ignore' }));
