@@ -308,6 +308,99 @@ test('充值申请校验金额和支付方式', async () => {
     });
 });
 
+test('管理员确认充值后增加余额并写入账户流水', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139006');
+        const created = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ amount: '30', paymentMethod: 'alipay', paymentNote: 'paid 30' })
+        });
+
+        const approved = await jsonFetch(`${baseUrl}/api/admin/topups/${created.body.topup.id}/approve`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ confirmedAmount: '30', adminNote: '到账' })
+        });
+
+        assert.equal(approved.response.status, 200);
+        assert.equal(approved.body.topup.status, 'approved');
+        assert.equal(approved.body.balance.balanceCents, 3000);
+        assert.equal(approved.body.balance.pendingTopupCents, 0);
+
+        const ledger = db.prepare(`
+SELECT entry_type, amount_cents, balance_after_cents, related_id
+FROM account_ledger_entries
+WHERE phone = ?
+`).get('13800139006');
+        assert.deepEqual(ledger, {
+            entry_type: 'topup_approved',
+            amount_cents: 3000,
+            balance_after_cents: 3000,
+            related_id: created.body.topup.id
+        });
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceCents, 3000);
+    });
+});
+
+test('管理员确认金额以管理员填写为准且不能重复入账', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139007');
+        const created = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ amount: '30', paymentMethod: 'wechat' })
+        });
+
+        const approved = await jsonFetch(`${baseUrl}/api/admin/topups/${created.body.topup.id}/approve`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ confirmedAmount: '20', adminNote: '实际到账 20' })
+        });
+        assert.equal(approved.response.status, 200);
+        assert.equal(approved.body.balance.balanceCents, 2000);
+
+        const duplicate = await jsonFetch(`${baseUrl}/api/admin/topups/${created.body.topup.id}/approve`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ confirmedAmount: '20' })
+        });
+        assert.equal(duplicate.response.status, 409);
+        assert.equal(duplicate.body.code, 'TOPUP_NOT_PENDING');
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceCents, 2000);
+    });
+});
+
+test('管理员拒绝充值不会改变余额', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139008');
+        const created = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ amount: '50', paymentMethod: 'alipay' })
+        });
+
+        const rejected = await jsonFetch(`${baseUrl}/api/admin/topups/${created.body.topup.id}/reject`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ adminNote: '未到账' })
+        });
+
+        assert.equal(rejected.response.status, 200);
+        assert.equal(rejected.body.topup.status, 'rejected');
+        assert.equal(rejected.body.balance.balanceCents, 0);
+        assert.equal(rejected.body.balance.pendingTopupCents, 0);
+    });
+});
+
 test('内部 usage event 接口校验 token、HMAC、timestamp 并幂等写入', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const event = {

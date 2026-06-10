@@ -957,6 +957,61 @@ SET pending_topup_cents = ?,
 WHERE phone = ?
 `);
 
+    const listTopupRequestsForAdmin = db.prepare(`
+SELECT id, phone, requested_amount_cents, confirmed_amount_cents, payment_method,
+       payment_time, payment_note, screenshot_path, status, admin_note, created_at,
+       confirmed_at, confirmed_by_phone, rejected_at, rejected_by_phone
+FROM topup_requests
+WHERE (? = 'all' OR status = ?)
+ORDER BY created_at DESC
+LIMIT ?
+`);
+
+    const getTopupRequestById = db.prepare(`
+SELECT id, phone, requested_amount_cents, confirmed_amount_cents, payment_method,
+       payment_time, payment_note, screenshot_path, status, admin_note, created_at,
+       confirmed_at, confirmed_by_phone, rejected_at, rejected_by_phone
+FROM topup_requests
+WHERE id = ?
+`);
+
+    const approveTopupRequestById = db.prepare(`
+UPDATE topup_requests
+SET status = 'approved',
+    confirmed_amount_cents = ?,
+    admin_note = ?,
+    confirmed_at = ?,
+    confirmed_by_phone = ?
+WHERE id = ? AND status = 'pending'
+`);
+
+    const rejectTopupRequestById = db.prepare(`
+UPDATE topup_requests
+SET status = 'rejected',
+    admin_note = ?,
+    rejected_at = ?,
+    rejected_by_phone = ?
+WHERE id = ? AND status = 'pending'
+`);
+
+    const updateBalanceCents = db.prepare(`
+UPDATE account_balances
+SET balance_cents = ?,
+    updated_at = ?
+WHERE phone = ?
+`);
+
+    const insertLedgerEntry = db.prepare(`
+INSERT INTO account_ledger_entries (
+  id, phone, entry_type, amount_cents, balance_after_cents, currency,
+  related_id, memo, created_at, created_by_phone
+)
+VALUES (
+  @id, @phone, @entryType, @amountCents, @balanceAfterCents, 'CNY',
+  @relatedId, @memo, @createdAt, @createdByPhone
+)
+`);
+
     const getUserByPhone = db.prepare(`
 SELECT phone, created_at, password_hash, password_created_at, updated_at
 FROM users
@@ -1218,6 +1273,67 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         insertTopupRequest.run(topup);
         refreshPendingTopupCents(phone);
         return topup;
+    });
+
+    const approveTopupRequest = db.transaction(({ id, confirmedAmountCents, adminNote, adminPhone }) => {
+        const row = getTopupRequestById.get(id);
+        if (!row || row.status !== 'pending') {
+            const error = new Error('充值申请不是待确认状态。');
+            error.status = 409;
+            error.code = 'TOPUP_NOT_PENDING';
+            throw error;
+        }
+        const phone = row.phone;
+        const balanceRow = ensureAccountBalance(phone);
+        const nextBalanceCents = Number(balanceRow.balance_cents || 0) + confirmedAmountCents;
+        const now = nowIso();
+        const result = approveTopupRequestById.run(confirmedAmountCents, adminNote, now, adminPhone, id);
+        if (result.changes !== 1) {
+            const error = new Error('充值申请确认失败。');
+            error.status = 409;
+            error.code = 'TOPUP_NOT_PENDING';
+            throw error;
+        }
+        updateBalanceCents.run(nextBalanceCents, now, phone);
+        refreshPendingTopupCents(phone);
+        insertLedgerEntry.run({
+            id: createId('LEDGER'),
+            phone,
+            entryType: 'topup_approved',
+            amountCents: confirmedAmountCents,
+            balanceAfterCents: nextBalanceCents,
+            relatedId: id,
+            memo: adminNote,
+            createdAt: now,
+            createdByPhone: adminPhone
+        });
+        return {
+            topup: getTopupRequestById.get(id),
+            balance: getAccountBalanceRow.get(phone)
+        };
+    });
+
+    const rejectTopupRequest = db.transaction(({ id, adminNote, adminPhone }) => {
+        const row = getTopupRequestById.get(id);
+        if (!row || row.status !== 'pending') {
+            const error = new Error('充值申请不是待确认状态。');
+            error.status = 409;
+            error.code = 'TOPUP_NOT_PENDING';
+            throw error;
+        }
+        const now = nowIso();
+        const result = rejectTopupRequestById.run(adminNote, now, adminPhone, id);
+        if (result.changes !== 1) {
+            const error = new Error('充值申请拒绝失败。');
+            error.status = 409;
+            error.code = 'TOPUP_NOT_PENDING';
+            throw error;
+        }
+        refreshPendingTopupCents(row.phone);
+        return {
+            topup: getTopupRequestById.get(id),
+            balance: getAccountBalanceRow.get(row.phone)
+        };
     });
 
     function loginUser({ phone, password }) {
@@ -2037,6 +2153,54 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             return res.status(error.status || 500).json({
                 code: error.code || 'USAGE_KEY_PROFILE_FAILED',
                 message: error.message || 'usage key 归属设置失败。'
+            });
+        }
+    });
+
+    app.get('/api/admin/topups', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        const status = String(req.query.status || 'pending').trim();
+        const normalizedStatus = ['pending', 'approved', 'rejected', 'cancelled', 'all'].includes(status) ? status : 'pending';
+        const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
+        const topups = listTopupRequestsForAdmin.all(normalizedStatus, normalizedStatus, limit).map(publicTopupRequest);
+        return res.json({ topups });
+    });
+
+    app.post('/api/admin/topups/:id/approve', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        try {
+            const confirmedAmountCents = parsePositiveCnyToCents(req.body.confirmedAmount ?? req.body.confirmed_amount);
+            const result = approveTopupRequest({
+                id: req.params.id,
+                confirmedAmountCents,
+                adminNote: String(req.body.adminNote || req.body.admin_note || '').trim().slice(0, 500),
+                adminPhone: req.account?.phone || defaultAdminAccountPhone
+            });
+            return res.json({
+                topup: publicTopupRequest(result.topup),
+                balance: publicAccountBalance(result.balance)
+            });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'TOPUP_APPROVE_FAILED',
+                message: error.message || '充值确认失败。'
+            });
+        }
+    });
+
+    app.post('/api/admin/topups/:id/reject', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        try {
+            const result = rejectTopupRequest({
+                id: req.params.id,
+                adminNote: String(req.body.adminNote || req.body.admin_note || '').trim().slice(0, 500),
+                adminPhone: req.account?.phone || defaultAdminAccountPhone
+            });
+            return res.json({
+                topup: publicTopupRequest(result.topup),
+                balance: publicAccountBalance(result.balance)
+            });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'TOPUP_REJECT_FAILED',
+                message: error.message || '充值拒绝失败。'
             });
         }
     });
