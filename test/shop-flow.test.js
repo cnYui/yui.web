@@ -74,6 +74,41 @@ async function usageEventFetch(baseUrl, event, options = {}) {
     });
 }
 
+async function createRedeemedOrder(baseUrl, phone, apiKey = 'sk-balance-gated') {
+    await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+        method: 'POST',
+        headers: { 'x-admin-token': 'test-token' },
+        body: JSON.stringify({ apiKeys: [apiKey] })
+    });
+    const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
+        method: 'POST',
+        headers: { 'x-admin-token': 'test-token' },
+        body: JSON.stringify({ count: 1 })
+    });
+    const redeemResult = await jsonFetch(`${baseUrl}/api/invites/redeem`, {
+        method: 'POST',
+        body: JSON.stringify({ phone, code: inviteResult.body.invites[0].code })
+    });
+    assert.equal(redeemResult.response.status, 201);
+    return redeemResult.body.order;
+}
+
+async function submitAndApproveTopup(baseUrl, cookie, amount, adminToken = 'test-token') {
+    const created = await jsonFetch(`${baseUrl}/api/account/topups`, {
+        method: 'POST',
+        headers: { cookie },
+        body: JSON.stringify({ amount, paymentMethod: 'alipay' })
+    });
+    assert.equal(created.response.status, 201);
+    const approved = await jsonFetch(`${baseUrl}/api/admin/topups/${created.body.topup.id}/approve`, {
+        method: 'POST',
+        headers: { 'x-admin-token': adminToken },
+        body: JSON.stringify({ confirmedAmount: amount })
+    });
+    assert.equal(approved.response.status, 200);
+    return approved.body;
+}
+
 async function withServer(run, appOptions = {}) {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yui-shop-test-'));
     const dbPath = path.join(tempDir, 'shop.sqlite');
@@ -398,6 +433,41 @@ test('管理员拒绝充值不会改变余额', async () => {
         assert.equal(rejected.body.topup.status, 'rejected');
         assert.equal(rejected.body.balance.balanceCents, 0);
         assert.equal(rejected.body.balance.pendingTopupCents, 0);
+    });
+});
+
+test('托管 API key 在账户余额为 0 时返回余额不足状态', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800139009', 'sk-balance-zero');
+
+        const status = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=${encodeURIComponent(order.apiKey)}`, {
+            headers: { 'x-internal-token': 'internal-test-token' }
+        });
+
+        assert.equal(status.response.status, 200);
+        assert.equal(status.body.managed, true);
+        assert.equal(status.body.active, false);
+        assert.equal(status.body.status, 'insufficient_balance');
+        assert.equal(status.body.billing.balanceCents, 0);
+        assert.equal(status.body.billing.debtCents, 0);
+    });
+});
+
+test('托管 API key 充值确认后恢复可用', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800139010', 'sk-balance-positive');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139010');
+        await submitAndApproveTopup(baseUrl, cookie, '5');
+
+        const status = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=${encodeURIComponent(order.apiKey)}`, {
+            headers: { 'x-internal-token': 'internal-test-token' }
+        });
+
+        assert.equal(status.response.status, 200);
+        assert.equal(status.body.managed, true);
+        assert.equal(status.body.active, true);
+        assert.equal(status.body.status, 'active');
+        assert.equal(status.body.billing.balanceCents, 500);
     });
 });
 
@@ -1302,22 +1372,11 @@ WHERE api_key = ?
     });
 });
 
-test('内部 API key 状态接口对未过期订单返回 active', async () => {
+test('内部 API key 状态接口对未过期且余额充足的订单返回 active', async () => {
     await withServer(async ({ baseUrl }) => {
-        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-active-status'] })
-        });
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 1 })
-        });
-        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138301', code: inviteResult.body.invites[0].code })
-        });
+        await createRedeemedOrder(baseUrl, '13800138301', 'sk-active-status');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138301');
+        await submitAndApproveTopup(baseUrl, cookie, '1');
 
         const active = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=sk-active-status`, {
             headers: { 'x-internal-token': 'internal-test-token' }
@@ -1326,6 +1385,7 @@ test('内部 API key 状态接口对未过期订单返回 active', async () => {
         assert.equal(active.body.managed, true);
         assert.equal(active.body.active, true);
         assert.equal(active.body.status, 'active');
+        assert.equal(active.body.billing.balanceCents, 100);
         assert.match(active.body.expiresAt, /^\d{4}-\d{2}-\d{2}T/);
     });
 });

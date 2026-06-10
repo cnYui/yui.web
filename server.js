@@ -630,6 +630,18 @@ function createShopApp(options = {}) {
         };
     }
 
+    function billingStatusForPhone(phone) {
+        return publicAccountBalance(ensureAccountBalance(phone));
+    }
+
+    function billingBlockedStatus(phone) {
+        const billing = billingStatusForPhone(phone);
+        if (billing.balanceCents > 0) {
+            return { blocked: false, billing };
+        }
+        return { blocked: true, billing };
+    }
+
     function paymentReferenceForPhone(phone) {
         const parts = chinaParts(new Date());
         const maskedPhone = `${phone.slice(0, 3)}****${phone.slice(-4)}`;
@@ -2318,11 +2330,33 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
 
         const order = toOrder(orderRow);
         const active = getOrderStatus(order) === 'active';
+        if (!active) {
+            return res.json({
+                managed: true,
+                active: false,
+                status: 'expired',
+                expiresAt: order.expiresAt,
+                billing: billingStatusForPhone(order.phone)
+            });
+        }
+
+        const billingStatus = billingBlockedStatus(order.phone);
+        if (billingStatus.blocked) {
+            return res.json({
+                managed: true,
+                active: false,
+                status: 'insufficient_balance',
+                expiresAt: order.expiresAt,
+                billing: billingStatus.billing
+            });
+        }
+
         return res.json({
             managed: true,
-            active,
-            status: active ? 'active' : 'expired',
-            expiresAt: order.expiresAt
+            active: true,
+            status: 'active',
+            expiresAt: order.expiresAt,
+            billing: billingStatus.billing
         });
     });
 
