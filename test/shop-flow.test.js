@@ -1479,6 +1479,15 @@ test('Account 页面包含预充值余额、充值申请和扣费流水容器', 
     assert.match(html, /id="accountLedger"/);
 });
 
+test('Admin 页面包含充值审核容器', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
+
+    assert.match(html, /id="adminTopupRefreshButton"/);
+    assert.match(html, /id="adminTopupStatusFilter"/);
+    assert.match(html, /id="adminTopupTable"/);
+    assert.match(html, /id="adminTopupMessage"/);
+});
+
 test('管理员页和登录页包含密码重置入口', () => {
     const adminHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
     const loginHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');

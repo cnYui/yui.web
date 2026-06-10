@@ -44,6 +44,25 @@
             <p id="passwordResetCodeMessage" class="mt-3 text-sm text-text-muted dark:text-dark-text-muted"></p>
             <div id="passwordResetCodeResult" class="mt-4 hidden rounded-md border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface p-4"></div>
         </section>
+        <section id="adminTopupSection" class="mt-10 border-t border-border-subtle dark:border-dark-border pt-10">
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Topups</p>
+                    <h2 class="mt-3 font-display text-3xl md:text-4xl">充值审核</h2>
+                </div>
+                <button id="adminTopupRefreshButton" class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button">刷新</button>
+            </div>
+            <div class="mt-6 grid gap-3 md:grid-cols-[12rem_1fr]">
+                <select id="adminTopupStatusFilter" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary">
+                    <option value="pending">待确认</option>
+                    <option value="approved">已入账</option>
+                    <option value="rejected">已拒绝</option>
+                    <option value="all">全部</option>
+                </select>
+                <p id="adminTopupMessage" class="self-center text-sm text-text-muted dark:text-dark-text-muted"></p>
+            </div>
+            <div id="adminTopupTable" class="mt-6 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
+        </section>
         <section id="adminUsageSection" class="mt-10 border-t border-border-subtle dark:border-dark-border pt-10">
             <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                 <div>

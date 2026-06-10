@@ -266,6 +266,49 @@
         `;
     }
 
+    function renderAdminTopups(topups = []) {
+        if (!topups.length) {
+            return '<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">暂无充值申请。</div>';
+        }
+        return `
+            <table class="min-w-full divide-y divide-border-subtle dark:divide-dark-border text-sm">
+                <thead class="bg-background-soft dark:bg-dark-surface text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                    <tr>
+                        <th class="px-4 py-3">用户</th>
+                        <th class="px-4 py-3">金额</th>
+                        <th class="px-4 py-3">方式</th>
+                        <th class="px-4 py-3">备注</th>
+                        <th class="px-4 py-3">状态</th>
+                        <th class="px-4 py-3">操作</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-subtle dark:divide-dark-border bg-white dark:bg-dark-card">
+                    ${topups.map((topup) => `
+                        <tr data-topup-id="${escapeHtml(topup.id)}">
+                            <td class="px-4 py-3">${escapeHtml(topup.phone)}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatCents(topup.requestedAmountCents))}</td>
+                            <td class="px-4 py-3">${escapeHtml(topup.paymentMethod === 'wechat' ? '微信' : '支付宝')}</td>
+                            <td class="px-4 py-3">${escapeHtml(topup.paymentNote || '-')}</td>
+                            <td class="px-4 py-3">${escapeHtml(topupStatusText(topup.status))}</td>
+                            <td class="px-4 py-3">
+                                ${topup.status === 'pending' ? `
+                                    <div class="flex flex-col gap-2 min-w-40">
+                                        <input class="h-9 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" data-confirmed-amount value="${escapeHtml(String(topup.requestedAmount || ''))}" inputmode="decimal"/>
+                                        <input class="h-9 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" data-admin-note placeholder="管理员备注"/>
+                                        <div class="flex gap-2">
+                                            <button class="btn-primary px-3 py-2 text-xs" type="button" data-approve-topup>确认</button>
+                                            <button class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text px-3 py-2 text-xs" type="button" data-reject-topup>拒绝</button>
+                                        </div>
+                                    </div>
+                                ` : '-'}
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
     function renderCharges(charges = []) {
         if (!charges.length) return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无 API 扣费记录。</p>';
         return `
@@ -826,9 +869,61 @@
         });
     }
 
+    function initAdminTopupPage() {
+        const refreshButton = document.getElementById('adminTopupRefreshButton');
+        const statusFilter = document.getElementById('adminTopupStatusFilter');
+        const tableRoot = document.getElementById('adminTopupTable');
+        const message = document.getElementById('adminTopupMessage');
+        if (!refreshButton || !statusFilter || !tableRoot || !message) return;
+
+        async function fetchTopups() {
+            message.textContent = '正在刷新...';
+            try {
+                const data = await requestJson(`/api/admin/topups?status=${encodeURIComponent(statusFilter.value)}`);
+                tableRoot.innerHTML = renderAdminTopups(data.topups || []);
+                message.textContent = `共 ${(data.topups || []).length} 条。`;
+            } catch (error) {
+                message.textContent = error.message;
+            }
+        }
+
+        tableRoot.addEventListener('click', async (event) => {
+            const approveButton = event.target.closest('[data-approve-topup]');
+            const rejectButton = event.target.closest('[data-reject-topup]');
+            if (!approveButton && !rejectButton) return;
+            const row = event.target.closest('[data-topup-id]');
+            const id = row?.getAttribute('data-topup-id');
+            if (!id) return;
+            const adminNote = row.querySelector('[data-admin-note]')?.value || '';
+            const confirmedAmount = row.querySelector('[data-confirmed-amount]')?.value || '';
+            message.textContent = approveButton ? '正在确认入账...' : '正在拒绝申请...';
+            try {
+                if (approveButton) {
+                    await requestJson(`/api/admin/topups/${encodeURIComponent(id)}/approve`, {
+                        method: 'POST',
+                        body: JSON.stringify({ confirmedAmount, adminNote })
+                    });
+                } else {
+                    await requestJson(`/api/admin/topups/${encodeURIComponent(id)}/reject`, {
+                        method: 'POST',
+                        body: JSON.stringify({ adminNote })
+                    });
+                }
+                await fetchTopups();
+            } catch (error) {
+                message.textContent = error.message;
+            }
+        });
+
+        refreshButton.addEventListener('click', fetchTopups);
+        statusFilter.addEventListener('change', fetchTopups);
+        fetchTopups();
+    }
+
     function initAdminPage() {
         initAdminUsagePage();
         initAdminPasswordResetPage();
+        initAdminTopupPage();
         const refreshButton = document.getElementById('usageRefreshButton');
         if (refreshButton) {
             refreshButton.click();
