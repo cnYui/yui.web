@@ -1105,7 +1105,7 @@ SELECT id, phone, entry_type, amount_cents, balance_after_cents, currency,
        related_id, memo, created_at, created_by_phone
 FROM account_ledger_entries
 WHERE phone = ?
-ORDER BY created_at DESC, id DESC
+ORDER BY created_at DESC, rowid DESC
 LIMIT ?
 `);
 
@@ -1115,7 +1115,7 @@ SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_toke
        balance_after_cents, status, created_at
 FROM api_charge_records
 WHERE phone = ?
-ORDER BY created_at DESC, id DESC
+ORDER BY created_at DESC, rowid DESC
 LIMIT ?
 `);
 
