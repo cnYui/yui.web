@@ -471,6 +471,143 @@ test('托管 API key 充值确认后恢复可用', async () => {
     });
 });
 
+test('usage event 写入后按 price_amount_micros 扣余额并生成用户可见扣费记录', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800139011', 'sk-charge-positive');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139011');
+        await submitAndApproveTopup(baseUrl, cookie, '1');
+
+        const event = {
+            version: 1,
+            request_id: 'req-charge-001',
+            api_key_hash: hashApiKeyForTest(order.apiKey),
+            api_key_preview: keyPreviewForTest(order.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            endpoint: '/v1/responses',
+            success: true,
+            failed: false,
+            input_tokens: 100,
+            output_tokens: 200,
+            total_tokens: 300,
+            price_amount_micros: 250000,
+            price_currency: 'CNY',
+            requested_at: '2026-06-10T12:00:00+08:00'
+        };
+
+        const inserted = await usageEventFetch(baseUrl, event);
+        assert.equal(inserted.response.status, 201);
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceCents, 75);
+
+        const charge = db.prepare(`
+SELECT phone, usage_event_id, charge_cents, balance_before_cents, balance_after_cents, status
+FROM api_charge_records
+WHERE usage_event_id = ?
+`).get('req-charge-001');
+        assert.deepEqual(charge, {
+            phone: '13800139011',
+            usage_event_id: 'req-charge-001',
+            charge_cents: 25,
+            balance_before_cents: 100,
+            balance_after_cents: 75,
+            status: 'charged'
+        });
+
+        const ledger = db.prepare(`
+SELECT entry_type, amount_cents, balance_after_cents, related_id
+FROM account_ledger_entries
+WHERE related_id = ?
+`).get('req-charge-001');
+        assert.deepEqual(ledger, {
+            entry_type: 'api_charge',
+            amount_cents: -25,
+            balance_after_cents: 75,
+            related_id: 'req-charge-001'
+        });
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
+test('余额很少时本次调用可扣成负数且下一次状态检查拒绝', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800139012', 'sk-charge-negative');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139012');
+        await submitAndApproveTopup(baseUrl, cookie, '0.05');
+
+        const inserted = await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-charge-negative',
+            api_key_hash: hashApiKeyForTest(order.apiKey),
+            api_key_preview: keyPreviewForTest(order.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            endpoint: '/v1/responses',
+            success: true,
+            failed: false,
+            input_tokens: 100,
+            output_tokens: 200,
+            total_tokens: 300,
+            price_amount_micros: 200000,
+            price_currency: 'CNY',
+            requested_at: '2026-06-10T12:05:00+08:00'
+        });
+        assert.equal(inserted.response.status, 201);
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceCents, -15);
+        assert.equal(balance.body.balance.debtCents, 15);
+        assert.equal(balance.body.balance.status, 'debt');
+
+        const status = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=${encodeURIComponent(order.apiKey)}`, {
+            headers: { 'x-internal-token': 'internal-test-token' }
+        });
+        assert.equal(status.body.active, false);
+        assert.equal(status.body.status, 'insufficient_balance');
+        assert.equal(status.body.billing.debtCents, 15);
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
+test('重复 usage event 不会重复扣费', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800139013', 'sk-charge-idempotent');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139013');
+        await submitAndApproveTopup(baseUrl, cookie, '1');
+
+        const event = {
+            version: 1,
+            request_id: 'req-charge-idempotent',
+            api_key_hash: hashApiKeyForTest(order.apiKey),
+            api_key_preview: keyPreviewForTest(order.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            endpoint: '/v1/responses',
+            success: true,
+            failed: false,
+            input_tokens: 1,
+            output_tokens: 1,
+            total_tokens: 2,
+            price_amount_micros: 100000,
+            price_currency: 'CNY',
+            requested_at: '2026-06-10T12:10:00+08:00'
+        };
+
+        const first = await usageEventFetch(baseUrl, event);
+        assert.equal(first.response.status, 201);
+        const duplicate = await usageEventFetch(baseUrl, event);
+        assert.equal(duplicate.response.status, 200);
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceCents, 90);
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
 test('内部 usage event 接口校验 token、HMAC、timestamp 并幂等写入', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const event = {

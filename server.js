@@ -224,7 +224,11 @@ function normalizeUsageEvent(body = {}) {
         cachedTokens,
         totalTokens,
         latencyMs: nonNegativeInteger(body.latency_ms),
-        requestedAt: requestedAt && !Number.isNaN(new Date(requestedAt).getTime()) ? requestedAt : nowIso()
+        requestedAt: requestedAt && !Number.isNaN(new Date(requestedAt).getTime()) ? requestedAt : nowIso(),
+        priceAmountMicros: body.price_amount_micros === undefined || body.price_amount_micros === null
+            ? null
+            : nonNegativeInteger(body.price_amount_micros),
+        priceCurrency: String(body.price_currency || '').trim().toUpperCase()
     };
 }
 
@@ -1024,6 +1028,39 @@ VALUES (
 )
 `);
 
+    const getPhoneByUsageApiKeyHash = db.prepare(`
+SELECT o.phone AS phone
+FROM api_keys ak
+JOIN orders o ON o.api_key = ak.api_key
+WHERE ak.api_key_hash = ?
+UNION
+SELECT phone
+FROM usage_key_profiles
+WHERE api_key_hash = ? AND phone != ''
+LIMIT 1
+`);
+
+    const getApiChargeByUsageEventId = db.prepare(`
+SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+       total_tokens, price_version, charge_cents, balance_before_cents,
+       balance_after_cents, status, created_at
+FROM api_charge_records
+WHERE usage_event_id = ?
+`);
+
+    const insertApiChargeRecord = db.prepare(`
+INSERT INTO api_charge_records (
+  id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+  total_tokens, price_version, charge_cents, balance_before_cents,
+  balance_after_cents, status, created_at
+)
+VALUES (
+  @id, @phone, @usageEventId, @apiKeyHash, @model, @inputTokens, @outputTokens,
+  @totalTokens, @priceVersion, @chargeCents, @balanceBeforeCents,
+  @balanceAfterCents, @status, @createdAt
+)
+`);
+
     const getUserByPhone = db.prepare(`
 SELECT phone, created_at, password_hash, password_created_at, updated_at
 FROM users
@@ -1120,19 +1157,19 @@ WHERE api_key = ?
 INSERT OR IGNORE INTO usage_events (
   request_id, api_key_hash, api_key_preview, provider, model, endpoint, source, auth_index,
   success, failed, input_tokens, output_tokens, reasoning_tokens, cached_tokens, total_tokens,
-  latency_ms, requested_at, received_at
+  latency_ms, requested_at, received_at, price_amount_micros, price_currency
 )
 VALUES (
   @requestId, @apiKeyHash, @apiKeyPreview, @provider, @model, @endpoint, @source, @authIndex,
   @success, @failed, @inputTokens, @outputTokens, @reasoningTokens, @cachedTokens, @totalTokens,
-  @latencyMs, @requestedAt, @receivedAt
+  @latencyMs, @requestedAt, @receivedAt, @priceAmountMicros, @priceCurrency
 )
 `);
 
     const listUsageEvents = db.prepare(`
 SELECT request_id, api_key_hash, api_key_preview, provider, model, endpoint, source, auth_index,
        success, failed, input_tokens, output_tokens, reasoning_tokens, cached_tokens, total_tokens,
-       latency_ms, requested_at, received_at
+       latency_ms, requested_at, received_at, price_amount_micros, price_currency
 FROM usage_events
 ORDER BY requested_at DESC
 `);
@@ -1348,6 +1385,76 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         };
     });
 
+    function chargeCentsFromUsageEvent(event) {
+        if (event.failed) {
+            return { chargeCents: 0, status: 'failed_no_charge', priceVersion: 'failed-no-charge' };
+        }
+        if (event.priceAmountMicros === null || event.priceAmountMicros === undefined || event.priceAmountMicros <= 0) {
+            return { chargeCents: 0, status: 'unpriced_no_charge', priceVersion: 'usage-event-missing-price' };
+        }
+        const currency = String(event.priceCurrency || 'CNY').toUpperCase();
+        if (currency !== 'CNY') {
+            const error = new Error('usage event 价格币种必须是 CNY。');
+            error.status = 400;
+            error.code = 'UNSUPPORTED_USAGE_PRICE_CURRENCY';
+            throw error;
+        }
+        return {
+            chargeCents: Math.ceil(Number(event.priceAmountMicros) / 10000),
+            status: 'charged',
+            priceVersion: 'usage-event-price-micros-cny-v1'
+        };
+    }
+
+    const chargeUsageEvent = db.transaction((event) => {
+        if (getApiChargeByUsageEventId.get(event.requestId)) {
+            return { charged: 0, skipped: 1 };
+        }
+        const owner = getPhoneByUsageApiKeyHash.get(event.apiKeyHash, event.apiKeyHash);
+        if (!owner?.phone) {
+            return { charged: 0, skipped: 1 };
+        }
+        const balanceRow = ensureAccountBalance(owner.phone);
+        const pricing = chargeCentsFromUsageEvent(event);
+        const balanceBeforeCents = Number(balanceRow.balance_cents || 0);
+        const balanceAfterCents = balanceBeforeCents - pricing.chargeCents;
+        const now = nowIso();
+
+        insertApiChargeRecord.run({
+            id: createId('CHARGE'),
+            phone: owner.phone,
+            usageEventId: event.requestId,
+            apiKeyHash: event.apiKeyHash,
+            model: event.model,
+            inputTokens: event.inputTokens,
+            outputTokens: event.outputTokens,
+            totalTokens: event.totalTokens,
+            priceVersion: pricing.priceVersion,
+            chargeCents: pricing.chargeCents,
+            balanceBeforeCents,
+            balanceAfterCents,
+            status: pricing.status,
+            createdAt: now
+        });
+
+        if (pricing.chargeCents > 0) {
+            updateBalanceCents.run(balanceAfterCents, now, owner.phone);
+            insertLedgerEntry.run({
+                id: createId('LEDGER'),
+                phone: owner.phone,
+                entryType: 'api_charge',
+                amountCents: -pricing.chargeCents,
+                balanceAfterCents,
+                relatedId: event.requestId,
+                memo: `${event.model || 'unknown'} API 调用扣费`,
+                createdAt: now,
+                createdByPhone: ''
+            });
+        }
+
+        return { charged: pricing.chargeCents > 0 ? 1 : 0, skipped: 0 };
+    });
+
     function loginUser({ phone, password }) {
         const user = getUserByPhone.get(phone);
         if (!user || !user.password_hash || !verifyPassword(password, user.password_hash)) {
@@ -1552,7 +1659,11 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         event.success = event.success ? 1 : 0;
         event.failed = event.failed ? 1 : 0;
         const result = insertUsageEvent.run(event);
-        return result.changes > 0 ? { inserted: 1, skipped: 0 } : { inserted: 0, skipped: 1 };
+        if (result.changes <= 0) {
+            return { inserted: 0, skipped: 1 };
+        }
+        chargeUsageEvent(event);
+        return { inserted: 1, skipped: 0 };
     }
 
     function emptyUsageStats() {
