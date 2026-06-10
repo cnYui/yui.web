@@ -608,6 +608,54 @@ test('重复 usage event 不会重复扣费', async () => {
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
+test('用户账户页 API 返回自己的账户流水和扣费记录', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const firstOrder = await createRedeemedOrder(baseUrl, '13800139014', 'sk-ledger-first');
+        await createRedeemedOrder(baseUrl, '13800139015', 'sk-ledger-second');
+        const firstCookie = await registerUserAndGetCookie(baseUrl, '13800139014');
+        const secondCookie = await registerUserAndGetCookie(baseUrl, '13800139015');
+        await submitAndApproveTopup(baseUrl, firstCookie, '1');
+
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-ledger-first',
+            api_key_hash: hashApiKeyForTest(firstOrder.apiKey),
+            api_key_preview: keyPreviewForTest(firstOrder.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            endpoint: '/v1/responses',
+            success: true,
+            failed: false,
+            input_tokens: 10,
+            output_tokens: 20,
+            total_tokens: 30,
+            price_amount_micros: 100000,
+            price_currency: 'CNY',
+            requested_at: '2026-06-10T12:15:00+08:00'
+        });
+
+        const ledger = await jsonFetch(`${baseUrl}/api/account/ledger`, {
+            headers: { cookie: firstCookie }
+        });
+        assert.equal(ledger.response.status, 200);
+        assert.equal(ledger.body.entries.length, 2);
+        assert.deepEqual(ledger.body.entries.map((entry) => entry.entryType), ['api_charge', 'topup_approved']);
+
+        const charges = await jsonFetch(`${baseUrl}/api/account/api-charges`, {
+            headers: { cookie: firstCookie }
+        });
+        assert.equal(charges.response.status, 200);
+        assert.equal(charges.body.charges.length, 1);
+        assert.equal(charges.body.charges[0].usageEventId, 'req-ledger-first');
+        assert.equal(charges.body.charges[0].chargeCents, 10);
+
+        const secondLedger = await jsonFetch(`${baseUrl}/api/account/ledger`, {
+            headers: { cookie: secondCookie }
+        });
+        assert.equal(secondLedger.body.entries.length, 0);
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
 test('内部 usage event 接口校验 token、HMAC、timestamp 并幂等写入', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const event = {

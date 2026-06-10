@@ -702,6 +702,45 @@ function createShopApp(options = {}) {
         };
     }
 
+    function publicLedgerEntry(row) {
+        return {
+            id: row.id,
+            phone: row.phone,
+            entryType: row.entry_type,
+            amountCents: row.amount_cents,
+            amount: centsToCny(row.amount_cents),
+            balanceAfterCents: row.balance_after_cents,
+            balanceAfter: centsToCny(row.balance_after_cents),
+            currency: row.currency,
+            relatedId: row.related_id || '',
+            memo: row.memo || '',
+            createdAt: row.created_at,
+            createdByPhone: row.created_by_phone || ''
+        };
+    }
+
+    function publicApiChargeRecord(row) {
+        return {
+            id: row.id,
+            phone: row.phone,
+            usageEventId: row.usage_event_id,
+            apiKeyHash: row.api_key_hash,
+            model: row.model || 'unknown',
+            inputTokens: row.input_tokens,
+            outputTokens: row.output_tokens,
+            totalTokens: row.total_tokens,
+            priceVersion: row.price_version,
+            chargeCents: row.charge_cents,
+            chargeAmount: centsToCny(row.charge_cents),
+            balanceBeforeCents: row.balance_before_cents,
+            balanceBefore: centsToCny(row.balance_before_cents),
+            balanceAfterCents: row.balance_after_cents,
+            balanceAfter: centsToCny(row.balance_after_cents),
+            status: row.status,
+            createdAt: row.created_at
+        };
+    }
+
     function accountDestination(phone) {
         return isAdminAccountPhone(phone) ? '/shop/admin/' : '/shop/account/';
     }
@@ -1059,6 +1098,25 @@ VALUES (
   @totalTokens, @priceVersion, @chargeCents, @balanceBeforeCents,
   @balanceAfterCents, @status, @createdAt
 )
+`);
+
+    const listLedgerEntriesByPhone = db.prepare(`
+SELECT id, phone, entry_type, amount_cents, balance_after_cents, currency,
+       related_id, memo, created_at, created_by_phone
+FROM account_ledger_entries
+WHERE phone = ?
+ORDER BY created_at DESC, id DESC
+LIMIT ?
+`);
+
+    const listApiChargeRecordsByPhone = db.prepare(`
+SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+       total_tokens, price_version, charge_cents, balance_before_cents,
+       balance_after_cents, status, created_at
+FROM api_charge_records
+WHERE phone = ?
+ORDER BY created_at DESC, id DESC
+LIMIT ?
 `);
 
     const getUserByPhone = db.prepare(`
@@ -2226,6 +2284,18 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 100);
         const topups = listTopupRequestsByPhone.all(req.account.phone, limit).map(publicTopupRequest);
         return res.json({ topups });
+    });
+
+    app.get('/api/account/ledger', limitQueryApi, requireAccount, (req, res) => {
+        const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
+        const entries = listLedgerEntriesByPhone.all(req.account.phone, limit).map(publicLedgerEntry);
+        return res.json({ entries });
+    });
+
+    app.get('/api/account/api-charges', limitQueryApi, requireAccount, (req, res) => {
+        const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
+        const charges = listApiChargeRecordsByPhone.all(req.account.phone, limit).map(publicApiChargeRecord);
+        return res.json({ charges });
     });
 
     app.get('/api/account/usage-summary', limitQueryApi, requireAccount, (req, res) => {
