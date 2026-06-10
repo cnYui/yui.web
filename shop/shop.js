@@ -31,6 +31,10 @@
         return `¥${Number(amount).toFixed(2)}`;
     }
 
+    function formatCents(cents) {
+        return `¥${(Number(cents || 0) / 100).toFixed(2)}`;
+    }
+
     function formatNumber(value) {
         return Number(value || 0).toLocaleString('zh-CN');
     }
@@ -50,6 +54,45 @@
         return status === 'active'
             ? 'bg-background-soft dark:bg-dark-surface text-primary dark:text-dark-text'
             : 'bg-gray-100 dark:bg-dark-surface text-text-muted dark:text-dark-text-muted';
+    }
+
+    function billingStatusText(status) {
+        const map = {
+            available: '可用',
+            empty: '余额为 0',
+            debt: '欠费'
+        };
+        return map[status] || status || '-';
+    }
+
+    function topupStatusText(status) {
+        const map = {
+            pending: '待确认',
+            approved: '已入账',
+            rejected: '已拒绝',
+            cancelled: '已取消'
+        };
+        return map[status] || status || '-';
+    }
+
+    function ledgerEntryText(type) {
+        const map = {
+            topup_approved: '充值入账',
+            api_charge: 'API 扣费',
+            admin_adjustment: '管理员调整',
+            refund: '退款'
+        };
+        return map[type] || type || '-';
+    }
+
+    function chargeStatusText(status) {
+        const map = {
+            charged: '已扣费',
+            failed_no_charge: '失败未扣费',
+            unpriced_no_charge: '未计价',
+            adjusted: '已调整'
+        };
+        return map[status] || status || '-';
     }
 
     function escapeHtml(value) {
@@ -184,6 +227,87 @@
                     `;
                 }).join('')}
             </div>
+        `;
+    }
+
+    function renderBalanceCards(balance = {}) {
+        const cards = [
+            ['当前余额', formatCents(balance.balanceCents), billingStatusText(balance.status)],
+            ['欠费金额', formatCents(balance.debtCents), balance.debtCents > 0 ? '需补缴' : '无欠费'],
+            ['待确认充值', formatCents(balance.pendingTopupCents), '确认后入账'],
+            ['欠费上限', formatCents(balance.creditLimitCents), balance.creditExceeded ? '已超过' : '默认上限']
+        ];
+        return cards.map(([label, value, hint]) => `
+            <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(label)}</p>
+                <p class="mt-2 text-2xl font-display text-primary dark:text-dark-text">${escapeHtml(value)}</p>
+                <p class="mt-1 text-xs text-text-muted dark:text-dark-text-muted">${escapeHtml(hint)}</p>
+            </article>
+        `).join('');
+    }
+
+    function renderTopups(topups = []) {
+        if (!topups.length) return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无充值申请。</p>';
+        return `
+            <div class="space-y-3">
+                ${topups.map((topup) => `
+                    <article class="rounded-md border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="font-medium text-primary dark:text-dark-text">${escapeHtml(formatCents(topup.requestedAmountCents))}</p>
+                                <p class="mt-1 text-sm text-text-muted dark:text-dark-text-muted">${escapeHtml(topup.paymentMethod === 'wechat' ? '微信' : '支付宝')} · ${escapeHtml(formatDate(topup.createdAt))}</p>
+                            </div>
+                            <span class="rounded-full border border-border-subtle dark:border-dark-border px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted">${escapeHtml(topupStatusText(topup.status))}</span>
+                        </div>
+                        ${topup.adminNote ? `<p class="mt-2 text-sm text-text-muted dark:text-dark-text-muted">${escapeHtml(topup.adminNote)}</p>` : ''}
+                    </article>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    function renderCharges(charges = []) {
+        if (!charges.length) return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无 API 扣费记录。</p>';
+        return `
+            <table class="min-w-full text-sm">
+                <thead class="text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                    <tr><th class="py-2 pr-3">时间</th><th class="py-2 pr-3">模型</th><th class="py-2 pr-3">Token</th><th class="py-2 pr-3">费用</th><th class="py-2 pr-3">余额</th><th class="py-2">状态</th></tr>
+                </thead>
+                <tbody>
+                    ${charges.map((charge) => `
+                        <tr class="border-t border-border-subtle dark:border-dark-border">
+                            <td class="py-2 pr-3">${escapeHtml(formatDate(charge.createdAt))}</td>
+                            <td class="py-2 pr-3">${escapeHtml(charge.model)}</td>
+                            <td class="py-2 pr-3">${escapeHtml(`${formatNumber(charge.inputTokens)} / ${formatNumber(charge.outputTokens)} / ${formatNumber(charge.totalTokens)}`)}</td>
+                            <td class="py-2 pr-3">${escapeHtml(formatCents(charge.chargeCents))}</td>
+                            <td class="py-2 pr-3">${escapeHtml(formatCents(charge.balanceAfterCents))}</td>
+                            <td class="py-2">${escapeHtml(chargeStatusText(charge.status))}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function renderLedger(entries = []) {
+        if (!entries.length) return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无账户流水。</p>';
+        return `
+            <table class="min-w-full text-sm">
+                <thead class="text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                    <tr><th class="py-2 pr-3">时间</th><th class="py-2 pr-3">类型</th><th class="py-2 pr-3">金额</th><th class="py-2 pr-3">余额</th><th class="py-2">备注</th></tr>
+                </thead>
+                <tbody>
+                    ${entries.map((entry) => `
+                        <tr class="border-t border-border-subtle dark:border-dark-border">
+                            <td class="py-2 pr-3">${escapeHtml(formatDate(entry.createdAt))}</td>
+                            <td class="py-2 pr-3">${escapeHtml(ledgerEntryText(entry.entryType))}</td>
+                            <td class="py-2 pr-3">${escapeHtml(formatCents(entry.amountCents))}</td>
+                            <td class="py-2 pr-3">${escapeHtml(formatCents(entry.balanceAfterCents))}</td>
+                            <td class="py-2">${escapeHtml(entry.memo || '-')}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
         `;
     }
 
@@ -545,6 +669,20 @@
         const dailyChart = document.getElementById('accountDailyChart');
         const usageFreshness = document.getElementById('usageFreshness');
         const usageMessage = document.getElementById('accountUsageMessage');
+        const balanceCards = document.getElementById('accountBalanceCards');
+        const billingMessage = document.getElementById('accountBillingMessage');
+        const topupForm = document.getElementById('topupForm');
+        const topupAmount = document.getElementById('topupAmount');
+        const topupPaymentMethod = document.getElementById('topupPaymentMethod');
+        const topupPaymentTime = document.getElementById('topupPaymentTime');
+        const topupPaymentNote = document.getElementById('topupPaymentNote');
+        const topupMessage = document.getElementById('topupMessage');
+        const accountTopups = document.getElementById('accountTopups');
+        const accountCharges = document.getElementById('accountCharges');
+        const accountLedger = document.getElementById('accountLedger');
+        const alipayQrImage = document.getElementById('alipayQrImage');
+        const wechatQrImage = document.getElementById('wechatQrImage');
+        const paymentReference = document.getElementById('paymentReference');
         if (!phoneRoot || !ordersRoot || !message || !logoutButton) return;
 
         ordersRoot.innerHTML = '<p class="text-sm text-text-muted dark:text-dark-text-muted">正在读取账户信息...</p>';
@@ -567,6 +705,53 @@
             message.textContent = '';
         } catch (error) {
             window.location.replace('/shop/login/');
+        }
+
+        async function refreshBilling() {
+            if (billingMessage) billingMessage.textContent = '正在读取账务信息...';
+            const [balanceData, topupData, chargeData, ledgerData] = await Promise.all([
+                requestJson('/api/account/balance'),
+                requestJson('/api/account/topups'),
+                requestJson('/api/account/api-charges'),
+                requestJson('/api/account/ledger')
+            ]);
+            if (balanceCards) balanceCards.innerHTML = renderBalanceCards(balanceData.balance || {});
+            if (accountTopups) accountTopups.innerHTML = renderTopups(topupData.topups || []);
+            if (accountCharges) accountCharges.innerHTML = renderCharges(chargeData.charges || []);
+            if (accountLedger) accountLedger.innerHTML = renderLedger(ledgerData.entries || []);
+            if (alipayQrImage) alipayQrImage.src = balanceData.payment?.alipayQrUrl || '';
+            if (wechatQrImage) wechatQrImage.src = balanceData.payment?.wechatQrUrl || '';
+            if (paymentReference) paymentReference.textContent = balanceData.payment?.paymentReference || '-';
+            if (billingMessage) billingMessage.textContent = '';
+        }
+
+        try {
+            await refreshBilling();
+        } catch (error) {
+            if (billingMessage) billingMessage.textContent = error.message;
+        }
+
+        if (topupForm && topupAmount && topupPaymentMethod && topupMessage) {
+            topupForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                topupMessage.textContent = '正在提交充值申请...';
+                try {
+                    await requestJson('/api/account/topups', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            amount: topupAmount.value,
+                            paymentMethod: topupPaymentMethod.value,
+                            paymentTime: topupPaymentTime?.value || '',
+                            paymentNote: topupPaymentNote?.value || ''
+                        })
+                    });
+                    topupForm.reset();
+                    topupMessage.textContent = '充值申请已提交，管理员确认后会入账。';
+                    await refreshBilling();
+                } catch (error) {
+                    topupMessage.textContent = error.message;
+                }
+            });
         }
 
         try {
