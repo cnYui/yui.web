@@ -145,6 +145,7 @@ async function withServer(run, appOptions = {}) {
         adminToken: 'test-token',
         internalToken: 'internal-test-token',
         rootDir: path.join(__dirname, '..'),
+        apiKeyEncryptionSecret: '',
         ...appOptions
     });
     const server = await new Promise((resolve, reject) => {

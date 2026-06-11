@@ -170,5 +170,10 @@
 
 - 已按完整实施计划修复登录态兑换、Admin 兑换码管理、usage 自动同步、历史补账、API key 静态加密与 reveal 文案。
 - 后续改动不能恢复 body.phone 兑换主路径，不能在浏览器引入 `ADMIN_TOKEN`。
-- usage 补账和 API key 加密迁移真实库 apply 均未执行；必须在用户确认 dry-run 结果后再操作。
+- 2026-06-11 20:17-20:22 用户确认后，已对 `data/shop.sqlite` 执行 usage 补账 apply 和 API key 加密迁移 apply。
+- usage 补账 apply 总扣费 `32870254600` nanos；apply 后 dry-run 为 0 待处理项。
+- API key 加密迁移 apply 后 `api_keys` 8 条、`orders` 6 条均为密文，明文剩余 0 条。
+- `.env` 已新增 `SHOP_API_KEY_ENCRYPTION_SECRET`；不记录明文，SHA-256 指纹前 16 位为 `79c09541b842d2c1`，不要删除或替换。
+- usage 补账脚本的历史补账记录 id 必须使用 `request_id` 派生稳定 id，不能回到 `Date.now()+random`，否则真实库批量 apply 会撞主键。
 - 实施记录见 `docs/ai/context/20260611-201244-shop-complete-flow-security-billing-repair-implementation_CN.md`。
+- 真实库执行记录见 `docs/ai/context/20260611-202247-shop-real-db-usage-and-api-key-apply_CN.md`。

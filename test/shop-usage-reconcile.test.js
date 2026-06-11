@@ -55,6 +55,37 @@ test('usage 补账 dry-run 不写数据库，apply 后幂等扣费', () => {
     }
 });
 
+test('usage 补账批量创建扣费记录时不依赖随机 id 唯一性', () => {
+    const { db, tempDir } = createDb();
+    const originalDateNow = Date.now;
+    const originalRandom = Math.random;
+    try {
+        const apiKey = 'sk-reconcile-batch';
+        const hash = hashApiKeyForTest(apiKey);
+        db.prepare('INSERT INTO users (phone, created_at) VALUES (?, ?)').run('13800138202', '2026-06-11T10:00:00+08:00');
+        db.prepare('INSERT INTO account_balances (phone, balance_cents, balance_nanos, pending_topup_cents, pending_topup_nanos, credit_limit_cents, credit_limit_nanos, updated_at) VALUES (?, ?, ?, 0, 0, 1000, 10000000000, ?)').run('13800138202', 100, 1000000000, '2026-06-11T10:00:00+08:00');
+        db.prepare('INSERT INTO api_keys (api_key, api_key_preview, api_key_hash, status, created_at, used_at, order_id) VALUES (?, ?, ?, ?, ?, ?, ?)').run(apiKey, 'sk-r...batch', hash, 'used', '2026-06-11T10:00:00+08:00', '2026-06-11T10:00:00+08:00', 'ORDER-BATCH');
+        db.prepare('INSERT INTO orders (id, phone, invite_code, api_key, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run('ORDER-BATCH', '13800138202', 'YUI-REC-000002', apiKey, 'sk-r...batch', 'codex api key', 0, '2026-06-11T10:00:00+08:00', '2026-07-12T10:00:00+08:00', 'rst-batch');
+        const insertUsage = db.prepare('INSERT INTO usage_events (request_id, api_key_hash, api_key_preview, provider, model, endpoint, source, auth_index, success, failed, input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_hit_input_tokens, cache_miss_input_tokens, total_tokens, latency_ms, requested_at, received_at, price_amount_micros, price_currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 100, 10, 0, 40, 0, 0, 110, 0, ?, ?, NULL, ?)');
+        insertUsage.run('req-reconcile-batch-a', hash, 'sk-r...batch', 'codex', 'gpt-5.4', '', '', '', '2026-06-11T10:01:00Z', '2026-06-11T10:01:01+08:00', '');
+        insertUsage.run('req-reconcile-batch-b', hash, 'sk-r...batch', 'codex', 'gpt-5.4', '', '', '', '2026-06-11T10:02:00Z', '2026-06-11T10:02:01+08:00', '');
+
+        Date.now = () => 1234567890000;
+        Math.random = () => 0;
+
+        const applied = reconcileUsageBilling(db, { apply: true, now: () => '2026-06-11T11:00:00+08:00' });
+
+        assert.equal(applied.createdCharges, 2);
+        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM api_charge_records').get().count, 2);
+        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM account_ledger_entries WHERE entry_type = ?').get('api_charge').count, 2);
+    } finally {
+        Date.now = originalDateNow;
+        Math.random = originalRandom;
+        db.close();
+        fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+});
+
 test('补账 apply 前会复制数据库备份', () => {
     const { db, tempDir } = createDb();
     try {
