@@ -878,6 +878,51 @@ test('Shop 数据库包含 API key hash 和 usage_events 账本表', async () =>
     });
 });
 
+test('配置 API key 加密 secret 后，新导入 key 写入密文且 reveal 可解密', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const imported = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ apiKeys: ['sk-encrypted-runtime'] })
+        });
+        assert.equal(imported.response.status, 201);
+
+        const stored = db.prepare('SELECT api_key, api_key_ciphertext, api_key_nonce, api_key_hash FROM api_keys WHERE api_key_hash = ?').get(hashApiKeyForTest('sk-encrypted-runtime'));
+        assert.equal(stored.api_key_hash, hashApiKeyForTest('sk-encrypted-runtime'));
+        assert.notEqual(stored.api_key, 'sk-encrypted-runtime');
+        assert.ok(stored.api_key_ciphertext);
+        assert.ok(stored.api_key_nonce);
+
+        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ count: 1 })
+        });
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138231');
+        const redeemed = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ code: inviteResult.body.invites[0].code })
+        });
+        assert.equal(redeemed.response.status, 201);
+        assert.equal(redeemed.body.order.apiKey, 'sk-encrypted-runtime');
+
+        const order = db.prepare('SELECT api_key, api_key_ciphertext, api_key_nonce FROM orders WHERE id = ?').get(redeemed.body.order.id);
+        assert.notEqual(order.api_key, 'sk-encrypted-runtime');
+        assert.ok(order.api_key_ciphertext);
+        assert.ok(order.api_key_nonce);
+
+        const revealed = await jsonFetch(`${baseUrl}/api/account/orders/${redeemed.body.order.id}/reveal-api-key`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({})
+        });
+        assert.equal(revealed.body.apiKey, 'sk-encrypted-runtime');
+    }, {
+        apiKeyEncryptionSecret: '0123456789abcdef0123456789abcdef'
+    });
+});
+
 test('Shop 数据库包含 DeepSeek 人民币 nanos 扣费字段', async () => {
     await withServer(async ({ db }) => {
         const usageColumns = tableColumns(db, 'usage_events');
@@ -2752,6 +2797,25 @@ test('内部 API key 状态接口支持 POST api_key_hash 且不需要 raw key',
         assert.equal(active.body.managed, true);
         assert.equal(active.body.active, true);
         assert.equal(active.body.status, 'active');
+    });
+});
+
+test('内部 API key 状态查询使用 hash 查找，不依赖明文列', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ apiKeys: ['sk-status-encrypted'] })
+        });
+        db.prepare('UPDATE api_keys SET api_key = ? WHERE api_key_hash = ?').run('', hashApiKeyForTest('sk-status-encrypted'));
+
+        const status = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=${encodeURIComponent('sk-status-encrypted')}`, {
+            headers: { 'x-internal-token': 'internal-test-token' }
+        });
+        assert.equal(status.response.status, 200);
+        assert.equal(status.body.managed, true);
+    }, {
+        apiKeyEncryptionSecret: '0123456789abcdef0123456789abcdef'
     });
 });
 

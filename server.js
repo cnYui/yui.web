@@ -7,6 +7,12 @@ require('dotenv').config();
 
 const { createRateLimitStore } = require('./lib/rate-limit-store');
 const {
+    encryptApiKeyEnvelope,
+    hashApiKey,
+    keyPreview,
+    readStoredApiKey
+} = require('./lib/shop-api-key-crypto');
+const {
     chargeNanosToCents,
     deepseekProRmbPrice,
     deriveInputTokenBreakdown,
@@ -101,15 +107,6 @@ function createPasswordResetCode() {
     const left = crypto.randomBytes(3).toString('hex').toUpperCase();
     const right = crypto.randomBytes(3).toString('hex').toUpperCase();
     return `RST-${left}-${right}`;
-}
-
-function keyPreview(apiKey) {
-    if (!apiKey) return '';
-    return `${apiKey.slice(0, 12)}...${apiKey.slice(-6)}`;
-}
-
-function hashApiKey(apiKey) {
-    return crypto.createHash('sha256').update(String(apiKey || '').trim()).digest('hex');
 }
 
 function hashSessionToken(token) {
@@ -483,6 +480,12 @@ ALTER TABLE invite_codes_next RENAME TO invite_codes;
     if (!apiKeyColumns.includes('api_key_hash')) {
         db.exec(`ALTER TABLE api_keys ADD COLUMN api_key_hash TEXT;`);
     }
+    if (!apiKeyColumns.includes('api_key_ciphertext')) {
+        db.exec(`ALTER TABLE api_keys ADD COLUMN api_key_ciphertext TEXT;`);
+    }
+    if (!apiKeyColumns.includes('api_key_nonce')) {
+        db.exec(`ALTER TABLE api_keys ADD COLUMN api_key_nonce TEXT;`);
+    }
     const missingHashRows = db.prepare(`
 SELECT api_key
 FROM api_keys
@@ -510,6 +513,12 @@ WHERE api_key_hash IS NOT NULL;
     }
     if (!orderColumns.includes('result_token')) {
         db.exec(`ALTER TABLE orders ADD COLUMN result_token TEXT;`);
+    }
+    if (!orderColumns.includes('api_key_ciphertext')) {
+        db.exec(`ALTER TABLE orders ADD COLUMN api_key_ciphertext TEXT;`);
+    }
+    if (!orderColumns.includes('api_key_nonce')) {
+        db.exec(`ALTER TABLE orders ADD COLUMN api_key_nonce TEXT;`);
     }
     db.exec(`
 CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_result_token_unique
@@ -724,6 +733,33 @@ function createShopApp(options = {}) {
         ? configuredCreditLimitCents
         : defaultCreditLimitCents;
     const creditLimitNanos = centsToNanos(creditLimitCents);
+    const apiKeyEncryptionSecret = String(options.apiKeyEncryptionSecret ?? process.env.SHOP_API_KEY_ENCRYPTION_SECRET ?? '').trim();
+    if (apiKeyEncryptionSecret) {
+        assertStrongSecret('SHOP_API_KEY_ENCRYPTION_SECRET', apiKeyEncryptionSecret, { production });
+    }
+
+    function apiKeyStorage(apiKey) {
+        const apiKeyHash = hashApiKey(apiKey);
+        if (!apiKeyEncryptionSecret) {
+            return {
+                apiKey: String(apiKey || ''),
+                apiKeyHash,
+                apiKeyCiphertext: null,
+                apiKeyNonce: null
+            };
+        }
+        const envelope = encryptApiKeyEnvelope(apiKey, apiKeyEncryptionSecret);
+        return {
+            apiKey: `enc_${apiKeyHash}`,
+            apiKeyHash,
+            apiKeyCiphertext: envelope.api_key_ciphertext,
+            apiKeyNonce: envelope.api_key_nonce
+        };
+    }
+
+    function plainApiKey(row) {
+        return readStoredApiKey(row, apiKeyEncryptionSecret);
+    }
 
     function toOrder(row) {
         return {
@@ -731,7 +767,7 @@ function createShopApp(options = {}) {
             phone: row.phone,
             productName: row.product_name,
             amount: row.amount,
-            apiKey: row.api_key,
+            apiKey: plainApiKey(row),
             apiKeyPreview: row.api_key_preview,
             redeemedAt: row.redeemed_at,
             expiresAt: row.expires_at,
@@ -1291,24 +1327,24 @@ WHERE code = ?
 `);
 
     const insertApiKey = db.prepare(`
-INSERT INTO api_keys (api_key, api_key_preview, api_key_hash, status, created_at)
-VALUES (?, ?, ?, 'unused', ?)
+INSERT INTO api_keys (api_key, api_key_preview, api_key_hash, api_key_ciphertext, api_key_nonce, status, created_at)
+VALUES (?, ?, ?, ?, ?, 'unused', ?)
 `);
 
     const getApiKey = db.prepare(`
-SELECT api_key, api_key_preview, status, created_at, used_at, order_id
+SELECT api_key, api_key_preview, api_key_hash, api_key_ciphertext, api_key_nonce, status, created_at, used_at, order_id
 FROM api_keys
 WHERE api_key = ?
 `);
 
     const getApiKeyByHash = db.prepare(`
-SELECT api_key, api_key_preview, api_key_hash, status, created_at, used_at, order_id
+SELECT api_key, api_key_preview, api_key_hash, api_key_ciphertext, api_key_nonce, status, created_at, used_at, order_id
 FROM api_keys
 WHERE api_key_hash = ?
 `);
 
     const getNextUnusedApiKey = db.prepare(`
-SELECT api_key, api_key_preview, status, created_at, used_at, order_id
+SELECT api_key, api_key_preview, api_key_hash, api_key_ciphertext, api_key_nonce, status, created_at, used_at, order_id
 FROM api_keys
 WHERE status = 'unused'
 ORDER BY created_at ASC, api_key ASC
@@ -1326,7 +1362,7 @@ UPDATE api_keys
 SET status = 'used',
     used_at = @usedAt,
     order_id = @orderId
-WHERE api_key = @apiKey AND status = 'unused'
+WHERE api_key_hash = @apiKeyHash AND status = 'unused'
 `);
 
     const ensureUser = db.prepare(`
@@ -1577,8 +1613,14 @@ WHERE id = ? AND used_at IS NULL
 `);
 
     const insertOrder = db.prepare(`
-INSERT INTO orders (id, phone, invite_code, api_key, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token)
-VALUES (@id, @phone, @inviteCode, @apiKey, @apiKeyPreview, @productName, @amount, @redeemedAt, @expiresAt, @resultToken)
+INSERT INTO orders (
+  id, phone, invite_code, api_key, api_key_ciphertext, api_key_nonce,
+  api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
+)
+VALUES (
+  @id, @phone, @inviteCode, @apiKey, @apiKeyCiphertext, @apiKeyNonce,
+  @apiKeyPreview, @productName, @amount, @redeemedAt, @expiresAt, @resultToken
+)
 `);
 
     const markInviteRedeemed = db.prepare(`
@@ -1591,26 +1633,32 @@ WHERE code = @code
 `);
 
     const listOrdersByPhone = db.prepare(`
-SELECT id, phone, api_key, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
+SELECT id, phone, api_key, api_key_ciphertext, api_key_nonce, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
 FROM orders
 WHERE phone = ?
 ORDER BY redeemed_at DESC
 `);
 
     const getOrderByResultToken = db.prepare(`
-SELECT id, phone, api_key, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
+SELECT id, phone, api_key, api_key_ciphertext, api_key_nonce, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
 FROM orders
 WHERE result_token = ?
 `);
 
     const getOrderByApiKey = db.prepare(`
-SELECT id, phone, api_key, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
+SELECT id, phone, api_key, api_key_ciphertext, api_key_nonce, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
 FROM orders
 WHERE api_key = ?
 `);
 
+    const getOrderById = db.prepare(`
+SELECT id, phone, api_key, api_key_ciphertext, api_key_nonce, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
+FROM orders
+WHERE id = ?
+`);
+
     const getOrderByIdAndPhone = db.prepare(`
-SELECT id, phone, api_key, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
+SELECT id, phone, api_key, api_key_ciphertext, api_key_nonce, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
 FROM orders
 WHERE id = ? AND phone = ?
 `);
@@ -1658,7 +1706,7 @@ ON CONFLICT(api_key_hash) DO UPDATE SET
 SELECT ak.api_key_hash, ak.api_key_preview, ak.status AS key_status, ak.created_at, ak.used_at,
        o.phone, o.redeemed_at, o.expires_at
 FROM api_keys ak
-LEFT JOIN orders o ON o.api_key = ak.api_key
+LEFT JOIN orders o ON o.id = ak.order_id OR o.api_key = ak.api_key
 WHERE ak.api_key_hash IS NOT NULL AND ak.api_key_hash != ''
 ORDER BY ak.created_at DESC, ak.api_key_preview ASC
 `);
@@ -1685,14 +1733,22 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     const importApiKeys = db.transaction((apiKeys) => {
         const imported = [];
         for (const apiKey of apiKeys) {
-            if (getApiKey.get(apiKey)) {
+            const storage = apiKeyStorage(apiKey);
+            if (getApiKeyByHash.get(storage.apiKeyHash)) {
                 const error = new Error('API key 已存在。');
                 error.status = 409;
                 error.code = 'API_KEY_EXISTS';
                 throw error;
             }
             const apiKeyPreview = keyPreview(apiKey);
-            insertApiKey.run(apiKey, apiKeyPreview, hashApiKey(apiKey), nowIso());
+            insertApiKey.run(
+                storage.apiKey,
+                apiKeyPreview,
+                storage.apiKeyHash,
+                storage.apiKeyCiphertext,
+                storage.apiKeyNonce,
+                nowIso()
+            );
             imported.push({ apiKeyPreview, status: 'unused' });
         }
         return imported;
@@ -1743,13 +1799,17 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         while (getOrderByResultToken.get(resultToken)) {
             resultToken = createResultToken();
         }
+        const apiKey = plainApiKey(apiKeyRow);
+        const orderStorage = apiKeyStorage(apiKey);
         const order = {
             id: createId('ORDER'),
             phone,
             inviteCode: invite.code,
             productName: product.name,
             amount: product.amount,
-            apiKey: apiKeyRow.api_key,
+            apiKey: orderStorage.apiKey,
+            apiKeyCiphertext: orderStorage.apiKeyCiphertext,
+            apiKeyNonce: orderStorage.apiKeyNonce,
             apiKeyPreview: apiKeyRow.api_key_preview,
             redeemedAt: nowIso(redeemedAt),
             expiresAt: nowIso(addDays(redeemedAt, durationDays)),
@@ -1759,7 +1819,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         ensureUser.run(phone, nowIso());
         insertOrder.run(order);
         markApiKeyUsed.run({
-            apiKey: order.apiKey,
+            apiKeyHash: apiKeyRow.api_key_hash,
             usedAt: order.redeemedAt,
             orderId: order.id
         });
@@ -1770,7 +1830,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             redeemedAt: order.redeemedAt
         });
 
-        return order;
+        return { ...order, apiKey };
     });
 
     const registerUser = db.transaction(({ phone, password }) => {
@@ -2836,7 +2896,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         if (!row) {
             return res.status(404).json({ code: 'ORDER_NOT_FOUND', message: '订单不存在。' });
         }
-        return res.json({ apiKey: row.api_key, expiresInSeconds: 60 });
+        return res.json({ apiKey: toOrder(row).apiKey, expiresInSeconds: 60 });
     });
 
     app.get('/api/account/balance', limitQueryApi, requireAccount, (req, res) => {
@@ -3146,7 +3206,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             });
         }
 
-        const orderRow = getOrderByApiKey.get(apiKeyRow.api_key);
+        const orderRow = apiKeyRow.order_id ? getOrderById.get(apiKeyRow.order_id) : getOrderByApiKey.get(apiKeyRow.api_key);
         if (!orderRow) {
             return res.json({
                 managed: true,
@@ -3197,7 +3257,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             });
         }
 
-        return respondApiKeyStatus(res, getApiKey.get(apiKey));
+        return respondApiKeyStatus(res, getApiKeyByHash.get(hashApiKey(apiKey)));
     });
 
     app.post('/api/internal/api-keys/status', requireInternal, (req, res) => {
