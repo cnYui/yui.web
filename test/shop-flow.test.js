@@ -226,6 +226,104 @@ test('requestJson 保留自定义 headers 并自动添加 CSRF token', async () 
     assert.equal(captured.options.headers['x-csrf-token'], 'csrf token');
 });
 
+test('Shop 外部脚本会在 CSP 禁止 inline script 时自动初始化 Account 页二维码', async () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+    const elements = new Map();
+    const createElement = () => ({
+        innerHTML: '',
+        textContent: '',
+        src: '',
+        value: '',
+        classList: {
+            add() {},
+            remove() {},
+            toggle() {}
+        },
+        addEventListener() {},
+        querySelectorAll: () => [],
+        querySelector: () => null,
+        focus() {}
+    });
+    for (const id of [
+        'accountPhone',
+        'accountOrders',
+        'accountMessage',
+        'logoutButton',
+        'accountBalanceCards',
+        'accountTopups',
+        'accountCharges',
+        'accountLedger',
+        'alipayQrImage',
+        'wechatQrImage',
+        'paymentReference',
+        'accountUsageCards',
+        'accountBillingUsageCards',
+        'accountTokenBreakdown',
+        'accountHourlyChart',
+        'accountDailyChart',
+        'usageFreshness',
+        'accountUsageMessage'
+    ]) {
+        elements.set(id, createElement());
+    }
+    const requests = [];
+    const responses = {
+        '/api/account/me': { user: { phone: '13800139999' }, orders: [] },
+        '/api/account/balance': {
+            balance: {},
+            payment: {
+                alipayQrUrl: '/shop/assets/pay/alipay-qr.png',
+                wechatQrUrl: '/shop/assets/pay/wechat-qr.png',
+                paymentReference: 'YUI-TEST'
+            }
+        },
+        '/api/account/topups': { topups: [] },
+        '/api/account/api-charges': { charges: [] },
+        '/api/account/ledger': { entries: [] },
+        '/api/account/usage-summary': {
+            generatedAt: '2026-06-11T10:00:00+08:00',
+            summary: { month: {} },
+            billing: {},
+            hourly: [],
+            daily: []
+        }
+    };
+    const sandbox = {
+        document: {
+            cookie: '',
+            readyState: 'complete',
+            getElementById: (id) => elements.get(id) || null,
+            addEventListener() {}
+        },
+        fetch: async (url) => {
+            requests.push(url);
+            return {
+                ok: true,
+                status: 200,
+                json: async () => responses[url] || {}
+            };
+        },
+        window: {
+            location: {
+                pathname: '/shop/account/',
+                replace() {}
+            }
+        },
+        Intl,
+        URL
+    };
+    sandbox.window.document = sandbox.document;
+
+    vm.runInNewContext(script, sandbox);
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.ok(requests.includes('/api/account/me'));
+    assert.equal(elements.get('accountPhone').textContent, '13800139999');
+    assert.equal(elements.get('alipayQrImage').src, '/shop/assets/pay/alipay-qr.png');
+    assert.equal(elements.get('wechatQrImage').src, '/shop/assets/pay/wechat-qr.png');
+    assert.equal(elements.get('paymentReference').textContent, 'YUI-TEST');
+});
+
 test('账号 cookie 状态变更拒绝跨站 Origin', async () => {
     await withServer(async ({ baseUrl }) => {
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138701');
@@ -1753,7 +1851,7 @@ test('商店首页提供使用方法入口，公开说明页只使用占位 API 
     assert.match(guide, /Authorization: Bearer/);
     assert.match(guide, /不要使用 x-api-key/);
     assert.match(guide, /sk-xx/);
-    assert.match(guide, /data-ui-ready','true/);
+    assert.doesNotMatch(guide, /data-ui-ready','true/);
     assert.doesNotMatch(guide, /sk-dummy/);
     assert.doesNotMatch(guide, /环境变量文件/);
     assert.doesNotMatch(guide, /sk-[a-f0-9]{32}/);
@@ -2484,6 +2582,7 @@ test('Shop 首页顶部不显示账号入口且正文只保留固定登录入口
     const login = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');
     const register = fs.readFileSync(path.join(__dirname, '..', 'shop/register/index.html'), 'utf8');
     const account = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
     const header = home.match(/<header[\s\S]*?<\/header>/)?.[0] || '';
     const accountLinkCount = (home.match(/data-account-link/g) || []).length;
 
@@ -2497,7 +2596,8 @@ test('Shop 首页顶部不显示账号入口且正文只保留固定登录入口
     assert.match(register, /id="registerForm"/);
     assert.match(register, /至少 8 位/);
     assert.match(account, /id="logoutButton"/);
-    assert.match(account, /window\.YuiShop\.initAccountPage/);
+    assert.doesNotMatch(account, /window\.YuiShop\.initAccountPage/);
+    assert.match(script, /'\/shop\/account\/': initAccountPage/);
 });
 
 
