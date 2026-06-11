@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
+const http = require('node:http');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
@@ -185,6 +186,32 @@ async function jsonFetch(url, options = {}) {
     return { response, body };
 }
 
+function rawHttpJsonRequest(url, options = {}) {
+    return new Promise((resolve, reject) => {
+        const requestUrl = new URL(url);
+        const requestBody = options.body || '';
+        const request = http.request(requestUrl, {
+            method: options.method || 'GET',
+            headers: options.headers || {}
+        }, (response) => {
+            let text = '';
+            response.setEncoding('utf8');
+            response.on('data', (chunk) => {
+                text += chunk;
+            });
+            response.on('end', () => {
+                resolve({
+                    response,
+                    body: text ? JSON.parse(text) : {}
+                });
+            });
+        });
+        request.on('error', reject);
+        if (requestBody) request.write(requestBody);
+        request.end();
+    });
+}
+
 function loadShopRequestJsonForTest(fetchImpl, cookie = '') {
     const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
     const instrumented = script.replace(
@@ -292,6 +319,7 @@ test('Shop 外部脚本会在 CSP 禁止 inline script 时自动初始化 Accoun
         document: {
             cookie: '',
             readyState: 'complete',
+            querySelectorAll: () => [],
             getElementById: (id) => elements.get(id) || null,
             addEventListener() {}
         },
@@ -324,6 +352,62 @@ test('Shop 外部脚本会在 CSP 禁止 inline script 时自动初始化 Accoun
     assert.equal(elements.get('paymentReference').textContent, 'YUI-TEST');
 });
 
+test('Shop 外部脚本会绑定 Account 页栏目折叠按钮', async () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+    const content = {
+        hidden: false,
+        setAttribute(name, value) { this[name] = value; },
+        removeAttribute(name) { delete this[name]; }
+    };
+    const button = {
+        textContent: '',
+        attributes: {},
+        events: {},
+        setAttribute(name, value) { this.attributes[name] = value; },
+        addEventListener(name, handler) { this.events[name] = handler; }
+    };
+    const section = {
+        dataset: { collapsibleDefault: 'open' },
+        querySelector(selector) {
+            if (selector === '[data-collapsible-toggle]') return button;
+            if (selector === '[data-collapsible-content]') return content;
+            return null;
+        }
+    };
+    const sandbox = {
+        document: {
+            readyState: 'complete',
+            querySelectorAll(selector) {
+                return selector === '[data-collapsible-section]' ? [section] : [];
+            },
+            getElementById() { return null; },
+            addEventListener() {}
+        },
+        window: {
+            location: {
+                pathname: '/shop/account/',
+                replace() {}
+            }
+        },
+        fetch: async () => ({ ok: true, status: 200, json: async () => ({}) }),
+        Intl,
+        URL
+    };
+    sandbox.window.document = sandbox.document;
+
+    vm.runInNewContext(script, sandbox);
+
+    assert.equal(button.attributes['aria-expanded'], 'true');
+    assert.equal(content.hidden, false);
+    assert.equal(button.textContent, '收起');
+
+    button.events.click();
+
+    assert.equal(button.attributes['aria-expanded'], 'false');
+    assert.equal(content.hidden, true);
+    assert.equal(button.textContent, '展开');
+});
+
 test('账号 cookie 状态变更拒绝跨站 Origin', async () => {
     await withServer(async ({ baseUrl }) => {
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138701');
@@ -339,6 +423,25 @@ test('账号 cookie 状态变更拒绝跨站 Origin', async () => {
 
         assert.equal(result.response.status, 403);
         assert.equal(result.body.code, 'CSRF_ORIGIN_REJECTED');
+    });
+});
+
+test('同 Host HTTPS Origin 在反代协议缺失时仍允许退出登录', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138705');
+        const logout = await rawHttpJsonRequest(`${baseUrl}/api/auth/logout`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Cookie: cookie,
+                Host: 'aaccx.pw',
+                Origin: 'https://aaccx.pw',
+                'x-csrf-token': decodeURIComponent(cookieValue(cookie, 'yui_shop_csrf'))
+            }
+        });
+
+        assert.equal(logout.response.statusCode, 200);
+        assert.match(String(logout.response.headers['set-cookie'] || ''), /yui_shop_account_session=;/);
     });
 });
 
@@ -1944,6 +2047,17 @@ test('Account 页面包含预充值余额、充值申请和扣费流水容器', 
     assert.match(html, /id="accountTopups"/);
     assert.match(html, /id="accountCharges"/);
     assert.match(html, /id="accountLedger"/);
+    assert.match(html, /id="accountGuideSection"/);
+    assert.match(html, /Codex 配置使用方法/);
+    assert.match(html, /https:\/\/api\.aaccx\.pw\/v1/);
+    assert.match(html, /OPENAI_API_KEY/);
+    assert.match(html, /Authorization: Bearer/);
+    assert.match(html, /不要使用 x-api-key/);
+    assert.match(html, /sk-xx/);
+    assert.equal((html.match(/data-collapsible-section/g) || []).length, 5);
+    assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 5);
+    assert.equal((html.match(/data-collapsible-content/g) || []).length, 5);
+    assert.match(html, /id="accountGuideSection"[\s\S]*?data-collapsible-default="open"/);
 });
 
 test('Admin 页面包含充值审核容器', () => {
