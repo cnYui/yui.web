@@ -6,6 +6,12 @@ const express = require('express');
 require('dotenv').config();
 
 const { createRateLimitStore } = require('./lib/rate-limit-store');
+const {
+    chargeNanosToCents,
+    deepseekProRmbPrice,
+    deriveInputTokenBreakdown,
+    priceUsageTokens
+} = require('./lib/shop-pricing');
 
 const durationDays = 31;
 const resultCookieName = 'yui_shop_result_token';
@@ -26,12 +32,6 @@ const defaultAdminAccountPhone = '15951875192';
 const defaultCreditLimitCents = 1000;
 const nanosPerYuan = 1000000000;
 const nanosPerCent = 10000000;
-const deepseekProRmbPrice = Object.freeze({
-    version: 'deepseek-v4-pro-rmb-20260424',
-    cacheHitInputNanosPerToken: 25,
-    cacheMissInputNanosPerToken: 3000,
-    outputNanosPerToken: 6000
-});
 const supportedPaymentMethods = new Set(['alipay', 'wechat']);
 
 function assertStrongSecret(name, value, { required = true, production = false } = {}) {
@@ -245,11 +245,6 @@ function nanosToBalanceCents(nanos) {
     return -Math.ceil(Math.abs(value) / nanosPerCent);
 }
 
-function chargeNanosToCents(nanos) {
-    const value = nonNegativeInteger(nanos);
-    return value <= 0 ? 0 : Math.ceil(value / nanosPerCent);
-}
-
 function normalizePaymentMethod(value) {
     const method = String(value || '').trim().toLowerCase();
     if (!supportedPaymentMethods.has(method)) {
@@ -297,18 +292,16 @@ function normalizeUsageEvent(body = {}) {
         'cache_miss_input_tokens',
         'prompt_cache_miss_tokens'
     ]));
-    if (cacheHitInputTokens === 0 && cachedTokens > 0) {
-        cacheHitInputTokens = cachedTokens;
-    }
-    if (cachedTokens === 0 && cacheHitInputTokens > 0) {
-        cachedTokens = cacheHitInputTokens;
-    }
-    if (inputTokens === 0 && (cacheHitInputTokens > 0 || cacheMissInputTokens > 0)) {
-        inputTokens = cacheHitInputTokens + cacheMissInputTokens;
-    }
-    if (cacheMissInputTokens === 0 && inputTokens > cacheHitInputTokens) {
-        cacheMissInputTokens = inputTokens - cacheHitInputTokens;
-    }
+    const breakdown = deriveInputTokenBreakdown({
+        inputTokens,
+        cachedTokens,
+        cacheHitInputTokens,
+        cacheMissInputTokens
+    });
+    inputTokens = breakdown.inputTokens;
+    cachedTokens = breakdown.cachedTokens;
+    cacheHitInputTokens = breakdown.cacheHitInputTokens;
+    cacheMissInputTokens = breakdown.cacheMissInputTokens;
     let totalTokens = nonNegativeInteger(body.total_tokens);
     if (totalTokens === 0) {
         totalTokens = inputTokens + outputTokens;
@@ -1846,24 +1839,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     });
 
     function chargeNanosFromUsageEvent(event) {
-        if (event.failed) {
-            return {
-                chargeNanos: 0,
-                chargeCents: 0,
-                status: 'failed_no_charge',
-                priceVersion: 'failed-no-charge'
-            };
-        }
-        const chargeNanos =
-            event.cacheHitInputTokens * deepseekProRmbPrice.cacheHitInputNanosPerToken +
-            event.cacheMissInputTokens * deepseekProRmbPrice.cacheMissInputNanosPerToken +
-            event.outputTokens * deepseekProRmbPrice.outputNanosPerToken;
-        return {
-            chargeNanos,
-            chargeCents: chargeNanosToCents(chargeNanos),
-            status: chargeNanos > 0 ? 'charged' : 'unpriced_no_charge',
-            priceVersion: deepseekProRmbPrice.version
-        };
+        return priceUsageTokens(event);
     }
 
     function chargeUsageEventInCurrentTransaction(event) {
