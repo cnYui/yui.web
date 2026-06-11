@@ -149,3 +149,10 @@
 - Account 页说明和扣费流水默认收起；API key 卡片只展示 key、兑换时间和复制完整 key 按钮。
 - 验证：`npm run build:css` 通过，`npm test` 112 个测试通过；视觉截图见实施记录。
 - 实施记录见 `docs/ai/context/20260611-194100-shop-auth-entry-and-flow-unification-implementation_CN.md`。
+
+## 2026-06-11 Shop usage 历史补账脚本
+
+- 历史 usage 补账使用 `scripts/shop-reconcile-usage-billing.js` 手动执行，默认 dry-run，不随服务启动自动运行。
+- `--apply` 前必须先复制 sqlite 备份，备份文件命名为 `shop-before-usage-reconcile-<timestamp>.sqlite`。
+- 补账逻辑来自 `lib/shop-usage-reconcile.js`，按内部 nanos 价格补写 `api_charge_records`、`account_ledger_entries` 和余额。
+- 实施记录见 `docs/ai/context/20260611-195133-shop-usage-reconcile-script-implementation_CN.md`。
