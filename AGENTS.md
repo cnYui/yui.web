@@ -56,9 +56,10 @@
 
 ## 2026-06-11 X-Forwarded-Host 信任收紧
 
-- 默认不信任客户端传入的 `X-Forwarded-Host`；只有应用开启 `trust proxy` 时才把它用于同源候选 origin。
+- 默认不信任客户端传入的 `X-Forwarded-Host`；只有当前请求来自 Express `trust proxy fn` 判定可信的代理时才把它用于同源候选 origin。
+- 受限 `trust proxy` 配置必须按当前请求远端地址判定可信代理；不能只因为配置项非 false 就信任 `X-Forwarded-Host`。
 - 生产更推荐配置 `PUBLIC_BASE_URL=https://aaccx.pw`，把公网 origin 固定在环境变量里。
-- 记录见 `docs/ai/context/20260611-154244-forwarded-host-trust-tightening_CN.md`。
+- 记录见 `docs/ai/context/20260611-154244-forwarded-host-trust-tightening_CN.md` 和 `docs/ai/context/20260611-155226-trust-proxy-per-request-review_CN.md`。
 
 ## 2026-06-11 Redeem 页面按量计费文案
 

@@ -488,6 +488,26 @@ test('未信任代理时拒绝伪造的 X-Forwarded-Host 来源', async () => {
     });
 });
 
+test('受限 trust proxy 不接受非可信远端伪造的 X-Forwarded-Host 来源', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138717');
+        const result = await rawHttpJsonRequest(`${baseUrl}/api/auth/logout`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Cookie: cookie,
+                Host: 'internal.local',
+                'X-Forwarded-Host': 'aaccx.pw',
+                Origin: 'https://aaccx.pw',
+                'x-csrf-token': decodeURIComponent(cookieValue(cookie, 'yui_shop_csrf'))
+            }
+        });
+
+        assert.equal(result.response.statusCode, 403);
+        assert.equal(result.body.code, 'CSRF_ORIGIN_REJECTED');
+    }, { trustProxy: '10.0.0.0/8' });
+});
+
 test('账号 cookie 状态变更要求 CSRF token', async () => {
     await withServer(async ({ baseUrl }) => {
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138702');

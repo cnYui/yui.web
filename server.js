@@ -1048,9 +1048,15 @@ function createShopApp(options = {}) {
         }
     }
 
+    function isRequestFromTrustedProxy(req) {
+        const trustProxy = req.app.get('trust proxy fn');
+        const remoteAddress = req.socket?.remoteAddress || req.connection?.remoteAddress || '';
+        return typeof trustProxy === 'function' && Boolean(remoteAddress) && trustProxy(remoteAddress, 0);
+    }
+
     function requestHosts(req) {
         const hosts = [req.header('host')];
-        if (req.app.get('trust proxy')) {
+        if (isRequestFromTrustedProxy(req)) {
             hosts.push(String(req.header('x-forwarded-host') || '').split(',')[0].trim());
         }
         return hosts.filter(Boolean);
