@@ -783,6 +783,16 @@ function createShopApp(options = {}) {
         };
     }
 
+    function publicApiKeyPoolItem(row) {
+        return {
+            apiKeyPreview: row.api_key_preview || '',
+            status: row.status || '',
+            createdAt: row.created_at || '',
+            usedAt: row.used_at || '',
+            orderId: row.order_id || ''
+        };
+    }
+
     function publicUsageKeyProfile(profile) {
         return {
             apiKeyHash: profile.api_key_hash,
@@ -1305,6 +1315,12 @@ ORDER BY created_at ASC, api_key ASC
 LIMIT 1
 `);
 
+    const listApiKeysForAdmin = db.prepare(`
+SELECT api_key_preview, status, created_at, used_at, order_id
+FROM api_keys
+ORDER BY created_at DESC, api_key_preview ASC
+`);
+
     const markApiKeyUsed = db.prepare(`
 UPDATE api_keys
 SET status = 'used',
@@ -1681,6 +1697,22 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
         return imported;
     });
+
+    function buildInviteConsole() {
+        const invites = listInvites.all().map((row) => publicInvite(toInvite(row)));
+        const apiKeyPool = listApiKeysForAdmin.all().map(publicApiKeyPoolItem);
+        return {
+            summary: {
+                unusedInvites: invites.filter((invite) => invite.status === 'unused').length,
+                redeemedInvites: invites.filter((invite) => invite.status === 'redeemed').length,
+                unusedApiKeys: apiKeyPool.filter((apiKey) => apiKey.status === 'unused').length,
+                usedApiKeys: apiKeyPool.filter((apiKey) => apiKey.status === 'used').length,
+                disabledApiKeys: apiKeyPool.filter((apiKey) => apiKey.status === 'disabled').length
+            },
+            invites,
+            apiKeyPool
+        };
+    }
 
     const redeemInvite = db.transaction(({ phone, code }) => {
         const row = getInvite.get(code);
@@ -2852,6 +2884,42 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     app.get('/api/admin/invites', limitAdminApi, requireAdminToken, (req, res) => {
         const invites = listInvites.all().map((row) => publicInvite(toInvite(row)));
         return res.json({ invites });
+    });
+
+    app.get('/api/admin/invite-console', limitAdminApi, requireAdminAccount, (req, res) => {
+        return res.json(buildInviteConsole());
+    });
+
+    app.post('/api/admin/session-invites', limitAdminApi, requireSameOrigin, requireAdminAccount, requireAccountCsrf, (req, res) => {
+        const count = Math.min(Math.max(Number(req.body.count || 1), 1), 50);
+        const invites = createInvites(count);
+        return res.status(201).json({ invites });
+    });
+
+    app.post('/api/admin/session-api-keys', limitAdminApi, requireSameOrigin, requireAdminAccount, requireAccountCsrf, (req, res) => {
+        const textKeys = String(req.body.apiKeysText || req.body.api_keys_text || '')
+            .split(/\r?\n/)
+            .map((apiKey) => apiKey.trim())
+            .filter(Boolean);
+        const arrayKeys = Array.isArray(req.body.apiKeys)
+            ? req.body.apiKeys.map((apiKey) => String(apiKey || '').trim()).filter(Boolean)
+            : [];
+        const apiKeys = [...arrayKeys, ...textKeys];
+        if (!apiKeys.length) {
+            return res.status(400).json({ code: 'INVALID_API_KEYS', message: '请提供 API key 列表。' });
+        }
+        if (new Set(apiKeys).size !== apiKeys.length) {
+            return res.status(409).json({ code: 'API_KEY_EXISTS', message: 'API key 列表存在重复。' });
+        }
+        try {
+            const apiKeyResults = importApiKeys(apiKeys);
+            return res.status(201).json({ apiKeys: apiKeyResults });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'API_KEY_IMPORT_FAILED',
+                message: error.message || 'API key 导入失败。'
+            });
+        }
     });
 
     app.get('/api/admin/usage-summary', limitAdminApi, requireAdminUsageAccess, (req, res) => {

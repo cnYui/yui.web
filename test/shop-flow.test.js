@@ -1768,7 +1768,7 @@ test('管理员 token 只能通过请求头提交，不能放在 URL 查询参�
     });
 });
 
-test('邀请码和 API key 管理接口只接受后端管理员 token，不接受网页登录 session', async () => {
+test('旧邀请码和 API key 管理接口仍只接受后端管理员 token', async () => {
     await withServer(async ({ baseUrl, db }) => {
         seedAdminUserForTest(db);
         const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
@@ -1800,6 +1800,56 @@ test('邀请码和 API key 管理接口只接受后端管理员 token，不接�
         });
         assert.equal(sessionApiKeyImport.response.status, 401);
         assert.equal(sessionApiKeyImport.body.code, 'UNAUTHORIZED');
+    });
+});
+
+test('管理员 session 可访问 invite console、生成邀请码和导入 API key 池', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+        const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
+        });
+        assert.equal(adminLogin.response.status, 200);
+        const adminCookie = adminLogin.response.headers.get('set-cookie') || '';
+
+        const createdInvites = await jsonFetch(`${baseUrl}/api/admin/session-invites`, {
+            method: 'POST',
+            headers: { cookie: adminCookie },
+            body: JSON.stringify({ count: 2 })
+        });
+        assert.equal(createdInvites.response.status, 201);
+        assert.equal(createdInvites.body.invites.length, 2);
+
+        const importedKeys = await jsonFetch(`${baseUrl}/api/admin/session-api-keys`, {
+            method: 'POST',
+            headers: { cookie: adminCookie },
+            body: JSON.stringify({ apiKeysText: 'sk-admin-session-a\nsk-admin-session-b' })
+        });
+        assert.equal(importedKeys.response.status, 201);
+        assert.deepEqual(importedKeys.body.apiKeys.map((item) => item.apiKeyPreview), [
+            keyPreviewForTest('sk-admin-session-a'),
+            keyPreviewForTest('sk-admin-session-b')
+        ]);
+        assert.doesNotMatch(JSON.stringify(importedKeys.body), /sk-admin-session-a/);
+
+        const consoleResult = await jsonFetch(`${baseUrl}/api/admin/invite-console`, {
+            headers: { cookie: adminCookie }
+        });
+        assert.equal(consoleResult.response.status, 200);
+        assert.equal(consoleResult.body.summary.unusedInvites, 2);
+        assert.equal(consoleResult.body.summary.unusedApiKeys, 2);
+    });
+});
+
+test('普通用户不能访问 Admin invite console', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138121');
+        const result = await jsonFetch(`${baseUrl}/api/admin/invite-console`, {
+            headers: { cookie }
+        });
+        assert.equal(result.response.status, 403);
+        assert.equal(result.body.code, 'ADMIN_ACCOUNT_REQUIRED');
     });
 });
 
