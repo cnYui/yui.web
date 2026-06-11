@@ -2416,6 +2416,43 @@ test('登录失败、重复注册、退出登录和 account 页面保护都按 s
     });
 });
 
+test('历史登录态缺少 CSRF token 时仍可退出登录', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const register = await jsonFetch(`${baseUrl}/api/auth/register`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138604', password: 'Abcdefg1', confirmPassword: 'Abcdefg1' })
+        });
+        assert.equal(register.response.status, 201);
+
+        db.prepare('UPDATE user_sessions SET csrf_token_hash = NULL WHERE phone = ?').run('13800138604');
+
+        const cookie = cookieHeaderFromSetCookie(register.response.headers.get('set-cookie') || '');
+        const sessionCookie = cookie
+            .split('; ')
+            .filter((part) => part.startsWith('yui_shop_account_session='))
+            .join('; ');
+
+        const accountPage = await fetch(`${baseUrl}/shop/account/`, { headers: { cookie: sessionCookie } });
+        assert.equal(accountPage.status, 200);
+
+        const logout = await jsonFetch(`${baseUrl}/api/auth/logout`, {
+            method: 'POST',
+            headers: {
+                cookie: sessionCookie,
+                origin: baseUrl
+            }
+        });
+        assert.equal(logout.response.status, 200);
+        assert.match(logout.response.headers.get('set-cookie') || '', /yui_shop_account_session=;/);
+
+        const afterLogout = await jsonFetch(`${baseUrl}/api/account/me`, {
+            headers: { cookie: sessionCookie }
+        });
+        assert.equal(afterLogout.response.status, 401);
+        assert.equal(afterLogout.body.code, 'ACCOUNT_LOGIN_REQUIRED');
+    });
+});
+
 test('公开注册接口不能创建唯一管理员手机号', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const register = await jsonFetch(`${baseUrl}/api/auth/register`, {
