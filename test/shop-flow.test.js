@@ -689,6 +689,57 @@ test('用户用手机号和邀请码兑换后，从未使用 API key 池分配�
     });
 });
 
+test('登录态邀请码兑换只绑定当前 session 手机号，忽略请求体手机号', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ apiKeys: ['sk-session-redeem'] })
+        });
+        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ count: 1 })
+        });
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138111');
+
+        const redeemResult = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ phone: '13800138999', code: inviteResult.body.invites[0].code })
+        });
+
+        assert.equal(redeemResult.response.status, 201);
+        assert.equal(redeemResult.body.order.phone, '13800138111');
+        assert.equal(redeemResult.body.order.apiKey, 'sk-session-redeem');
+        assert.deepEqual(
+            db.prepare('SELECT phone, invite_code FROM orders WHERE api_key = ?').get('sk-session-redeem'),
+            { phone: '13800138111', invite_code: inviteResult.body.invites[0].code }
+        );
+    });
+});
+
+test('登录态邀请码兑换要求账号 session、同源和 CSRF', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const missingSession = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
+            method: 'POST',
+            body: JSON.stringify({ code: 'YUI-NOPE-NOPE' })
+        });
+        assert.equal(missingSession.response.status, 401);
+        assert.equal(missingSession.body.code, 'ACCOUNT_LOGIN_REQUIRED');
+
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138112');
+        const missingCsrf = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
+            method: 'POST',
+            headers: { cookie, origin: baseUrl },
+            skipCsrfForTest: true,
+            body: JSON.stringify({ code: 'YUI-NOPE-NOPE' })
+        });
+        assert.equal(missingCsrf.response.status, 403);
+        assert.equal(missingCsrf.body.code, 'CSRF_TOKEN_REQUIRED');
+    });
+});
+
 test('Shop 数据库包含 API key hash 和 usage_events 账本表', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const seedKeys = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {

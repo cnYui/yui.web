@@ -2803,6 +2803,25 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return res.json(accountUsageSummary(req.account.phone));
     });
 
+    app.post('/api/account/invites/redeem', limitRedeemApi, requireAccount, requireSameOrigin, requireAccountCsrf, (req, res) => {
+        const code = String(req.body.code || '').trim().toUpperCase();
+        if (!code) {
+            return res.status(400).json({ code: 'INVALID_INVITE_CODE', message: '请输入邀请码。' });
+        }
+
+        try {
+            const order = redeemInvite({ phone: req.account.phone, code });
+            res.cookie(resultCookieName, order.resultToken, cookieOptions(req));
+            res.clearCookie(legacyRedeemCookieName, { path: '/shop' });
+            return res.status(201).json({ order: publicOrder(order, { includeApiKey: true }) });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'REDEEM_FAILED',
+                message: error.message || '兑换失败。'
+            });
+        }
+    });
+
     app.post('/api/admin/invites', limitAdminApi, requireAdminToken, (req, res) => {
         const count = Math.min(Math.max(Number(req.body.count || 1), 1), 50);
         const invites = createInvites(count);
