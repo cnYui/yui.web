@@ -2176,10 +2176,22 @@ test('管理员页和登录页包含密码重置入口', () => {
 test('登录页使用新的小店文案并移除旧说明小字', () => {
     const loginHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');
 
-    assert.match(loginHtml, /登录 悠一 的小店/);
+    assert.match(loginHtml, /这里是登录页面/);
     assert.doesNotMatch(loginHtml, /登录 Shop/);
+    assert.doesNotMatch(loginHtml, /登录 悠一 的小店/);
     assert.doesNotMatch(loginHtml, /使用手机号和密码进入个人中心/);
     assert.doesNotMatch(loginHtml, /管理员账号登录后进入控制台/);
+});
+
+test('登录页引用透明背景人物图作为居中背景', () => {
+    const loginHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');
+    const assetPath = path.join(__dirname, '..', 'shop/assets/login/yui-login-bg.png');
+    const png = fs.readFileSync(assetPath);
+
+    assert.match(loginHtml, /src="\/shop\/assets\/login\/yui-login-bg\.png"/);
+    assert.match(loginHtml, /class="login-background-figure"/);
+    assert.equal(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+    assert.equal(png[25], 6);
 });
 
 test('内部 API key 状态接口必须使用请求头 token', async () => {
@@ -2839,7 +2851,7 @@ test('Shop 首页顶部不显示账号入口且正文只保留固定登录入口
     assert.match(home, /<main[\s\S]*href="\/shop\/login\/"[\s\S]*>登录账户<\/a>/);
     assert.doesNotMatch(home, /管理控制台/);
     assert.match(login, /id="loginForm"/);
-    assert.match(login, /登录 悠一 的小店/);
+    assert.match(login, /这里是登录页面/);
     assert.match(register, /id="registerForm"/);
     assert.match(register, /至少 8 位/);
     assert.match(account, /id="logoutButton"/);
@@ -2855,4 +2867,5 @@ test('公共顶部导航支持 Shop 的中英日翻译', () => {
     assert.match(script, /shop:\s*'Shop'/);
     assert.match(script, /shop:\s*'ショップ'/);
     assert.match(script, /href\.includes\('\/shop'\)[\s\S]*data\.nav\.shop/);
+    assert.match(script, /path === '\/shop' \|\| path\.startsWith\('\/shop\/'\)[\s\S]*return null/);
 });

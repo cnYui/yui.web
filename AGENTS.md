@@ -80,3 +80,10 @@
 - 删除旧的手机号/密码用途说明和管理员登录说明小字。
 - 页面布局保持登录与重置表单 DOM id 不变，只调整文案和 Tailwind 布局类。
 - 设计与计划见 `docs/ai/context/20260611-155749-shop-login-copy-layout-design-plan_CN.md`，实施记录见 `docs/ai/context/20260611-160405-shop-login-copy-layout-implementation_CN.md`。
+
+## 2026-06-11 Login 透明人物背景图
+
+- `/shop/login/` 标题改为“这里是登录页面”，弱化正式感。
+- 用户提供的 `2080.PNG` 使用代码生成透明背景 PNG，输出为 `shop/assets/login/yui-login-bg.png`。
+- 背景图通过页面内居中 `img` 层展示，登录和重置表单 DOM id 不变。
+- 设计与计划见 `docs/ai/context/20260611-161311-shop-login-transparent-bg-image-design-plan_CN.md`，实施记录见 `docs/ai/context/20260611-161607-shop-login-transparent-bg-image-implementation_CN.md`。

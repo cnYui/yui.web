@@ -886,6 +886,7 @@
     // Detect current page
     function detectPage() {
         const path = window.location.pathname;
+        if (path === '/shop' || path.startsWith('/shop/')) return null;
         if (path === '/404.html' || path === '/404' || document.querySelector('[data-i18n="backHome"]')) return 'notfound';
         if (path === '/skill' || path.startsWith('/skill/')) return 'skill';
         if (path === '/' || path === '/index.html' || (path.endsWith('/index.html') && !path.includes('/projects') && !path.includes('/blog') && !path.includes('/music') && !path.includes('/travel') && !path.includes('/resume') && !path.includes('/anime'))) return 'index';
