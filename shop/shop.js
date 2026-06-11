@@ -1020,6 +1020,40 @@
         }
     }
 
+    const pageInitializers = {
+        '/shop/redeem/': initRedeemPage,
+        '/shop/key/': initKeyPage,
+        '/shop/query/': initQueryPage,
+        '/shop/admin/': initAdminPage,
+        '/shop/login/': initLoginPage,
+        '/shop/register/': initRegisterPage,
+        '/shop/account/': initAccountPage,
+        '/shop/order/': () => { window.location.replace('/shop/redeem/'); },
+        '/shop/pay/': () => { window.location.replace('/shop/redeem/'); },
+        '/shop/result/': () => { window.location.replace('/shop/key/'); },
+        '/shop/content/': () => { window.location.replace('/shop/key/'); }
+    };
+
+    function normalizeShopPath(pathname) {
+        const value = String(pathname || '').trim();
+        if (!value) return '';
+        const path = value.startsWith('/') ? value : `/${value}`;
+        return path.endsWith('/') ? path : `${path}/`;
+    }
+
+    function initCurrentShopPage() {
+        const initializer = pageInitializers[normalizeShopPath(window.location?.pathname)];
+        if (initializer) initializer();
+    }
+
+    function runWhenDomReady(fn) {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fn, { once: true });
+            return;
+        }
+        fn();
+    }
+
     window.YuiShop = {
         initRedeemPage,
         initKeyPage,
@@ -1029,9 +1063,10 @@
         initRegisterPage,
         initAccountPage,
         initAccountLinks,
-        initOrderPage: () => { window.location.replace('/shop/redeem/'); },
-        initPayPage: () => { window.location.replace('/shop/redeem/'); },
-        initResultPage: () => { window.location.replace('/shop/key/'); },
-        initContentPage: () => { window.location.replace('/shop/key/'); }
+        initOrderPage: pageInitializers['/shop/order/'],
+        initPayPage: pageInitializers['/shop/pay/'],
+        initResultPage: pageInitializers['/shop/result/'],
+        initContentPage: pageInitializers['/shop/content/']
     };
+    runWhenDomReady(initCurrentShopPage);
 })();
