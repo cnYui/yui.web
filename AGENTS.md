@@ -45,3 +45,11 @@
 - 修复方向：同一 `Host` 下允许 `http` 与 `https` 两种 origin，跨 Host 继续拒绝；CSRF token 校验不降级。
 - 设计与计划见 `docs/ai/context/20260611-151347-shop-logout-origin-proxy-design_CN.md` 和 `docs/ai/context/20260611-151347-shop-logout-origin-proxy-plan_CN.md`。
 - 实施记录见 `docs/ai/context/20260611-151750-shop-logout-origin-proxy-implementation_CN.md`。
+
+## 2026-06-11 Shop CSP 字体与 forwarded host
+
+- Shop 页面引用 Google Fonts 和 Material Symbols，CSP 必须显式允许 `https://fonts.googleapis.com` 样式和 `https://fonts.gstatic.com` 字体，否则浏览器会阻止字体样式加载。
+- 生产反代可能把应用侧 `Host` 改为内部域名；同源校验需要同时参考 `X-Forwarded-Host` 的第一个 host 值。
+- 安全边界仍是同 Host；跨 Host 继续拒绝，CSRF token 校验不降级。
+- 设计与计划见 `docs/ai/context/20260611-152919-shop-csp-font-and-forwarded-origin-design_CN.md` 和 `docs/ai/context/20260611-152919-shop-csp-font-and-forwarded-origin-plan_CN.md`。
+- 实施记录见 `docs/ai/context/20260611-153159-shop-csp-font-and-forwarded-origin-implementation_CN.md`。
