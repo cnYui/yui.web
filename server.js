@@ -6,6 +6,18 @@ const express = require('express');
 require('dotenv').config();
 
 const { createRateLimitStore } = require('./lib/rate-limit-store');
+const {
+    encryptApiKeyEnvelope,
+    hashApiKey,
+    keyPreview,
+    readStoredApiKey
+} = require('./lib/shop-api-key-crypto');
+const {
+    chargeNanosToCents,
+    deepseekProRmbPrice,
+    deriveInputTokenBreakdown,
+    priceUsageTokens
+} = require('./lib/shop-pricing');
 
 const durationDays = 31;
 const resultCookieName = 'yui_shop_result_token';
@@ -26,12 +38,6 @@ const defaultAdminAccountPhone = '15951875192';
 const defaultCreditLimitCents = 1000;
 const nanosPerYuan = 1000000000;
 const nanosPerCent = 10000000;
-const deepseekProRmbPrice = Object.freeze({
-    version: 'deepseek-v4-pro-rmb-20260424',
-    cacheHitInputNanosPerToken: 25,
-    cacheMissInputNanosPerToken: 3000,
-    outputNanosPerToken: 6000
-});
 const supportedPaymentMethods = new Set(['alipay', 'wechat']);
 
 function assertStrongSecret(name, value, { required = true, production = false } = {}) {
@@ -101,15 +107,6 @@ function createPasswordResetCode() {
     const left = crypto.randomBytes(3).toString('hex').toUpperCase();
     const right = crypto.randomBytes(3).toString('hex').toUpperCase();
     return `RST-${left}-${right}`;
-}
-
-function keyPreview(apiKey) {
-    if (!apiKey) return '';
-    return `${apiKey.slice(0, 12)}...${apiKey.slice(-6)}`;
-}
-
-function hashApiKey(apiKey) {
-    return crypto.createHash('sha256').update(String(apiKey || '').trim()).digest('hex');
 }
 
 function hashSessionToken(token) {
@@ -245,11 +242,6 @@ function nanosToBalanceCents(nanos) {
     return -Math.ceil(Math.abs(value) / nanosPerCent);
 }
 
-function chargeNanosToCents(nanos) {
-    const value = nonNegativeInteger(nanos);
-    return value <= 0 ? 0 : Math.ceil(value / nanosPerCent);
-}
-
 function normalizePaymentMethod(value) {
     const method = String(value || '').trim().toLowerCase();
     if (!supportedPaymentMethods.has(method)) {
@@ -297,18 +289,16 @@ function normalizeUsageEvent(body = {}) {
         'cache_miss_input_tokens',
         'prompt_cache_miss_tokens'
     ]));
-    if (cacheHitInputTokens === 0 && cachedTokens > 0) {
-        cacheHitInputTokens = cachedTokens;
-    }
-    if (cachedTokens === 0 && cacheHitInputTokens > 0) {
-        cachedTokens = cacheHitInputTokens;
-    }
-    if (inputTokens === 0 && (cacheHitInputTokens > 0 || cacheMissInputTokens > 0)) {
-        inputTokens = cacheHitInputTokens + cacheMissInputTokens;
-    }
-    if (cacheMissInputTokens === 0 && inputTokens > cacheHitInputTokens) {
-        cacheMissInputTokens = inputTokens - cacheHitInputTokens;
-    }
+    const breakdown = deriveInputTokenBreakdown({
+        inputTokens,
+        cachedTokens,
+        cacheHitInputTokens,
+        cacheMissInputTokens
+    });
+    inputTokens = breakdown.inputTokens;
+    cachedTokens = breakdown.cachedTokens;
+    cacheHitInputTokens = breakdown.cacheHitInputTokens;
+    cacheMissInputTokens = breakdown.cacheMissInputTokens;
     let totalTokens = nonNegativeInteger(body.total_tokens);
     if (totalTokens === 0) {
         totalTokens = inputTokens + outputTokens;
@@ -490,6 +480,12 @@ ALTER TABLE invite_codes_next RENAME TO invite_codes;
     if (!apiKeyColumns.includes('api_key_hash')) {
         db.exec(`ALTER TABLE api_keys ADD COLUMN api_key_hash TEXT;`);
     }
+    if (!apiKeyColumns.includes('api_key_ciphertext')) {
+        db.exec(`ALTER TABLE api_keys ADD COLUMN api_key_ciphertext TEXT;`);
+    }
+    if (!apiKeyColumns.includes('api_key_nonce')) {
+        db.exec(`ALTER TABLE api_keys ADD COLUMN api_key_nonce TEXT;`);
+    }
     const missingHashRows = db.prepare(`
 SELECT api_key
 FROM api_keys
@@ -517,6 +513,12 @@ WHERE api_key_hash IS NOT NULL;
     }
     if (!orderColumns.includes('result_token')) {
         db.exec(`ALTER TABLE orders ADD COLUMN result_token TEXT;`);
+    }
+    if (!orderColumns.includes('api_key_ciphertext')) {
+        db.exec(`ALTER TABLE orders ADD COLUMN api_key_ciphertext TEXT;`);
+    }
+    if (!orderColumns.includes('api_key_nonce')) {
+        db.exec(`ALTER TABLE orders ADD COLUMN api_key_nonce TEXT;`);
     }
     db.exec(`
 CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_result_token_unique
@@ -731,6 +733,33 @@ function createShopApp(options = {}) {
         ? configuredCreditLimitCents
         : defaultCreditLimitCents;
     const creditLimitNanos = centsToNanos(creditLimitCents);
+    const apiKeyEncryptionSecret = String(options.apiKeyEncryptionSecret ?? process.env.SHOP_API_KEY_ENCRYPTION_SECRET ?? '').trim();
+    if (apiKeyEncryptionSecret) {
+        assertStrongSecret('SHOP_API_KEY_ENCRYPTION_SECRET', apiKeyEncryptionSecret, { production });
+    }
+
+    function apiKeyStorage(apiKey) {
+        const apiKeyHash = hashApiKey(apiKey);
+        if (!apiKeyEncryptionSecret) {
+            return {
+                apiKey: String(apiKey || ''),
+                apiKeyHash,
+                apiKeyCiphertext: null,
+                apiKeyNonce: null
+            };
+        }
+        const envelope = encryptApiKeyEnvelope(apiKey, apiKeyEncryptionSecret);
+        return {
+            apiKey: `enc_${apiKeyHash}`,
+            apiKeyHash,
+            apiKeyCiphertext: envelope.api_key_ciphertext,
+            apiKeyNonce: envelope.api_key_nonce
+        };
+    }
+
+    function plainApiKey(row) {
+        return readStoredApiKey(row, apiKeyEncryptionSecret);
+    }
 
     function toOrder(row) {
         return {
@@ -738,7 +767,7 @@ function createShopApp(options = {}) {
             phone: row.phone,
             productName: row.product_name,
             amount: row.amount,
-            apiKey: row.api_key,
+            apiKey: plainApiKey(row),
             apiKeyPreview: row.api_key_preview,
             redeemedAt: row.redeemed_at,
             expiresAt: row.expires_at,
@@ -787,6 +816,16 @@ function createShopApp(options = {}) {
             orderId: invite.orderId,
             createdAt: invite.createdAt,
             redeemedAt: invite.redeemedAt
+        };
+    }
+
+    function publicApiKeyPoolItem(row) {
+        return {
+            apiKeyPreview: row.api_key_preview || '',
+            status: row.status || '',
+            createdAt: row.created_at || '',
+            usedAt: row.used_at || '',
+            orderId: row.order_id || ''
         };
     }
 
@@ -1288,28 +1327,34 @@ WHERE code = ?
 `);
 
     const insertApiKey = db.prepare(`
-INSERT INTO api_keys (api_key, api_key_preview, api_key_hash, status, created_at)
-VALUES (?, ?, ?, 'unused', ?)
+INSERT INTO api_keys (api_key, api_key_preview, api_key_hash, api_key_ciphertext, api_key_nonce, status, created_at)
+VALUES (?, ?, ?, ?, ?, 'unused', ?)
 `);
 
     const getApiKey = db.prepare(`
-SELECT api_key, api_key_preview, status, created_at, used_at, order_id
+SELECT api_key, api_key_preview, api_key_hash, api_key_ciphertext, api_key_nonce, status, created_at, used_at, order_id
 FROM api_keys
 WHERE api_key = ?
 `);
 
     const getApiKeyByHash = db.prepare(`
-SELECT api_key, api_key_preview, api_key_hash, status, created_at, used_at, order_id
+SELECT api_key, api_key_preview, api_key_hash, api_key_ciphertext, api_key_nonce, status, created_at, used_at, order_id
 FROM api_keys
 WHERE api_key_hash = ?
 `);
 
     const getNextUnusedApiKey = db.prepare(`
-SELECT api_key, api_key_preview, status, created_at, used_at, order_id
+SELECT api_key, api_key_preview, api_key_hash, api_key_ciphertext, api_key_nonce, status, created_at, used_at, order_id
 FROM api_keys
 WHERE status = 'unused'
 ORDER BY created_at ASC, api_key ASC
 LIMIT 1
+`);
+
+    const listApiKeysForAdmin = db.prepare(`
+SELECT api_key_preview, status, created_at, used_at, order_id
+FROM api_keys
+ORDER BY created_at DESC, api_key_preview ASC
 `);
 
     const markApiKeyUsed = db.prepare(`
@@ -1317,7 +1362,7 @@ UPDATE api_keys
 SET status = 'used',
     used_at = @usedAt,
     order_id = @orderId
-WHERE api_key = @apiKey AND status = 'unused'
+WHERE api_key_hash = @apiKeyHash AND status = 'unused'
 `);
 
     const ensureUser = db.prepare(`
@@ -1568,8 +1613,14 @@ WHERE id = ? AND used_at IS NULL
 `);
 
     const insertOrder = db.prepare(`
-INSERT INTO orders (id, phone, invite_code, api_key, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token)
-VALUES (@id, @phone, @inviteCode, @apiKey, @apiKeyPreview, @productName, @amount, @redeemedAt, @expiresAt, @resultToken)
+INSERT INTO orders (
+  id, phone, invite_code, api_key, api_key_ciphertext, api_key_nonce,
+  api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
+)
+VALUES (
+  @id, @phone, @inviteCode, @apiKey, @apiKeyCiphertext, @apiKeyNonce,
+  @apiKeyPreview, @productName, @amount, @redeemedAt, @expiresAt, @resultToken
+)
 `);
 
     const markInviteRedeemed = db.prepare(`
@@ -1582,26 +1633,32 @@ WHERE code = @code
 `);
 
     const listOrdersByPhone = db.prepare(`
-SELECT id, phone, api_key, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
+SELECT id, phone, api_key, api_key_ciphertext, api_key_nonce, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
 FROM orders
 WHERE phone = ?
 ORDER BY redeemed_at DESC
 `);
 
     const getOrderByResultToken = db.prepare(`
-SELECT id, phone, api_key, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
+SELECT id, phone, api_key, api_key_ciphertext, api_key_nonce, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
 FROM orders
 WHERE result_token = ?
 `);
 
     const getOrderByApiKey = db.prepare(`
-SELECT id, phone, api_key, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
+SELECT id, phone, api_key, api_key_ciphertext, api_key_nonce, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
 FROM orders
 WHERE api_key = ?
 `);
 
+    const getOrderById = db.prepare(`
+SELECT id, phone, api_key, api_key_ciphertext, api_key_nonce, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
+FROM orders
+WHERE id = ?
+`);
+
     const getOrderByIdAndPhone = db.prepare(`
-SELECT id, phone, api_key, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
+SELECT id, phone, api_key, api_key_ciphertext, api_key_nonce, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
 FROM orders
 WHERE id = ? AND phone = ?
 `);
@@ -1649,7 +1706,7 @@ ON CONFLICT(api_key_hash) DO UPDATE SET
 SELECT ak.api_key_hash, ak.api_key_preview, ak.status AS key_status, ak.created_at, ak.used_at,
        o.phone, o.redeemed_at, o.expires_at
 FROM api_keys ak
-LEFT JOIN orders o ON o.api_key = ak.api_key
+LEFT JOIN orders o ON o.id = ak.order_id OR o.api_key = ak.api_key
 WHERE ak.api_key_hash IS NOT NULL AND ak.api_key_hash != ''
 ORDER BY ak.created_at DESC, ak.api_key_preview ASC
 `);
@@ -1676,18 +1733,42 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     const importApiKeys = db.transaction((apiKeys) => {
         const imported = [];
         for (const apiKey of apiKeys) {
-            if (getApiKey.get(apiKey)) {
+            const storage = apiKeyStorage(apiKey);
+            if (getApiKeyByHash.get(storage.apiKeyHash)) {
                 const error = new Error('API key 已存在。');
                 error.status = 409;
                 error.code = 'API_KEY_EXISTS';
                 throw error;
             }
             const apiKeyPreview = keyPreview(apiKey);
-            insertApiKey.run(apiKey, apiKeyPreview, hashApiKey(apiKey), nowIso());
+            insertApiKey.run(
+                storage.apiKey,
+                apiKeyPreview,
+                storage.apiKeyHash,
+                storage.apiKeyCiphertext,
+                storage.apiKeyNonce,
+                nowIso()
+            );
             imported.push({ apiKeyPreview, status: 'unused' });
         }
         return imported;
     });
+
+    function buildInviteConsole() {
+        const invites = listInvites.all().map((row) => publicInvite(toInvite(row)));
+        const apiKeyPool = listApiKeysForAdmin.all().map(publicApiKeyPoolItem);
+        return {
+            summary: {
+                unusedInvites: invites.filter((invite) => invite.status === 'unused').length,
+                redeemedInvites: invites.filter((invite) => invite.status === 'redeemed').length,
+                unusedApiKeys: apiKeyPool.filter((apiKey) => apiKey.status === 'unused').length,
+                usedApiKeys: apiKeyPool.filter((apiKey) => apiKey.status === 'used').length,
+                disabledApiKeys: apiKeyPool.filter((apiKey) => apiKey.status === 'disabled').length
+            },
+            invites,
+            apiKeyPool
+        };
+    }
 
     const redeemInvite = db.transaction(({ phone, code }) => {
         const row = getInvite.get(code);
@@ -1718,13 +1799,17 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         while (getOrderByResultToken.get(resultToken)) {
             resultToken = createResultToken();
         }
+        const apiKey = plainApiKey(apiKeyRow);
+        const orderStorage = apiKeyStorage(apiKey);
         const order = {
             id: createId('ORDER'),
             phone,
             inviteCode: invite.code,
             productName: product.name,
             amount: product.amount,
-            apiKey: apiKeyRow.api_key,
+            apiKey: orderStorage.apiKey,
+            apiKeyCiphertext: orderStorage.apiKeyCiphertext,
+            apiKeyNonce: orderStorage.apiKeyNonce,
             apiKeyPreview: apiKeyRow.api_key_preview,
             redeemedAt: nowIso(redeemedAt),
             expiresAt: nowIso(addDays(redeemedAt, durationDays)),
@@ -1734,7 +1819,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         ensureUser.run(phone, nowIso());
         insertOrder.run(order);
         markApiKeyUsed.run({
-            apiKey: order.apiKey,
+            apiKeyHash: apiKeyRow.api_key_hash,
             usedAt: order.redeemedAt,
             orderId: order.id
         });
@@ -1745,7 +1830,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             redeemedAt: order.redeemedAt
         });
 
-        return order;
+        return { ...order, apiKey };
     });
 
     const registerUser = db.transaction(({ phone, password }) => {
@@ -1846,24 +1931,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     });
 
     function chargeNanosFromUsageEvent(event) {
-        if (event.failed) {
-            return {
-                chargeNanos: 0,
-                chargeCents: 0,
-                status: 'failed_no_charge',
-                priceVersion: 'failed-no-charge'
-            };
-        }
-        const chargeNanos =
-            event.cacheHitInputTokens * deepseekProRmbPrice.cacheHitInputNanosPerToken +
-            event.cacheMissInputTokens * deepseekProRmbPrice.cacheMissInputNanosPerToken +
-            event.outputTokens * deepseekProRmbPrice.outputNanosPerToken;
-        return {
-            chargeNanos,
-            chargeCents: chargeNanosToCents(chargeNanos),
-            status: chargeNanos > 0 ? 'charged' : 'unpriced_no_charge',
-            priceVersion: deepseekProRmbPrice.version
-        };
+        return priceUsageTokens(event);
     }
 
     function chargeUsageEventInCurrentTransaction(event) {
@@ -2065,7 +2133,10 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         '/shop/login/index.html',
         '/shop/register',
         '/shop/register/',
-        '/shop/register/index.html'
+        '/shop/register/index.html',
+        '/shop/reset-password',
+        '/shop/reset-password/',
+        '/shop/reset-password/index.html'
     ]);
 
     function isShopHtmlPagePath(requestPath) {
@@ -2374,6 +2445,11 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}`;
     }
 
+    function currentChinaMonth(date = new Date()) {
+        const parts = chinaParts(date);
+        return `${parts.year}-${pad2(parts.month)}`;
+    }
+
     function chinaHourKey(date) {
         const parts = chinaParts(date);
         return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}T${pad2(parts.hour)}:00:00+08:00`;
@@ -2620,6 +2696,62 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return result;
     }
 
+    const usageImportStatus = {
+        enabled: Boolean(options.usageAutoImportEnabled ?? process.env.SHOP_USAGE_AUTO_IMPORT_ENABLED === 'true'),
+        lastRunAt: '',
+        lastMonth: '',
+        lastInserted: 0,
+        lastSkipped: 0,
+        lastFailedLines: 0,
+        lastError: ''
+    };
+
+    function runUsageAutoImport(month = currentChinaMonth()) {
+        usageImportStatus.lastRunAt = nowIso();
+        usageImportStatus.lastMonth = month;
+        usageImportStatus.lastError = '';
+        try {
+            const result = importUsageEvents(month);
+            usageImportStatus.lastInserted = result.inserted;
+            usageImportStatus.lastSkipped = result.skipped;
+            usageImportStatus.lastFailedLines = result.failed_lines;
+            return result;
+        } catch (error) {
+            usageImportStatus.lastInserted = 0;
+            usageImportStatus.lastSkipped = 0;
+            usageImportStatus.lastFailedLines = 0;
+            usageImportStatus.lastError = error.message || 'usage 自动导入失败。';
+            return {
+                month,
+                inserted: 0,
+                skipped: 0,
+                failed_lines: 0,
+                error: usageImportStatus.lastError
+            };
+        }
+    }
+
+    function createUsageImporter() {
+        const rawIntervalMs = Number(options.usageAutoImportIntervalMs ?? process.env.SHOP_USAGE_AUTO_IMPORT_INTERVAL_MS ?? 60000);
+        const intervalMs = Number.isFinite(rawIntervalMs) ? Math.max(rawIntervalMs, 5000) : 60000;
+        let timer = null;
+        if (usageImportStatus.enabled && options.usageAutoImportStartTimer !== false) {
+            runUsageAutoImport();
+            timer = setInterval(() => runUsageAutoImport(), intervalMs);
+            timer.unref?.();
+        }
+        return {
+            runOnce: runUsageAutoImport,
+            status: () => ({ ...usageImportStatus }),
+            stop: () => {
+                if (timer) clearInterval(timer);
+                timer = null;
+            }
+        };
+    }
+
+    const usageImporter = createUsageImporter();
+
     function jsonLimitForPath(pathname) {
         if (pathname === '/api/internal/usage-events') {
             return options.usageJsonBodyLimit || process.env.USAGE_JSON_BODY_LIMIT || '256kb';
@@ -2764,7 +2896,10 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         if (!row) {
             return res.status(404).json({ code: 'ORDER_NOT_FOUND', message: '订单不存在。' });
         }
-        return res.json({ apiKey: row.api_key, expiresInSeconds: 60 });
+        return res.json({
+            apiKey: toOrder(row).apiKey,
+            message: '完整 API key 只在本次响应返回，请妥善保存。'
+        });
     });
 
     app.get('/api/account/balance', limitQueryApi, requireAccount, (req, res) => {
@@ -2827,6 +2962,25 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return res.json(accountUsageSummary(req.account.phone));
     });
 
+    app.post('/api/account/invites/redeem', limitRedeemApi, requireAccount, requireSameOrigin, requireAccountCsrf, (req, res) => {
+        const code = String(req.body.code || '').trim().toUpperCase();
+        if (!code) {
+            return res.status(400).json({ code: 'INVALID_INVITE_CODE', message: '请输入邀请码。' });
+        }
+
+        try {
+            const order = redeemInvite({ phone: req.account.phone, code });
+            res.cookie(resultCookieName, order.resultToken, cookieOptions(req));
+            res.clearCookie(legacyRedeemCookieName, { path: '/shop' });
+            return res.status(201).json({ order: publicOrder(order, { includeApiKey: true }) });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'REDEEM_FAILED',
+                message: error.message || '兑换失败。'
+            });
+        }
+    });
+
     app.post('/api/admin/invites', limitAdminApi, requireAdminToken, (req, res) => {
         const count = Math.min(Math.max(Number(req.body.count || 1), 1), 50);
         const invites = createInvites(count);
@@ -2859,8 +3013,48 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return res.json({ invites });
     });
 
+    app.get('/api/admin/invite-console', limitAdminApi, requireAdminAccount, (req, res) => {
+        return res.json(buildInviteConsole());
+    });
+
+    app.post('/api/admin/session-invites', limitAdminApi, requireSameOrigin, requireAdminAccount, requireAccountCsrf, (req, res) => {
+        const count = Math.min(Math.max(Number(req.body.count || 1), 1), 50);
+        const invites = createInvites(count);
+        return res.status(201).json({ invites });
+    });
+
+    app.post('/api/admin/session-api-keys', limitAdminApi, requireSameOrigin, requireAdminAccount, requireAccountCsrf, (req, res) => {
+        const textKeys = String(req.body.apiKeysText || req.body.api_keys_text || '')
+            .split(/\r?\n/)
+            .map((apiKey) => apiKey.trim())
+            .filter(Boolean);
+        const arrayKeys = Array.isArray(req.body.apiKeys)
+            ? req.body.apiKeys.map((apiKey) => String(apiKey || '').trim()).filter(Boolean)
+            : [];
+        const apiKeys = [...arrayKeys, ...textKeys];
+        if (!apiKeys.length) {
+            return res.status(400).json({ code: 'INVALID_API_KEYS', message: '请提供 API key 列表。' });
+        }
+        if (new Set(apiKeys).size !== apiKeys.length) {
+            return res.status(409).json({ code: 'API_KEY_EXISTS', message: 'API key 列表存在重复。' });
+        }
+        try {
+            const apiKeyResults = importApiKeys(apiKeys);
+            return res.status(201).json({ apiKeys: apiKeyResults });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'API_KEY_IMPORT_FAILED',
+                message: error.message || 'API key 导入失败。'
+            });
+        }
+    });
+
     app.get('/api/admin/usage-summary', limitAdminApi, requireAdminUsageAccess, (req, res) => {
         return res.json(buildUsageSummary(req.query));
+    });
+
+    app.get('/api/admin/usage-import-status', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        return res.json(usageImporter.status());
     });
 
     app.post('/api/admin/usage-key-profiles', limitAdminApi, requireSameOrigin, requireAdminUsageAccess, requireAccountCsrf, (req, res) => {
@@ -3015,7 +3209,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             });
         }
 
-        const orderRow = getOrderByApiKey.get(apiKeyRow.api_key);
+        const orderRow = apiKeyRow.order_id ? getOrderById.get(apiKeyRow.order_id) : getOrderByApiKey.get(apiKeyRow.api_key);
         if (!orderRow) {
             return res.json({
                 managed: true,
@@ -3066,7 +3260,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             });
         }
 
-        return respondApiKeyStatus(res, getApiKey.get(apiKey));
+        return respondApiKeyStatus(res, getApiKeyByHash.get(hashApiKey(apiKey)));
     });
 
     app.post('/api/internal/api-keys/status', requireInternal, (req, res) => {
@@ -3123,7 +3317,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         res.status(404).sendFile(path.join(rootDir, '404.html'));
     });
 
-    return { app, db, dbPath };
+    return { app, db, dbPath, usageImporter };
 }
 
 if (require.main === module) {

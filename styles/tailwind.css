@@ -21,6 +21,80 @@
     @apply font-serif text-3xl md:text-4xl text-text-main mb-2;
   }
 
+  .shop-auth-main {
+    position: relative;
+    overflow: hidden;
+    min-height: calc(100vh - 97px);
+  }
+
+  .shop-auth-background-figure {
+    position: absolute;
+    left: clamp(-380px, -22vw, -260px);
+    bottom: 0;
+    width: min(86vw, 1120px);
+    max-width: none;
+    opacity: 0.42;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+  }
+
+  .shop-auth-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+    min-height: inherit;
+  }
+
+  .shop-auth-panel {
+    width: min(100%, 620px);
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(16px);
+  }
+
+  .dark .shop-auth-background-figure {
+    opacity: 0.26;
+  }
+
+  .dark .shop-auth-panel {
+    background: rgba(36, 36, 36, 0.88);
+  }
+
+  @media (max-width: 1023px) {
+    .shop-auth-background-figure {
+      left: -42vw;
+      width: 150vw;
+      opacity: 0.2;
+    }
+
+    .shop-auth-content {
+      justify-content: center;
+    }
+
+    .shop-auth-panel {
+      width: min(100%, 560px);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .shop-auth-main {
+      min-height: calc(100vh - 89px);
+    }
+
+    .shop-auth-background-figure {
+      left: -82vw;
+      width: 210vw;
+      opacity: 0.14;
+    }
+
+    .dark .shop-auth-background-figure {
+      opacity: 0.1;
+    }
+  }
+
   .resume-section-heading {
     @apply text-sm font-bold uppercase tracking-widest text-text-muted mb-8 md:mb-0 md:w-48 shrink-0 pt-2;
   }

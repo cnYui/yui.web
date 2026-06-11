@@ -85,15 +85,19 @@
                     <h2 class="mt-2 font-display text-3xl text-primary dark:text-dark-text">我的 API key</h2>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
-                    <a class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text" href="/shop/redeem/">兑换新的 API key</a>
                     <button class="btn-secondary h-10 px-3 text-sm dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button" data-collapsible-toggle>收起</button>
                 </div>
             </div>
             <div data-collapsible-content>
+                <form id="accountRedeemForm" class="mt-6 grid gap-3 rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5 sm:grid-cols-[1fr_auto]">
+                    <input id="accountInviteCodeInput" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="text" autocomplete="one-time-code" placeholder="输入管理员提供的邀请码"/>
+                    <button class="btn-primary" type="submit">兑换 API key</button>
+                    <p id="accountRedeemMessage" class="min-h-5 text-sm text-text-muted dark:text-dark-text-muted sm:col-span-2"></p>
+                </form>
                 <div id="accountOrders" class="mt-5"></div>
             </div>
         </section>
-        <section id="accountGuideSection" class="mt-12" data-collapsible-section data-collapsible-default="open">
+        <section id="accountGuideSection" class="mt-12" data-collapsible-section data-collapsible-default="closed">
             <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-[0.24em] text-text-muted dark:text-dark-text-muted">Guide</p>
@@ -236,7 +240,7 @@ curl -sS https://api.aaccx.pw/v1/models \
                 <p id="accountUsageMessage" class="mt-4 min-h-5 text-sm text-text-muted dark:text-dark-text-muted"></p>
             </div>
         </section>
-        <section id="accountBillingHistorySection" class="mt-12" data-collapsible-section data-collapsible-default="open">
+        <section id="accountBillingHistorySection" class="mt-12" data-collapsible-section data-collapsible-default="closed">
             <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-[0.24em] text-text-muted dark:text-dark-text-muted">Billing</p>

@@ -140,7 +140,7 @@ async function submitAndApproveTopup(baseUrl, cookie, amount, adminToken = 'test
 async function withServer(run, appOptions = {}) {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yui-shop-test-'));
     const dbPath = path.join(tempDir, 'shop.sqlite');
-    const { app, db } = createShopApp({
+    const { app, db, usageImporter } = createShopApp({
         dbPath,
         adminToken: 'test-token',
         internalToken: 'internal-test-token',
@@ -154,8 +154,9 @@ async function withServer(run, appOptions = {}) {
     const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
     try {
-        await run({ baseUrl, db, dbPath });
+        await run({ baseUrl, db, dbPath, usageImporter });
     } finally {
+        usageImporter?.stop?.();
         await new Promise((resolve, reject) => {
             server.close((error) => error ? reject(error) : resolve());
         });
@@ -350,6 +351,123 @@ test('Shop 外部脚本会在 CSP 禁止 inline script 时自动初始化 Accoun
     assert.equal(elements.get('alipayQrImage').src, '/shop/assets/pay/alipay-qr.png');
     assert.equal(elements.get('wechatQrImage').src, '/shop/assets/pay/wechat-qr.png');
     assert.equal(elements.get('paymentReference').textContent, 'YUI-TEST');
+});
+
+test('Account 页提供登录态邀请码兑换表单且不再引导到独立手机号兑换页', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
+
+    assert.match(html, /id="accountRedeemForm"/);
+    assert.match(html, /id="accountInviteCodeInput"/);
+    assert.match(html, /id="accountRedeemMessage"/);
+    assert.doesNotMatch(html, /href="\/shop\/redeem\/"/);
+});
+
+test('Account 前端兑换调用登录态接口并且不提交手机号', async () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+    const elements = new Map();
+    const createElement = () => {
+        const listeners = new Map();
+        return {
+            innerHTML: '',
+            textContent: '',
+            value: '',
+            src: '',
+            classList: {
+                add() {},
+                remove() {},
+                toggle() {}
+            },
+            addEventListener(type, listener) {
+                listeners.set(type, listener);
+            },
+            dispatchEvent(event) {
+                listeners.get(event.type)?.({
+                    preventDefault() {},
+                    target: this
+                });
+            },
+            querySelectorAll: () => [],
+            querySelector: () => null,
+            focus() {}
+        };
+    };
+    for (const id of [
+        'accountPhone',
+        'accountOrders',
+        'accountMessage',
+        'logoutButton',
+        'accountRedeemForm',
+        'accountInviteCodeInput',
+        'accountRedeemMessage',
+        'accountBalanceCards',
+        'accountTopups',
+        'accountCharges',
+        'accountLedger',
+        'alipayQrImage',
+        'wechatQrImage',
+        'paymentReference',
+        'accountUsageCards',
+        'accountBillingUsageCards',
+        'accountTokenBreakdown',
+        'accountHourlyChart',
+        'accountDailyChart',
+        'usageFreshness',
+        'accountUsageMessage'
+    ]) {
+        elements.set(id, createElement());
+    }
+    const calls = [];
+    const responses = {
+        '/api/account/me': { user: { phone: '13800138111' }, orders: [] },
+        '/api/account/balance': { balance: {}, payment: {} },
+        '/api/account/topups': { topups: [] },
+        '/api/account/api-charges': { charges: [] },
+        '/api/account/ledger': { entries: [] },
+        '/api/account/usage-summary': { summary: {}, billing: {}, hourly: [], daily: [] },
+        '/api/account/invites/redeem': { order: { id: 'ORDER1', apiKey: 'sk-test' } }
+    };
+    const sandbox = {
+        document: {
+            cookie: 'yui_shop_csrf=csrf-token; yui_shop_account_session=session-token',
+            readyState: 'loading',
+            querySelectorAll: () => [],
+            getElementById: (id) => elements.get(id) || null,
+            addEventListener() {}
+        },
+        fetch: async (url, options = {}) => {
+            calls.push({ url, options });
+            return {
+                ok: true,
+                status: 200,
+                json: async () => responses[url] || {}
+            };
+        },
+        window: {
+            location: {
+                pathname: '/shop/account/',
+                href: '',
+                reload() {}
+            }
+        },
+        navigator: {
+            clipboard: {
+                writeText: async () => {}
+            }
+        },
+        Intl,
+        URL
+    };
+    sandbox.window.document = sandbox.document;
+
+    vm.runInNewContext(script, sandbox);
+    await sandbox.window.YuiShop.initAccountPage();
+    elements.get('accountInviteCodeInput').value = 'yui-abc-def';
+    elements.get('accountRedeemForm').dispatchEvent({ type: 'submit' });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    const redeemCall = calls.find((call) => call.url === '/api/account/invites/redeem');
+    assert.ok(redeemCall);
+    assert.deepEqual(JSON.parse(redeemCall.options.body), { code: 'YUI-ABC-DEF' });
 });
 
 test('Shop 外部脚本会绑定 Account 和 Admin 页栏目折叠按钮', async () => {
@@ -631,6 +749,27 @@ test('账号接口默认只返回 API key preview，完整 key 需要 reveal', a
     });
 });
 
+test('Reveal API key 响应不再声称服务端 60 秒过期', async () => {
+    await withServer(async ({ baseUrl }) => {
+        await createRedeemedOrder(baseUrl, '13800138261', 'sk-reveal-copy');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138261');
+
+        const me = await jsonFetch(`${baseUrl}/api/account/me`, {
+            headers: { cookie }
+        });
+        const revealed = await jsonFetch(`${baseUrl}/api/account/orders/${me.body.orders[0].id}/reveal-api-key`, {
+            method: 'POST',
+            headers: { cookie },
+            body: '{}'
+        });
+
+        assert.equal(revealed.response.status, 200);
+        assert.equal(revealed.body.apiKey, 'sk-reveal-copy');
+        assert.equal(Object.hasOwn(revealed.body, 'expiresInSeconds'), false);
+        assert.match(revealed.body.message, /本次响应/);
+    });
+});
+
 test('用户用手机号和邀请码兑换后，从未使用 API key 池分配一个 key 并写入 SQLite 订单', async () => {
     await withServer(async ({ baseUrl, db, dbPath }) => {
         const seedKeys = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
@@ -689,6 +828,57 @@ test('用户用手机号和邀请码兑换后，从未使用 API key 池分配�
     });
 });
 
+test('登录态邀请码兑换只绑定当前 session 手机号，忽略请求体手机号', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ apiKeys: ['sk-session-redeem'] })
+        });
+        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ count: 1 })
+        });
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138111');
+
+        const redeemResult = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ phone: '13800138999', code: inviteResult.body.invites[0].code })
+        });
+
+        assert.equal(redeemResult.response.status, 201);
+        assert.equal(redeemResult.body.order.phone, '13800138111');
+        assert.equal(redeemResult.body.order.apiKey, 'sk-session-redeem');
+        assert.deepEqual(
+            db.prepare('SELECT phone, invite_code FROM orders WHERE api_key = ?').get('sk-session-redeem'),
+            { phone: '13800138111', invite_code: inviteResult.body.invites[0].code }
+        );
+    });
+});
+
+test('登录态邀请码兑换要求账号 session、同源和 CSRF', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const missingSession = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
+            method: 'POST',
+            body: JSON.stringify({ code: 'YUI-NOPE-NOPE' })
+        });
+        assert.equal(missingSession.response.status, 401);
+        assert.equal(missingSession.body.code, 'ACCOUNT_LOGIN_REQUIRED');
+
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138112');
+        const missingCsrf = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
+            method: 'POST',
+            headers: { cookie, origin: baseUrl },
+            skipCsrfForTest: true,
+            body: JSON.stringify({ code: 'YUI-NOPE-NOPE' })
+        });
+        assert.equal(missingCsrf.response.status, 403);
+        assert.equal(missingCsrf.body.code, 'CSRF_TOKEN_REQUIRED');
+    });
+});
+
 test('Shop 数据库包含 API key hash 和 usage_events 账本表', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const seedKeys = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
@@ -706,6 +896,51 @@ test('Shop 数据库包含 API key hash 和 usage_events 账本表', async () =>
 
         const row = db.prepare('SELECT api_key_hash FROM api_keys WHERE api_key = ?').get('sk-hash-schema');
         assert.equal(row.api_key_hash, hashApiKeyForTest('sk-hash-schema'));
+    });
+});
+
+test('配置 API key 加密 secret 后，新导入 key 写入密文且 reveal 可解密', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const imported = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ apiKeys: ['sk-encrypted-runtime'] })
+        });
+        assert.equal(imported.response.status, 201);
+
+        const stored = db.prepare('SELECT api_key, api_key_ciphertext, api_key_nonce, api_key_hash FROM api_keys WHERE api_key_hash = ?').get(hashApiKeyForTest('sk-encrypted-runtime'));
+        assert.equal(stored.api_key_hash, hashApiKeyForTest('sk-encrypted-runtime'));
+        assert.notEqual(stored.api_key, 'sk-encrypted-runtime');
+        assert.ok(stored.api_key_ciphertext);
+        assert.ok(stored.api_key_nonce);
+
+        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ count: 1 })
+        });
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138231');
+        const redeemed = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ code: inviteResult.body.invites[0].code })
+        });
+        assert.equal(redeemed.response.status, 201);
+        assert.equal(redeemed.body.order.apiKey, 'sk-encrypted-runtime');
+
+        const order = db.prepare('SELECT api_key, api_key_ciphertext, api_key_nonce FROM orders WHERE id = ?').get(redeemed.body.order.id);
+        assert.notEqual(order.api_key, 'sk-encrypted-runtime');
+        assert.ok(order.api_key_ciphertext);
+        assert.ok(order.api_key_nonce);
+
+        const revealed = await jsonFetch(`${baseUrl}/api/account/orders/${redeemed.body.order.id}/reveal-api-key`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({})
+        });
+        assert.equal(revealed.body.apiKey, 'sk-encrypted-runtime');
+    }, {
+        apiKeyEncryptionSecret: '0123456789abcdef0123456789abcdef'
     });
 });
 
@@ -1514,6 +1749,51 @@ test('管理员可以从 CLIProxyAPI 月度 JSONL 手动导入 usage events', as
     }
 });
 
+test('usage 自动导入可手动触发一次并保持幂等状态', async () => {
+    const logDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cliproxy-auto-usage-log-'));
+    try {
+        fs.writeFileSync(path.join(logDir, 'usage-events-2026-06.jsonl'), `${JSON.stringify({
+            request_id: 'req-auto-import',
+            api_key_hash: hashApiKeyForTest('sk-auto-import'),
+            api_key_preview: keyPreviewForTest('sk-auto-import'),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 10,
+            cached_tokens: 4,
+            output_tokens: 2,
+            total_tokens: 12,
+            requested_at: '2026-06-11T10:00:00Z'
+        })}\n`);
+
+        await withServer(async ({ baseUrl, db, usageImporter }) => {
+            assert.ok(usageImporter);
+            const first = usageImporter.runOnce('2026-06');
+            assert.equal(first.inserted, 1);
+            const second = usageImporter.runOnce('2026-06');
+            assert.equal(second.skipped, 1);
+
+            const status = await jsonFetch(`${baseUrl}/api/admin/usage-import-status`, {
+                headers: { 'x-admin-token': 'test-token' }
+            });
+            assert.equal(status.response.status, 200);
+            assert.equal(status.body.enabled, true);
+            assert.equal(status.body.lastMonth, '2026-06');
+            assert.equal(status.body.lastInserted, 0);
+            assert.equal(status.body.lastSkipped, 1);
+
+            assert.equal(db.prepare('SELECT COUNT(*) AS count FROM usage_events WHERE request_id = ?').get('req-auto-import').count, 1);
+        }, {
+            cliproxyUsageLogDir: logDir,
+            usageAutoImportEnabled: true,
+            usageAutoImportStartTimer: false
+        });
+    } finally {
+        fs.rmSync(logDir, { recursive: true, force: true });
+    }
+});
+
 test('新兑换订单的兑换时间和到期时间使用中国东八区格式存储', async () => {
     await withServer(async ({ baseUrl, db }) => {
         await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
@@ -1574,7 +1854,7 @@ test('API key 结果页需要账户登录才能访问', async () => {
             headers: { cookie }
         });
         assert.equal(allowed.status, 200);
-        assert.match(await allowed.text(), /API key 已生成/);
+        assert.match(await allowed.text(), /API key 已激活/);
     });
 });
 
@@ -1600,7 +1880,7 @@ test('管理员 token 只能通过请求头提交，不能放在 URL 查询参�
     });
 });
 
-test('邀请码和 API key 管理接口只接受后端管理员 token，不接受网页登录 session', async () => {
+test('旧邀请码和 API key 管理接口仍只接受后端管理员 token', async () => {
     await withServer(async ({ baseUrl, db }) => {
         seedAdminUserForTest(db);
         const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
@@ -1632,6 +1912,56 @@ test('邀请码和 API key 管理接口只接受后端管理员 token，不接�
         });
         assert.equal(sessionApiKeyImport.response.status, 401);
         assert.equal(sessionApiKeyImport.body.code, 'UNAUTHORIZED');
+    });
+});
+
+test('管理员 session 可访问 invite console、生成邀请码和导入 API key 池', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+        const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
+        });
+        assert.equal(adminLogin.response.status, 200);
+        const adminCookie = adminLogin.response.headers.get('set-cookie') || '';
+
+        const createdInvites = await jsonFetch(`${baseUrl}/api/admin/session-invites`, {
+            method: 'POST',
+            headers: { cookie: adminCookie },
+            body: JSON.stringify({ count: 2 })
+        });
+        assert.equal(createdInvites.response.status, 201);
+        assert.equal(createdInvites.body.invites.length, 2);
+
+        const importedKeys = await jsonFetch(`${baseUrl}/api/admin/session-api-keys`, {
+            method: 'POST',
+            headers: { cookie: adminCookie },
+            body: JSON.stringify({ apiKeysText: 'sk-admin-session-a\nsk-admin-session-b' })
+        });
+        assert.equal(importedKeys.response.status, 201);
+        assert.deepEqual(importedKeys.body.apiKeys.map((item) => item.apiKeyPreview), [
+            keyPreviewForTest('sk-admin-session-a'),
+            keyPreviewForTest('sk-admin-session-b')
+        ]);
+        assert.doesNotMatch(JSON.stringify(importedKeys.body), /sk-admin-session-a/);
+
+        const consoleResult = await jsonFetch(`${baseUrl}/api/admin/invite-console`, {
+            headers: { cookie: adminCookie }
+        });
+        assert.equal(consoleResult.response.status, 200);
+        assert.equal(consoleResult.body.summary.unusedInvites, 2);
+        assert.equal(consoleResult.body.summary.unusedApiKeys, 2);
+    });
+});
+
+test('普通用户不能访问 Admin invite console', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138121');
+        const result = await jsonFetch(`${baseUrl}/api/admin/invite-console`, {
+            headers: { cookie }
+        });
+        assert.equal(result.response.status, 403);
+        assert.equal(result.body.code, 'ADMIN_ACCOUNT_REQUIRED');
     });
 });
 
@@ -1794,7 +2124,7 @@ test('登录后的订单查询接口只返回当前 session 手机号的数据',
     });
 });
 
-test('Shop 页面除登录和注册外未登录都会跳转登录页', async () => {
+test('Shop 页面除登录、注册和重置密码外未登录都会跳转登录页', async () => {
     await withServer(async ({ baseUrl }) => {
         const protectedPaths = [
             '/shop/',
@@ -1822,7 +2152,11 @@ test('Shop 页面除登录和注册外未登录都会跳转登录页', async () 
 
         const register = await fetch(`${baseUrl}/shop/register/`, { redirect: 'manual' });
         assert.equal(register.status, 200);
-        assert.match(await register.text(), /注册账户/);
+        assert.match(await register.text(), /id="registerForm"/);
+
+        const resetPassword = await fetch(`${baseUrl}/shop/reset-password/`, { redirect: 'manual' });
+        assert.equal(resetPassword.status, 200);
+        assert.match(await resetPassword.text(), /id="passwordResetForm"/);
     });
 });
 
@@ -2001,22 +2335,33 @@ test('API key 具有唯一性，重复导入会被拒绝', async () => {
     });
 });
 
-test('兑换页手机号输入框限制数字手机号格式', () => {
+test('兑换页不再要求输入手机号，只绑定当前登录账号', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/redeem/index.html'), 'utf8');
-    assert.match(html, /id="phoneInput"[^>]+inputmode="numeric"/);
-    assert.match(html, /id="phoneInput"[^>]+maxlength="11"/);
-    assert.match(html, /id="phoneInput"[^>]+pattern="\^1\[3-9\]\\d\{9\}\$"/);
+
+    assert.doesNotMatch(html, /id="phoneInput"/);
+    assert.match(html, /id="redeemAccountPhone"/);
+    assert.match(html, /id="inviteCodeInput"/);
+    assert.match(html, /会绑定到当前登录账号/);
 });
 
-test('兑换页展示按量计费 API key 文案并移除固定价格', () => {
+test('兑换页展示按量计费 API key 文案并移除固定价格和手机号语义', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/redeem/index.html'), 'utf8');
 
-    assert.match(html, /私下付款后，你会收到一个邀请码。输入手机号和邀请码后，系统会生成 API key。/);
+    assert.match(html, /私下付款后，你会收到一个邀请码。输入邀请码后，系统会生成 API key。/);
     assert.match(html, /<h2 class="mt-2 text-2xl font-display">codex api key<\/h2>/);
     assert.doesNotMatch(html, /Codex 月额度/);
     assert.doesNotMatch(html, /Codex 每月额度/);
     assert.doesNotMatch(html, /31 天/);
     assert.doesNotMatch(html, /¥30\.00/);
+});
+
+test('兑换页前端调用登录态兑换接口', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+
+    assert.match(script, /requestJson\('\/api\/account\/me'\)/);
+    assert.match(script, /redeemAccountPhone/);
+    assert.match(script, /api\/account\/invites\/redeem/);
+    assert.doesNotMatch(script, /api\/invites\/redeem',\s*\{/);
 });
 
 test('商店首页提供使用方法入口，公开说明页只使用占位 API key', () => {
@@ -2049,6 +2394,7 @@ test('Shop 首页按量计费文案和按钮布局不再暴露手机号查询入
     assert.match(home, /按量记录/);
     assert.doesNotMatch(home, /href="\/shop\/query\/"/);
     assert.doesNotMatch(home, /手机号查询/);
+    assert.doesNotMatch(home, /手机号和邀请码/);
     assert.doesNotMatch(home, /每月 30 元人民币/);
     assert.doesNotMatch(home, /额度兑换/);
     assert.doesNotMatch(home, /31 天有效/);
@@ -2071,7 +2417,50 @@ test('API key 结果页只展示订单，不再渲染使用方法', () => {
     assert.doesNotMatch(script, /renderUsageGuide/);
 });
 
-test('后台页面只作为管理员用量控制台，不渲染邀请码生成入口', () => {
+test('旧购买支付页面不再展示购买、支付、31 天和演示交付语义', () => {
+    const files = [
+        'shop/key/index.html',
+        'shop/order/index.html',
+        'shop/pay/index.html',
+        'shop/result/index.html',
+        'shop/content/index.html'
+    ];
+    const combined = files.map((file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8')).join('\n');
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+
+    assert.doesNotMatch(combined, /31 天/);
+    assert.doesNotMatch(combined, /重新购买/);
+    assert.doesNotMatch(combined, /¥199\.00/);
+    assert.doesNotMatch(combined, /Yui Personal Digital Pack/);
+    assert.doesNotMatch(combined, /生成订单并支付/);
+    assert.doesNotMatch(combined, /选择支付方式/);
+    assert.doesNotMatch(combined, /等待支付确认/);
+    assert.doesNotMatch(combined, /演示支付成功/);
+    assert.doesNotMatch(combined, /购买内容/);
+    assert.doesNotMatch(combined, /交付文件/);
+    assert.doesNotMatch(combined, /去购买/);
+    assert.doesNotMatch(combined, /id="orderForm"/);
+    assert.doesNotMatch(combined, /id="phoneInput"/);
+    assert.doesNotMatch(combined, /data-pay-method/);
+    assert.doesNotMatch(combined, /id="qrBox"/);
+    assert.doesNotMatch(combined, /id="paymentAction"/);
+    assert.doesNotMatch(combined, /id="orderSummary"/);
+    assert.doesNotMatch(combined, /id="paidContent"/);
+    assert.doesNotMatch(combined, /id="contentGuard"/);
+
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'shop/key/index.html'), 'utf8'), /API key 已激活/);
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'shop/order/index.html'), 'utf8'), /url=\/shop\/account\//);
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'shop/pay/index.html'), 'utf8'), /url=\/shop\/account\//);
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'shop/result/index.html'), 'utf8'), /url=\/shop\/account\//);
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'shop/content/index.html'), 'utf8'), /url=\/shop\/account\//);
+
+    assert.match(script, /'\/shop\/order\/': \(\) => \{ window\.location\.replace\('\/shop\/account\/'\); \}/);
+    assert.match(script, /'\/shop\/pay\/': \(\) => \{ window\.location\.replace\('\/shop\/account\/'\); \}/);
+    assert.match(script, /'\/shop\/result\/': \(\) => \{ window\.location\.replace\('\/shop\/account\/'\); \}/);
+    assert.match(script, /'\/shop\/content\/': \(\) => \{ window\.location\.replace\('\/shop\/account\/'\); \}/);
+});
+
+test('后台页面使用管理员 session，不渲染管理员 token 输入', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
     const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
 
@@ -2082,14 +2471,33 @@ test('后台页面只作为管理员用量控制台，不渲染邀请码生成�
     assert.doesNotMatch(html, /解锁用量监控/);
     assert.doesNotMatch(html, /id="adminAccessForm"/);
     assert.doesNotMatch(html, /id="adminTokenInput"/);
-    assert.doesNotMatch(html, /邀请码/);
-    assert.doesNotMatch(html, /生成邀请码/);
     assert.doesNotMatch(html, /id="adminInviteForm"/);
     assert.doesNotMatch(html, /id="inviteCountInput"/);
     assert.doesNotMatch(html, /id="adminResult"/);
-    assert.doesNotMatch(html, /对应 API key/);
     assert.doesNotMatch(script, /invite\.apiKey/);
     assert.doesNotMatch(script, /api\/admin\/invites/);
+    assert.doesNotMatch(script, /x-admin-token/);
+});
+
+test('Admin 页面包含兑换码管理栏目', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
+
+    assert.match(html, /id="adminInviteSection"/);
+    assert.match(html, /id="adminInviteCreateForm"/);
+    assert.match(html, /id="adminApiKeyImportForm"/);
+    assert.match(html, /id="adminInviteConsoleSummary"/);
+    assert.match(html, /id="adminInviteTable"/);
+    assert.match(html, /id="adminApiKeyPoolTable"/);
+    assert.match(html, /data-collapsible-section/);
+});
+
+test('Admin 前端兑换码管理不使用 x-admin-token', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+
+    assert.match(script, /api\/admin\/invite-console/);
+    assert.match(script, /api\/admin\/session-invites/);
+    assert.match(script, /api\/admin\/session-api-keys/);
+    assert.match(script, /function initAdminInvitePage/);
     assert.doesNotMatch(script, /x-admin-token/);
 });
 
@@ -2098,6 +2506,7 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
 
     assert.match(html, /id="adminPasswordResetSection"/);
+    assert.match(html, /id="adminInviteSection"/);
     assert.match(html, /id="adminTopupSection"/);
     assert.match(html, /id="adminUsageSection"/);
     assert.match(html, /id="adminUsageImportSection"/);
@@ -2115,13 +2524,24 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.match(script, /api\/admin\/usage-summary/);
     assert.match(script, /api\/admin\/usage-imports/);
     assert.doesNotMatch(html, /完整 API key/);
-    assert.equal((html.match(/data-collapsible-section/g) || []).length, 4);
-    assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 4);
-    assert.equal((html.match(/data-collapsible-content/g) || []).length, 4);
+    assert.equal((html.match(/data-collapsible-section/g) || []).length, 5);
+    assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 5);
+    assert.equal((html.match(/data-collapsible-content/g) || []).length, 5);
     assert.match(html, /id="adminPasswordResetSection"[\s\S]*?data-collapsible-default="open"/);
+    assert.match(html, /id="adminInviteSection"[\s\S]*?data-collapsible-default="open"/);
     assert.match(html, /id="adminTopupSection"[\s\S]*?data-collapsible-default="open"/);
     assert.match(html, /id="adminUsageSection"[\s\S]*?data-collapsible-default="open"/);
     assert.match(html, /id="adminUsageImportSection"[\s\S]*?data-collapsible-default="open"/);
+});
+
+test('Admin 日志导入栏目展示自动导入状态容器', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
+    assert.match(html, /id="usageImportStatus"/);
+});
+
+test('Admin 前端读取 usage 自动导入状态接口', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+    assert.match(script, /api\/admin\/usage-import-status/);
 });
 
 test('Account 页面包含预充值余额、充值申请和扣费流水容器', () => {
@@ -2144,7 +2564,29 @@ test('Account 页面包含预充值余额、充值申请和扣费流水容器', 
     assert.equal((html.match(/data-collapsible-section/g) || []).length, 5);
     assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 5);
     assert.equal((html.match(/data-collapsible-content/g) || []).length, 5);
-    assert.match(html, /id="accountGuideSection"[\s\S]*?data-collapsible-default="open"/);
+    assert.match(html, /id="accountGuideSection"[\s\S]*?data-collapsible-default="closed"/);
+});
+
+test('Account 页把余额和 API key 前置，并默认收起说明和流水', () => {
+    const accountHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
+
+    const billingIndex = accountHtml.indexOf('id="accountBillingSection"');
+    const keysIndex = accountHtml.indexOf('id="accountKeysSection"');
+    const guideIndex = accountHtml.indexOf('id="accountGuideSection"');
+    const usageIndex = accountHtml.indexOf('id="accountUsageSection"');
+    const historyIndex = accountHtml.indexOf('id="accountBillingHistorySection"');
+
+    assert.ok(billingIndex >= 0);
+    assert.ok(keysIndex > billingIndex);
+    assert.ok(guideIndex > keysIndex);
+    assert.ok(usageIndex > guideIndex);
+    assert.ok(historyIndex > usageIndex);
+
+    assert.match(accountHtml, /id="accountBillingSection"[^>]*data-collapsible-default="open"/);
+    assert.match(accountHtml, /id="accountKeysSection"[^>]*data-collapsible-default="open"/);
+    assert.match(accountHtml, /id="accountGuideSection"[^>]*data-collapsible-default="closed"/);
+    assert.match(accountHtml, /id="accountUsageSection"[^>]*data-collapsible-default="open"/);
+    assert.match(accountHtml, /id="accountBillingHistorySection"[^>]*data-collapsible-default="closed"/);
 });
 
 test('Account API key 卡片只展示 key、兑换时间和复制按钮', () => {
@@ -2172,21 +2614,81 @@ test('Admin 页面包含充值审核容器', () => {
     assert.match(html, /id="adminTopupMessage"/);
 });
 
-test('管理员页和登录页包含密码重置入口', () => {
+test('管理员页和独立重置密码页包含密码重置入口，登录页只保留跳转链接', () => {
     const adminHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
     const loginHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');
+    const resetHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/reset-password/index.html'), 'utf8');
     const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
 
     assert.match(adminHtml, /id="passwordResetCodeForm"/);
     assert.match(adminHtml, /id="passwordResetPhone"/);
     assert.match(adminHtml, /id="passwordResetCodeResult"/);
-    assert.match(loginHtml, /id="showPasswordResetButton"/);
-    assert.match(loginHtml, /id="passwordResetForm"/);
-    assert.match(loginHtml, /id="resetPasswordCode"/);
-    assert.match(loginHtml, /id="resetNewPassword"/);
-    assert.match(loginHtml, /id="resetConfirmPassword"/);
-    assert.match(script, /function initPasswordResetForm/);
+
+    assert.match(loginHtml, /href="\/shop\/reset-password\/"/);
+    assert.doesNotMatch(loginHtml, /id="showPasswordResetButton"/);
+    assert.doesNotMatch(loginHtml, /id="passwordResetForm"/);
+    assert.doesNotMatch(loginHtml, /id="resetPasswordCode"/);
+    assert.doesNotMatch(loginHtml, /id="resetNewPassword"/);
+    assert.doesNotMatch(loginHtml, /id="resetConfirmPassword"/);
+
+    assert.match(resetHtml, /<title>重置密码<\/title>/);
+    assert.match(resetHtml, /class="shop-auth-main[^"]*"/);
+    assert.match(resetHtml, /class="shop-auth-background-figure"/);
+    assert.match(resetHtml, /id="passwordResetForm"/);
+    assert.match(resetHtml, /id="resetPhone"/);
+    assert.match(resetHtml, /id="resetPasswordCode"/);
+    assert.match(resetHtml, /id="resetNewPassword"/);
+    assert.match(resetHtml, /id="resetConfirmPassword"/);
+    assert.match(resetHtml, /href="\/shop\/login\/"/);
+
+    assert.match(script, /function initResetPasswordPage/);
+    assert.match(script, /'\/shop\/reset-password\/': initResetPasswordPage/);
+    assert.doesNotMatch(script, /function initPasswordResetForm/);
+    assert.doesNotMatch(script, /initPasswordResetForm\(\)/);
+    assert.match(script, /initResetPasswordPage/);
     assert.match(script, /function initAdminPasswordResetPage/);
+});
+
+test('重置密码页使用紧凑 Auth 表单，避免桌面首屏溢出', () => {
+    const resetHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/reset-password/index.html'), 'utf8');
+
+    assert.match(resetHtml, /class="shop-auth-panel[^"]*md:p-10/);
+    assert.match(resetHtml, /id="passwordResetForm" class="space-y-4"/);
+    assert.equal((resetHtml.match(/h-11 rounded-md/g) || []).length, 4);
+    assert.doesNotMatch(resetHtml, /id="passwordResetForm" class="space-y-5"/);
+    assert.doesNotMatch(resetHtml, /class="shop-auth-panel[^"]*md:p-16/);
+});
+
+test('重置密码页允许未登录访问，账户页仍要求登录', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const resetPage = await fetch(`${baseUrl}/shop/reset-password/`, { redirect: 'manual' });
+        assert.equal(resetPage.status, 200);
+        assert.match(await resetPage.text(), /id="passwordResetForm"/);
+
+        const accountPage = await fetch(`${baseUrl}/shop/account/`, { redirect: 'manual' });
+        assert.equal(accountPage.status, 302);
+        assert.equal(accountPage.headers.get('location'), '/shop/login/');
+    });
+});
+
+test('注册页使用登录页同款 Auth 外壳并移除左侧说明区块', () => {
+    const registerHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/register/index.html'), 'utf8');
+
+    assert.match(registerHtml, /<title>注册<\/title>/);
+    assert.match(registerHtml, /class="shop-auth-main[^"]*"/);
+    assert.match(registerHtml, /class="shop-auth-background-figure"/);
+    assert.match(registerHtml, /src="\/shop\/assets\/login\/yui-login-bg\.png"/);
+    assert.match(registerHtml, /class="shop-auth-content[^"]*"/);
+    assert.match(registerHtml, /class="shop-auth-panel[^"]*"/);
+    assert.match(registerHtml, /id="registerForm"/);
+    assert.match(registerHtml, /id="registerPhone"/);
+    assert.match(registerHtml, /id="registerPassword"/);
+    assert.match(registerHtml, /id="registerConfirmPassword"/);
+    assert.match(registerHtml, /href="\/shop\/login\/"/);
+    assert.doesNotMatch(registerHtml, /Create account/);
+    assert.doesNotMatch(registerHtml, /手机号会作为你的账户身份/);
+    assert.doesNotMatch(registerHtml, /历史兑换过的手机号/);
+    assert.doesNotMatch(registerHtml, /grid lg:grid-cols-\[0\.9fr_1\.1fr\]/);
 });
 
 test('登录页移除左侧标题并保留轻量登录入口', () => {
@@ -2201,18 +2703,30 @@ test('登录页移除左侧标题并保留轻量登录入口', () => {
     assert.doesNotMatch(loginHtml, /管理员账号登录后进入控制台/);
 });
 
-test('登录页透明背景人物图固定在左下并放大显示', () => {
+test('Auth 外壳样式由 Tailwind 输入文件统一维护，登录页使用中途版人物背景', () => {
     const loginHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');
+    const tailwindCss = fs.readFileSync(path.join(__dirname, '..', 'styles/tailwind.css'), 'utf8');
+    const siteCss = fs.readFileSync(path.join(__dirname, '..', 'styles/site.css'), 'utf8');
     const assetPath = path.join(__dirname, '..', 'shop/assets/login/yui-login-bg.png');
     const png = fs.readFileSync(assetPath);
-    const backgroundRule = loginHtml.match(/\.login-background-figure\{([^}]*)\}/)?.[1] || '';
 
+    assert.match(loginHtml, /class="shop-auth-main[^"]*"/);
+    assert.match(loginHtml, /class="shop-auth-background-figure"/);
+    assert.match(loginHtml, /class="shop-auth-content[^"]*"/);
+    assert.match(loginHtml, /class="shop-auth-panel[^"]*"/);
     assert.match(loginHtml, /src="\/shop\/assets\/login\/yui-login-bg\.png"/);
-    assert.match(loginHtml, /class="login-background-figure"/);
-    assert.match(backgroundRule, /left:clamp\(/);
-    assert.match(backgroundRule, /bottom:0/);
-    assert.match(backgroundRule, /width:min\(86vw,1120px\)/);
-    assert.doesNotMatch(backgroundRule, /translate\(-50%,-50%\)/);
+    assert.doesNotMatch(loginHtml, /\.login-main/);
+    assert.doesNotMatch(loginHtml, /\.login-background-figure/);
+    assert.doesNotMatch(loginHtml, /\.login-content/);
+    assert.doesNotMatch(loginHtml, /\.login-panel/);
+
+    assert.match(tailwindCss, /\.shop-auth-background-figure/);
+    assert.match(tailwindCss, /left:\s*clamp\(-380px,\s*-22vw,\s*-260px\)/);
+    assert.match(tailwindCss, /bottom:\s*0/);
+    assert.match(tailwindCss, /width:\s*min\(86vw,\s*1120px\)/);
+    assert.match(tailwindCss, /opacity:\s*0\.42/);
+    assert.match(siteCss, /\.shop-auth-background-figure/);
+
     assert.equal(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
     assert.equal(png[25], 6);
 });
@@ -2305,6 +2819,25 @@ test('内部 API key 状态接口支持 POST api_key_hash 且不需要 raw key',
         assert.equal(active.body.managed, true);
         assert.equal(active.body.active, true);
         assert.equal(active.body.status, 'active');
+    });
+});
+
+test('内部 API key 状态查询使用 hash 查找，不依赖明文列', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ apiKeys: ['sk-status-encrypted'] })
+        });
+        db.prepare('UPDATE api_keys SET api_key = ? WHERE api_key_hash = ?').run('', hashApiKeyForTest('sk-status-encrypted'));
+
+        const status = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=${encodeURIComponent('sk-status-encrypted')}`, {
+            headers: { 'x-internal-token': 'internal-test-token' }
+        });
+        assert.equal(status.response.status, 200);
+        assert.equal(status.body.managed, true);
+    }, {
+        apiKeyEncryptionSecret: '0123456789abcdef0123456789abcdef'
     });
 });
 

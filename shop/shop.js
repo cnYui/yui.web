@@ -175,7 +175,7 @@
                     <div>
                         <p class="text-xs uppercase tracking-[0.2em] text-text-muted dark:text-dark-text-muted">${escapeHtml(order.id)}</p>
                         <h2 class="mt-2 text-2xl font-display text-primary dark:text-dark-text">${escapeHtml(order.productName)}</h2>
-                        <p class="mt-2 text-sm text-text-muted dark:text-dark-text-muted">一个 API key 对应一个订单，有效期 31 天。</p>
+                        <p class="mt-2 text-sm text-text-muted dark:text-dark-text-muted">API key 已绑定到账户，按实际使用量计费。</p>
                     </div>
                     <span class="w-fit rounded-full border border-border-subtle dark:border-dark-border px-3 py-1 text-xs ${statusClass(order.status)}">${escapeHtml(statusText(order.status))}</span>
                 </div>
@@ -389,6 +389,71 @@
         `;
     }
 
+    function renderInviteConsoleSummary(summary = {}) {
+        const cards = [
+            ['未使用邀请码', summary.unusedInvites || 0],
+            ['已兑换邀请码', summary.redeemedInvites || 0],
+            ['未使用 API key', summary.unusedApiKeys || 0],
+            ['已使用 API key', summary.usedApiKeys || 0],
+            ['已禁用 API key', summary.disabledApiKeys || 0]
+        ];
+        return cards.map(([label, value]) => `
+            <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(label)}</p>
+                <p class="mt-2 text-2xl font-display text-primary dark:text-dark-text">${escapeHtml(formatNumber(value))}</p>
+            </article>
+        `).join('');
+    }
+
+    function renderAdminInviteTable(invites = []) {
+        if (!invites.length) {
+            return '<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">暂无邀请码。</div>';
+        }
+        return `
+            <table class="min-w-full divide-y divide-border-subtle dark:divide-dark-border text-sm">
+                <thead class="bg-background-soft dark:bg-dark-surface text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                    <tr><th class="px-4 py-3">邀请码</th><th class="px-4 py-3">状态</th><th class="px-4 py-3">用户</th><th class="px-4 py-3">订单</th><th class="px-4 py-3">创建</th><th class="px-4 py-3">兑换</th></tr>
+                </thead>
+                <tbody class="divide-y divide-border-subtle dark:divide-dark-border bg-white dark:bg-dark-card">
+                    ${invites.map((invite) => `
+                        <tr>
+                            <td class="px-4 py-3 font-mono">${escapeHtml(invite.code)}</td>
+                            <td class="px-4 py-3">${escapeHtml(invite.status === 'redeemed' ? '已兑换' : '未使用')}</td>
+                            <td class="px-4 py-3">${escapeHtml(invite.phone || '-')}</td>
+                            <td class="px-4 py-3">${escapeHtml(invite.orderId || '-')}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatDate(invite.createdAt))}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatDate(invite.redeemedAt))}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function renderAdminApiKeyPoolTable(apiKeyPool = []) {
+        if (!apiKeyPool.length) {
+            return '<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">暂无 API key 池记录。</div>';
+        }
+        return `
+            <table class="min-w-full divide-y divide-border-subtle dark:divide-dark-border text-sm">
+                <thead class="bg-background-soft dark:bg-dark-surface text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                    <tr><th class="px-4 py-3">API key</th><th class="px-4 py-3">状态</th><th class="px-4 py-3">订单</th><th class="px-4 py-3">创建</th><th class="px-4 py-3">使用</th></tr>
+                </thead>
+                <tbody class="divide-y divide-border-subtle dark:divide-dark-border bg-white dark:bg-dark-card">
+                    ${apiKeyPool.map((apiKey) => `
+                        <tr>
+                            <td class="px-4 py-3 font-mono">${escapeHtml(apiKey.apiKeyPreview || '-')}</td>
+                            <td class="px-4 py-3">${escapeHtml(usageStatusText(apiKey.status))}</td>
+                            <td class="px-4 py-3">${escapeHtml(apiKey.orderId || '-')}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatDate(apiKey.createdAt))}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatDate(apiKey.usedAt))}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
     function renderCharges(charges = [], options = {}) {
         if (!charges.length) return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无 API 扣费记录。</p>';
         const phoneHeader = options.showPhone ? '<th class="py-2 pr-3">用户</th>' : '';
@@ -536,7 +601,23 @@
         const importForm = document.getElementById('usageImportForm');
         const importMonth = document.getElementById('usageImportMonth');
         const importMessage = document.getElementById('usageImportMessage');
+        const usageImportStatus = document.getElementById('usageImportStatus');
         if (!refreshButton || !summaryRoot || !tableRoot || !message) return;
+
+        async function fetchUsageImportStatus() {
+            if (!usageImportStatus) return;
+            try {
+                const status = await requestJson('/api/admin/usage-import-status');
+                usageImportStatus.innerHTML = `
+                    <p>自动导入：${status.enabled ? '已开启' : '未开启'}</p>
+                    <p class="mt-1">最近月份：${escapeHtml(status.lastMonth || '-')}，导入 ${escapeHtml(formatNumber(status.lastInserted || 0))}，跳过 ${escapeHtml(formatNumber(status.lastSkipped || 0))}，失败 ${escapeHtml(formatNumber(status.lastFailedLines || 0))}</p>
+                    <p class="mt-1">最近运行：${escapeHtml(formatDate(status.lastRunAt))}</p>
+                    ${status.lastError ? `<p class="mt-1 text-red-600">${escapeHtml(status.lastError)}</p>` : ''}
+                `;
+            } catch (error) {
+                usageImportStatus.textContent = error.message;
+            }
+        }
 
         async function fetchUsage() {
             const params = new URLSearchParams({
@@ -554,6 +635,8 @@
                 message.textContent = `共 ${(data.items || []).length} 条。`;
             } catch (error) {
                 message.textContent = error.message;
+            } finally {
+                await fetchUsageImportStatus();
             }
         }
 
@@ -584,22 +667,26 @@
 
     function initRedeemPage() {
         const form = document.getElementById('redeemForm');
-        const phoneInput = document.getElementById('phoneInput');
+        const accountPhone = document.getElementById('redeemAccountPhone');
         const codeInput = document.getElementById('inviteCodeInput');
         const message = document.getElementById('redeemMessage');
-        if (!form || !phoneInput || !codeInput || !message) return;
+        if (!form || !accountPhone || !codeInput || !message) return;
 
-        bindPhoneInput(phoneInput);
+        requestJson('/api/account/me')
+            .then((data) => {
+                accountPhone.textContent = data.user?.phone || '-';
+            })
+            .catch(() => {
+                window.location.replace('/shop/login/');
+            });
+
+        codeInput.addEventListener('input', () => {
+            codeInput.value = normalizeInviteCode(codeInput.value);
+        });
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const phone = phoneInput.value.trim();
-            const code = codeInput.value.trim();
-            if (!isPhone(phone)) {
-                message.textContent = '请输入有效的中国大陆手机号。';
-                phoneInput.focus();
-                return;
-            }
+            const code = normalizeInviteCode(codeInput.value);
             if (!code) {
                 message.textContent = '请输入邀请码。';
                 codeInput.focus();
@@ -608,15 +695,19 @@
 
             message.textContent = '正在兑换...';
             try {
-                const data = await requestJson('/api/invites/redeem', {
+                await requestJson('/api/account/invites/redeem', {
                     method: 'POST',
-                    body: JSON.stringify({ phone, code })
+                    body: JSON.stringify({ code })
                 });
-                window.location.href = '/shop/key/';
+                window.location.href = '/shop/account/';
             } catch (error) {
                 message.textContent = error.message;
             }
         });
+    }
+
+    function normalizeInviteCode(value) {
+        return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 18);
     }
 
     async function initKeyPage() {
@@ -648,32 +739,17 @@
         });
     }
 
-    function initPasswordResetForm() {
-        const loginForm = document.getElementById('loginForm');
+    function initResetPasswordPage() {
         const resetForm = document.getElementById('passwordResetForm');
-        const showResetButton = document.getElementById('showPasswordResetButton');
-        const showLoginButton = document.getElementById('showLoginFormButton');
         const phoneInput = document.getElementById('resetPhone');
         const codeInput = document.getElementById('resetPasswordCode');
         const passwordInput = document.getElementById('resetNewPassword');
         const confirmInput = document.getElementById('resetConfirmPassword');
         const message = document.getElementById('passwordResetMessage');
-        if (!loginForm || !resetForm || !showResetButton || !showLoginButton || !phoneInput || !codeInput || !passwordInput || !confirmInput || !message) return;
+        if (!resetForm || !phoneInput || !codeInput || !passwordInput || !confirmInput || !message) return;
 
         bindPhoneInput(phoneInput);
         normalizeResetCodeInput(codeInput);
-
-        showResetButton.addEventListener('click', () => {
-            loginForm.classList.add('hidden');
-            resetForm.classList.remove('hidden');
-            message.textContent = '';
-            phoneInput.focus();
-        });
-
-        showLoginButton.addEventListener('click', () => {
-            resetForm.classList.add('hidden');
-            loginForm.classList.remove('hidden');
-        });
 
         resetForm.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -723,7 +799,6 @@
         if (!form || !phoneInput || !passwordInput || !message) return;
 
         bindPhoneInput(phoneInput);
-        initPasswordResetForm();
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -847,6 +922,9 @@
         const alipayQrImage = document.getElementById('alipayQrImage');
         const wechatQrImage = document.getElementById('wechatQrImage');
         const paymentReference = document.getElementById('paymentReference');
+        const accountRedeemForm = document.getElementById('accountRedeemForm');
+        const accountInviteCodeInput = document.getElementById('accountInviteCodeInput');
+        const accountRedeemMessage = document.getElementById('accountRedeemMessage');
         if (!phoneRoot || !ordersRoot || !message || !logoutButton) return;
 
         ordersRoot.innerHTML = '<p class="text-sm text-text-muted dark:text-dark-text-muted">正在读取账户信息...</p>';
@@ -857,9 +935,8 @@
             if (!orders.length) {
                 ordersRoot.innerHTML = `
                     <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-8 text-center">
-                        <h2 class="font-display text-3xl text-primary dark:text-dark-text">暂无订单</h2>
-                        <p class="mt-3 text-text-muted dark:text-dark-text-muted">使用邀请码兑换后，订单会显示在这里。</p>
-                        <a class="btn-primary mt-6 inline-flex" href="/shop/redeem/">去兑换</a>
+                        <h2 class="font-display text-3xl text-primary dark:text-dark-text">暂无 API key</h2>
+                        <p class="mt-3 text-text-muted dark:text-dark-text-muted">输入管理员提供的邀请码后，API key 会绑定到当前账号。</p>
                     </section>
                 `;
             } else {
@@ -914,6 +991,33 @@
                     await refreshBilling();
                 } catch (error) {
                     topupMessage.textContent = error.message;
+                }
+            });
+        }
+
+        if (accountRedeemForm && accountInviteCodeInput && accountRedeemMessage) {
+            accountInviteCodeInput.addEventListener('input', () => {
+                accountInviteCodeInput.value = normalizeInviteCode(accountInviteCodeInput.value);
+            });
+            accountRedeemForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const code = normalizeInviteCode(accountInviteCodeInput.value);
+                if (!code) {
+                    accountRedeemMessage.textContent = '请输入邀请码。';
+                    accountInviteCodeInput.focus();
+                    return;
+                }
+                accountRedeemMessage.textContent = '正在兑换...';
+                try {
+                    await requestJson('/api/account/invites/redeem', {
+                        method: 'POST',
+                        body: JSON.stringify({ code })
+                    });
+                    accountInviteCodeInput.value = '';
+                    accountRedeemMessage.textContent = '兑换成功，API key 已绑定到当前账号。';
+                    window.location.reload();
+                } catch (error) {
+                    accountRedeemMessage.textContent = error.message;
                 }
             });
         }
@@ -1042,9 +1146,89 @@
         fetchTopups();
     }
 
+    function initAdminInvitePage() {
+        const refreshButton = document.getElementById('adminInviteRefreshButton');
+        const createForm = document.getElementById('adminInviteCreateForm');
+        const inviteCount = document.getElementById('adminInviteCount');
+        const createMessage = document.getElementById('adminInviteCreateMessage');
+        const createResult = document.getElementById('adminInviteCreateResult');
+        const importForm = document.getElementById('adminApiKeyImportForm');
+        const apiKeysText = document.getElementById('adminApiKeysText');
+        const importMessage = document.getElementById('adminApiKeyImportMessage');
+        const summaryRoot = document.getElementById('adminInviteConsoleSummary');
+        const inviteTable = document.getElementById('adminInviteTable');
+        const apiKeyPoolTable = document.getElementById('adminApiKeyPoolTable');
+        if (!summaryRoot || !inviteTable || !apiKeyPoolTable) return;
+
+        async function refreshInviteConsole() {
+            summaryRoot.innerHTML = '<p class="text-sm text-text-muted dark:text-dark-text-muted">正在刷新兑换码状态...</p>';
+            try {
+                const data = await requestJson('/api/admin/invite-console');
+                summaryRoot.innerHTML = renderInviteConsoleSummary(data.summary || {});
+                inviteTable.innerHTML = renderAdminInviteTable(data.invites || []);
+                apiKeyPoolTable.innerHTML = renderAdminApiKeyPoolTable(data.apiKeyPool || []);
+            } catch (error) {
+                summaryRoot.innerHTML = '';
+                inviteTable.innerHTML = `<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">${escapeHtml(error.message)}</div>`;
+                apiKeyPoolTable.innerHTML = '';
+            }
+        }
+
+        if (createForm && inviteCount && createMessage && createResult) {
+            createForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                createMessage.textContent = '正在生成...';
+                createResult.innerHTML = '';
+                try {
+                    const data = await requestJson('/api/admin/session-invites', {
+                        method: 'POST',
+                        body: JSON.stringify({ count: inviteCount.value })
+                    });
+                    createMessage.textContent = `已生成 ${(data.invites || []).length} 个邀请码。`;
+                    createResult.innerHTML = (data.invites || []).map((invite) => `
+                        <code class="block break-all rounded-md border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface px-3 py-2 text-sm text-primary dark:text-dark-text">${escapeHtml(invite.code)}</code>
+                    `).join('');
+                    await refreshInviteConsole();
+                } catch (error) {
+                    createMessage.textContent = error.message;
+                }
+            });
+        }
+
+        if (importForm && apiKeysText && importMessage) {
+            importForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const text = apiKeysText.value.trim();
+                if (!text) {
+                    importMessage.textContent = '请输入 API key。';
+                    apiKeysText.focus();
+                    return;
+                }
+                importMessage.textContent = '正在导入...';
+                try {
+                    const data = await requestJson('/api/admin/session-api-keys', {
+                        method: 'POST',
+                        body: JSON.stringify({ apiKeysText: text })
+                    });
+                    apiKeysText.value = '';
+                    importMessage.textContent = `已导入 ${(data.apiKeys || []).length} 个 API key。`;
+                    await refreshInviteConsole();
+                } catch (error) {
+                    importMessage.textContent = error.message;
+                }
+            });
+        }
+
+        if (refreshButton) {
+            refreshButton.addEventListener('click', refreshInviteConsole);
+        }
+        refreshInviteConsole();
+    }
+
     function initAdminPage() {
         initCollapsibleSections(document);
 
+        initAdminInvitePage();
         initAdminUsagePage();
         initAdminPasswordResetPage();
         initAdminTopupPage();
@@ -1071,11 +1255,12 @@
         '/shop/admin/': initAdminPage,
         '/shop/login/': initLoginPage,
         '/shop/register/': initRegisterPage,
+        '/shop/reset-password/': initResetPasswordPage,
         '/shop/account/': initAccountPage,
-        '/shop/order/': () => { window.location.replace('/shop/redeem/'); },
-        '/shop/pay/': () => { window.location.replace('/shop/redeem/'); },
-        '/shop/result/': () => { window.location.replace('/shop/key/'); },
-        '/shop/content/': () => { window.location.replace('/shop/key/'); }
+        '/shop/order/': () => { window.location.replace('/shop/account/'); },
+        '/shop/pay/': () => { window.location.replace('/shop/account/'); },
+        '/shop/result/': () => { window.location.replace('/shop/account/'); },
+        '/shop/content/': () => { window.location.replace('/shop/account/'); }
     };
 
     function normalizeShopPath(pathname) {
@@ -1103,8 +1288,10 @@
         initKeyPage,
         initQueryPage,
         initAdminPage,
+        initAdminInvitePage,
         initLoginPage,
         initRegisterPage,
+        initResetPasswordPage,
         initAccountPage,
         initAccountLinks,
         initOrderPage: pageInitializers['/shop/order/'],

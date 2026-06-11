@@ -119,3 +119,49 @@
 - 执行前已备份数据库到 `data/backups/shop-before-reset-15062376174-20260611-182903.sqlite`。
 - 验证结果：无密码、未撤销会话为 0、余额 cents/nanos 均为 0。
 - 设计与计划见 `docs/ai/context/20260611-182903-reset-phone-unregistered-zero-balance-plan_CN.md`，实施记录见 `docs/ai/context/20260611-183014-reset-phone-unregistered-zero-balance-implementation_CN.md`。
+
+## 2026-06-11 Shop 完整流程安全与扣费修复计划
+
+- Shop 修复不能只做 P1；必须覆盖登录态兑换归属、Admin 兑换码管理、自动 usage 同步、历史漏扣补账、API key 静态加密和验收测试。
+- 主兑换路径必须改为登录态：订单手机号只能来自当前 session，不能信任请求体手机号。
+- Admin 页面新增兑换码管理时不能在浏览器使用 `ADMIN_TOKEN`；页面写操作必须走管理员 session、Same-Origin 与 CSRF。
+- 用量自动同步优先在 yui.web 内按当前月 JSONL 定时幂等导入；手动导入只作为补救入口。
+- 历史漏扣不能靠重导 JSONL 修复，必须有 dry-run/apply 补账脚本，apply 前备份数据库并写 ledger。
+- 完整设计与修复计划见 `docs/ai/context/20260611-185334-shop-complete-flow-security-billing-repair-design-plan_CN.md`。
+- 可执行实施计划已写入 `docs/ai/context/20260611-185745-shop-complete-flow-security-billing-repair-implementation-plan_CN.md`；后续执行必须覆盖 Phase 0 到 Phase 6，不能缩回只修 P1。
+
+## 2026-06-11 Shop 前台账户入口与流程统一设计
+
+- 登录、注册、重置密码应拆成 3 个独立页面，而不是把重置密码藏在登录页里。
+- 三个账户入口页面统一使用已确认的左侧贴底人物背景中途版本：`left: clamp(-380px, -22vw, -260px)`，`width: min(86vw, 1120px)`。
+- `/shop/redeem/` 后续应改为登录态兑换，只输入邀请码，手机号来自当前 session。
+- 旧 `/shop/order/`、`/shop/pay/`、`/shop/result/`、`/shop/content/`、`/shop/key/` 需要清理购买、支付、31 天有效期等旧语义。
+- Account 页后续应降低信息密度：余额和 API key 前置，使用说明改入口或默认收起，扣费流水默认收起。
+- 设计文档见 `docs/ai/context/20260611-190009-shop-auth-entry-and-flow-unification-design_CN.md`。
+- 实施计划见 `docs/ai/context/20260611-190626-shop-auth-entry-and-flow-unification-plan_CN.md`。
+
+## 2026-06-11 Shop 前台账户入口与流程统一实施
+
+- 已实施 3 个独立 Auth 页面：`/shop/login/`、`/shop/register/`、`/shop/reset-password/`。
+- 三页共用 `.shop-auth-*` 外壳和中途版左侧贴底人物背景；重置密码页因 4 个输入框较高，使用更紧凑的面板间距避免桌面首屏裁切。
+- `/shop/redeem/` 已改为登录态兑换，只提交邀请码；订单手机号来自当前 session。
+- 旧购买、支付、结果和内容页面前台改为账户页入口，删除固定价格、31 天、演示交付以及手机号表单、支付按钮、二维码占位等旧控件。
+- Account 页说明和扣费流水默认收起；API key 卡片只展示 key、兑换时间和复制完整 key 按钮。
+- 验证：`npm run build:css` 通过，`npm test` 112 个测试通过；视觉截图见实施记录。
+- 实施记录见 `docs/ai/context/20260611-194100-shop-auth-entry-and-flow-unification-implementation_CN.md`。
+
+## 2026-06-11 Shop usage 历史补账脚本
+
+- 历史 usage 补账使用 `scripts/shop-reconcile-usage-billing.js` 手动执行，默认 dry-run，不随服务启动自动运行。
+- `--apply` 前必须先复制 sqlite 备份，备份文件命名为 `shop-before-usage-reconcile-<timestamp>.sqlite`。
+- 补账逻辑来自 `lib/shop-usage-reconcile.js`，按内部 nanos 价格补写 `api_charge_records`、`account_ledger_entries` 和余额。
+- 实施记录见 `docs/ai/context/20260611-195133-shop-usage-reconcile-script-implementation_CN.md`。
+
+## 2026-06-11 Shop API key 静态加密
+
+- 配置 `SHOP_API_KEY_ENCRYPTION_SECRET` 后，新导入 API key 使用 AES-256-GCM 写入 `api_key_ciphertext` 和 `api_key_nonce`。
+- 密文模式下 `api_key` 列不保存明文，而保存非敏感唯一占位 `enc_<api_key_hash>`，避免旧唯一键冲突。
+- 旧明文记录使用 `scripts/shop-encrypt-api-keys.js` 迁移；`--apply` 前必须先备份数据库。
+- 2026-06-11 对 `data/shop.sqlite` 的加密迁移 dry-run：`api_keys` 明文 8 条、`orders` 明文 6 条、已加密均为 0；本次未执行 `--apply`。
+- reveal 和内部 status 查询必须走 hash/密文读取路径，不能依赖明文 `api_key` 列。
+- 实施记录见 `docs/ai/context/20260611-200103-shop-api-key-encryption-implementation_CN.md`。
