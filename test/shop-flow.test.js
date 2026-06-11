@@ -2300,7 +2300,7 @@ test('API key 结果页只展示订单，不再渲染使用方法', () => {
     assert.doesNotMatch(script, /renderUsageGuide/);
 });
 
-test('后台页面只作为管理员用量控制台，不渲染邀请码生成入口', () => {
+test('后台页面使用管理员 session，不渲染管理员 token 输入', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
     const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
 
@@ -2311,14 +2311,33 @@ test('后台页面只作为管理员用量控制台，不渲染邀请码生成�
     assert.doesNotMatch(html, /解锁用量监控/);
     assert.doesNotMatch(html, /id="adminAccessForm"/);
     assert.doesNotMatch(html, /id="adminTokenInput"/);
-    assert.doesNotMatch(html, /邀请码/);
-    assert.doesNotMatch(html, /生成邀请码/);
     assert.doesNotMatch(html, /id="adminInviteForm"/);
     assert.doesNotMatch(html, /id="inviteCountInput"/);
     assert.doesNotMatch(html, /id="adminResult"/);
-    assert.doesNotMatch(html, /对应 API key/);
     assert.doesNotMatch(script, /invite\.apiKey/);
     assert.doesNotMatch(script, /api\/admin\/invites/);
+    assert.doesNotMatch(script, /x-admin-token/);
+});
+
+test('Admin 页面包含兑换码管理栏目', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
+
+    assert.match(html, /id="adminInviteSection"/);
+    assert.match(html, /id="adminInviteCreateForm"/);
+    assert.match(html, /id="adminApiKeyImportForm"/);
+    assert.match(html, /id="adminInviteConsoleSummary"/);
+    assert.match(html, /id="adminInviteTable"/);
+    assert.match(html, /id="adminApiKeyPoolTable"/);
+    assert.match(html, /data-collapsible-section/);
+});
+
+test('Admin 前端兑换码管理不使用 x-admin-token', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+
+    assert.match(script, /api\/admin\/invite-console/);
+    assert.match(script, /api\/admin\/session-invites/);
+    assert.match(script, /api\/admin\/session-api-keys/);
+    assert.match(script, /function initAdminInvitePage/);
     assert.doesNotMatch(script, /x-admin-token/);
 });
 
@@ -2327,6 +2346,7 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
 
     assert.match(html, /id="adminPasswordResetSection"/);
+    assert.match(html, /id="adminInviteSection"/);
     assert.match(html, /id="adminTopupSection"/);
     assert.match(html, /id="adminUsageSection"/);
     assert.match(html, /id="adminUsageImportSection"/);
@@ -2344,10 +2364,11 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.match(script, /api\/admin\/usage-summary/);
     assert.match(script, /api\/admin\/usage-imports/);
     assert.doesNotMatch(html, /完整 API key/);
-    assert.equal((html.match(/data-collapsible-section/g) || []).length, 4);
-    assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 4);
-    assert.equal((html.match(/data-collapsible-content/g) || []).length, 4);
+    assert.equal((html.match(/data-collapsible-section/g) || []).length, 5);
+    assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 5);
+    assert.equal((html.match(/data-collapsible-content/g) || []).length, 5);
     assert.match(html, /id="adminPasswordResetSection"[\s\S]*?data-collapsible-default="open"/);
+    assert.match(html, /id="adminInviteSection"[\s\S]*?data-collapsible-default="open"/);
     assert.match(html, /id="adminTopupSection"[\s\S]*?data-collapsible-default="open"/);
     assert.match(html, /id="adminUsageSection"[\s\S]*?data-collapsible-default="open"/);
     assert.match(html, /id="adminUsageImportSection"[\s\S]*?data-collapsible-default="open"/);

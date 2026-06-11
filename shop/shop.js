@@ -389,6 +389,71 @@
         `;
     }
 
+    function renderInviteConsoleSummary(summary = {}) {
+        const cards = [
+            ['未使用邀请码', summary.unusedInvites || 0],
+            ['已兑换邀请码', summary.redeemedInvites || 0],
+            ['未使用 API key', summary.unusedApiKeys || 0],
+            ['已使用 API key', summary.usedApiKeys || 0],
+            ['已禁用 API key', summary.disabledApiKeys || 0]
+        ];
+        return cards.map(([label, value]) => `
+            <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(label)}</p>
+                <p class="mt-2 text-2xl font-display text-primary dark:text-dark-text">${escapeHtml(formatNumber(value))}</p>
+            </article>
+        `).join('');
+    }
+
+    function renderAdminInviteTable(invites = []) {
+        if (!invites.length) {
+            return '<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">暂无邀请码。</div>';
+        }
+        return `
+            <table class="min-w-full divide-y divide-border-subtle dark:divide-dark-border text-sm">
+                <thead class="bg-background-soft dark:bg-dark-surface text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                    <tr><th class="px-4 py-3">邀请码</th><th class="px-4 py-3">状态</th><th class="px-4 py-3">用户</th><th class="px-4 py-3">订单</th><th class="px-4 py-3">创建</th><th class="px-4 py-3">兑换</th></tr>
+                </thead>
+                <tbody class="divide-y divide-border-subtle dark:divide-dark-border bg-white dark:bg-dark-card">
+                    ${invites.map((invite) => `
+                        <tr>
+                            <td class="px-4 py-3 font-mono">${escapeHtml(invite.code)}</td>
+                            <td class="px-4 py-3">${escapeHtml(invite.status === 'redeemed' ? '已兑换' : '未使用')}</td>
+                            <td class="px-4 py-3">${escapeHtml(invite.phone || '-')}</td>
+                            <td class="px-4 py-3">${escapeHtml(invite.orderId || '-')}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatDate(invite.createdAt))}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatDate(invite.redeemedAt))}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function renderAdminApiKeyPoolTable(apiKeyPool = []) {
+        if (!apiKeyPool.length) {
+            return '<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">暂无 API key 池记录。</div>';
+        }
+        return `
+            <table class="min-w-full divide-y divide-border-subtle dark:divide-dark-border text-sm">
+                <thead class="bg-background-soft dark:bg-dark-surface text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                    <tr><th class="px-4 py-3">API key</th><th class="px-4 py-3">状态</th><th class="px-4 py-3">订单</th><th class="px-4 py-3">创建</th><th class="px-4 py-3">使用</th></tr>
+                </thead>
+                <tbody class="divide-y divide-border-subtle dark:divide-dark-border bg-white dark:bg-dark-card">
+                    ${apiKeyPool.map((apiKey) => `
+                        <tr>
+                            <td class="px-4 py-3 font-mono">${escapeHtml(apiKey.apiKeyPreview || '-')}</td>
+                            <td class="px-4 py-3">${escapeHtml(usageStatusText(apiKey.status))}</td>
+                            <td class="px-4 py-3">${escapeHtml(apiKey.orderId || '-')}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatDate(apiKey.createdAt))}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatDate(apiKey.usedAt))}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
     function renderCharges(charges = [], options = {}) {
         if (!charges.length) return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无 API 扣费记录。</p>';
         const phoneHeader = options.showPhone ? '<th class="py-2 pr-3">用户</th>' : '';
@@ -1079,9 +1144,89 @@
         fetchTopups();
     }
 
+    function initAdminInvitePage() {
+        const refreshButton = document.getElementById('adminInviteRefreshButton');
+        const createForm = document.getElementById('adminInviteCreateForm');
+        const inviteCount = document.getElementById('adminInviteCount');
+        const createMessage = document.getElementById('adminInviteCreateMessage');
+        const createResult = document.getElementById('adminInviteCreateResult');
+        const importForm = document.getElementById('adminApiKeyImportForm');
+        const apiKeysText = document.getElementById('adminApiKeysText');
+        const importMessage = document.getElementById('adminApiKeyImportMessage');
+        const summaryRoot = document.getElementById('adminInviteConsoleSummary');
+        const inviteTable = document.getElementById('adminInviteTable');
+        const apiKeyPoolTable = document.getElementById('adminApiKeyPoolTable');
+        if (!summaryRoot || !inviteTable || !apiKeyPoolTable) return;
+
+        async function refreshInviteConsole() {
+            summaryRoot.innerHTML = '<p class="text-sm text-text-muted dark:text-dark-text-muted">正在刷新兑换码状态...</p>';
+            try {
+                const data = await requestJson('/api/admin/invite-console');
+                summaryRoot.innerHTML = renderInviteConsoleSummary(data.summary || {});
+                inviteTable.innerHTML = renderAdminInviteTable(data.invites || []);
+                apiKeyPoolTable.innerHTML = renderAdminApiKeyPoolTable(data.apiKeyPool || []);
+            } catch (error) {
+                summaryRoot.innerHTML = '';
+                inviteTable.innerHTML = `<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">${escapeHtml(error.message)}</div>`;
+                apiKeyPoolTable.innerHTML = '';
+            }
+        }
+
+        if (createForm && inviteCount && createMessage && createResult) {
+            createForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                createMessage.textContent = '正在生成...';
+                createResult.innerHTML = '';
+                try {
+                    const data = await requestJson('/api/admin/session-invites', {
+                        method: 'POST',
+                        body: JSON.stringify({ count: inviteCount.value })
+                    });
+                    createMessage.textContent = `已生成 ${(data.invites || []).length} 个邀请码。`;
+                    createResult.innerHTML = (data.invites || []).map((invite) => `
+                        <code class="block break-all rounded-md border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface px-3 py-2 text-sm text-primary dark:text-dark-text">${escapeHtml(invite.code)}</code>
+                    `).join('');
+                    await refreshInviteConsole();
+                } catch (error) {
+                    createMessage.textContent = error.message;
+                }
+            });
+        }
+
+        if (importForm && apiKeysText && importMessage) {
+            importForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const text = apiKeysText.value.trim();
+                if (!text) {
+                    importMessage.textContent = '请输入 API key。';
+                    apiKeysText.focus();
+                    return;
+                }
+                importMessage.textContent = '正在导入...';
+                try {
+                    const data = await requestJson('/api/admin/session-api-keys', {
+                        method: 'POST',
+                        body: JSON.stringify({ apiKeysText: text })
+                    });
+                    apiKeysText.value = '';
+                    importMessage.textContent = `已导入 ${(data.apiKeys || []).length} 个 API key。`;
+                    await refreshInviteConsole();
+                } catch (error) {
+                    importMessage.textContent = error.message;
+                }
+            });
+        }
+
+        if (refreshButton) {
+            refreshButton.addEventListener('click', refreshInviteConsole);
+        }
+        refreshInviteConsole();
+    }
+
     function initAdminPage() {
         initCollapsibleSections(document);
 
+        initAdminInvitePage();
         initAdminUsagePage();
         initAdminPasswordResetPage();
         initAdminTopupPage();
@@ -1140,6 +1285,7 @@
         initKeyPage,
         initQueryPage,
         initAdminPage,
+        initAdminInvitePage,
         initLoginPage,
         initRegisterPage,
         initAccountPage,

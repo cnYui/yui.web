@@ -31,6 +31,40 @@
             <h1 class="mt-4 font-display text-4xl md:text-6xl">管理员控制台</h1>
             <p class="mt-5 text-text-muted dark:text-dark-text-muted leading-relaxed">管理员账号登录后查看全局 API key 用量。其他账号无法进入该页面。</p>
         </section>
+        <section id="adminInviteSection" class="mt-10 border-t border-border-subtle dark:border-dark-border pt-10" data-collapsible-section data-collapsible-default="open">
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Invites</p>
+                    <h2 class="mt-3 font-display text-3xl md:text-4xl">兑换码管理</h2>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button id="adminInviteRefreshButton" class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button">刷新</button>
+                    <button class="btn-secondary h-10 px-3 text-sm dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button" data-collapsible-toggle>收起</button>
+                </div>
+            </div>
+            <div data-collapsible-content>
+                <div id="adminInviteConsoleSummary" class="mt-6 grid gap-3 md:grid-cols-5"></div>
+                <div class="mt-6 grid gap-5 lg:grid-cols-2">
+                    <form id="adminInviteCreateForm" class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
+                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">生成邀请码</h3>
+                        <div class="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+                            <input id="adminInviteCount" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="number" min="1" max="50" value="1"/>
+                            <button class="btn-primary" type="submit">生成</button>
+                        </div>
+                        <p id="adminInviteCreateMessage" class="mt-3 min-h-5 text-sm text-text-muted dark:text-dark-text-muted"></p>
+                        <div id="adminInviteCreateResult" class="mt-4 grid gap-2"></div>
+                    </form>
+                    <form id="adminApiKeyImportForm" class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
+                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">补充 API key 池</h3>
+                        <textarea id="adminApiKeysText" class="mt-4 min-h-32 w-full rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" placeholder="每行一个 API key"></textarea>
+                        <button class="btn-primary mt-3" type="submit">导入</button>
+                        <p id="adminApiKeyImportMessage" class="mt-3 min-h-5 text-sm text-text-muted dark:text-dark-text-muted"></p>
+                    </form>
+                </div>
+                <div id="adminInviteTable" class="mt-6 w-full min-w-0 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
+                <div id="adminApiKeyPoolTable" class="mt-6 w-full min-w-0 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
+            </div>
+        </section>
         <section id="adminPasswordResetSection" class="mt-10 border-t border-border-subtle dark:border-dark-border pt-10" data-collapsible-section data-collapsible-default="open">
             <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                 <div>
