@@ -156,3 +156,12 @@
 - `--apply` 前必须先复制 sqlite 备份，备份文件命名为 `shop-before-usage-reconcile-<timestamp>.sqlite`。
 - 补账逻辑来自 `lib/shop-usage-reconcile.js`，按内部 nanos 价格补写 `api_charge_records`、`account_ledger_entries` 和余额。
 - 实施记录见 `docs/ai/context/20260611-195133-shop-usage-reconcile-script-implementation_CN.md`。
+
+## 2026-06-11 Shop API key 静态加密
+
+- 配置 `SHOP_API_KEY_ENCRYPTION_SECRET` 后，新导入 API key 使用 AES-256-GCM 写入 `api_key_ciphertext` 和 `api_key_nonce`。
+- 密文模式下 `api_key` 列不保存明文，而保存非敏感唯一占位 `enc_<api_key_hash>`，避免旧唯一键冲突。
+- 旧明文记录使用 `scripts/shop-encrypt-api-keys.js` 迁移；`--apply` 前必须先备份数据库。
+- 2026-06-11 对 `data/shop.sqlite` 的加密迁移 dry-run：`api_keys` 明文 8 条、`orders` 明文 6 条、已加密均为 0；本次未执行 `--apply`。
+- reveal 和内部 status 查询必须走 hash/密文读取路径，不能依赖明文 `api_key` 列。
+- 实施记录见 `docs/ai/context/20260611-200103-shop-api-key-encryption-implementation_CN.md`。
