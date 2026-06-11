@@ -1048,6 +1048,13 @@ function createShopApp(options = {}) {
         }
     }
 
+    function requestHosts(req) {
+        return [
+            req.header('host'),
+            String(req.header('x-forwarded-host') || '').split(',')[0].trim()
+        ].filter(Boolean);
+    }
+
     function expectedOrigins(req) {
         const origins = new Set();
         const configured = String(options.publicBaseUrl || process.env.PUBLIC_BASE_URL || '').trim();
@@ -1055,8 +1062,7 @@ function createShopApp(options = {}) {
             const origin = originFromURL(configured);
             if (origin) origins.add(origin);
         }
-        const host = req.header('host');
-        if (host) {
+        for (const host of requestHosts(req)) {
             origins.add(`http://${host}`);
             origins.add(`https://${host}`);
         }
@@ -1139,7 +1145,7 @@ function createShopApp(options = {}) {
     function setSecurityHeaders(req, res, next) {
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('Referrer-Policy', 'same-origin');
-        res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+        res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
         res.setHeader('X-Frame-Options', 'DENY');
         res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         if (req.secure || req.header('x-forwarded-proto') === 'https') {

@@ -445,6 +445,26 @@ test('同 Host HTTPS Origin 在反代协议缺失时仍允许退出登录', asyn
     });
 });
 
+test('同源校验接受反代转发的公网 Host', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138706');
+        const logout = await rawHttpJsonRequest(`${baseUrl}/api/auth/logout`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Cookie: cookie,
+                Host: 'internal.local',
+                'X-Forwarded-Host': 'aaccx.pw',
+                Origin: 'https://aaccx.pw',
+                'x-csrf-token': decodeURIComponent(cookieValue(cookie, 'yui_shop_csrf'))
+            }
+        });
+
+        assert.equal(logout.response.statusCode, 200);
+        assert.match(String(logout.response.headers['set-cookie'] || ''), /yui_shop_account_session=;/);
+    });
+});
+
 test('账号 cookie 状态变更要求 CSRF token', async () => {
     await withServer(async ({ baseUrl }) => {
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138702');
@@ -534,7 +554,10 @@ test('HTTPS 响应包含安全响应头', async () => {
         });
 
         assert.equal(response.status, 200);
-        assert.match(response.headers.get('content-security-policy') || '', /default-src 'self'/);
+        const csp = response.headers.get('content-security-policy') || '';
+        assert.match(csp, /default-src 'self'/);
+        assert.match(csp, /style-src[^;]*https:\/\/fonts\.googleapis\.com/);
+        assert.match(csp, /font-src[^;]*https:\/\/fonts\.gstatic\.com/);
         assert.equal(response.headers.get('x-frame-options'), 'DENY');
         assert.match(response.headers.get('permissions-policy') || '', /camera=\(\)/);
         assert.match(response.headers.get('strict-transport-security') || '', /max-age=/);
