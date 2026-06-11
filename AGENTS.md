@@ -53,3 +53,22 @@
 - 安全边界仍是同 Host；跨 Host 继续拒绝，CSRF token 校验不降级。
 - 设计与计划见 `docs/ai/context/20260611-152919-shop-csp-font-and-forwarded-origin-design_CN.md` 和 `docs/ai/context/20260611-152919-shop-csp-font-and-forwarded-origin-plan_CN.md`。
 - 实施记录见 `docs/ai/context/20260611-153159-shop-csp-font-and-forwarded-origin-implementation_CN.md`。
+
+## 2026-06-11 X-Forwarded-Host 信任收紧
+
+- 默认不信任客户端传入的 `X-Forwarded-Host`；只有应用开启 `trust proxy` 时才把它用于同源候选 origin。
+- 生产更推荐配置 `PUBLIC_BASE_URL=https://aaccx.pw`，把公网 origin 固定在环境变量里。
+- 记录见 `docs/ai/context/20260611-154244-forwarded-host-trust-tightening_CN.md`。
+
+## 2026-06-11 Redeem 页面按量计费文案
+
+- `/shop/redeem/` 不再展示 Codex 月额度、31 天有效期或固定 30 元价格。
+- 说明文案固定为“私下付款后，你会收到一个邀请码。输入手机号和邀请码后，系统会生成 API key。”
+- Product 下方产品名显示为 `codex api key`，价格区域移除，以符合当前按量计费。
+- 设计与计划见 `docs/ai/context/20260611-154117-shop-redeem-metered-copy-design-plan_CN.md`。
+
+## 2026-06-11 Admin 页面栏目折叠
+
+- `/shop/admin/` 的生成密码重置码、充值审核、用量监控、日志导入 4 个栏目使用统一折叠按钮。
+- 折叠行为复用 `shop/shop.js` 的 `initCollapsibleSections`，Admin 初始化时调用，不新增专用状态逻辑。
+- 设计与计划见 `docs/ai/context/20260611-154357-admin-collapsible-sections-design-plan_CN.md`。

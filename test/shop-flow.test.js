@@ -352,60 +352,63 @@ test('Shop 外部脚本会在 CSP 禁止 inline script 时自动初始化 Accoun
     assert.equal(elements.get('paymentReference').textContent, 'YUI-TEST');
 });
 
-test('Shop 外部脚本会绑定 Account 页栏目折叠按钮', async () => {
+test('Shop 外部脚本会绑定 Account 和 Admin 页栏目折叠按钮', async () => {
     const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
-    const content = {
-        hidden: false,
-        setAttribute(name, value) { this[name] = value; },
-        removeAttribute(name) { delete this[name]; }
-    };
-    const button = {
-        textContent: '',
-        attributes: {},
-        events: {},
-        setAttribute(name, value) { this.attributes[name] = value; },
-        addEventListener(name, handler) { this.events[name] = handler; }
-    };
-    const section = {
-        dataset: { collapsibleDefault: 'open' },
-        querySelector(selector) {
-            if (selector === '[data-collapsible-toggle]') return button;
-            if (selector === '[data-collapsible-content]') return content;
-            return null;
-        }
-    };
-    const sandbox = {
-        document: {
-            readyState: 'complete',
-            querySelectorAll(selector) {
-                return selector === '[data-collapsible-section]' ? [section] : [];
-            },
-            getElementById() { return null; },
-            addEventListener() {}
-        },
-        window: {
-            location: {
-                pathname: '/shop/account/',
-                replace() {}
+
+    for (const pathname of ['/shop/account/', '/shop/admin/']) {
+        const content = {
+            hidden: false,
+            setAttribute(name, value) { this[name] = value; },
+            removeAttribute(name) { delete this[name]; }
+        };
+        const button = {
+            textContent: '',
+            attributes: {},
+            events: {},
+            setAttribute(name, value) { this.attributes[name] = value; },
+            addEventListener(name, handler) { this.events[name] = handler; }
+        };
+        const section = {
+            dataset: { collapsibleDefault: 'open' },
+            querySelector(selector) {
+                if (selector === '[data-collapsible-toggle]') return button;
+                if (selector === '[data-collapsible-content]') return content;
+                return null;
             }
-        },
-        fetch: async () => ({ ok: true, status: 200, json: async () => ({}) }),
-        Intl,
-        URL
-    };
-    sandbox.window.document = sandbox.document;
+        };
+        const sandbox = {
+            document: {
+                readyState: 'complete',
+                querySelectorAll(selector) {
+                    return selector === '[data-collapsible-section]' ? [section] : [];
+                },
+                getElementById() { return null; },
+                addEventListener() {}
+            },
+            window: {
+                location: {
+                    pathname,
+                    replace() {}
+                }
+            },
+            fetch: async () => ({ ok: true, status: 200, json: async () => ({}) }),
+            Intl,
+            URL
+        };
+        sandbox.window.document = sandbox.document;
 
-    vm.runInNewContext(script, sandbox);
+        vm.runInNewContext(script, sandbox);
 
-    assert.equal(button.attributes['aria-expanded'], 'true');
-    assert.equal(content.hidden, false);
-    assert.equal(button.textContent, '收起');
+        assert.equal(button.attributes['aria-expanded'], 'true', pathname);
+        assert.equal(content.hidden, false, pathname);
+        assert.equal(button.textContent, '收起', pathname);
 
-    button.events.click();
+        button.events.click();
 
-    assert.equal(button.attributes['aria-expanded'], 'false');
-    assert.equal(content.hidden, true);
-    assert.equal(button.textContent, '展开');
+        assert.equal(button.attributes['aria-expanded'], 'false', pathname);
+        assert.equal(content.hidden, true, pathname);
+        assert.equal(button.textContent, '展开', pathname);
+    }
 });
 
 test('账号 cookie 状态变更拒绝跨站 Origin', async () => {
@@ -462,6 +465,26 @@ test('同源校验接受反代转发的公网 Host', async () => {
 
         assert.equal(logout.response.statusCode, 200);
         assert.match(String(logout.response.headers['set-cookie'] || ''), /yui_shop_account_session=;/);
+    }, { trustProxy: true });
+});
+
+test('未信任代理时拒绝伪造的 X-Forwarded-Host 来源', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138707');
+        const result = await rawHttpJsonRequest(`${baseUrl}/api/auth/logout`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Cookie: cookie,
+                Host: 'internal.local',
+                'X-Forwarded-Host': 'aaccx.pw',
+                Origin: 'https://aaccx.pw',
+                'x-csrf-token': decodeURIComponent(cookieValue(cookie, 'yui_shop_csrf'))
+            }
+        });
+
+        assert.equal(result.response.statusCode, 403);
+        assert.equal(result.body.code, 'CSRF_ORIGIN_REJECTED');
     });
 });
 
@@ -1965,6 +1988,17 @@ test('兑换页手机号输入框限制数字手机号格式', () => {
     assert.match(html, /id="phoneInput"[^>]+pattern="\^1\[3-9\]\\d\{9\}\$"/);
 });
 
+test('兑换页展示按量计费 API key 文案并移除固定价格', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'shop/redeem/index.html'), 'utf8');
+
+    assert.match(html, /私下付款后，你会收到一个邀请码。输入手机号和邀请码后，系统会生成 API key。/);
+    assert.match(html, /<h2 class="mt-2 text-2xl font-display">codex api key<\/h2>/);
+    assert.doesNotMatch(html, /Codex 月额度/);
+    assert.doesNotMatch(html, /Codex 每月额度/);
+    assert.doesNotMatch(html, /31 天/);
+    assert.doesNotMatch(html, /¥30\.00/);
+});
+
 test('商店首页提供使用方法入口，公开说明页只使用占位 API key', () => {
     const home = fs.readFileSync(path.join(__dirname, '..', 'shop/index.html'), 'utf8');
     const guide = fs.readFileSync(path.join(__dirname, '..', 'shop/guide/index.html'), 'utf8');
@@ -2043,7 +2077,10 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
     const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
 
+    assert.match(html, /id="adminPasswordResetSection"/);
+    assert.match(html, /id="adminTopupSection"/);
     assert.match(html, /id="adminUsageSection"/);
+    assert.match(html, /id="adminUsageImportSection"/);
     assert.match(html, /id="usageRefreshButton"/);
     assert.match(html, /id="usageGroupFilter"/);
     assert.match(html, /<option value="local">Local<\/option>/);
@@ -2058,6 +2095,13 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.match(script, /api\/admin\/usage-summary/);
     assert.match(script, /api\/admin\/usage-imports/);
     assert.doesNotMatch(html, /完整 API key/);
+    assert.equal((html.match(/data-collapsible-section/g) || []).length, 4);
+    assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 4);
+    assert.equal((html.match(/data-collapsible-content/g) || []).length, 4);
+    assert.match(html, /id="adminPasswordResetSection"[\s\S]*?data-collapsible-default="open"/);
+    assert.match(html, /id="adminTopupSection"[\s\S]*?data-collapsible-default="open"/);
+    assert.match(html, /id="adminUsageSection"[\s\S]*?data-collapsible-default="open"/);
+    assert.match(html, /id="adminUsageImportSection"[\s\S]*?data-collapsible-default="open"/);
 });
 
 test('Account 页面包含预充值余额、充值申请和扣费流水容器', () => {

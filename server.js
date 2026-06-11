@@ -1049,10 +1049,11 @@ function createShopApp(options = {}) {
     }
 
     function requestHosts(req) {
-        return [
-            req.header('host'),
-            String(req.header('x-forwarded-host') || '').split(',')[0].trim()
-        ].filter(Boolean);
+        const hosts = [req.header('host')];
+        if (req.app.get('trust proxy')) {
+            hosts.push(String(req.header('x-forwarded-host') || '').split(',')[0].trim());
+        }
+        return hosts.filter(Boolean);
     }
 
     function expectedOrigins(req) {

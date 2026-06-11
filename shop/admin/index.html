@@ -31,81 +31,101 @@
             <h1 class="mt-4 font-display text-4xl md:text-6xl">管理员控制台</h1>
             <p class="mt-5 text-text-muted dark:text-dark-text-muted leading-relaxed">管理员账号登录后查看全局 API key 用量。其他账号无法进入该页面。</p>
         </section>
-        <section class="mt-10 border-t border-border-subtle dark:border-dark-border pt-10">
-            <div>
-                <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Password reset</p>
-                <h2 class="mt-3 font-display text-3xl md:text-4xl">生成密码重置码</h2>
-                <p class="mt-3 text-sm text-text-muted dark:text-dark-text-muted leading-relaxed">输入已注册用户手机号，生成 30 分钟内有效的一次性重置码。生成后通过线下渠道发给用户。</p>
+        <section id="adminPasswordResetSection" class="mt-10 border-t border-border-subtle dark:border-dark-border pt-10" data-collapsible-section data-collapsible-default="open">
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Password reset</p>
+                    <h2 class="mt-3 font-display text-3xl md:text-4xl">生成密码重置码</h2>
+                    <p class="mt-3 text-sm text-text-muted dark:text-dark-text-muted leading-relaxed">输入已注册用户手机号，生成 30 分钟内有效的一次性重置码。生成后通过线下渠道发给用户。</p>
+                </div>
+                <button class="btn-secondary h-10 px-3 text-sm dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button" data-collapsible-toggle>收起</button>
             </div>
-            <form id="passwordResetCodeForm" class="mt-6 flex flex-col sm:flex-row gap-3 rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
-                <input id="passwordResetPhone" class="h-11 flex-1 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="tel" inputmode="numeric" autocomplete="tel" minlength="11" maxlength="11" pattern="^1[3-9]\d{9}$" required placeholder="用户手机号"/>
-                <button class="btn-primary" type="submit">生成重置码</button>
-            </form>
-            <p id="passwordResetCodeMessage" class="mt-3 text-sm text-text-muted dark:text-dark-text-muted"></p>
-            <div id="passwordResetCodeResult" class="mt-4 hidden rounded-md border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface p-4"></div>
+            <div data-collapsible-content>
+                <form id="passwordResetCodeForm" class="mt-6 flex flex-col sm:flex-row gap-3 rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
+                    <input id="passwordResetPhone" class="h-11 flex-1 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="tel" inputmode="numeric" autocomplete="tel" minlength="11" maxlength="11" pattern="^1[3-9]\d{9}$" required placeholder="用户手机号"/>
+                    <button class="btn-primary" type="submit">生成重置码</button>
+                </form>
+                <p id="passwordResetCodeMessage" class="mt-3 text-sm text-text-muted dark:text-dark-text-muted"></p>
+                <div id="passwordResetCodeResult" class="mt-4 hidden rounded-md border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface p-4"></div>
+            </div>
         </section>
-        <section id="adminTopupSection" class="mt-10 border-t border-border-subtle dark:border-dark-border pt-10">
+        <section id="adminTopupSection" class="mt-10 border-t border-border-subtle dark:border-dark-border pt-10" data-collapsible-section data-collapsible-default="open">
             <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                 <div>
                     <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Topups</p>
                     <h2 class="mt-3 font-display text-3xl md:text-4xl">充值审核</h2>
                 </div>
-                <button id="adminTopupRefreshButton" class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button">刷新</button>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button id="adminTopupRefreshButton" class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button">刷新</button>
+                    <button class="btn-secondary h-10 px-3 text-sm dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button" data-collapsible-toggle>收起</button>
+                </div>
             </div>
-            <div class="mt-6 grid gap-3 md:grid-cols-[12rem_1fr]">
-                <select id="adminTopupStatusFilter" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary">
-                    <option value="pending">待确认</option>
-                    <option value="approved">已入账</option>
-                    <option value="rejected">已拒绝</option>
-                    <option value="all">全部</option>
-                </select>
-                <p id="adminTopupMessage" class="self-center text-sm text-text-muted dark:text-dark-text-muted"></p>
+            <div data-collapsible-content>
+                <div class="mt-6 grid gap-3 md:grid-cols-[12rem_1fr]">
+                    <select id="adminTopupStatusFilter" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary">
+                        <option value="pending">待确认</option>
+                        <option value="approved">已入账</option>
+                        <option value="rejected">已拒绝</option>
+                        <option value="all">全部</option>
+                    </select>
+                    <p id="adminTopupMessage" class="self-center text-sm text-text-muted dark:text-dark-text-muted"></p>
+                </div>
+                <div id="adminTopupTable" class="mt-6 w-full min-w-0 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
             </div>
-            <div id="adminTopupTable" class="mt-6 w-full min-w-0 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
         </section>
-        <section id="adminUsageSection" class="mt-10 border-t border-border-subtle dark:border-dark-border pt-10">
+        <section id="adminUsageSection" class="mt-10 border-t border-border-subtle dark:border-dark-border pt-10" data-collapsible-section data-collapsible-default="open">
             <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                 <div>
                     <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Usage</p>
                     <h2 class="mt-3 font-display text-3xl md:text-4xl">用量监控</h2>
                 </div>
-                <button id="usageRefreshButton" class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button">刷新</button>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button id="usageRefreshButton" class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button">刷新</button>
+                    <button class="btn-secondary h-10 px-3 text-sm dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button" data-collapsible-toggle>收起</button>
+                </div>
             </div>
-            <div class="mt-6 grid gap-3 md:grid-cols-[1fr_10rem_10rem]">
-                <input id="usageSearchInput" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="search" placeholder="手机号 / preview / 状态"/>
-                <select id="usageGroupFilter" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary">
-                    <option value="all">全部</option>
-                    <option value="shop">Shop</option>
-                    <option value="local">Local</option>
-                    <option value="unmanaged">未托管</option>
-                </select>
-                <select id="usageStatusFilter" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary">
-                    <option value="all">全部状态</option>
-                    <option value="active">使用中</option>
-                    <option value="expired">已过期</option>
-                    <option value="unused">未使用</option>
-                    <option value="disabled">已禁用</option>
-                    <option value="local">本地</option>
-                    <option value="unmanaged">未托管</option>
-                </select>
+            <div data-collapsible-content>
+                <div class="mt-6 grid gap-3 md:grid-cols-[1fr_10rem_10rem]">
+                    <input id="usageSearchInput" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="search" placeholder="手机号 / preview / 状态"/>
+                    <select id="usageGroupFilter" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary">
+                        <option value="all">全部</option>
+                        <option value="shop">Shop</option>
+                        <option value="local">Local</option>
+                        <option value="unmanaged">未托管</option>
+                    </select>
+                    <select id="usageStatusFilter" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary">
+                        <option value="all">全部状态</option>
+                        <option value="active">使用中</option>
+                        <option value="expired">已过期</option>
+                        <option value="unused">未使用</option>
+                        <option value="disabled">已禁用</option>
+                        <option value="local">本地</option>
+                        <option value="unmanaged">未托管</option>
+                    </select>
+                </div>
+                <div id="usageSummaryCards" class="mt-6 grid gap-3 md:grid-cols-4"></div>
+                <div id="adminBillingUsageCards" class="mt-6 grid gap-3 md:grid-cols-5"></div>
+                <div id="usageTable" class="mt-6 w-full min-w-0 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
+                <div id="adminRecentCharges" class="mt-6 w-full min-w-0 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
+                <p id="usageMessage" class="mt-3 text-sm text-text-muted dark:text-dark-text-muted"></p>
             </div>
-            <div id="usageSummaryCards" class="mt-6 grid gap-3 md:grid-cols-4"></div>
-            <div id="adminBillingUsageCards" class="mt-6 grid gap-3 md:grid-cols-5"></div>
-            <div id="usageTable" class="mt-6 w-full min-w-0 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
-            <div id="adminRecentCharges" class="mt-6 w-full min-w-0 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
-            <p id="usageMessage" class="mt-3 text-sm text-text-muted dark:text-dark-text-muted"></p>
         </section>
-        <section class="mt-12 border-t border-border-subtle dark:border-dark-border pt-10">
-            <div>
-                <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Import</p>
-                <h2 class="mt-3 font-display text-3xl md:text-4xl">日志导入</h2>
-                <p class="mt-3 break-words text-sm text-text-muted dark:text-dark-text-muted leading-relaxed">读取 yui.web `.env` 中 `CLIPROXY_USAGE_LOG_DIR` 指向的 CLIProxyAPI 本地目录，例如 `/Users/wujianxiang/CodeSpace/CLIProxyAPI/logs/usage/usage-events-YYYY-MM.jsonl`。它用于实时同步漏掉或重启期间的 usage event 补账。</p>
+        <section id="adminUsageImportSection" class="mt-12 border-t border-border-subtle dark:border-dark-border pt-10" data-collapsible-section data-collapsible-default="open">
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Import</p>
+                    <h2 class="mt-3 font-display text-3xl md:text-4xl">日志导入</h2>
+                    <p class="mt-3 break-words text-sm text-text-muted dark:text-dark-text-muted leading-relaxed">读取 yui.web `.env` 中 `CLIPROXY_USAGE_LOG_DIR` 指向的 CLIProxyAPI 本地目录，例如 `/Users/wujianxiang/CodeSpace/CLIProxyAPI/logs/usage/usage-events-YYYY-MM.jsonl`。它用于实时同步漏掉或重启期间的 usage event 补账。</p>
+                </div>
+                <button class="btn-secondary h-10 px-3 text-sm dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button" data-collapsible-toggle>收起</button>
             </div>
-            <form id="usageImportForm" class="mt-6 grid gap-3 rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5 md:grid-cols-[12rem_auto]">
-                <input id="usageImportMonth" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="month"/>
-                <button class="btn-primary" type="submit">导入</button>
-            </form>
-            <p id="usageImportMessage" class="mt-3 text-sm text-text-muted dark:text-dark-text-muted"></p>
+            <div data-collapsible-content>
+                <form id="usageImportForm" class="mt-6 grid gap-3 rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5 md:grid-cols-[12rem_auto]">
+                    <input id="usageImportMonth" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="month"/>
+                    <button class="btn-primary" type="submit">导入</button>
+                </form>
+                <p id="usageImportMessage" class="mt-3 text-sm text-text-muted dark:text-dark-text-muted"></p>
+            </div>
         </section>
     </main>
 </body>
