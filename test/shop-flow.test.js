@@ -2394,6 +2394,7 @@ test('Shop 首页按量计费文案和按钮布局不再暴露手机号查询入
     assert.match(home, /按量记录/);
     assert.doesNotMatch(home, /href="\/shop\/query\/"/);
     assert.doesNotMatch(home, /手机号查询/);
+    assert.doesNotMatch(home, /手机号和邀请码/);
     assert.doesNotMatch(home, /每月 30 元人民币/);
     assert.doesNotMatch(home, /额度兑换/);
     assert.doesNotMatch(home, /31 天有效/);
