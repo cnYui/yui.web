@@ -99,3 +99,6 @@ superpowers/
 
 # Large media files
 # Removed exclusions for image directories to fix 404 errors in deployment
+
+# AI context files
+docs/ai/context/
