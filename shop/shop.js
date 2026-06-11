@@ -1,4 +1,4 @@
-// 用户通过私下付款获得邀请码，网站只负责兑换和查询 Codex 月额度。
+// 用户通过私下付款获得邀请码，网站负责兑换 API key、展示用量与账务记录。
 (function() {
     function isPhone(value) {
         return /^1[3-9]\d{9}$/.test(String(value || '').trim());
@@ -150,6 +150,24 @@
             : options.revealKey
                 ? '<button class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button" data-reveal-api-key>复制完整 API key</button>'
             : '';
+
+        if (options.compactAccountOrder) {
+            return `
+                <article class="border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card p-5 md:p-6" data-order-id="${escapeHtml(order.id)}">
+                    <div class="rounded-md border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface p-4">
+                        <p class="text-xs uppercase tracking-[0.2em] text-text-muted dark:text-dark-text-muted">API key</p>
+                        <code class="mt-2 block break-all text-sm text-primary dark:text-dark-text" data-api-key>${escapeHtml(key || '-')}</code>
+                    </div>
+                    <dl class="mt-5 text-sm">
+                        <div>
+                            <dt class="text-text-muted dark:text-dark-text-muted">兑换时间</dt>
+                            <dd class="mt-1 font-medium text-primary dark:text-dark-text">${escapeHtml(formatDate(order.redeemedAt))}</dd>
+                        </div>
+                    </dl>
+                    ${copyButton ? `<div class="mt-5">${copyButton}</div>` : ''}
+                </article>
+            `;
+        }
 
         return `
             <article class="border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card p-5 md:p-6" data-order-id="${escapeHtml(order.id)}">
@@ -845,7 +863,7 @@
                     </section>
                 `;
             } else {
-                ordersRoot.innerHTML = `<div class="grid gap-5">${orders.map((order) => renderOrderCard(order, { revealKey: true })).join('')}</div>`;
+                ordersRoot.innerHTML = `<div class="grid gap-5">${orders.map((order) => renderOrderCard(order, { revealKey: true, compactAccountOrder: true })).join('')}</div>`;
                 ordersRoot.querySelectorAll('article').forEach(bindCopy);
             }
             message.textContent = '';
