@@ -140,7 +140,7 @@ async function submitAndApproveTopup(baseUrl, cookie, amount, adminToken = 'test
 async function withServer(run, appOptions = {}) {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yui-shop-test-'));
     const dbPath = path.join(tempDir, 'shop.sqlite');
-    const { app, db } = createShopApp({
+    const { app, db, usageImporter } = createShopApp({
         dbPath,
         adminToken: 'test-token',
         internalToken: 'internal-test-token',
@@ -154,8 +154,9 @@ async function withServer(run, appOptions = {}) {
     const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
     try {
-        await run({ baseUrl, db, dbPath });
+        await run({ baseUrl, db, dbPath, usageImporter });
     } finally {
+        usageImporter?.stop?.();
         await new Promise((resolve, reject) => {
             server.close((error) => error ? reject(error) : resolve());
         });
@@ -1677,6 +1678,51 @@ test('管理员可以从 CLIProxyAPI 月度 JSONL 手动导入 usage events', as
             const row = db.prepare('SELECT request_id, total_tokens FROM usage_events WHERE request_id = ?').get(event.request_id);
             assert.deepEqual(row, { request_id: event.request_id, total_tokens: 5 });
         }, { cliproxyUsageLogDir: logDir });
+    } finally {
+        fs.rmSync(logDir, { recursive: true, force: true });
+    }
+});
+
+test('usage 自动导入可手动触发一次并保持幂等状态', async () => {
+    const logDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cliproxy-auto-usage-log-'));
+    try {
+        fs.writeFileSync(path.join(logDir, 'usage-events-2026-06.jsonl'), `${JSON.stringify({
+            request_id: 'req-auto-import',
+            api_key_hash: hashApiKeyForTest('sk-auto-import'),
+            api_key_preview: keyPreviewForTest('sk-auto-import'),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 10,
+            cached_tokens: 4,
+            output_tokens: 2,
+            total_tokens: 12,
+            requested_at: '2026-06-11T10:00:00Z'
+        })}\n`);
+
+        await withServer(async ({ baseUrl, db, usageImporter }) => {
+            assert.ok(usageImporter);
+            const first = usageImporter.runOnce('2026-06');
+            assert.equal(first.inserted, 1);
+            const second = usageImporter.runOnce('2026-06');
+            assert.equal(second.skipped, 1);
+
+            const status = await jsonFetch(`${baseUrl}/api/admin/usage-import-status`, {
+                headers: { 'x-admin-token': 'test-token' }
+            });
+            assert.equal(status.response.status, 200);
+            assert.equal(status.body.enabled, true);
+            assert.equal(status.body.lastMonth, '2026-06');
+            assert.equal(status.body.lastInserted, 0);
+            assert.equal(status.body.lastSkipped, 1);
+
+            assert.equal(db.prepare('SELECT COUNT(*) AS count FROM usage_events WHERE request_id = ?').get('req-auto-import').count, 1);
+        }, {
+            cliproxyUsageLogDir: logDir,
+            usageAutoImportEnabled: true,
+            usageAutoImportStartTimer: false
+        });
     } finally {
         fs.rmSync(logDir, { recursive: true, force: true });
     }

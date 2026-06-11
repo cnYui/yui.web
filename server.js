@@ -2382,6 +2382,11 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}`;
     }
 
+    function currentChinaMonth(date = new Date()) {
+        const parts = chinaParts(date);
+        return `${parts.year}-${pad2(parts.month)}`;
+    }
+
     function chinaHourKey(date) {
         const parts = chinaParts(date);
         return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}T${pad2(parts.hour)}:00:00+08:00`;
@@ -2627,6 +2632,62 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
         return result;
     }
+
+    const usageImportStatus = {
+        enabled: Boolean(options.usageAutoImportEnabled ?? process.env.SHOP_USAGE_AUTO_IMPORT_ENABLED === 'true'),
+        lastRunAt: '',
+        lastMonth: '',
+        lastInserted: 0,
+        lastSkipped: 0,
+        lastFailedLines: 0,
+        lastError: ''
+    };
+
+    function runUsageAutoImport(month = currentChinaMonth()) {
+        usageImportStatus.lastRunAt = nowIso();
+        usageImportStatus.lastMonth = month;
+        usageImportStatus.lastError = '';
+        try {
+            const result = importUsageEvents(month);
+            usageImportStatus.lastInserted = result.inserted;
+            usageImportStatus.lastSkipped = result.skipped;
+            usageImportStatus.lastFailedLines = result.failed_lines;
+            return result;
+        } catch (error) {
+            usageImportStatus.lastInserted = 0;
+            usageImportStatus.lastSkipped = 0;
+            usageImportStatus.lastFailedLines = 0;
+            usageImportStatus.lastError = error.message || 'usage 自动导入失败。';
+            return {
+                month,
+                inserted: 0,
+                skipped: 0,
+                failed_lines: 0,
+                error: usageImportStatus.lastError
+            };
+        }
+    }
+
+    function createUsageImporter() {
+        const rawIntervalMs = Number(options.usageAutoImportIntervalMs ?? process.env.SHOP_USAGE_AUTO_IMPORT_INTERVAL_MS ?? 60000);
+        const intervalMs = Number.isFinite(rawIntervalMs) ? Math.max(rawIntervalMs, 5000) : 60000;
+        let timer = null;
+        if (usageImportStatus.enabled && options.usageAutoImportStartTimer !== false) {
+            runUsageAutoImport();
+            timer = setInterval(() => runUsageAutoImport(), intervalMs);
+            timer.unref?.();
+        }
+        return {
+            runOnce: runUsageAutoImport,
+            status: () => ({ ...usageImportStatus }),
+            stop: () => {
+                if (timer) clearInterval(timer);
+                timer = null;
+            }
+        };
+    }
+
+    const usageImporter = createUsageImporter();
 
     function jsonLimitForPath(pathname) {
         if (pathname === '/api/internal/usage-events') {
@@ -2926,6 +2987,10 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return res.json(buildUsageSummary(req.query));
     });
 
+    app.get('/api/admin/usage-import-status', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        return res.json(usageImporter.status());
+    });
+
     app.post('/api/admin/usage-key-profiles', limitAdminApi, requireSameOrigin, requireAdminUsageAccess, requireAccountCsrf, (req, res) => {
         try {
             const profile = saveUsageKeyProfile(req.body);
@@ -3186,7 +3251,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         res.status(404).sendFile(path.join(rootDir, '404.html'));
     });
 
-    return { app, db, dbPath };
+    return { app, db, dbPath, usageImporter };
 }
 
 if (require.main === module) {
