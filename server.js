@@ -2896,7 +2896,10 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         if (!row) {
             return res.status(404).json({ code: 'ORDER_NOT_FOUND', message: '订单不存在。' });
         }
-        return res.json({ apiKey: toOrder(row).apiKey, expiresInSeconds: 60 });
+        return res.json({
+            apiKey: toOrder(row).apiKey,
+            message: '完整 API key 只在本次响应返回，请妥善保存。'
+        });
     });
 
     app.get('/api/account/balance', limitQueryApi, requireAccount, (req, res) => {

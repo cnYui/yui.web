@@ -749,6 +749,27 @@ test('账号接口默认只返回 API key preview，完整 key 需要 reveal', a
     });
 });
 
+test('Reveal API key 响应不再声称服务端 60 秒过期', async () => {
+    await withServer(async ({ baseUrl }) => {
+        await createRedeemedOrder(baseUrl, '13800138261', 'sk-reveal-copy');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138261');
+
+        const me = await jsonFetch(`${baseUrl}/api/account/me`, {
+            headers: { cookie }
+        });
+        const revealed = await jsonFetch(`${baseUrl}/api/account/orders/${me.body.orders[0].id}/reveal-api-key`, {
+            method: 'POST',
+            headers: { cookie },
+            body: '{}'
+        });
+
+        assert.equal(revealed.response.status, 200);
+        assert.equal(revealed.body.apiKey, 'sk-reveal-copy');
+        assert.equal(Object.hasOwn(revealed.body, 'expiresInSeconds'), false);
+        assert.match(revealed.body.message, /本次响应/);
+    });
+});
+
 test('用户用手机号和邀请码兑换后，从未使用 API key 池分配一个 key 并写入 SQLite 订单', async () => {
     await withServer(async ({ baseUrl, db, dbPath }) => {
         const seedKeys = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
