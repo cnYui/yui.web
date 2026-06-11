@@ -54,3 +54,18 @@ test('usage 补账 dry-run 不写数据库，apply 后幂等扣费', () => {
         fs.rmSync(tempDir, { recursive: true, force: true });
     }
 });
+
+test('补账 apply 前会复制数据库备份', () => {
+    const { db, tempDir } = createDb();
+    try {
+        const dbPath = db.name;
+        const backupDir = path.join(tempDir, 'backups');
+        const { backupShopDatabase } = require('../scripts/shop-reconcile-usage-billing');
+        const backupPath = backupShopDatabase(dbPath, backupDir, '20260611-190000');
+        assert.equal(fs.existsSync(backupPath), true);
+        assert.match(path.basename(backupPath), /^shop-before-usage-reconcile-20260611-190000\.sqlite$/);
+    } finally {
+        db.close();
+        fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+});
