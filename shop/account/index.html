@@ -92,6 +92,7 @@
                 <p id="usageFreshness" class="text-sm text-text-muted dark:text-dark-text-muted">用量统计可能最多延迟 1 小时。</p>
             </div>
             <div id="accountUsageCards" class="mt-6 grid gap-3 md:grid-cols-4"></div>
+            <div id="accountBillingUsageCards" class="mt-6 grid gap-3 md:grid-cols-5"></div>
             <div id="accountTokenBreakdown" class="mt-6 grid gap-3 md:grid-cols-4"></div>
             <div class="mt-6 grid gap-5 lg:grid-cols-2">
                 <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
@@ -111,11 +112,11 @@
                 <h2 class="mt-2 font-display text-3xl text-primary dark:text-dark-text">扣费与流水</h2>
             </div>
             <div class="mt-6 grid gap-5 lg:grid-cols-2">
-                <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5 overflow-x-auto">
+                <section class="min-w-0 rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5 overflow-x-auto">
                     <h3 class="font-display text-2xl text-primary dark:text-dark-text">API 扣费记录</h3>
                     <div id="accountCharges" class="mt-5"></div>
                 </section>
-                <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5 overflow-x-auto">
+                <section class="min-w-0 rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5 overflow-x-auto">
                     <h3 class="font-display text-2xl text-primary dark:text-dark-text">账户流水</h3>
                     <div id="accountLedger" class="mt-5"></div>
                 </section>

@@ -24,6 +24,14 @@ const authPhoneFailureBuckets = new Map();
 const chinaOffsetMs = 8 * 60 * 60 * 1000;
 const defaultAdminAccountPhone = '15951875192';
 const defaultCreditLimitCents = 1000;
+const nanosPerYuan = 1000000000;
+const nanosPerCent = 10000000;
+const deepseekProRmbPrice = Object.freeze({
+    version: 'deepseek-v4-pro-rmb-20260424',
+    cacheHitInputNanosPerToken: 25,
+    cacheMissInputNanosPerToken: 3000,
+    outputNanosPerToken: 6000
+});
 const supportedPaymentMethods = new Set(['alipay', 'wechat']);
 
 function assertStrongSecret(name, value, { required = true, production = false } = {}) {
@@ -217,6 +225,31 @@ function centsToCny(cents) {
     return Number(cents || 0) / 100;
 }
 
+function centsToNanos(cents) {
+    return nonNegativeInteger(cents) * nanosPerCent;
+}
+
+function signedCentsToNanos(cents) {
+    const value = Number(cents || 0);
+    if (!Number.isSafeInteger(value)) return 0;
+    return value * nanosPerCent;
+}
+
+function nanosToCny(nanos) {
+    return Number(nanos || 0) / nanosPerYuan;
+}
+
+function nanosToBalanceCents(nanos) {
+    const value = Number(nanos || 0);
+    if (value >= 0) return Math.floor(value / nanosPerCent);
+    return -Math.ceil(Math.abs(value) / nanosPerCent);
+}
+
+function chargeNanosToCents(nanos) {
+    const value = nonNegativeInteger(nanos);
+    return value <= 0 ? 0 : Math.ceil(value / nanosPerCent);
+}
+
 function normalizePaymentMethod(value) {
     const method = String(value || '').trim().toLowerCase();
     if (!supportedPaymentMethods.has(method)) {
@@ -228,14 +261,57 @@ function normalizePaymentMethod(value) {
     return method;
 }
 
+function usageTokenValue(body, tokenSource, keys) {
+    for (const key of keys) {
+        const bodyValue = body?.[key];
+        if (bodyValue !== undefined && bodyValue !== null) return bodyValue;
+        const tokenValue = tokenSource?.[key];
+        if (tokenValue !== undefined && tokenValue !== null) return tokenValue;
+    }
+    return undefined;
+}
+
 function normalizeUsageEvent(body = {}) {
-    const inputTokens = nonNegativeInteger(body.input_tokens);
-    const outputTokens = nonNegativeInteger(body.output_tokens);
-    const reasoningTokens = nonNegativeInteger(body.reasoning_tokens);
-    const cachedTokens = nonNegativeInteger(body.cached_tokens);
+    const tokenSource = body.tokens && typeof body.tokens === 'object' ? body.tokens : {};
+    let inputTokens = nonNegativeInteger(usageTokenValue(body, tokenSource, ['input_tokens', 'prompt_tokens']));
+    const outputTokens = nonNegativeInteger(usageTokenValue(body, tokenSource, ['output_tokens', 'completion_tokens']));
+    const reasoningTokens = nonNegativeInteger(
+        usageTokenValue(body, tokenSource, ['reasoning_tokens']) ??
+        body.completion_tokens_details?.reasoning_tokens ??
+        body.output_tokens_details?.reasoning_tokens ??
+        tokenSource.completion_tokens_details?.reasoning_tokens ??
+        tokenSource.output_tokens_details?.reasoning_tokens
+    );
+    let cachedTokens = nonNegativeInteger(
+        usageTokenValue(body, tokenSource, ['cached_tokens']) ??
+        body.prompt_tokens_details?.cached_tokens ??
+        body.input_tokens_details?.cached_tokens ??
+        tokenSource.prompt_tokens_details?.cached_tokens ??
+        tokenSource.input_tokens_details?.cached_tokens
+    );
+    let cacheHitInputTokens = nonNegativeInteger(usageTokenValue(body, tokenSource, [
+        'cache_hit_input_tokens',
+        'prompt_cache_hit_tokens'
+    ]));
+    let cacheMissInputTokens = nonNegativeInteger(usageTokenValue(body, tokenSource, [
+        'cache_miss_input_tokens',
+        'prompt_cache_miss_tokens'
+    ]));
+    if (cacheHitInputTokens === 0 && cachedTokens > 0) {
+        cacheHitInputTokens = cachedTokens;
+    }
+    if (cachedTokens === 0 && cacheHitInputTokens > 0) {
+        cachedTokens = cacheHitInputTokens;
+    }
+    if (inputTokens === 0 && (cacheHitInputTokens > 0 || cacheMissInputTokens > 0)) {
+        inputTokens = cacheHitInputTokens + cacheMissInputTokens;
+    }
+    if (cacheMissInputTokens === 0 && inputTokens > cacheHitInputTokens) {
+        cacheMissInputTokens = inputTokens - cacheHitInputTokens;
+    }
     let totalTokens = nonNegativeInteger(body.total_tokens);
     if (totalTokens === 0) {
-        totalTokens = inputTokens + outputTokens + reasoningTokens;
+        totalTokens = inputTokens + outputTokens;
     }
     const failed = Boolean(body.failed);
     const requestedAt = String(body.requested_at || '').trim();
@@ -254,6 +330,8 @@ function normalizeUsageEvent(body = {}) {
         outputTokens,
         reasoningTokens,
         cachedTokens,
+        cacheHitInputTokens,
+        cacheMissInputTokens,
         totalTokens,
         latencyMs: nonNegativeInteger(body.latency_ms),
         requestedAt: requestedAt && !Number.isNaN(new Date(requestedAt).getTime()) ? requestedAt : nowIso(),
@@ -460,6 +538,8 @@ CREATE TABLE IF NOT EXISTS usage_events (
   output_tokens INTEGER NOT NULL DEFAULT 0,
   reasoning_tokens INTEGER NOT NULL DEFAULT 0,
   cached_tokens INTEGER NOT NULL DEFAULT 0,
+  cache_hit_input_tokens INTEGER NOT NULL DEFAULT 0,
+  cache_miss_input_tokens INTEGER NOT NULL DEFAULT 0,
   total_tokens INTEGER NOT NULL DEFAULT 0,
   latency_ms INTEGER NOT NULL DEFAULT 0,
   requested_at TEXT NOT NULL,
@@ -489,8 +569,11 @@ ON usage_key_profiles(group_name);
 CREATE TABLE IF NOT EXISTS account_balances (
   phone TEXT PRIMARY KEY,
   balance_cents INTEGER NOT NULL DEFAULT 0,
+  balance_nanos INTEGER NOT NULL DEFAULT 0,
   pending_topup_cents INTEGER NOT NULL DEFAULT 0,
+  pending_topup_nanos INTEGER NOT NULL DEFAULT 0,
   credit_limit_cents INTEGER NOT NULL DEFAULT 1000,
+  credit_limit_nanos INTEGER NOT NULL DEFAULT 10000000000,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (phone) REFERENCES users(phone)
 );
@@ -525,7 +608,9 @@ CREATE TABLE IF NOT EXISTS account_ledger_entries (
   phone TEXT NOT NULL,
   entry_type TEXT NOT NULL CHECK (entry_type IN ('topup_approved', 'api_charge', 'admin_adjustment', 'refund')),
   amount_cents INTEGER NOT NULL,
+  amount_nanos INTEGER NOT NULL DEFAULT 0,
   balance_after_cents INTEGER NOT NULL,
+  balance_after_nanos INTEGER NOT NULL DEFAULT 0,
   currency TEXT NOT NULL DEFAULT 'CNY',
   related_id TEXT,
   memo TEXT,
@@ -545,11 +630,17 @@ CREATE TABLE IF NOT EXISTS api_charge_records (
   model TEXT,
   input_tokens INTEGER NOT NULL DEFAULT 0,
   output_tokens INTEGER NOT NULL DEFAULT 0,
+  cache_hit_input_tokens INTEGER NOT NULL DEFAULT 0,
+  cache_miss_input_tokens INTEGER NOT NULL DEFAULT 0,
+  reasoning_tokens INTEGER NOT NULL DEFAULT 0,
   total_tokens INTEGER NOT NULL DEFAULT 0,
   price_version TEXT NOT NULL,
   charge_cents INTEGER NOT NULL,
+  charge_nanos INTEGER NOT NULL DEFAULT 0,
   balance_before_cents INTEGER NOT NULL,
+  balance_before_nanos INTEGER NOT NULL DEFAULT 0,
   balance_after_cents INTEGER NOT NULL,
+  balance_after_nanos INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL CHECK (status IN ('charged', 'failed_no_charge', 'unpriced_no_charge', 'adjusted')),
   created_at TEXT NOT NULL,
   FOREIGN KEY (phone) REFERENCES users(phone)
@@ -558,6 +649,57 @@ CREATE TABLE IF NOT EXISTS api_charge_records (
 CREATE INDEX IF NOT EXISTS idx_api_charge_records_phone_created
 ON api_charge_records(phone, created_at);
 `);
+    const usageEventColumns = db.prepare('PRAGMA table_info(usage_events)').all().map((column) => column.name);
+    if (!usageEventColumns.includes('cache_hit_input_tokens')) {
+        db.exec(`ALTER TABLE usage_events ADD COLUMN cache_hit_input_tokens INTEGER NOT NULL DEFAULT 0;`);
+    }
+    if (!usageEventColumns.includes('cache_miss_input_tokens')) {
+        db.exec(`ALTER TABLE usage_events ADD COLUMN cache_miss_input_tokens INTEGER NOT NULL DEFAULT 0;`);
+    }
+    const balanceColumns = db.prepare('PRAGMA table_info(account_balances)').all().map((column) => column.name);
+    if (!balanceColumns.includes('balance_nanos')) {
+        db.exec(`ALTER TABLE account_balances ADD COLUMN balance_nanos INTEGER NOT NULL DEFAULT 0;`);
+        db.exec(`UPDATE account_balances SET balance_nanos = balance_cents * 10000000 WHERE balance_nanos = 0;`);
+    }
+    if (!balanceColumns.includes('pending_topup_nanos')) {
+        db.exec(`ALTER TABLE account_balances ADD COLUMN pending_topup_nanos INTEGER NOT NULL DEFAULT 0;`);
+        db.exec(`UPDATE account_balances SET pending_topup_nanos = pending_topup_cents * 10000000 WHERE pending_topup_nanos = 0;`);
+    }
+    if (!balanceColumns.includes('credit_limit_nanos')) {
+        db.exec(`ALTER TABLE account_balances ADD COLUMN credit_limit_nanos INTEGER NOT NULL DEFAULT 10000000000;`);
+        db.exec(`UPDATE account_balances SET credit_limit_nanos = credit_limit_cents * 10000000 WHERE credit_limit_nanos = 10000000000;`);
+    }
+    const ledgerColumns = db.prepare('PRAGMA table_info(account_ledger_entries)').all().map((column) => column.name);
+    if (!ledgerColumns.includes('amount_nanos')) {
+        db.exec(`ALTER TABLE account_ledger_entries ADD COLUMN amount_nanos INTEGER NOT NULL DEFAULT 0;`);
+        db.exec(`UPDATE account_ledger_entries SET amount_nanos = amount_cents * 10000000 WHERE amount_nanos = 0;`);
+    }
+    if (!ledgerColumns.includes('balance_after_nanos')) {
+        db.exec(`ALTER TABLE account_ledger_entries ADD COLUMN balance_after_nanos INTEGER NOT NULL DEFAULT 0;`);
+        db.exec(`UPDATE account_ledger_entries SET balance_after_nanos = balance_after_cents * 10000000 WHERE balance_after_nanos = 0;`);
+    }
+    const chargeColumns = db.prepare('PRAGMA table_info(api_charge_records)').all().map((column) => column.name);
+    if (!chargeColumns.includes('cache_hit_input_tokens')) {
+        db.exec(`ALTER TABLE api_charge_records ADD COLUMN cache_hit_input_tokens INTEGER NOT NULL DEFAULT 0;`);
+    }
+    if (!chargeColumns.includes('cache_miss_input_tokens')) {
+        db.exec(`ALTER TABLE api_charge_records ADD COLUMN cache_miss_input_tokens INTEGER NOT NULL DEFAULT 0;`);
+    }
+    if (!chargeColumns.includes('reasoning_tokens')) {
+        db.exec(`ALTER TABLE api_charge_records ADD COLUMN reasoning_tokens INTEGER NOT NULL DEFAULT 0;`);
+    }
+    if (!chargeColumns.includes('charge_nanos')) {
+        db.exec(`ALTER TABLE api_charge_records ADD COLUMN charge_nanos INTEGER NOT NULL DEFAULT 0;`);
+        db.exec(`UPDATE api_charge_records SET charge_nanos = charge_cents * 10000000 WHERE charge_nanos = 0;`);
+    }
+    if (!chargeColumns.includes('balance_before_nanos')) {
+        db.exec(`ALTER TABLE api_charge_records ADD COLUMN balance_before_nanos INTEGER NOT NULL DEFAULT 0;`);
+        db.exec(`UPDATE api_charge_records SET balance_before_nanos = balance_before_cents * 10000000 WHERE balance_before_nanos = 0;`);
+    }
+    if (!chargeColumns.includes('balance_after_nanos')) {
+        db.exec(`ALTER TABLE api_charge_records ADD COLUMN balance_after_nanos INTEGER NOT NULL DEFAULT 0;`);
+        db.exec(`UPDATE api_charge_records SET balance_after_nanos = balance_after_cents * 10000000 WHERE balance_after_nanos = 0;`);
+    }
     return db;
 }
 
@@ -588,6 +730,7 @@ function createShopApp(options = {}) {
     const creditLimitCents = Number.isSafeInteger(configuredCreditLimitCents) && configuredCreditLimitCents >= 0
         ? configuredCreditLimitCents
         : defaultCreditLimitCents;
+    const creditLimitNanos = centsToNanos(creditLimitCents);
 
     function toOrder(row) {
         return {
@@ -669,27 +812,35 @@ function createShopApp(options = {}) {
 
     function ensureAccountBalance(phone) {
         ensureUser.run(phone, nowIso());
-        ensureAccountBalanceRow.run(phone, creditLimitCents, nowIso());
+        ensureAccountBalanceRow.run(phone, creditLimitCents, creditLimitNanos, nowIso());
         return getAccountBalanceRow.get(phone);
     }
 
     function publicAccountBalance(row) {
-        const balanceCents = Number(row?.balance_cents || 0);
-        const pendingTopupCents = Number(row?.pending_topup_cents || 0);
+        const balanceNanos = Number(row?.balance_nanos ?? signedCentsToNanos(row?.balance_cents || 0));
+        const pendingTopupNanos = Number(row?.pending_topup_nanos ?? centsToNanos(row?.pending_topup_cents || 0));
         const creditLimit = Number(row?.credit_limit_cents || creditLimitCents);
-        const debtCents = balanceCents < 0 ? Math.abs(balanceCents) : 0;
-        const status = balanceCents < 0 ? 'debt' : balanceCents === 0 ? 'empty' : 'available';
+        const creditLimitBalanceNanos = Number(row?.credit_limit_nanos ?? centsToNanos(creditLimit));
+        const balanceCents = nanosToBalanceCents(balanceNanos);
+        const pendingTopupCents = nanosToBalanceCents(pendingTopupNanos);
+        const debtNanos = balanceNanos < 0 ? Math.abs(balanceNanos) : 0;
+        const debtCents = chargeNanosToCents(debtNanos);
+        const status = balanceNanos < 0 ? 'debt' : balanceNanos === 0 ? 'empty' : 'available';
         return {
             phone: row.phone,
             balanceCents,
-            balanceAmount: centsToCny(balanceCents),
+            balanceNanos,
+            balanceAmount: nanosToCny(balanceNanos),
             pendingTopupCents,
-            pendingTopupAmount: centsToCny(pendingTopupCents),
+            pendingTopupNanos,
+            pendingTopupAmount: nanosToCny(pendingTopupNanos),
             debtCents,
-            debtAmount: centsToCny(debtCents),
+            debtNanos,
+            debtAmount: nanosToCny(debtNanos),
             creditLimitCents: creditLimit,
-            creditLimitAmount: centsToCny(creditLimit),
-            creditExceeded: balanceCents < -creditLimit,
+            creditLimitNanos: creditLimitBalanceNanos,
+            creditLimitAmount: nanosToCny(creditLimitBalanceNanos),
+            creditExceeded: balanceNanos < -creditLimitBalanceNanos,
             status,
             updatedAt: row.updated_at
         };
@@ -701,7 +852,7 @@ function createShopApp(options = {}) {
 
     function billingBlockedStatus(phone) {
         const billing = billingStatusForPhone(phone);
-        if (billing.balanceCents > 0) {
+        if (billing.balanceNanos > 0) {
             return { blocked: false, billing };
         }
         return { blocked: true, billing };
@@ -749,7 +900,7 @@ function createShopApp(options = {}) {
         ensureAccountBalance(phone);
         const row = sumPendingTopupsByPhone.get(phone);
         const pendingTopupCents = Number(row?.pending_topup_cents || 0);
-        updatePendingTopupCents.run(pendingTopupCents, nowIso(), phone);
+        updatePendingTopupCents.run(pendingTopupCents, centsToNanos(pendingTopupCents), nowIso(), phone);
         return pendingTopupCents;
     }
 
@@ -769,9 +920,11 @@ function createShopApp(options = {}) {
             phone: row.phone,
             entryType: row.entry_type,
             amountCents: row.amount_cents,
-            amount: centsToCny(row.amount_cents),
+            amountNanos: row.amount_nanos,
+            amount: nanosToCny(row.amount_nanos ?? signedCentsToNanos(row.amount_cents)),
             balanceAfterCents: row.balance_after_cents,
-            balanceAfter: centsToCny(row.balance_after_cents),
+            balanceAfterNanos: row.balance_after_nanos,
+            balanceAfter: nanosToCny(row.balance_after_nanos ?? signedCentsToNanos(row.balance_after_cents)),
             currency: row.currency,
             relatedId: row.related_id || '',
             memo: row.memo || '',
@@ -789,14 +942,20 @@ function createShopApp(options = {}) {
             model: row.model || 'unknown',
             inputTokens: row.input_tokens,
             outputTokens: row.output_tokens,
+            cacheHitInputTokens: row.cache_hit_input_tokens,
+            cacheMissInputTokens: row.cache_miss_input_tokens,
+            reasoningTokens: row.reasoning_tokens,
             totalTokens: row.total_tokens,
             priceVersion: row.price_version,
             chargeCents: row.charge_cents,
-            chargeAmount: centsToCny(row.charge_cents),
+            chargeNanos: row.charge_nanos,
+            chargeAmount: nanosToCny(row.charge_nanos ?? centsToNanos(row.charge_cents)),
             balanceBeforeCents: row.balance_before_cents,
-            balanceBefore: centsToCny(row.balance_before_cents),
+            balanceBeforeNanos: row.balance_before_nanos,
+            balanceBefore: nanosToCny(row.balance_before_nanos ?? signedCentsToNanos(row.balance_before_cents)),
             balanceAfterCents: row.balance_after_cents,
-            balanceAfter: centsToCny(row.balance_after_cents),
+            balanceAfterNanos: row.balance_after_nanos,
+            balanceAfter: nanosToCny(row.balance_after_nanos ?? signedCentsToNanos(row.balance_after_cents)),
             status: row.status,
             createdAt: row.created_at
         };
@@ -1144,13 +1303,17 @@ ON CONFLICT(phone) DO NOTHING
 `);
 
     const ensureAccountBalanceRow = db.prepare(`
-INSERT INTO account_balances (phone, balance_cents, pending_topup_cents, credit_limit_cents, updated_at)
-VALUES (?, 0, 0, ?, ?)
+INSERT INTO account_balances (
+  phone, balance_cents, balance_nanos, pending_topup_cents, pending_topup_nanos,
+  credit_limit_cents, credit_limit_nanos, updated_at
+)
+VALUES (?, 0, 0, 0, 0, ?, ?, ?)
 ON CONFLICT(phone) DO NOTHING
 `);
 
     const getAccountBalanceRow = db.prepare(`
-SELECT phone, balance_cents, pending_topup_cents, credit_limit_cents, updated_at
+SELECT phone, balance_cents, balance_nanos, pending_topup_cents, pending_topup_nanos,
+       credit_limit_cents, credit_limit_nanos, updated_at
 FROM account_balances
 WHERE phone = ?
 `);
@@ -1185,6 +1348,7 @@ WHERE phone = ? AND status = 'pending'
     const updatePendingTopupCents = db.prepare(`
 UPDATE account_balances
 SET pending_topup_cents = ?,
+    pending_topup_nanos = ?,
     updated_at = ?
 WHERE phone = ?
 `);
@@ -1229,17 +1393,18 @@ WHERE id = ? AND status = 'pending'
     const updateBalanceCents = db.prepare(`
 UPDATE account_balances
 SET balance_cents = ?,
+    balance_nanos = ?,
     updated_at = ?
 WHERE phone = ?
 `);
 
     const insertLedgerEntry = db.prepare(`
 INSERT INTO account_ledger_entries (
-  id, phone, entry_type, amount_cents, balance_after_cents, currency,
+  id, phone, entry_type, amount_cents, amount_nanos, balance_after_cents, balance_after_nanos, currency,
   related_id, memo, created_at, created_by_phone
 )
 VALUES (
-  @id, @phone, @entryType, @amountCents, @balanceAfterCents, 'CNY',
+  @id, @phone, @entryType, @amountCents, @amountNanos, @balanceAfterCents, @balanceAfterNanos, 'CNY',
   @relatedId, @memo, @createdAt, @createdByPhone
 )
 `);
@@ -1258,8 +1423,9 @@ LIMIT 1
 
     const getApiChargeByUsageEventId = db.prepare(`
 SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
-       total_tokens, price_version, charge_cents, balance_before_cents,
-       balance_after_cents, status, created_at
+       cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+       price_version, charge_cents, charge_nanos, balance_before_cents,
+       balance_before_nanos, balance_after_cents, balance_after_nanos, status, created_at
 FROM api_charge_records
 WHERE usage_event_id = ?
 `);
@@ -1267,19 +1433,21 @@ WHERE usage_event_id = ?
     const insertApiChargeRecord = db.prepare(`
 INSERT INTO api_charge_records (
   id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
-  total_tokens, price_version, charge_cents, balance_before_cents,
-  balance_after_cents, status, created_at
+  cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+  price_version, charge_cents, charge_nanos, balance_before_cents, balance_before_nanos,
+  balance_after_cents, balance_after_nanos, status, created_at
 )
 VALUES (
   @id, @phone, @usageEventId, @apiKeyHash, @model, @inputTokens, @outputTokens,
-  @totalTokens, @priceVersion, @chargeCents, @balanceBeforeCents,
-  @balanceAfterCents, @status, @createdAt
+  @cacheHitInputTokens, @cacheMissInputTokens, @reasoningTokens, @totalTokens,
+  @priceVersion, @chargeCents, @chargeNanos, @balanceBeforeCents, @balanceBeforeNanos,
+  @balanceAfterCents, @balanceAfterNanos, @status, @createdAt
 )
 `);
 
     const listLedgerEntriesByPhone = db.prepare(`
-SELECT id, phone, entry_type, amount_cents, balance_after_cents, currency,
-       related_id, memo, created_at, created_by_phone
+SELECT id, phone, entry_type, amount_cents, amount_nanos, balance_after_cents,
+       balance_after_nanos, currency, related_id, memo, created_at, created_by_phone
 FROM account_ledger_entries
 WHERE phone = ?
 ORDER BY created_at DESC, rowid DESC
@@ -1288,12 +1456,32 @@ LIMIT ?
 
     const listApiChargeRecordsByPhone = db.prepare(`
 SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
-       total_tokens, price_version, charge_cents, balance_before_cents,
-       balance_after_cents, status, created_at
+       cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+       price_version, charge_cents, charge_nanos, balance_before_cents,
+       balance_before_nanos, balance_after_cents, balance_after_nanos, status, created_at
 FROM api_charge_records
 WHERE phone = ?
 ORDER BY created_at DESC, rowid DESC
 LIMIT ?
+`);
+
+    const listApiChargeRecordsForBillingByPhone = db.prepare(`
+SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+       cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+       price_version, charge_cents, charge_nanos, balance_before_cents,
+       balance_before_nanos, balance_after_cents, balance_after_nanos, status, created_at
+FROM api_charge_records
+WHERE phone = ?
+ORDER BY created_at DESC, rowid DESC
+`);
+
+    const listApiChargeRecordsForBilling = db.prepare(`
+SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+       cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+       price_version, charge_cents, charge_nanos, balance_before_cents,
+       balance_before_nanos, balance_after_cents, balance_after_nanos, status, created_at
+FROM api_charge_records
+ORDER BY created_at DESC, rowid DESC
 `);
 
     const getUserByPhone = db.prepare(`
@@ -1397,20 +1585,23 @@ WHERE id = ? AND phone = ?
     const insertUsageEvent = db.prepare(`
 INSERT OR IGNORE INTO usage_events (
   request_id, api_key_hash, api_key_preview, provider, model, endpoint, source, auth_index,
-  success, failed, input_tokens, output_tokens, reasoning_tokens, cached_tokens, total_tokens,
-  latency_ms, requested_at, received_at, price_amount_micros, price_currency
+  success, failed, input_tokens, output_tokens, reasoning_tokens, cached_tokens,
+  cache_hit_input_tokens, cache_miss_input_tokens, total_tokens, latency_ms,
+  requested_at, received_at, price_amount_micros, price_currency
 )
 VALUES (
   @requestId, @apiKeyHash, @apiKeyPreview, @provider, @model, @endpoint, @source, @authIndex,
-  @success, @failed, @inputTokens, @outputTokens, @reasoningTokens, @cachedTokens, @totalTokens,
-  @latencyMs, @requestedAt, @receivedAt, @priceAmountMicros, @priceCurrency
+  @success, @failed, @inputTokens, @outputTokens, @reasoningTokens, @cachedTokens,
+  @cacheHitInputTokens, @cacheMissInputTokens, @totalTokens, @latencyMs,
+  @requestedAt, @receivedAt, @priceAmountMicros, @priceCurrency
 )
 `);
 
     const listUsageEvents = db.prepare(`
 SELECT request_id, api_key_hash, api_key_preview, provider, model, endpoint, source, auth_index,
-       success, failed, input_tokens, output_tokens, reasoning_tokens, cached_tokens, total_tokens,
-       latency_ms, requested_at, received_at, price_amount_micros, price_currency
+       success, failed, input_tokens, output_tokens, reasoning_tokens, cached_tokens,
+       cache_hit_input_tokens, cache_miss_input_tokens, total_tokens, latency_ms,
+       requested_at, received_at, price_amount_micros, price_currency
 FROM usage_events
 ORDER BY requested_at DESC
 `);
@@ -1575,7 +1766,9 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
         const phone = row.phone;
         const balanceRow = ensureAccountBalance(phone);
-        const nextBalanceCents = Number(balanceRow.balance_cents || 0) + confirmedAmountCents;
+        const confirmedAmountNanos = centsToNanos(confirmedAmountCents);
+        const nextBalanceNanos = Number(balanceRow.balance_nanos || 0) + confirmedAmountNanos;
+        const nextBalanceCents = nanosToBalanceCents(nextBalanceNanos);
         const now = nowIso();
         const result = approveTopupRequestById.run(confirmedAmountCents, adminNote, now, adminPhone, id);
         if (result.changes !== 1) {
@@ -1584,14 +1777,16 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             error.code = 'TOPUP_NOT_PENDING';
             throw error;
         }
-        updateBalanceCents.run(nextBalanceCents, now, phone);
+        updateBalanceCents.run(nextBalanceCents, nextBalanceNanos, now, phone);
         refreshPendingTopupCents(phone);
         insertLedgerEntry.run({
             id: createId('LEDGER'),
             phone,
             entryType: 'topup_approved',
             amountCents: confirmedAmountCents,
+            amountNanos: confirmedAmountNanos,
             balanceAfterCents: nextBalanceCents,
+            balanceAfterNanos: nextBalanceNanos,
             relatedId: id,
             memo: adminNote,
             createdAt: now,
@@ -1626,24 +1821,24 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         };
     });
 
-    function chargeCentsFromUsageEvent(event) {
+    function chargeNanosFromUsageEvent(event) {
         if (event.failed) {
-            return { chargeCents: 0, status: 'failed_no_charge', priceVersion: 'failed-no-charge' };
+            return {
+                chargeNanos: 0,
+                chargeCents: 0,
+                status: 'failed_no_charge',
+                priceVersion: 'failed-no-charge'
+            };
         }
-        if (event.priceAmountMicros === null || event.priceAmountMicros === undefined || event.priceAmountMicros <= 0) {
-            return { chargeCents: 0, status: 'unpriced_no_charge', priceVersion: 'usage-event-missing-price' };
-        }
-        const currency = String(event.priceCurrency || 'CNY').toUpperCase();
-        if (currency !== 'CNY') {
-            const error = new Error('usage event 价格币种必须是 CNY。');
-            error.status = 400;
-            error.code = 'UNSUPPORTED_USAGE_PRICE_CURRENCY';
-            throw error;
-        }
+        const chargeNanos =
+            event.cacheHitInputTokens * deepseekProRmbPrice.cacheHitInputNanosPerToken +
+            event.cacheMissInputTokens * deepseekProRmbPrice.cacheMissInputNanosPerToken +
+            event.outputTokens * deepseekProRmbPrice.outputNanosPerToken;
         return {
-            chargeCents: Math.ceil(Number(event.priceAmountMicros) / 10000),
-            status: 'charged',
-            priceVersion: 'usage-event-price-micros-cny-v1'
+            chargeNanos,
+            chargeCents: chargeNanosToCents(chargeNanos),
+            status: chargeNanos > 0 ? 'charged' : 'unpriced_no_charge',
+            priceVersion: deepseekProRmbPrice.version
         };
     }
 
@@ -1656,9 +1851,11 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             return { charged: 0, skipped: 1 };
         }
         const balanceRow = ensureAccountBalance(owner.phone);
-        const pricing = chargeCentsFromUsageEvent(event);
-        const balanceBeforeCents = Number(balanceRow.balance_cents || 0);
-        const balanceAfterCents = balanceBeforeCents - pricing.chargeCents;
+        const pricing = chargeNanosFromUsageEvent(event);
+        const balanceBeforeNanos = Number(balanceRow.balance_nanos || 0);
+        const balanceAfterNanos = balanceBeforeNanos - pricing.chargeNanos;
+        const balanceBeforeCents = nanosToBalanceCents(balanceBeforeNanos);
+        const balanceAfterCents = nanosToBalanceCents(balanceAfterNanos);
         const now = nowIso();
 
         insertApiChargeRecord.run({
@@ -1669,23 +1866,31 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             model: event.model,
             inputTokens: event.inputTokens,
             outputTokens: event.outputTokens,
+            cacheHitInputTokens: event.cacheHitInputTokens,
+            cacheMissInputTokens: event.cacheMissInputTokens,
+            reasoningTokens: event.reasoningTokens,
             totalTokens: event.totalTokens,
             priceVersion: pricing.priceVersion,
             chargeCents: pricing.chargeCents,
+            chargeNanos: pricing.chargeNanos,
             balanceBeforeCents,
+            balanceBeforeNanos,
             balanceAfterCents,
+            balanceAfterNanos,
             status: pricing.status,
             createdAt: now
         });
 
-        if (pricing.chargeCents > 0) {
-            updateBalanceCents.run(balanceAfterCents, now, owner.phone);
+        if (pricing.chargeNanos > 0) {
+            updateBalanceCents.run(balanceAfterCents, balanceAfterNanos, now, owner.phone);
             insertLedgerEntry.run({
                 id: createId('LEDGER'),
                 phone: owner.phone,
                 entryType: 'api_charge',
                 amountCents: -pricing.chargeCents,
+                amountNanos: -pricing.chargeNanos,
                 balanceAfterCents,
+                balanceAfterNanos,
                 relatedId: event.requestId,
                 memo: `${event.model || 'unknown'} API 调用扣费`,
                 createdAt: now,
@@ -1693,7 +1898,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             });
         }
 
-        return { charged: pricing.chargeCents > 0 ? 1 : 0, skipped: 0 };
+        return { charged: pricing.chargeNanos > 0 ? 1 : 0, skipped: 0 };
     }
 
     const chargeUsageEvent = db.transaction((event) => {
@@ -1944,6 +2149,66 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         };
     }
 
+    function emptyBillingStats() {
+        return {
+            todayChargeNanos: 0,
+            monthChargeNanos: 0,
+            todayCacheHitInputTokens: 0,
+            todayCacheMissInputTokens: 0,
+            todayOutputTokens: 0,
+            cacheHitInputTokens: 0,
+            cacheMissInputTokens: 0,
+            outputTokens: 0
+        };
+    }
+
+    function addBillingStats(stats, row, ranges) {
+        if (row.status !== 'charged') return;
+        const createdAt = new Date(row.created_at);
+        if (!Number.isFinite(createdAt.getTime())) return;
+        const chargeNanos = nonNegativeInteger(row.charge_nanos);
+        const cacheHitInputTokens = nonNegativeInteger(row.cache_hit_input_tokens);
+        const cacheMissInputTokens = nonNegativeInteger(row.cache_miss_input_tokens);
+        const outputTokens = nonNegativeInteger(row.output_tokens);
+        if (createdAt >= ranges.todayStart) {
+            stats.todayChargeNanos += chargeNanos;
+            stats.todayCacheHitInputTokens += cacheHitInputTokens;
+            stats.todayCacheMissInputTokens += cacheMissInputTokens;
+            stats.todayOutputTokens += outputTokens;
+        }
+        if (createdAt >= ranges.monthStart) {
+            stats.monthChargeNanos += chargeNanos;
+            stats.cacheHitInputTokens += cacheHitInputTokens;
+            stats.cacheMissInputTokens += cacheMissInputTokens;
+            stats.outputTokens += outputTokens;
+        }
+    }
+
+    function billingStatsToPublic(stats, chargeRows) {
+        return {
+            priceVersion: deepseekProRmbPrice.version,
+            todayChargeNanos: stats.todayChargeNanos,
+            todayChargeAmount: nanosToCny(stats.todayChargeNanos),
+            monthChargeNanos: stats.monthChargeNanos,
+            monthChargeAmount: nanosToCny(stats.monthChargeNanos),
+            todayCacheHitInputTokens: stats.todayCacheHitInputTokens,
+            todayCacheMissInputTokens: stats.todayCacheMissInputTokens,
+            todayOutputTokens: stats.todayOutputTokens,
+            cacheHitInputTokens: stats.cacheHitInputTokens,
+            cacheMissInputTokens: stats.cacheMissInputTokens,
+            outputTokens: stats.outputTokens,
+            recentCharges: chargeRows.slice(0, 10).map(publicApiChargeRecord)
+        };
+    }
+
+    function buildBillingSummary(chargeRows, ranges) {
+        const stats = emptyBillingStats();
+        for (const row of chargeRows) {
+            addBillingStats(stats, row, ranges);
+        }
+        return billingStatsToPublic(stats, chargeRows);
+    }
+
     function addUsageStats(stats, row, ranges) {
         const requestedAt = new Date(row.requested_at);
         const isToday = requestedAt >= ranges.todayStart;
@@ -2124,6 +2389,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         const todayStart = startOfChinaDay(now);
         const weekStart = startOfChinaWeek(now);
         const monthStart = startOfChinaMonth(now);
+        const ranges = { todayStart, monthStart };
         const visibleKeys = accountUsageKeys(phone);
         const visibleHashes = new Set(visibleKeys.keys());
         const summary = {
@@ -2189,6 +2455,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
                 lastEventAt
             },
             summary,
+            billing: buildBillingSummary(listApiChargeRecordsForBillingByPhone.all(phone), ranges),
             hourly: Array.from(hourlyByBucket.values()).sort((left, right) => left.bucket.localeCompare(right.bucket)).slice(-24),
             daily: Array.from(dailyByBucket.values()).sort((left, right) => left.bucket.localeCompare(right.bucket)),
             byModel: Array.from(byModel.values()).sort((left, right) => right.totalTokens - left.totalTokens),
@@ -2273,6 +2540,10 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
                 total_requests: summaryStats.total_requests,
                 failed_requests: summaryStats.failed_requests
             },
+            billing: buildBillingSummary(listApiChargeRecordsForBilling.all(), {
+                todayStart: startOfChinaDay(now),
+                monthStart: startOfChinaMonth(now)
+            }),
             items: filteredItems
         };
     }

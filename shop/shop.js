@@ -35,6 +35,12 @@
         return `¥${(Number(cents || 0) / 100).toFixed(2)}`;
     }
 
+    function formatNanos(nanos) {
+        const amount = Number(nanos || 0) / 1000000000;
+        if (amount === 0) return '¥0.00';
+        return `¥${Math.abs(amount) >= 1 ? amount.toFixed(2) : amount.toFixed(6)}`;
+    }
+
     function formatNumber(value) {
         return Number(value || 0).toLocaleString('zh-CN');
     }
@@ -249,6 +255,23 @@
         `).join('');
     }
 
+    function renderBillingUsageCards(billing = {}) {
+        const cards = [
+            ['今日消费', formatNanos(billing.todayChargeNanos), '今日已扣费'],
+            ['本月消费', formatNanos(billing.monthChargeNanos), billing.priceVersion || 'DeepSeek Pro RMB'],
+            ['缓存命中输入', formatNumber(billing.cacheHitInputTokens), '本月 token'],
+            ['缓存未命中输入', formatNumber(billing.cacheMissInputTokens), '本月 token'],
+            ['输出 token', formatNumber(billing.outputTokens), '本月 token']
+        ];
+        return cards.map(([label, value, hint]) => `
+            <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(label)}</p>
+                <p class="mt-2 text-xl font-display text-primary dark:text-dark-text">${escapeHtml(value)}</p>
+                <p class="mt-1 text-xs text-text-muted dark:text-dark-text-muted">${escapeHtml(hint)}</p>
+            </article>
+        `).join('');
+    }
+
     function renderBars(items, labelFormatter = (item) => item.bucket) {
         if (!items.length) {
             return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无用量记录，用量统计可能最多延迟 1 小时。</p>';
@@ -271,10 +294,10 @@
 
     function renderBalanceCards(balance = {}) {
         const cards = [
-            ['当前余额', formatCents(balance.balanceCents), billingStatusText(balance.status)],
-            ['欠费金额', formatCents(balance.debtCents), balance.debtCents > 0 ? '需补缴' : '无欠费'],
-            ['待确认充值', formatCents(balance.pendingTopupCents), '确认后入账'],
-            ['欠费上限', formatCents(balance.creditLimitCents), balance.creditExceeded ? '已超过' : '默认上限']
+            ['当前余额', balance.balanceNanos === undefined ? formatCents(balance.balanceCents) : formatNanos(balance.balanceNanos), billingStatusText(balance.status)],
+            ['欠费金额', balance.debtNanos === undefined ? formatCents(balance.debtCents) : formatNanos(balance.debtNanos), balance.debtCents > 0 ? '需补缴' : '无欠费'],
+            ['待确认充值', balance.pendingTopupNanos === undefined ? formatCents(balance.pendingTopupCents) : formatNanos(balance.pendingTopupNanos), '确认后入账'],
+            ['欠费上限', balance.creditLimitNanos === undefined ? formatCents(balance.creditLimitCents) : formatNanos(balance.creditLimitNanos), balance.creditExceeded ? '已超过' : '默认上限']
         ];
         return cards.map(([label, value, hint]) => `
             <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
@@ -348,27 +371,39 @@
         `;
     }
 
-    function renderCharges(charges = []) {
+    function renderCharges(charges = [], options = {}) {
         if (!charges.length) return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无 API 扣费记录。</p>';
+        const phoneHeader = options.showPhone ? '<th class="py-2 pr-3">用户</th>' : '';
         return `
             <table class="min-w-full text-sm">
                 <thead class="text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
-                    <tr><th class="py-2 pr-3">时间</th><th class="py-2 pr-3">模型</th><th class="py-2 pr-3">Token</th><th class="py-2 pr-3">费用</th><th class="py-2 pr-3">余额</th><th class="py-2">状态</th></tr>
+                    <tr><th class="py-2 pr-3">时间</th>${phoneHeader}<th class="py-2 pr-3">模型</th><th class="py-2 pr-3">命中输入</th><th class="py-2 pr-3">未命中输入</th><th class="py-2 pr-3">输出</th><th class="py-2 pr-3">Reasoning</th><th class="py-2 pr-3">费用</th><th class="py-2 pr-3">扣后余额</th><th class="py-2">状态</th></tr>
                 </thead>
                 <tbody>
                     ${charges.map((charge) => `
                         <tr class="border-t border-border-subtle dark:border-dark-border">
                             <td class="py-2 pr-3">${escapeHtml(formatDate(charge.createdAt))}</td>
+                            ${options.showPhone ? `<td class="py-2 pr-3">${escapeHtml(charge.phone || '-')}</td>` : ''}
                             <td class="py-2 pr-3">${escapeHtml(charge.model)}</td>
-                            <td class="py-2 pr-3">${escapeHtml(`${formatNumber(charge.inputTokens)} / ${formatNumber(charge.outputTokens)} / ${formatNumber(charge.totalTokens)}`)}</td>
-                            <td class="py-2 pr-3">${escapeHtml(formatCents(charge.chargeCents))}</td>
-                            <td class="py-2 pr-3">${escapeHtml(formatCents(charge.balanceAfterCents))}</td>
+                            <td class="py-2 pr-3">${escapeHtml(formatNumber(charge.cacheHitInputTokens))}</td>
+                            <td class="py-2 pr-3">${escapeHtml(formatNumber(charge.cacheMissInputTokens))}</td>
+                            <td class="py-2 pr-3">${escapeHtml(formatNumber(charge.outputTokens))}</td>
+                            <td class="py-2 pr-3">${escapeHtml(formatNumber(charge.reasoningTokens))}</td>
+                            <td class="py-2 pr-3">${escapeHtml(charge.chargeNanos === undefined ? formatCents(charge.chargeCents) : formatNanos(charge.chargeNanos))}</td>
+                            <td class="py-2 pr-3">${escapeHtml(charge.balanceAfterNanos === undefined ? formatCents(charge.balanceAfterCents) : formatNanos(charge.balanceAfterNanos))}</td>
                             <td class="py-2">${escapeHtml(chargeStatusText(charge.status))}</td>
                         </tr>
                     `).join('')}
                 </tbody>
             </table>
         `;
+    }
+
+    function renderAdminRecentCharges(charges = []) {
+        if (!charges.length) {
+            return '<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">暂无最近扣费记录。</div>';
+        }
+        return renderCharges(charges, { showPhone: true });
     }
 
     function renderLedger(entries = []) {
@@ -476,7 +511,9 @@
         const groupFilter = document.getElementById('usageGroupFilter');
         const statusFilter = document.getElementById('usageStatusFilter');
         const summaryRoot = document.getElementById('usageSummaryCards');
+        const billingRoot = document.getElementById('adminBillingUsageCards');
         const tableRoot = document.getElementById('usageTable');
+        const recentChargesRoot = document.getElementById('adminRecentCharges');
         const message = document.getElementById('usageMessage');
         const importForm = document.getElementById('usageImportForm');
         const importMonth = document.getElementById('usageImportMonth');
@@ -493,7 +530,9 @@
             try {
                 const data = await requestJson(`/api/admin/usage-summary?${params.toString()}`);
                 summaryRoot.innerHTML = renderUsageSummary(data.summary || {});
+                if (billingRoot) billingRoot.innerHTML = renderBillingUsageCards(data.billing || {});
                 tableRoot.innerHTML = renderUsageItems(data.items || []);
+                if (recentChargesRoot) recentChargesRoot.innerHTML = renderAdminRecentCharges(data.billing?.recentCharges || []);
                 message.textContent = `共 ${(data.items || []).length} 条。`;
             } catch (error) {
                 message.textContent = error.message;
@@ -746,6 +785,7 @@
         const message = document.getElementById('accountMessage');
         const logoutButton = document.getElementById('logoutButton');
         const usageCards = document.getElementById('accountUsageCards');
+        const billingUsageCards = document.getElementById('accountBillingUsageCards');
         const tokenBreakdown = document.getElementById('accountTokenBreakdown');
         const hourlyChart = document.getElementById('accountHourlyChart');
         const dailyChart = document.getElementById('accountDailyChart');
@@ -839,6 +879,7 @@
         try {
             const usage = await requestJson('/api/account/usage-summary');
             if (usageCards) usageCards.innerHTML = renderAccountUsageCards(usage.summary || {});
+            if (billingUsageCards) billingUsageCards.innerHTML = renderBillingUsageCards(usage.billing || {});
             if (tokenBreakdown) tokenBreakdown.innerHTML = renderTokenBreakdown(usage.summary?.month || {});
             if (hourlyChart) hourlyChart.innerHTML = renderBars(usage.hourly || [], (item) => String(item.bucket || '').slice(11, 16));
             if (dailyChart) dailyChart.innerHTML = renderBars(usage.daily || [], (item) => String(item.bucket || '').slice(5));
