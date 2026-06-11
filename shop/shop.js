@@ -601,7 +601,23 @@
         const importForm = document.getElementById('usageImportForm');
         const importMonth = document.getElementById('usageImportMonth');
         const importMessage = document.getElementById('usageImportMessage');
+        const usageImportStatus = document.getElementById('usageImportStatus');
         if (!refreshButton || !summaryRoot || !tableRoot || !message) return;
+
+        async function fetchUsageImportStatus() {
+            if (!usageImportStatus) return;
+            try {
+                const status = await requestJson('/api/admin/usage-import-status');
+                usageImportStatus.innerHTML = `
+                    <p>自动导入：${status.enabled ? '已开启' : '未开启'}</p>
+                    <p class="mt-1">最近月份：${escapeHtml(status.lastMonth || '-')}，导入 ${escapeHtml(formatNumber(status.lastInserted || 0))}，跳过 ${escapeHtml(formatNumber(status.lastSkipped || 0))}，失败 ${escapeHtml(formatNumber(status.lastFailedLines || 0))}</p>
+                    <p class="mt-1">最近运行：${escapeHtml(formatDate(status.lastRunAt))}</p>
+                    ${status.lastError ? `<p class="mt-1 text-red-600">${escapeHtml(status.lastError)}</p>` : ''}
+                `;
+            } catch (error) {
+                usageImportStatus.textContent = error.message;
+            }
+        }
 
         async function fetchUsage() {
             const params = new URLSearchParams({
@@ -619,6 +635,8 @@
                 message.textContent = `共 ${(data.items || []).length} 条。`;
             } catch (error) {
                 message.textContent = error.message;
+            } finally {
+                await fetchUsageImportStatus();
             }
         }
 

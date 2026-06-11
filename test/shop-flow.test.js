@@ -2420,6 +2420,16 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.match(html, /id="adminUsageImportSection"[\s\S]*?data-collapsible-default="open"/);
 });
 
+test('Admin 日志导入栏目展示自动导入状态容器', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
+    assert.match(html, /id="usageImportStatus"/);
+});
+
+test('Admin 前端读取 usage 自动导入状态接口', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+    assert.match(script, /api\/admin\/usage-import-status/);
+});
+
 test('Account 页面包含预充值余额、充值申请和扣费流水容器', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
 
