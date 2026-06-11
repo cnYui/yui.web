@@ -2173,6 +2173,15 @@ test('管理员页和登录页包含密码重置入口', () => {
     assert.match(script, /function initAdminPasswordResetPage/);
 });
 
+test('登录页使用新的小店文案并移除旧说明小字', () => {
+    const loginHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');
+
+    assert.match(loginHtml, /登录 悠一 的小店/);
+    assert.doesNotMatch(loginHtml, /登录 Shop/);
+    assert.doesNotMatch(loginHtml, /使用手机号和密码进入个人中心/);
+    assert.doesNotMatch(loginHtml, /管理员账号登录后进入控制台/);
+});
+
 test('内部 API key 状态接口必须使用请求头 token', async () => {
     await withServer(async ({ baseUrl }) => {
         const missing = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=sk-any`);
@@ -2830,7 +2839,7 @@ test('Shop 首页顶部不显示账号入口且正文只保留固定登录入口
     assert.match(home, /<main[\s\S]*href="\/shop\/login\/"[\s\S]*>登录账户<\/a>/);
     assert.doesNotMatch(home, /管理控制台/);
     assert.match(login, /id="loginForm"/);
-    assert.match(login, /管理员账号登录后进入控制台/);
+    assert.match(login, /登录 悠一 的小店/);
     assert.match(register, /id="registerForm"/);
     assert.match(register, /至少 8 位/);
     assert.match(account, /id="logoutButton"/);

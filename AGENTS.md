@@ -73,3 +73,10 @@
 - `/shop/admin/` 的生成密码重置码、充值审核、用量监控、日志导入 4 个栏目使用统一折叠按钮。
 - 折叠行为复用 `shop/shop.js` 的 `initCollapsibleSections`，Admin 初始化时调用，不新增专用状态逻辑。
 - 设计与计划见 `docs/ai/context/20260611-154357-admin-collapsible-sections-design-plan_CN.md`。
+
+## 2026-06-11 Login 页面文案与布局
+
+- `/shop/login/` 主提示文案改为“登录 悠一 的小店”。
+- 删除旧的手机号/密码用途说明和管理员登录说明小字。
+- 页面布局保持登录与重置表单 DOM id 不变，只调整文案和 Tailwind 布局类。
+- 设计与计划见 `docs/ai/context/20260611-155749-shop-login-copy-layout-design-plan_CN.md`，实施记录见 `docs/ai/context/20260611-160405-shop-login-copy-layout-implementation_CN.md`。
