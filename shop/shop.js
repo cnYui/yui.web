@@ -1025,6 +1025,8 @@
     }
 
     function initAdminPage() {
+        initCollapsibleSections(document);
+
         initAdminUsagePage();
         initAdminPasswordResetPage();
         initAdminTopupPage();
