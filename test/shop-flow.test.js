@@ -352,6 +352,123 @@ test('Shop 外部脚本会在 CSP 禁止 inline script 时自动初始化 Accoun
     assert.equal(elements.get('paymentReference').textContent, 'YUI-TEST');
 });
 
+test('Account 页提供登录态邀请码兑换表单且不再引导到独立手机号兑换页', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
+
+    assert.match(html, /id="accountRedeemForm"/);
+    assert.match(html, /id="accountInviteCodeInput"/);
+    assert.match(html, /id="accountRedeemMessage"/);
+    assert.doesNotMatch(html, /href="\/shop\/redeem\/"/);
+});
+
+test('Account 前端兑换调用登录态接口并且不提交手机号', async () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+    const elements = new Map();
+    const createElement = () => {
+        const listeners = new Map();
+        return {
+            innerHTML: '',
+            textContent: '',
+            value: '',
+            src: '',
+            classList: {
+                add() {},
+                remove() {},
+                toggle() {}
+            },
+            addEventListener(type, listener) {
+                listeners.set(type, listener);
+            },
+            dispatchEvent(event) {
+                listeners.get(event.type)?.({
+                    preventDefault() {},
+                    target: this
+                });
+            },
+            querySelectorAll: () => [],
+            querySelector: () => null,
+            focus() {}
+        };
+    };
+    for (const id of [
+        'accountPhone',
+        'accountOrders',
+        'accountMessage',
+        'logoutButton',
+        'accountRedeemForm',
+        'accountInviteCodeInput',
+        'accountRedeemMessage',
+        'accountBalanceCards',
+        'accountTopups',
+        'accountCharges',
+        'accountLedger',
+        'alipayQrImage',
+        'wechatQrImage',
+        'paymentReference',
+        'accountUsageCards',
+        'accountBillingUsageCards',
+        'accountTokenBreakdown',
+        'accountHourlyChart',
+        'accountDailyChart',
+        'usageFreshness',
+        'accountUsageMessage'
+    ]) {
+        elements.set(id, createElement());
+    }
+    const calls = [];
+    const responses = {
+        '/api/account/me': { user: { phone: '13800138111' }, orders: [] },
+        '/api/account/balance': { balance: {}, payment: {} },
+        '/api/account/topups': { topups: [] },
+        '/api/account/api-charges': { charges: [] },
+        '/api/account/ledger': { entries: [] },
+        '/api/account/usage-summary': { summary: {}, billing: {}, hourly: [], daily: [] },
+        '/api/account/invites/redeem': { order: { id: 'ORDER1', apiKey: 'sk-test' } }
+    };
+    const sandbox = {
+        document: {
+            cookie: 'yui_shop_csrf=csrf-token; yui_shop_account_session=session-token',
+            readyState: 'loading',
+            querySelectorAll: () => [],
+            getElementById: (id) => elements.get(id) || null,
+            addEventListener() {}
+        },
+        fetch: async (url, options = {}) => {
+            calls.push({ url, options });
+            return {
+                ok: true,
+                status: 200,
+                json: async () => responses[url] || {}
+            };
+        },
+        window: {
+            location: {
+                pathname: '/shop/account/',
+                href: '',
+                reload() {}
+            }
+        },
+        navigator: {
+            clipboard: {
+                writeText: async () => {}
+            }
+        },
+        Intl,
+        URL
+    };
+    sandbox.window.document = sandbox.document;
+
+    vm.runInNewContext(script, sandbox);
+    await sandbox.window.YuiShop.initAccountPage();
+    elements.get('accountInviteCodeInput').value = 'yui-abc-def';
+    elements.get('accountRedeemForm').dispatchEvent({ type: 'submit' });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    const redeemCall = calls.find((call) => call.url === '/api/account/invites/redeem');
+    assert.ok(redeemCall);
+    assert.deepEqual(JSON.parse(redeemCall.options.body), { code: 'YUI-ABC-DEF' });
+});
+
 test('Shop 外部脚本会绑定 Account 和 Admin 页栏目折叠按钮', async () => {
     const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
 

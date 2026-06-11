@@ -619,6 +619,10 @@
         });
     }
 
+    function normalizeInviteCode(value) {
+        return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 18);
+    }
+
     async function initKeyPage() {
         const root = document.getElementById('keyResult');
         const empty = document.getElementById('emptyKey');
@@ -847,6 +851,9 @@
         const alipayQrImage = document.getElementById('alipayQrImage');
         const wechatQrImage = document.getElementById('wechatQrImage');
         const paymentReference = document.getElementById('paymentReference');
+        const accountRedeemForm = document.getElementById('accountRedeemForm');
+        const accountInviteCodeInput = document.getElementById('accountInviteCodeInput');
+        const accountRedeemMessage = document.getElementById('accountRedeemMessage');
         if (!phoneRoot || !ordersRoot || !message || !logoutButton) return;
 
         ordersRoot.innerHTML = '<p class="text-sm text-text-muted dark:text-dark-text-muted">正在读取账户信息...</p>';
@@ -857,9 +864,8 @@
             if (!orders.length) {
                 ordersRoot.innerHTML = `
                     <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-8 text-center">
-                        <h2 class="font-display text-3xl text-primary dark:text-dark-text">暂无订单</h2>
-                        <p class="mt-3 text-text-muted dark:text-dark-text-muted">使用邀请码兑换后，订单会显示在这里。</p>
-                        <a class="btn-primary mt-6 inline-flex" href="/shop/redeem/">去兑换</a>
+                        <h2 class="font-display text-3xl text-primary dark:text-dark-text">暂无 API key</h2>
+                        <p class="mt-3 text-text-muted dark:text-dark-text-muted">输入管理员提供的邀请码后，API key 会绑定到当前账号。</p>
                     </section>
                 `;
             } else {
@@ -914,6 +920,33 @@
                     await refreshBilling();
                 } catch (error) {
                     topupMessage.textContent = error.message;
+                }
+            });
+        }
+
+        if (accountRedeemForm && accountInviteCodeInput && accountRedeemMessage) {
+            accountInviteCodeInput.addEventListener('input', () => {
+                accountInviteCodeInput.value = normalizeInviteCode(accountInviteCodeInput.value);
+            });
+            accountRedeemForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const code = normalizeInviteCode(accountInviteCodeInput.value);
+                if (!code) {
+                    accountRedeemMessage.textContent = '请输入邀请码。';
+                    accountInviteCodeInput.focus();
+                    return;
+                }
+                accountRedeemMessage.textContent = '正在兑换...';
+                try {
+                    await requestJson('/api/account/invites/redeem', {
+                        method: 'POST',
+                        body: JSON.stringify({ code })
+                    });
+                    accountInviteCodeInput.value = '';
+                    accountRedeemMessage.textContent = '兑换成功，API key 已绑定到当前账号。';
+                    window.location.reload();
+                } catch (error) {
+                    accountRedeemMessage.textContent = error.message;
                 }
             });
         }
