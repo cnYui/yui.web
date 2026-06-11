@@ -16,6 +16,10 @@ function keyPreviewForTest(apiKey) {
     return `${apiKey.slice(0, 12)}...${apiKey.slice(-6)}`;
 }
 
+function tableColumns(db, tableName) {
+    return db.prepare(`PRAGMA table_info(${tableName})`).all().map((column) => column.name);
+}
+
 function hashPasswordForTest(password) {
     const salt = 'test-admin-salt';
     const hash = crypto.scryptSync(String(password || ''), salt, 64, {
@@ -438,6 +442,31 @@ test('Shop 数据库包含 API key hash 和 usage_events 账本表', async () =>
     });
 });
 
+test('Shop 数据库包含 DeepSeek 人民币 nanos 扣费字段', async () => {
+    await withServer(async ({ db }) => {
+        const usageColumns = tableColumns(db, 'usage_events');
+        assert.ok(usageColumns.includes('cache_hit_input_tokens'));
+        assert.ok(usageColumns.includes('cache_miss_input_tokens'));
+
+        const balanceColumns = tableColumns(db, 'account_balances');
+        assert.ok(balanceColumns.includes('balance_nanos'));
+        assert.ok(balanceColumns.includes('pending_topup_nanos'));
+        assert.ok(balanceColumns.includes('credit_limit_nanos'));
+
+        const ledgerColumns = tableColumns(db, 'account_ledger_entries');
+        assert.ok(ledgerColumns.includes('amount_nanos'));
+        assert.ok(ledgerColumns.includes('balance_after_nanos'));
+
+        const chargeColumns = tableColumns(db, 'api_charge_records');
+        assert.ok(chargeColumns.includes('cache_hit_input_tokens'));
+        assert.ok(chargeColumns.includes('cache_miss_input_tokens'));
+        assert.ok(chargeColumns.includes('reasoning_tokens'));
+        assert.ok(chargeColumns.includes('charge_nanos'));
+        assert.ok(chargeColumns.includes('balance_before_nanos'));
+        assert.ok(chargeColumns.includes('balance_after_nanos'));
+    });
+});
+
 test('Shop 数据库包含预充值余额、充值申请、账户流水和扣费记录表', async () => {
     await withServer(async ({ db }) => {
         const tableNames = db.prepare(`
@@ -686,7 +715,7 @@ test('托管 API key 充值确认后恢复可用', async () => {
     });
 });
 
-test('usage event 写入后按 price_amount_micros 扣余额并生成用户可见扣费记录', async () => {
+test('usage event 写入后按 DeepSeek Pro 人民币 nanos 扣余额并生成用户可见扣费记录', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const order = await createRedeemedOrder(baseUrl, '13800139011', 'sk-charge-positive');
         const cookie = await registerUserAndGetCookie(baseUrl, '13800139011');
@@ -697,16 +726,20 @@ test('usage event 写入后按 price_amount_micros 扣余额并生成用户可�
             request_id: 'req-charge-001',
             api_key_hash: hashApiKeyForTest(order.apiKey),
             api_key_preview: keyPreviewForTest(order.apiKey),
-            provider: 'codex',
-            model: 'gpt-5.4',
-            endpoint: '/v1/responses',
+            provider: 'deepseek',
+            model: 'deepseek-v4-pro',
+            endpoint: '/v1/chat/completions',
             success: true,
             failed: false,
-            input_tokens: 100,
-            output_tokens: 200,
-            total_tokens: 300,
-            price_amount_micros: 250000,
-            price_currency: 'CNY',
+            input_tokens: 1222504,
+            output_tokens: 12287,
+            reasoning_tokens: 3544,
+            cached_tokens: 1056256,
+            cache_hit_input_tokens: 1056256,
+            cache_miss_input_tokens: 166248,
+            total_tokens: 1234791,
+            price_amount_micros: 1,
+            price_currency: 'USD',
             requested_at: '2026-06-10T12:00:00+08:00'
         };
 
@@ -716,33 +749,90 @@ test('usage event 写入后按 price_amount_micros 扣余额并生成用户可�
         const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
             headers: { cookie }
         });
-        assert.equal(balance.body.balance.balanceCents, 75);
+        assert.equal(balance.body.balance.balanceNanos, 401127600);
+        assert.equal(balance.body.balance.balanceAmount, 0.4011276);
 
         const charge = db.prepare(`
-SELECT phone, usage_event_id, charge_cents, balance_before_cents, balance_after_cents, status
+SELECT phone, usage_event_id, cache_hit_input_tokens, cache_miss_input_tokens, output_tokens,
+       reasoning_tokens, charge_nanos, balance_before_nanos, balance_after_nanos, price_version,
+       charge_cents, balance_before_cents, balance_after_cents, status
 FROM api_charge_records
 WHERE usage_event_id = ?
 `).get('req-charge-001');
         assert.deepEqual(charge, {
             phone: '13800139011',
             usage_event_id: 'req-charge-001',
-            charge_cents: 25,
+            cache_hit_input_tokens: 1056256,
+            cache_miss_input_tokens: 166248,
+            output_tokens: 12287,
+            reasoning_tokens: 3544,
+            charge_nanos: 598872400,
+            balance_before_nanos: 1000000000,
+            balance_after_nanos: 401127600,
+            price_version: 'deepseek-v4-pro-rmb-20260424',
+            charge_cents: 60,
             balance_before_cents: 100,
-            balance_after_cents: 75,
+            balance_after_cents: 40,
             status: 'charged'
         });
 
         const ledger = db.prepare(`
-SELECT entry_type, amount_cents, balance_after_cents, related_id
+SELECT entry_type, amount_cents, amount_nanos, balance_after_cents, balance_after_nanos, related_id
 FROM account_ledger_entries
 WHERE related_id = ?
 `).get('req-charge-001');
         assert.deepEqual(ledger, {
             entry_type: 'api_charge',
-            amount_cents: -25,
-            balance_after_cents: 75,
+            amount_cents: -60,
+            amount_nanos: -598872400,
+            balance_after_cents: 40,
+            balance_after_nanos: 401127600,
             related_id: 'req-charge-001'
         });
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
+test('旧 usage event 只有 cached_tokens 时可推导未命中输入并按 nanos 扣费', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800139015', 'sk-charge-legacy-cache');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800139015');
+        await submitAndApproveTopup(baseUrl, cookie, '1');
+
+        const inserted = await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-charge-legacy-cache',
+            api_key_hash: hashApiKeyForTest(order.apiKey),
+            api_key_preview: keyPreviewForTest(order.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.5',
+            success: true,
+            failed: false,
+            input_tokens: 1000,
+            cached_tokens: 700,
+            output_tokens: 50,
+            reasoning_tokens: 20,
+            total_tokens: 1050,
+            requested_at: '2026-06-10T12:10:00+08:00'
+        });
+        assert.equal(inserted.response.status, 201);
+
+        const charge = db.prepare(`
+SELECT cache_hit_input_tokens, cache_miss_input_tokens, output_tokens, reasoning_tokens, charge_nanos
+FROM api_charge_records
+WHERE usage_event_id = ?
+`).get('req-charge-legacy-cache');
+        assert.deepEqual(charge, {
+            cache_hit_input_tokens: 700,
+            cache_miss_input_tokens: 300,
+            output_tokens: 50,
+            reasoning_tokens: 20,
+            charge_nanos: 1217500
+        });
+
+        const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
+            headers: { cookie }
+        });
+        assert.equal(balance.body.balance.balanceNanos, 998782500);
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
@@ -762,11 +852,9 @@ test('余额很少时本次调用可扣成负数且下一次状态检查拒绝',
             endpoint: '/v1/responses',
             success: true,
             failed: false,
-            input_tokens: 100,
-            output_tokens: 200,
-            total_tokens: 300,
-            price_amount_micros: 200000,
-            price_currency: 'CNY',
+            input_tokens: 0,
+            output_tokens: 33333,
+            total_tokens: 33333,
             requested_at: '2026-06-10T12:05:00+08:00'
         });
         assert.equal(inserted.response.status, 201);
@@ -775,6 +863,7 @@ test('余额很少时本次调用可扣成负数且下一次状态检查拒绝',
             headers: { cookie }
         });
         assert.equal(balance.body.balance.balanceCents, -15);
+        assert.equal(balance.body.balance.balanceNanos, -149998000);
         assert.equal(balance.body.balance.debtCents, 15);
         assert.equal(balance.body.balance.status, 'debt');
 
@@ -819,11 +908,12 @@ test('重复 usage event 不会重复扣费', async () => {
         const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
             headers: { cookie }
         });
-        assert.equal(balance.body.balance.balanceCents, 90);
+        assert.equal(balance.body.balance.balanceCents, 99);
+        assert.equal(balance.body.balance.balanceNanos, 999991000);
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
-test('usage event 扣费失败时不会留下未扣费事件', async () => {
+test('失败 usage event 会保留审计记录但不会扣费', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const order = await createRedeemedOrder(baseUrl, '13800139016', 'sk-charge-rollback');
         const cookie = await registerUserAndGetCookie(baseUrl, '13800139016');
@@ -837,25 +927,31 @@ test('usage event 扣费失败时不会留下未扣费事件', async () => {
             provider: 'codex',
             model: 'gpt-5.4',
             endpoint: '/v1/responses',
-            success: true,
-            failed: false,
+            success: false,
+            failed: true,
             input_tokens: 1,
             output_tokens: 1,
             total_tokens: 2,
-            price_amount_micros: 100000,
-            price_currency: 'USD',
             requested_at: '2026-06-10T12:12:00+08:00'
         });
 
-        assert.equal(rejected.response.status, 400);
-        assert.equal(rejected.body.code, 'UNSUPPORTED_USAGE_PRICE_CURRENCY');
-        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM usage_events WHERE request_id = ?').get('req-charge-rollback').count, 0);
-        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM api_charge_records WHERE usage_event_id = ?').get('req-charge-rollback').count, 0);
+        assert.equal(rejected.response.status, 201);
+        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM usage_events WHERE request_id = ?').get('req-charge-rollback').count, 1);
+        assert.deepEqual(
+            db.prepare(`
+SELECT charge_cents, charge_nanos, status
+FROM api_charge_records
+WHERE usage_event_id = ?
+`).get('req-charge-rollback'),
+            { charge_cents: 0, charge_nanos: 0, status: 'failed_no_charge' }
+        );
+        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM account_ledger_entries WHERE related_id = ?').get('req-charge-rollback').count, 0);
 
         const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
             headers: { cookie }
         });
         assert.equal(balance.body.balance.balanceCents, 100);
+        assert.equal(balance.body.balance.balanceNanos, 1000000000);
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
@@ -898,7 +994,8 @@ test('用户账户页 API 返回自己的账户流水和扣费记录', async () 
         assert.equal(charges.response.status, 200);
         assert.equal(charges.body.charges.length, 1);
         assert.equal(charges.body.charges[0].usageEventId, 'req-ledger-first');
-        assert.equal(charges.body.charges[0].chargeCents, 10);
+        assert.equal(charges.body.charges[0].chargeCents, 1);
+        assert.equal(charges.body.charges[0].chargeNanos, 150000);
 
         const secondLedger = await jsonFetch(`${baseUrl}/api/account/ledger`, {
             headers: { cookie: secondCookie }
@@ -1016,6 +1113,13 @@ test('管理员 usage summary 返回 Shop 和未托管 key 的聚合用量', asy
         assert.equal(result.body.summary.total_tokens, 22);
         assert.equal(result.body.summary.month_tokens, 22);
         assert.equal(result.body.summary.failed_requests, 1);
+        assert.equal(result.body.billing.monthChargeNanos, 75000);
+        assert.equal(result.body.billing.todayChargeNanos, 75000);
+        assert.equal(result.body.billing.cacheHitInputTokens, 0);
+        assert.equal(result.body.billing.cacheMissInputTokens, 5);
+        assert.equal(result.body.billing.outputTokens, 10);
+        assert.equal(result.body.billing.recentCharges.length, 1);
+        assert.equal(result.body.billing.recentCharges[0].usageEventId, 'req-summary-shop');
 
         const shopItem = result.body.items.find((item) => item.group === 'shop' && item.phone === '13800138500');
         assert.ok(shopItem);
@@ -1543,6 +1647,13 @@ test('Account usage summary 只聚合当前登录手机号关联的 token 用量
         assert.equal(result.body.summary.month.outputTokens, 20);
         assert.equal(result.body.summary.month.reasoningTokens, 3);
         assert.equal(result.body.summary.month.cachedTokens, 4);
+        assert.equal(result.body.billing.monthChargeNanos, 138100);
+        assert.equal(result.body.billing.todayChargeNanos, 138100);
+        assert.equal(result.body.billing.cacheHitInputTokens, 4);
+        assert.equal(result.body.billing.cacheMissInputTokens, 6);
+        assert.equal(result.body.billing.outputTokens, 20);
+        assert.equal(result.body.billing.recentCharges.length, 1);
+        assert.equal(result.body.billing.recentCharges[0].usageEventId, 'req-account-own');
         assert.equal(result.body.byApiKey.length, 1);
         assert.equal(result.body.byApiKey[0].apiKeyPreview, keyPreviewForTest('sk-usage-aaa-own'));
         assert.ok(Array.isArray(result.body.hourly));
@@ -1715,7 +1826,11 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.match(html, /id="usageImportForm"/);
     assert.match(html, /CLIProxyAPI\/logs\/usage/);
     assert.match(html, /usage-events-YYYY-MM\.jsonl/);
+    assert.match(html, /id="adminBillingUsageCards"/);
+    assert.match(html, /id="adminRecentCharges"/);
     assert.match(script, /function initAdminUsagePage/);
+    assert.match(script, /function renderBillingUsageCards/);
+    assert.match(script, /function renderAdminRecentCharges/);
     assert.match(script, /api\/admin\/usage-summary/);
     assert.match(script, /api\/admin\/usage-imports/);
     assert.doesNotMatch(html, /完整 API key/);
@@ -1725,6 +1840,7 @@ test('Account 页面包含预充值余额、充值申请和扣费流水容器', 
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
 
     assert.match(html, /id="accountBalanceCards"/);
+    assert.match(html, /id="accountBillingUsageCards"/);
     assert.match(html, /id="topupForm"/);
     assert.match(html, /id="topupAmount"/);
     assert.match(html, /id="accountTopups"/);
