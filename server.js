@@ -1106,6 +1106,17 @@ function createShopApp(options = {}) {
         return next();
     }
 
+    function requireLogoutCsrf(req, res, next) {
+        if (adminHeaderOnlyRequest(req)) {
+            return next();
+        }
+        const session = getCurrentAccountSession(req);
+        if (session && !session.csrf_token_hash) {
+            return next();
+        }
+        return requireAccountCsrf(req, res, next);
+    }
+
     function blockSensitiveStaticPaths(req, res, next) {
         const requestPath = decodeURIComponent(req.path || '/');
         const normalizedPath = path.posix.normalize(requestPath);
@@ -2716,7 +2727,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
-    app.post('/api/auth/logout', limitAuthApi, requireSameOrigin, requireAccountCsrf, (req, res) => {
+    app.post('/api/auth/logout', limitAuthApi, requireSameOrigin, requireLogoutCsrf, (req, res) => {
         const token = getAccountSessionToken(req);
         if (token) {
             revokeAccountSession.run(nowIso(), hashSessionToken(token));
