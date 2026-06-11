@@ -87,3 +87,35 @@
 - 用户提供的 `2080.PNG` 使用代码生成透明背景 PNG，输出为 `shop/assets/login/yui-login-bg.png`。
 - 背景图通过页面内居中 `img` 层展示，登录和重置表单 DOM id 不变。
 - 设计与计划见 `docs/ai/context/20260611-161311-shop-login-transparent-bg-image-design-plan_CN.md`，实施记录见 `docs/ai/context/20260611-161607-shop-login-transparent-bg-image-implementation_CN.md`。
+
+## 2026-06-11 Login 左侧贴底人物图
+
+- `/shop/login/` 不再显示“这里是登录页面”，`<title>` 简化为“登录”。
+- 透明人物图从居中背景改为左侧背景，使用 `bottom: 0` 贴住登录主区域底部。
+- 登录表单保持右侧卡片，窄屏时居中并降低人物图透明度，避免影响输入。
+- 设计与计划见 `docs/ai/context/20260611-183623-shop-login-left-bottom-figure-design-plan_CN.md`，实施记录见 `docs/ai/context/20260611-183623-shop-login-left-bottom-figure-implementation_CN.md`。
+- 最终采用中途截图版本：桌面端 `left: clamp(-380px, -22vw, -260px)`，`width: min(86vw, 1120px)`；不要使用后续更大更靠左的 1320px 版本。记录见 `docs/ai/context/20260611-185005-shop-login-figure-restore-midpoint_CN.md`。
+
+## 2026-06-11 Account API key 卡片精简
+
+- `/shop/account/` 的“我的 API key”卡片按按量计费语义精简。
+- Account 场景只展示 API key、兑换时间、复制完整 API key 按钮。
+- 金额、手机号、失效时间、订单 id、产品名、31 天说明和状态标签不在 Account API key 卡片中展示。
+- 设计与计划见 `docs/ai/context/20260611-164226-account-api-key-card-metered-design-plan_CN.md`，实施记录见 `docs/ai/context/20260611-164432-account-api-key-card-metered-implementation_CN.md`。
+
+## 2026-06-11 未托管 sk-6...e883 删除
+
+- `sk-6...e883` 来自 CLIProxyAPI `config.yaml` 的入口 `api-keys` 列表，不是 yui.web Shop 兑换订单。
+- 它在 `2026-06-11T17:43:31.889333+09:00` 到 `2026-06-11T18:00:18.60552+09:00` 写入 6 条成功 usage，共 `348,059` tokens。
+- yui.web 显示“未托管”是因为该 usage hash 无法匹配 `api_keys -> orders`，也没有 `usage_key_profiles`。
+- 已删除 CLIProxyAPI 活跃配置中的该入口 key、yui.web `usage_events` 中该 hash 的 6 条记录，并备份后过滤当前月 CLIProxyAPI usage JSONL 中该 hash 的 23 行。
+- 该 hash 没有 `api_charge_records` 或 ledger 记录，没有对 Shop 账户扣费。
+- 操作记录见 `docs/ai/context/20260611-183759-unmanaged-api-key-removal-investigation_CN.md` 和 `docs/ai/context/20260611-184335-unmanaged-api-key-removal-implementation_CN.md`。
+
+## 2026-06-11 账号清空密码与余额归零
+
+- 已将手机号 `150****6174` 恢复为未注册语义：清空密码字段并撤销 7 个未撤销会话，避免旧登录态继续访问。
+- 余额归零只修改 `account_balances.balance_cents` 和 `balance_nanos`；充值、订单、扣费历史不删除，`credit_limit_*` 不作为余额处理。
+- 执行前已备份数据库到 `data/backups/shop-before-reset-15062376174-20260611-182903.sqlite`。
+- 验证结果：无密码、未撤销会话为 0、余额 cents/nanos 均为 0。
+- 设计与计划见 `docs/ai/context/20260611-182903-reset-phone-unregistered-zero-balance-plan_CN.md`，实施记录见 `docs/ai/context/20260611-183014-reset-phone-unregistered-zero-balance-implementation_CN.md`。
