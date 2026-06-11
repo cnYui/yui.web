@@ -175,7 +175,7 @@
                     <div>
                         <p class="text-xs uppercase tracking-[0.2em] text-text-muted dark:text-dark-text-muted">${escapeHtml(order.id)}</p>
                         <h2 class="mt-2 text-2xl font-display text-primary dark:text-dark-text">${escapeHtml(order.productName)}</h2>
-                        <p class="mt-2 text-sm text-text-muted dark:text-dark-text-muted">一个 API key 对应一个订单，有效期 31 天。</p>
+                        <p class="mt-2 text-sm text-text-muted dark:text-dark-text-muted">API key 已绑定到账户，按实际使用量计费。</p>
                     </div>
                     <span class="w-fit rounded-full border border-border-subtle dark:border-dark-border px-3 py-1 text-xs ${statusClass(order.status)}">${escapeHtml(statusText(order.status))}</span>
                 </div>
@@ -739,32 +739,17 @@
         });
     }
 
-    function initPasswordResetForm() {
-        const loginForm = document.getElementById('loginForm');
+    function initResetPasswordPage() {
         const resetForm = document.getElementById('passwordResetForm');
-        const showResetButton = document.getElementById('showPasswordResetButton');
-        const showLoginButton = document.getElementById('showLoginFormButton');
         const phoneInput = document.getElementById('resetPhone');
         const codeInput = document.getElementById('resetPasswordCode');
         const passwordInput = document.getElementById('resetNewPassword');
         const confirmInput = document.getElementById('resetConfirmPassword');
         const message = document.getElementById('passwordResetMessage');
-        if (!loginForm || !resetForm || !showResetButton || !showLoginButton || !phoneInput || !codeInput || !passwordInput || !confirmInput || !message) return;
+        if (!resetForm || !phoneInput || !codeInput || !passwordInput || !confirmInput || !message) return;
 
         bindPhoneInput(phoneInput);
         normalizeResetCodeInput(codeInput);
-
-        showResetButton.addEventListener('click', () => {
-            loginForm.classList.add('hidden');
-            resetForm.classList.remove('hidden');
-            message.textContent = '';
-            phoneInput.focus();
-        });
-
-        showLoginButton.addEventListener('click', () => {
-            resetForm.classList.add('hidden');
-            loginForm.classList.remove('hidden');
-        });
 
         resetForm.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -814,7 +799,6 @@
         if (!form || !phoneInput || !passwordInput || !message) return;
 
         bindPhoneInput(phoneInput);
-        initPasswordResetForm();
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -1271,11 +1255,12 @@
         '/shop/admin/': initAdminPage,
         '/shop/login/': initLoginPage,
         '/shop/register/': initRegisterPage,
+        '/shop/reset-password/': initResetPasswordPage,
         '/shop/account/': initAccountPage,
-        '/shop/order/': () => { window.location.replace('/shop/redeem/'); },
-        '/shop/pay/': () => { window.location.replace('/shop/redeem/'); },
-        '/shop/result/': () => { window.location.replace('/shop/key/'); },
-        '/shop/content/': () => { window.location.replace('/shop/key/'); }
+        '/shop/order/': () => { window.location.replace('/shop/account/'); },
+        '/shop/pay/': () => { window.location.replace('/shop/account/'); },
+        '/shop/result/': () => { window.location.replace('/shop/account/'); },
+        '/shop/content/': () => { window.location.replace('/shop/account/'); }
     };
 
     function normalizeShopPath(pathname) {
@@ -1306,6 +1291,7 @@
         initAdminInvitePage,
         initLoginPage,
         initRegisterPage,
+        initResetPasswordPage,
         initAccountPage,
         initAccountLinks,
         initOrderPage: pageInitializers['/shop/order/'],

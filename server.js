@@ -2073,7 +2073,10 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         '/shop/login/index.html',
         '/shop/register',
         '/shop/register/',
-        '/shop/register/index.html'
+        '/shop/register/index.html',
+        '/shop/reset-password',
+        '/shop/reset-password/',
+        '/shop/reset-password/index.html'
     ]);
 
     function isShopHtmlPagePath(requestPath) {

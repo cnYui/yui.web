@@ -1788,7 +1788,7 @@ test('API key 结果页需要账户登录才能访问', async () => {
             headers: { cookie }
         });
         assert.equal(allowed.status, 200);
-        assert.match(await allowed.text(), /API key 已生成/);
+        assert.match(await allowed.text(), /API key 已激活/);
     });
 });
 
@@ -2058,7 +2058,7 @@ test('登录后的订单查询接口只返回当前 session 手机号的数据',
     });
 });
 
-test('Shop 页面除登录和注册外未登录都会跳转登录页', async () => {
+test('Shop 页面除登录、注册和重置密码外未登录都会跳转登录页', async () => {
     await withServer(async ({ baseUrl }) => {
         const protectedPaths = [
             '/shop/',
@@ -2086,7 +2086,11 @@ test('Shop 页面除登录和注册外未登录都会跳转登录页', async () 
 
         const register = await fetch(`${baseUrl}/shop/register/`, { redirect: 'manual' });
         assert.equal(register.status, 200);
-        assert.match(await register.text(), /注册账户/);
+        assert.match(await register.text(), /id="registerForm"/);
+
+        const resetPassword = await fetch(`${baseUrl}/shop/reset-password/`, { redirect: 'manual' });
+        assert.equal(resetPassword.status, 200);
+        assert.match(await resetPassword.text(), /id="passwordResetForm"/);
     });
 });
 
@@ -2346,6 +2350,49 @@ test('API key 结果页只展示订单，不再渲染使用方法', () => {
     assert.doesNotMatch(script, /renderUsageGuide/);
 });
 
+test('旧购买支付页面不再展示购买、支付、31 天和演示交付语义', () => {
+    const files = [
+        'shop/key/index.html',
+        'shop/order/index.html',
+        'shop/pay/index.html',
+        'shop/result/index.html',
+        'shop/content/index.html'
+    ];
+    const combined = files.map((file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8')).join('\n');
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+
+    assert.doesNotMatch(combined, /31 天/);
+    assert.doesNotMatch(combined, /重新购买/);
+    assert.doesNotMatch(combined, /¥199\.00/);
+    assert.doesNotMatch(combined, /Yui Personal Digital Pack/);
+    assert.doesNotMatch(combined, /生成订单并支付/);
+    assert.doesNotMatch(combined, /选择支付方式/);
+    assert.doesNotMatch(combined, /等待支付确认/);
+    assert.doesNotMatch(combined, /演示支付成功/);
+    assert.doesNotMatch(combined, /购买内容/);
+    assert.doesNotMatch(combined, /交付文件/);
+    assert.doesNotMatch(combined, /去购买/);
+    assert.doesNotMatch(combined, /id="orderForm"/);
+    assert.doesNotMatch(combined, /id="phoneInput"/);
+    assert.doesNotMatch(combined, /data-pay-method/);
+    assert.doesNotMatch(combined, /id="qrBox"/);
+    assert.doesNotMatch(combined, /id="paymentAction"/);
+    assert.doesNotMatch(combined, /id="orderSummary"/);
+    assert.doesNotMatch(combined, /id="paidContent"/);
+    assert.doesNotMatch(combined, /id="contentGuard"/);
+
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'shop/key/index.html'), 'utf8'), /API key 已激活/);
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'shop/order/index.html'), 'utf8'), /url=\/shop\/account\//);
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'shop/pay/index.html'), 'utf8'), /url=\/shop\/account\//);
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'shop/result/index.html'), 'utf8'), /url=\/shop\/account\//);
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'shop/content/index.html'), 'utf8'), /url=\/shop\/account\//);
+
+    assert.match(script, /'\/shop\/order\/': \(\) => \{ window\.location\.replace\('\/shop\/account\/'\); \}/);
+    assert.match(script, /'\/shop\/pay\/': \(\) => \{ window\.location\.replace\('\/shop\/account\/'\); \}/);
+    assert.match(script, /'\/shop\/result\/': \(\) => \{ window\.location\.replace\('\/shop\/account\/'\); \}/);
+    assert.match(script, /'\/shop\/content\/': \(\) => \{ window\.location\.replace\('\/shop\/account\/'\); \}/);
+});
+
 test('后台页面使用管理员 session，不渲染管理员 token 输入', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
     const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
@@ -2450,7 +2497,29 @@ test('Account 页面包含预充值余额、充值申请和扣费流水容器', 
     assert.equal((html.match(/data-collapsible-section/g) || []).length, 5);
     assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 5);
     assert.equal((html.match(/data-collapsible-content/g) || []).length, 5);
-    assert.match(html, /id="accountGuideSection"[\s\S]*?data-collapsible-default="open"/);
+    assert.match(html, /id="accountGuideSection"[\s\S]*?data-collapsible-default="closed"/);
+});
+
+test('Account 页把余额和 API key 前置，并默认收起说明和流水', () => {
+    const accountHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
+
+    const billingIndex = accountHtml.indexOf('id="accountBillingSection"');
+    const keysIndex = accountHtml.indexOf('id="accountKeysSection"');
+    const guideIndex = accountHtml.indexOf('id="accountGuideSection"');
+    const usageIndex = accountHtml.indexOf('id="accountUsageSection"');
+    const historyIndex = accountHtml.indexOf('id="accountBillingHistorySection"');
+
+    assert.ok(billingIndex >= 0);
+    assert.ok(keysIndex > billingIndex);
+    assert.ok(guideIndex > keysIndex);
+    assert.ok(usageIndex > guideIndex);
+    assert.ok(historyIndex > usageIndex);
+
+    assert.match(accountHtml, /id="accountBillingSection"[^>]*data-collapsible-default="open"/);
+    assert.match(accountHtml, /id="accountKeysSection"[^>]*data-collapsible-default="open"/);
+    assert.match(accountHtml, /id="accountGuideSection"[^>]*data-collapsible-default="closed"/);
+    assert.match(accountHtml, /id="accountUsageSection"[^>]*data-collapsible-default="open"/);
+    assert.match(accountHtml, /id="accountBillingHistorySection"[^>]*data-collapsible-default="closed"/);
 });
 
 test('Account API key 卡片只展示 key、兑换时间和复制按钮', () => {
@@ -2478,21 +2547,81 @@ test('Admin 页面包含充值审核容器', () => {
     assert.match(html, /id="adminTopupMessage"/);
 });
 
-test('管理员页和登录页包含密码重置入口', () => {
+test('管理员页和独立重置密码页包含密码重置入口，登录页只保留跳转链接', () => {
     const adminHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
     const loginHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');
+    const resetHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/reset-password/index.html'), 'utf8');
     const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
 
     assert.match(adminHtml, /id="passwordResetCodeForm"/);
     assert.match(adminHtml, /id="passwordResetPhone"/);
     assert.match(adminHtml, /id="passwordResetCodeResult"/);
-    assert.match(loginHtml, /id="showPasswordResetButton"/);
-    assert.match(loginHtml, /id="passwordResetForm"/);
-    assert.match(loginHtml, /id="resetPasswordCode"/);
-    assert.match(loginHtml, /id="resetNewPassword"/);
-    assert.match(loginHtml, /id="resetConfirmPassword"/);
-    assert.match(script, /function initPasswordResetForm/);
+
+    assert.match(loginHtml, /href="\/shop\/reset-password\/"/);
+    assert.doesNotMatch(loginHtml, /id="showPasswordResetButton"/);
+    assert.doesNotMatch(loginHtml, /id="passwordResetForm"/);
+    assert.doesNotMatch(loginHtml, /id="resetPasswordCode"/);
+    assert.doesNotMatch(loginHtml, /id="resetNewPassword"/);
+    assert.doesNotMatch(loginHtml, /id="resetConfirmPassword"/);
+
+    assert.match(resetHtml, /<title>重置密码<\/title>/);
+    assert.match(resetHtml, /class="shop-auth-main[^"]*"/);
+    assert.match(resetHtml, /class="shop-auth-background-figure"/);
+    assert.match(resetHtml, /id="passwordResetForm"/);
+    assert.match(resetHtml, /id="resetPhone"/);
+    assert.match(resetHtml, /id="resetPasswordCode"/);
+    assert.match(resetHtml, /id="resetNewPassword"/);
+    assert.match(resetHtml, /id="resetConfirmPassword"/);
+    assert.match(resetHtml, /href="\/shop\/login\/"/);
+
+    assert.match(script, /function initResetPasswordPage/);
+    assert.match(script, /'\/shop\/reset-password\/': initResetPasswordPage/);
+    assert.doesNotMatch(script, /function initPasswordResetForm/);
+    assert.doesNotMatch(script, /initPasswordResetForm\(\)/);
+    assert.match(script, /initResetPasswordPage/);
     assert.match(script, /function initAdminPasswordResetPage/);
+});
+
+test('重置密码页使用紧凑 Auth 表单，避免桌面首屏溢出', () => {
+    const resetHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/reset-password/index.html'), 'utf8');
+
+    assert.match(resetHtml, /class="shop-auth-panel[^"]*md:p-10/);
+    assert.match(resetHtml, /id="passwordResetForm" class="space-y-4"/);
+    assert.equal((resetHtml.match(/h-11 rounded-md/g) || []).length, 4);
+    assert.doesNotMatch(resetHtml, /id="passwordResetForm" class="space-y-5"/);
+    assert.doesNotMatch(resetHtml, /class="shop-auth-panel[^"]*md:p-16/);
+});
+
+test('重置密码页允许未登录访问，账户页仍要求登录', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const resetPage = await fetch(`${baseUrl}/shop/reset-password/`, { redirect: 'manual' });
+        assert.equal(resetPage.status, 200);
+        assert.match(await resetPage.text(), /id="passwordResetForm"/);
+
+        const accountPage = await fetch(`${baseUrl}/shop/account/`, { redirect: 'manual' });
+        assert.equal(accountPage.status, 302);
+        assert.equal(accountPage.headers.get('location'), '/shop/login/');
+    });
+});
+
+test('注册页使用登录页同款 Auth 外壳并移除左侧说明区块', () => {
+    const registerHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/register/index.html'), 'utf8');
+
+    assert.match(registerHtml, /<title>注册<\/title>/);
+    assert.match(registerHtml, /class="shop-auth-main[^"]*"/);
+    assert.match(registerHtml, /class="shop-auth-background-figure"/);
+    assert.match(registerHtml, /src="\/shop\/assets\/login\/yui-login-bg\.png"/);
+    assert.match(registerHtml, /class="shop-auth-content[^"]*"/);
+    assert.match(registerHtml, /class="shop-auth-panel[^"]*"/);
+    assert.match(registerHtml, /id="registerForm"/);
+    assert.match(registerHtml, /id="registerPhone"/);
+    assert.match(registerHtml, /id="registerPassword"/);
+    assert.match(registerHtml, /id="registerConfirmPassword"/);
+    assert.match(registerHtml, /href="\/shop\/login\/"/);
+    assert.doesNotMatch(registerHtml, /Create account/);
+    assert.doesNotMatch(registerHtml, /手机号会作为你的账户身份/);
+    assert.doesNotMatch(registerHtml, /历史兑换过的手机号/);
+    assert.doesNotMatch(registerHtml, /grid lg:grid-cols-\[0\.9fr_1\.1fr\]/);
 });
 
 test('登录页移除左侧标题并保留轻量登录入口', () => {
@@ -2507,18 +2636,30 @@ test('登录页移除左侧标题并保留轻量登录入口', () => {
     assert.doesNotMatch(loginHtml, /管理员账号登录后进入控制台/);
 });
 
-test('登录页透明背景人物图固定在左下并放大显示', () => {
+test('Auth 外壳样式由 Tailwind 输入文件统一维护，登录页使用中途版人物背景', () => {
     const loginHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');
+    const tailwindCss = fs.readFileSync(path.join(__dirname, '..', 'styles/tailwind.css'), 'utf8');
+    const siteCss = fs.readFileSync(path.join(__dirname, '..', 'styles/site.css'), 'utf8');
     const assetPath = path.join(__dirname, '..', 'shop/assets/login/yui-login-bg.png');
     const png = fs.readFileSync(assetPath);
-    const backgroundRule = loginHtml.match(/\.login-background-figure\{([^}]*)\}/)?.[1] || '';
 
+    assert.match(loginHtml, /class="shop-auth-main[^"]*"/);
+    assert.match(loginHtml, /class="shop-auth-background-figure"/);
+    assert.match(loginHtml, /class="shop-auth-content[^"]*"/);
+    assert.match(loginHtml, /class="shop-auth-panel[^"]*"/);
     assert.match(loginHtml, /src="\/shop\/assets\/login\/yui-login-bg\.png"/);
-    assert.match(loginHtml, /class="login-background-figure"/);
-    assert.match(backgroundRule, /left:clamp\(/);
-    assert.match(backgroundRule, /bottom:0/);
-    assert.match(backgroundRule, /width:min\(86vw,1120px\)/);
-    assert.doesNotMatch(backgroundRule, /translate\(-50%,-50%\)/);
+    assert.doesNotMatch(loginHtml, /\.login-main/);
+    assert.doesNotMatch(loginHtml, /\.login-background-figure/);
+    assert.doesNotMatch(loginHtml, /\.login-content/);
+    assert.doesNotMatch(loginHtml, /\.login-panel/);
+
+    assert.match(tailwindCss, /\.shop-auth-background-figure/);
+    assert.match(tailwindCss, /left:\s*clamp\(-380px,\s*-22vw,\s*-260px\)/);
+    assert.match(tailwindCss, /bottom:\s*0/);
+    assert.match(tailwindCss, /width:\s*min\(86vw,\s*1120px\)/);
+    assert.match(tailwindCss, /opacity:\s*0\.42/);
+    assert.match(siteCss, /\.shop-auth-background-figure/);
+
     assert.equal(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
     assert.equal(png[25], 6);
 });

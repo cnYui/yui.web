@@ -4,7 +4,7 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>API Key - Shop</title>
-    <meta http-equiv="refresh" content="0; url=/shop/key/"/>
+    <meta http-equiv="refresh" content="0; url=/shop/account/"/>
     <script>(function(){const html=document.documentElement;html.setAttribute('data-ui-ready','false');try{const theme=localStorage.getItem('yui-portfolio-theme');const lang=localStorage.getItem('yui-portfolio-lang');const langMap={zh:'zh-CN',en:'en',ja:'ja'};const resolvedTheme=theme==='dark'?'dark':'light';html.classList.toggle('dark',resolvedTheme==='dark');html.style.colorScheme=resolvedTheme;html.style.backgroundColor=resolvedTheme==='dark'?'#0f0f0f':'#ffffff';html.lang=langMap[lang]||'en';}catch(error){html.style.colorScheme='light';html.style.backgroundColor='#ffffff';html.lang='en';}})();</script>
     <style>html{background-color:#fff}html.dark{background-color:#0f0f0f}html[data-ui-ready="false"] body{opacity:0}html[data-ui-ready="true"] body{opacity:1;transition:opacity 120ms ease-out}</style>
     <link href="/styles/site.css" rel="stylesheet"/>
@@ -23,37 +23,12 @@
             <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/shop/">Shop</a>
         </div>
     </header>
-    <main class="flex-1 max-w-[1040px] mx-auto px-6 md:px-12 py-14 md:py-20 w-full">
-        <section id="contentGuard" class="hidden border border-border-subtle dark:border-dark-border rounded-lg p-8 text-center bg-white dark:bg-dark-card">
-            <span class="material-symbols-outlined text-5xl">lock</span>
-            <h1 class="mt-4 font-display text-4xl">内容暂未解锁</h1>
-            <p class="mt-3 text-text-muted dark:text-dark-text-muted">请先完成支付，或进入账户页查看订单状态。</p>
-            <div class="mt-6 flex flex-col sm:flex-row justify-center gap-4">
-                <a class="btn-primary" href="/shop/order/">去购买</a>
-                <a class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text" href="/shop/account/">我的账户</a>
-            </div>
-        </section>
-        <section id="paidContent">
-            <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Unlocked</p>
-            <h1 class="mt-4 font-display text-4xl md:text-6xl">购买内容</h1>
-            <div id="orderSummary" class="mt-8 border border-border-subtle dark:border-dark-border rounded-lg p-6 bg-white dark:bg-dark-card"></div>
-            <div class="mt-8 grid md:grid-cols-3 gap-5">
-                <article class="border border-border-subtle dark:border-dark-border rounded-lg p-6 bg-white dark:bg-dark-card">
-                    <span class="material-symbols-outlined text-3xl">description</span>
-                    <h2 class="mt-4 text-xl font-display">交付文件</h2>
-                    <p class="mt-3 text-sm leading-relaxed text-text-muted dark:text-dark-text-muted">这里可以放报告、课程、下载链接或专属说明。</p>
-                </article>
-                <article class="border border-border-subtle dark:border-dark-border rounded-lg p-6 bg-white dark:bg-dark-card">
-                    <span class="material-symbols-outlined text-3xl">support_agent</span>
-                    <h2 class="mt-4 text-xl font-display">后续服务</h2>
-                    <p class="mt-3 text-sm leading-relaxed text-text-muted dark:text-dark-text-muted">这里可以展示预约方式、交付周期和售后入口。</p>
-                </article>
-                <article class="border border-border-subtle dark:border-dark-border rounded-lg p-6 bg-white dark:bg-dark-card">
-                    <span class="material-symbols-outlined text-3xl">history</span>
-                    <h2 class="mt-4 text-xl font-display">查询凭证</h2>
-                    <p class="mt-3 text-sm leading-relaxed text-text-muted dark:text-dark-text-muted">用户可用购买手机号再次查询并回到这个页面。</p>
-                </article>
-            </div>
+    <main class="flex-1 max-w-[760px] mx-auto px-6 md:px-12 py-14 md:py-20 w-full">
+        <section class="border border-border-subtle dark:border-dark-border rounded-lg p-8 text-center bg-white dark:bg-dark-card shadow-soft dark:shadow-soft-dark">
+            <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Account</p>
+            <h1 class="mt-4 font-display text-4xl text-primary dark:text-dark-text">正在进入账户页</h1>
+            <p class="mt-4 text-text-muted dark:text-dark-text-muted">当前 Shop 已改为登录账户后按量使用。</p>
+            <a class="btn-primary mt-6 inline-flex" href="/shop/account/">打开账户页</a>
         </section>
     </main>
 </body>
