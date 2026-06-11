@@ -2169,22 +2169,33 @@ test('API key 具有唯一性，重复导入会被拒绝', async () => {
     });
 });
 
-test('兑换页手机号输入框限制数字手机号格式', () => {
+test('兑换页不再要求输入手机号，只绑定当前登录账号', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/redeem/index.html'), 'utf8');
-    assert.match(html, /id="phoneInput"[^>]+inputmode="numeric"/);
-    assert.match(html, /id="phoneInput"[^>]+maxlength="11"/);
-    assert.match(html, /id="phoneInput"[^>]+pattern="\^1\[3-9\]\\d\{9\}\$"/);
+
+    assert.doesNotMatch(html, /id="phoneInput"/);
+    assert.match(html, /id="redeemAccountPhone"/);
+    assert.match(html, /id="inviteCodeInput"/);
+    assert.match(html, /会绑定到当前登录账号/);
 });
 
-test('兑换页展示按量计费 API key 文案并移除固定价格', () => {
+test('兑换页展示按量计费 API key 文案并移除固定价格和手机号语义', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/redeem/index.html'), 'utf8');
 
-    assert.match(html, /私下付款后，你会收到一个邀请码。输入手机号和邀请码后，系统会生成 API key。/);
+    assert.match(html, /私下付款后，你会收到一个邀请码。输入邀请码后，系统会生成 API key。/);
     assert.match(html, /<h2 class="mt-2 text-2xl font-display">codex api key<\/h2>/);
     assert.doesNotMatch(html, /Codex 月额度/);
     assert.doesNotMatch(html, /Codex 每月额度/);
     assert.doesNotMatch(html, /31 天/);
     assert.doesNotMatch(html, /¥30\.00/);
+});
+
+test('兑换页前端调用登录态兑换接口', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+
+    assert.match(script, /requestJson\('\/api\/account\/me'\)/);
+    assert.match(script, /redeemAccountPhone/);
+    assert.match(script, /api\/account\/invites\/redeem/);
+    assert.doesNotMatch(script, /api\/invites\/redeem',\s*\{/);
 });
 
 test('商店首页提供使用方法入口，公开说明页只使用占位 API key', () => {

@@ -584,22 +584,26 @@
 
     function initRedeemPage() {
         const form = document.getElementById('redeemForm');
-        const phoneInput = document.getElementById('phoneInput');
+        const accountPhone = document.getElementById('redeemAccountPhone');
         const codeInput = document.getElementById('inviteCodeInput');
         const message = document.getElementById('redeemMessage');
-        if (!form || !phoneInput || !codeInput || !message) return;
+        if (!form || !accountPhone || !codeInput || !message) return;
 
-        bindPhoneInput(phoneInput);
+        requestJson('/api/account/me')
+            .then((data) => {
+                accountPhone.textContent = data.user?.phone || '-';
+            })
+            .catch(() => {
+                window.location.replace('/shop/login/');
+            });
+
+        codeInput.addEventListener('input', () => {
+            codeInput.value = normalizeInviteCode(codeInput.value);
+        });
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const phone = phoneInput.value.trim();
-            const code = codeInput.value.trim();
-            if (!isPhone(phone)) {
-                message.textContent = '请输入有效的中国大陆手机号。';
-                phoneInput.focus();
-                return;
-            }
+            const code = normalizeInviteCode(codeInput.value);
             if (!code) {
                 message.textContent = '请输入邀请码。';
                 codeInput.focus();
@@ -608,11 +612,11 @@
 
             message.textContent = '正在兑换...';
             try {
-                const data = await requestJson('/api/invites/redeem', {
+                await requestJson('/api/account/invites/redeem', {
                     method: 'POST',
-                    body: JSON.stringify({ phone, code })
+                    body: JSON.stringify({ code })
                 });
-                window.location.href = '/shop/key/';
+                window.location.href = '/shop/account/';
             } catch (error) {
                 message.textContent = error.message;
             }
