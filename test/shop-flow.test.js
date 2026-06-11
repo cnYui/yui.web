@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
+const vm = require('node:vm');
 
 const { createShopApp } = require('../server');
 
@@ -25,6 +26,27 @@ function hashPasswordForTest(password) {
     return `scrypt$16384$8$1$${salt}$${hash}`;
 }
 
+function cookieHeaderFromSetCookie(setCookie) {
+    const value = String(setCookie || '');
+    if (value.includes(';') && !/;\s*(Max-Age|Path|Expires|HttpOnly|SameSite|Secure)=?/i.test(value)) {
+        return value;
+    }
+    return value
+        .split(/,(?=\s*[^;,=]+=[^;,]+)/)
+        .map((part) => part.split(';')[0].trim())
+        .filter(Boolean)
+        .join('; ');
+}
+
+function cookieValue(cookieHeader, name) {
+    const prefix = `${name}=`;
+    return String(cookieHeader || '')
+        .split(';')
+        .map((part) => part.trim())
+        .find((part) => part.startsWith(prefix))
+        ?.slice(prefix.length) || '';
+}
+
 function seedAdminUserForTest(db, password = 'Abcdefg1') {
     db.prepare(`
 INSERT INTO users (phone, created_at, password_hash, password_created_at, updated_at)
@@ -44,8 +66,9 @@ async function registerUserAndGetCookie(baseUrl, phone = '13800138690', password
         body: JSON.stringify({ phone, password, confirmPassword: password })
     });
     assert.equal(result.response.status, 201);
-    const cookie = result.response.headers.get('set-cookie') || '';
+    const cookie = cookieHeaderFromSetCookie(result.response.headers.get('set-cookie') || '');
     assert.match(cookie, /yui_shop_account_session=/);
+    assert.match(cookie, /yui_shop_csrf=/);
     return cookie;
 }
 
@@ -137,13 +160,205 @@ async function withServer(run, appOptions = {}) {
 }
 
 async function jsonFetch(url, options = {}) {
+    const { skipCsrfForTest, ...requestOptions } = options;
+    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    if (headers.cookie) {
+        headers.cookie = cookieHeaderFromSetCookie(headers.cookie) || headers.cookie;
+    }
+    const method = String(options.method || 'GET').toUpperCase();
+    if (method !== 'GET' && headers.cookie && !headers['x-csrf-token'] && !skipCsrfForTest) {
+        const csrfToken = cookieValue(headers.cookie, 'yui_shop_csrf');
+        if (csrfToken) {
+            headers['x-csrf-token'] = decodeURIComponent(csrfToken);
+            headers.origin = headers.origin || new URL(url).origin;
+        }
+    }
     const response = await fetch(url, {
-        ...options,
-        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+        ...requestOptions,
+        headers
     });
     const body = await response.json();
     return { response, body };
 }
+
+function loadShopRequestJsonForTest(fetchImpl, cookie = '') {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+    const instrumented = script.replace(
+        '    window.YuiShop = {',
+        '    window.__requestJsonForTest = requestJson;\n    window.YuiShop = {'
+    );
+    const sandbox = {
+        document: { cookie },
+        fetch: fetchImpl,
+        window: { location: { replace() {} } },
+        Intl,
+        URL
+    };
+    sandbox.window.document = sandbox.document;
+    vm.runInNewContext(instrumented, sandbox);
+    return sandbox.window.__requestJsonForTest;
+}
+
+test('requestJson 保留自定义 headers 并自动添加 CSRF token', async () => {
+    let captured;
+    const requestJson = loadShopRequestJsonForTest(async (url, options) => {
+        captured = { url, options };
+        return {
+            ok: true,
+            json: async () => ({ ok: true })
+        };
+    }, 'yui_shop_csrf=csrf%20token');
+
+    const data = await requestJson('/api/account/topups', {
+        method: 'POST',
+        headers: { 'x-extra': 'yes' },
+        body: '{}'
+    });
+
+    assert.deepEqual(data, { ok: true });
+    assert.equal(captured.url, '/api/account/topups');
+    assert.equal(captured.options.headers['Content-Type'], 'application/json');
+    assert.equal(captured.options.headers['x-extra'], 'yes');
+    assert.equal(captured.options.headers['x-csrf-token'], 'csrf token');
+});
+
+test('账号 cookie 状态变更拒绝跨站 Origin', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138701');
+        const result = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            skipCsrfForTest: true,
+            headers: {
+                cookie,
+                origin: 'https://evil.example'
+            },
+            body: JSON.stringify({ amount: '10', paymentMethod: 'alipay' })
+        });
+
+        assert.equal(result.response.status, 403);
+        assert.equal(result.body.code, 'CSRF_ORIGIN_REJECTED');
+    });
+});
+
+test('账号 cookie 状态变更要求 CSRF token', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138702');
+        const result = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            skipCsrfForTest: true,
+            headers: {
+                cookie,
+                origin: baseUrl
+            },
+            body: JSON.stringify({ amount: '10', paymentMethod: 'alipay' })
+        });
+
+        assert.equal(result.response.status, 403);
+        assert.equal(result.body.code, 'CSRF_TOKEN_REQUIRED');
+    });
+});
+
+test('登录失败按手机号维度限流', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const body = { phone: '13800138703', password: 'Wrong111' };
+        for (let index = 0; index < 2; index += 1) {
+            const failed = await jsonFetch(`${baseUrl}/api/auth/login`, {
+                method: 'POST',
+                body: JSON.stringify(body)
+            });
+            assert.equal(failed.response.status, 401);
+            assert.equal(failed.body.code, 'INVALID_CREDENTIALS');
+        }
+
+        const limited = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify(body)
+        });
+
+        assert.equal(limited.response.status, 429);
+        assert.equal(limited.body.code, 'AUTH_PHONE_RATE_LIMITED');
+    }, { authPhoneFailureLimit: 2 });
+});
+
+test('生产模式拒绝 change-me 默认 secret', () => {
+    assert.throws(() => createShopApp({
+        dbPath: ':memory:',
+        nodeEnv: 'production',
+        adminToken: 'change-me',
+        internalToken: 'change-me-internal-token',
+        usageEventHmacSecret: 'change-me-hmac-secret'
+    }), /weak secret/i);
+});
+
+test('默认不信任伪造 X-Forwarded-For', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yui-shop-proxy-test-'));
+    const dbPath = path.join(tempDir, 'shop.sqlite');
+    const { app, db } = createShopApp({
+        dbPath,
+        rootDir: path.join(__dirname, '..'),
+        adminToken: 'test-token',
+        internalToken: 'internal-test-token',
+        trustProxy: false
+    });
+    try {
+        assert.equal(app.get('trust proxy'), false);
+    } finally {
+        db.close();
+        fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+});
+
+test('auth 请求体超过限制返回 413', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const response = await fetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: '13800138695', password: 'A'.repeat(40000) })
+        });
+
+        assert.equal(response.status, 413);
+        const body = await response.json();
+        assert.equal(body.code, 'BODY_TOO_LARGE');
+    }, { jsonBodyLimit: '16kb' });
+});
+
+test('HTTPS 响应包含安全响应头', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const response = await fetch(`${baseUrl}/shop/`, {
+            headers: { 'x-forwarded-proto': 'https' }
+        });
+
+        assert.equal(response.status, 200);
+        assert.match(response.headers.get('content-security-policy') || '', /default-src 'self'/);
+        assert.equal(response.headers.get('x-frame-options'), 'DENY');
+        assert.match(response.headers.get('permissions-policy') || '', /camera=\(\)/);
+        assert.match(response.headers.get('strict-transport-security') || '', /max-age=/);
+    }, { trustProxy: true });
+});
+
+test('账号接口默认只返回 API key preview，完整 key 需要 reveal', async () => {
+    await withServer(async ({ baseUrl }) => {
+        await createRedeemedOrder(baseUrl, '13800138704', 'sk-preview-only');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138704');
+
+        const me = await jsonFetch(`${baseUrl}/api/account/me`, {
+            headers: { cookie }
+        });
+        assert.equal(me.response.status, 200);
+        assert.equal(me.body.orders.length, 1);
+        assert.equal(me.body.orders[0].apiKey, undefined);
+        assert.equal(me.body.orders[0].apiKeyPreview, keyPreviewForTest('sk-preview-only'));
+        assert.equal(JSON.stringify(me.body).includes('sk-preview-only'), false);
+
+        const reveal = await jsonFetch(`${baseUrl}/api/account/orders/${me.body.orders[0].id}/reveal-api-key`, {
+            method: 'POST',
+            headers: { cookie },
+            body: '{}'
+        });
+        assert.equal(reveal.response.status, 200);
+        assert.equal(reveal.body.apiKey, 'sk-preview-only');
+    });
+});
 
 test('用户用手机号和邀请码兑换后，从未使用 API key 池分配一个 key 并写入 SQLite 订单', async () => {
     await withServer(async ({ baseUrl, db, dbPath }) => {
@@ -1119,7 +1334,7 @@ test('当前订单接口只返回 result token 绑定的订单', async () => {
     });
 });
 
-test('Account 页面数据会持久展示已过期订单和完整 API key', async () => {
+test('Account 页面数据会持久展示已过期订单和 API key preview', async () => {
     await withServer(async ({ baseUrl, db }) => {
         db.prepare('INSERT INTO users (phone, created_at) VALUES (?, ?)').run('13800138200', '2000-01-01T00:00:00.000Z');
         db.prepare(`
@@ -1146,7 +1361,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         assert.equal(result.response.status, 200);
         assert.equal(result.body.orders.length, 1);
         assert.equal(result.body.orders[0].id, 'ORDER-EXPIRED-KEEP');
-        assert.equal(result.body.orders[0].apiKey, 'sk-expired-keep-visible');
+        assert.equal(result.body.orders[0].apiKey, undefined);
+        assert.equal(result.body.orders[0].apiKeyPreview, 'sk-expired...visible');
         assert.equal(result.body.orders[0].status, 'expired');
     });
 });
@@ -1202,7 +1418,8 @@ test('登录后的订单查询接口只返回当前 session 手机号的数据',
         assert.equal(result.response.status, 200);
         assert.equal(result.body.orders.length, 1);
         assert.equal(result.body.orders[0].phone, '13800138691');
-        assert.equal(result.body.orders[0].apiKey, 'sk-account-aaa-own');
+        assert.equal(result.body.orders[0].apiKey, undefined);
+        assert.equal(result.body.orders[0].apiKeyPreview, keyPreviewForTest('sk-account-aaa-own'));
     });
 });
 
@@ -1613,6 +1830,25 @@ WHERE api_key = ?
     });
 });
 
+test('内部 API key 状态接口支持 POST api_key_hash 且不需要 raw key', async () => {
+    await withServer(async ({ baseUrl }) => {
+        await createRedeemedOrder(baseUrl, '13800138302', 'sk-status-v2');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138302');
+        await submitAndApproveTopup(baseUrl, cookie, '1');
+
+        const active = await jsonFetch(`${baseUrl}/api/internal/api-keys/status`, {
+            method: 'POST',
+            headers: { 'x-internal-token': 'internal-test-token' },
+            body: JSON.stringify({ api_key_hash: hashApiKeyForTest('sk-status-v2') })
+        });
+
+        assert.equal(active.response.status, 200);
+        assert.equal(active.body.managed, true);
+        assert.equal(active.body.active, true);
+        assert.equal(active.body.status, 'active');
+    });
+});
+
 test('内部 API key 状态接口对未过期且余额充足的订单返回 active', async () => {
     await withServer(async ({ baseUrl }) => {
         await createRedeemedOrder(baseUrl, '13800138301', 'sk-active-status');
@@ -1725,7 +1961,7 @@ test('历史兑换手机号可以补密码注册并通过 account session 只查
         assert.equal(me.body.user.phone, '13800138601');
         assert.equal(me.body.orders.length, 1);
         assert.equal(me.body.orders[0].phone, '13800138601');
-        assert.equal(me.body.orders[0].apiKey, 'sk-account-a');
+        assert.equal(me.body.orders[0].apiKey, undefined);
         assert.equal(me.body.orders[0].apiKeyPreview, 'sk-account-a...ount-a');
     });
 });
