@@ -165,3 +165,10 @@
 - 2026-06-11 对 `data/shop.sqlite` 的加密迁移 dry-run：`api_keys` 明文 8 条、`orders` 明文 6 条、已加密均为 0；本次未执行 `--apply`。
 - reveal 和内部 status 查询必须走 hash/密文读取路径，不能依赖明文 `api_key` 列。
 - 实施记录见 `docs/ai/context/20260611-200103-shop-api-key-encryption-implementation_CN.md`。
+
+## 2026-06-11 Shop 完整流程修复实施完成
+
+- 已按完整实施计划修复登录态兑换、Admin 兑换码管理、usage 自动同步、历史补账、API key 静态加密与 reveal 文案。
+- 后续改动不能恢复 body.phone 兑换主路径，不能在浏览器引入 `ADMIN_TOKEN`。
+- usage 补账和 API key 加密迁移真实库 apply 均未执行；必须在用户确认 dry-run 结果后再操作。
+- 实施记录见 `docs/ai/context/20260611-201244-shop-complete-flow-security-billing-repair-implementation_CN.md`。
