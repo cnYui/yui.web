@@ -779,7 +779,31 @@
         });
     }
 
+    function initCollapsibleSections(root = document) {
+        const sections = Array.from(root.querySelectorAll('[data-collapsible-section]'));
+        sections.forEach((section) => {
+            const toggle = section.querySelector('[data-collapsible-toggle]');
+            const content = section.querySelector('[data-collapsible-content]');
+            if (!toggle || !content) return;
+
+            let open = section.dataset.collapsibleDefault !== 'closed';
+            const render = () => {
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                toggle.textContent = open ? '收起' : '展开';
+                content.hidden = !open;
+            };
+
+            toggle.addEventListener('click', () => {
+                open = !open;
+                render();
+            });
+            render();
+        });
+    }
+
     async function initAccountPage() {
+        initCollapsibleSections(document);
+
         const phoneRoot = document.getElementById('accountPhone');
         const ordersRoot = document.getElementById('accountOrders');
         const message = document.getElementById('accountMessage');

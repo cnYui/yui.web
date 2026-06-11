@@ -1057,8 +1057,8 @@ function createShopApp(options = {}) {
         }
         const host = req.header('host');
         if (host) {
-            const proto = req.secure || req.header('x-forwarded-proto') === 'https' ? 'https' : 'http';
-            origins.add(`${proto}://${host}`);
+            origins.add(`http://${host}`);
+            origins.add(`https://${host}`);
         }
         return origins;
     }
