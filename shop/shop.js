@@ -104,11 +104,28 @@
             .replace(/'/g, '&#39;');
     }
 
+    function readCookie(name) {
+        return document.cookie
+            .split(';')
+            .map((part) => part.trim())
+            .find((part) => part.startsWith(`${name}=`))
+            ?.slice(name.length + 1) || '';
+    }
+
     async function requestJson(url, options = {}) {
+        const { headers: optionHeaders, ...fetchOptions } = options;
+        const method = String(fetchOptions.method || 'GET').toUpperCase();
+        const headers = { 'Content-Type': 'application/json', ...(optionHeaders || {}) };
+        if (method !== 'GET' && !headers['x-csrf-token']) {
+            const csrfToken = readCookie('yui_shop_csrf');
+            if (csrfToken) {
+                headers['x-csrf-token'] = decodeURIComponent(csrfToken);
+            }
+        }
         const response = await fetch(url, {
-            headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-            credentials: 'same-origin',
-            ...options
+            ...fetchOptions,
+            headers,
+            credentials: 'same-origin'
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -124,10 +141,12 @@
         const key = options.showFullKey ? order.apiKey : order.apiKeyPreview;
         const copyButton = options.showFullKey
             ? '<button class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button" data-copy-key>复制 API key</button>'
+            : options.revealKey
+                ? '<button class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text" type="button" data-reveal-api-key>复制完整 API key</button>'
             : '';
 
         return `
-            <article class="border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card p-5 md:p-6">
+            <article class="border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card p-5 md:p-6" data-order-id="${escapeHtml(order.id)}">
                 <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-5">
                     <div>
                         <p class="text-xs uppercase tracking-[0.2em] text-text-muted dark:text-dark-text-muted">${escapeHtml(order.id)}</p>
@@ -165,14 +184,34 @@
 
     function bindCopy(root) {
         const button = root.querySelector('[data-copy-key]');
+        const revealButton = root.querySelector('[data-reveal-api-key]');
         const key = root.querySelector('[data-api-key]')?.textContent || '';
-        if (!button || !key) return;
+        if (!button && !revealButton) return;
 
-        button.addEventListener('click', async () => {
+        if (button && key) button.addEventListener('click', async () => {
             await navigator.clipboard.writeText(key);
             button.textContent = '已复制';
             setTimeout(() => {
                 button.textContent = '复制 API key';
+            }, 1400);
+        });
+
+        if (revealButton) revealButton.addEventListener('click', async () => {
+            const orderId = root.getAttribute('data-order-id') || '';
+            if (!orderId) return;
+            revealButton.textContent = '正在复制...';
+            try {
+                const data = await requestJson(`/api/account/orders/${encodeURIComponent(orderId)}/reveal-api-key`, {
+                    method: 'POST',
+                    body: '{}'
+                });
+                await navigator.clipboard.writeText(data.apiKey || '');
+                revealButton.textContent = '已复制';
+            } catch (error) {
+                revealButton.textContent = error.message || '复制失败';
+            }
+            setTimeout(() => {
+                revealButton.textContent = '复制完整 API key';
             }, 1400);
         });
     }
@@ -742,7 +781,7 @@
                     </section>
                 `;
             } else {
-                ordersRoot.innerHTML = `<div class="grid gap-5">${orders.map((order) => renderOrderCard(order, { showFullKey: true })).join('')}</div>`;
+                ordersRoot.innerHTML = `<div class="grid gap-5">${orders.map((order) => renderOrderCard(order, { revealKey: true })).join('')}</div>`;
                 ordersRoot.querySelectorAll('article').forEach(bindCopy);
             }
             message.textContent = '';

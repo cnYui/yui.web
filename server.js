@@ -5,10 +5,13 @@ const Database = require('better-sqlite3');
 const express = require('express');
 require('dotenv').config();
 
+const { createRateLimitStore } = require('./lib/rate-limit-store');
+
 const durationDays = 31;
 const resultCookieName = 'yui_shop_result_token';
 const legacyRedeemCookieName = 'yui_shop_redeemed';
 const accountCookieName = 'yui_shop_account_session';
+const csrfCookieName = 'yui_shop_csrf';
 const redeemCookieMaxAgeMs = durationDays * 24 * 60 * 60 * 1000;
 const accountSessionMaxAgeMs = redeemCookieMaxAgeMs;
 const passwordResetCodeMaxAgeMs = 30 * 60 * 1000;
@@ -17,10 +20,31 @@ const passwordScryptN = 16384;
 const passwordScryptR = 8;
 const passwordScryptP = 1;
 const rateLimitBuckets = new Map();
+const authPhoneFailureBuckets = new Map();
 const chinaOffsetMs = 8 * 60 * 60 * 1000;
 const defaultAdminAccountPhone = '15951875192';
 const defaultCreditLimitCents = 1000;
 const supportedPaymentMethods = new Set(['alipay', 'wechat']);
+
+function assertStrongSecret(name, value, { required = true, production = false } = {}) {
+    const trimmed = String(value || '').trim();
+    const weakValues = new Set(['change-me', 'change-me-internal-token', 'change-me-hmac-secret', 'password', 'admin']);
+    if (!trimmed && required) throw new Error(`${name} is required`);
+    if (!production && !trimmed) return;
+    if (production && (trimmed.length < 32 || weakValues.has(trimmed))) {
+        throw new Error(`weak secret: ${name}`);
+    }
+}
+
+function resolveTrustProxy(options = {}) {
+    if (Object.prototype.hasOwnProperty.call(options, 'trustProxy')) return options.trustProxy;
+    const raw = String(process.env.TRUST_PROXY || '').trim();
+    if (!raw) return false;
+    if (raw === 'true') return true;
+    if (raw === 'false') return false;
+    if (/^\d+$/.test(raw)) return Number(raw);
+    return raw.split(',').map((item) => item.trim()).filter(Boolean);
+}
 
 function toChinaIso(date = new Date()) {
     const value = new Date(date);
@@ -61,6 +85,10 @@ function createAccountSessionToken() {
     return `usr_${crypto.randomBytes(32).toString('base64url')}`;
 }
 
+function createCsrfToken() {
+    return crypto.randomBytes(32).toString('base64url');
+}
+
 function createPasswordResetCode() {
     const left = crypto.randomBytes(3).toString('hex').toUpperCase();
     const right = crypto.randomBytes(3).toString('hex').toUpperCase();
@@ -78,6 +106,10 @@ function hashApiKey(apiKey) {
 
 function hashSessionToken(token) {
     return crypto.createHash('sha256').update(String(token || '')).digest('hex');
+}
+
+function hashCsrfToken(token) {
+    return crypto.createHash('sha256').update(String(token || '').trim()).digest('hex');
 }
 
 function normalizePasswordResetCode(code) {
@@ -232,11 +264,23 @@ function normalizeUsageEvent(body = {}) {
     };
 }
 
-function createRateLimiter({ windowMs, max, code, message }) {
-    return (req, res, next) => {
+function createRateLimiter({ windowMs, max, code, message, store }) {
+    return async (req, res, next) => {
         const now = Date.now();
         const ip = req.ip || req.socket.remoteAddress || 'unknown';
         const key = `${req.method}:${req.path}:${ip}`;
+        if (store) {
+            try {
+                const bucket = await store.increment(key, windowMs);
+                if (bucket.count > max) {
+                    res.setHeader('Retry-After', String(Math.ceil((bucket.resetAt - now) / 1000)));
+                    return res.status(429).json({ code, message });
+                }
+                return next();
+            } catch (error) {
+                return next(error);
+            }
+        }
         const bucket = rateLimitBuckets.get(key);
         if (!bucket || bucket.resetAt <= now) {
             rateLimitBuckets.set(key, { count: 1, resetAt: now + windowMs });
@@ -336,6 +380,10 @@ ON password_reset_codes(phone);
 CREATE INDEX IF NOT EXISTS idx_password_reset_codes_expires
 ON password_reset_codes(expires_at);
 `);
+    const sessionColumns = db.prepare('PRAGMA table_info(user_sessions)').all().map((column) => column.name);
+    if (!sessionColumns.includes('csrf_token_hash')) {
+        db.exec(`ALTER TABLE user_sessions ADD COLUMN csrf_token_hash TEXT;`);
+    }
     const inviteColumns = db.prepare('PRAGMA table_info(invite_codes)').all().map((column) => column.name);
     if (inviteColumns.includes('api_key')) {
         db.exec(`
@@ -515,12 +563,22 @@ ON api_charge_records(phone, created_at);
 
 function createShopApp(options = {}) {
     rateLimitBuckets.clear();
+    authPhoneFailureBuckets.clear();
     const rootDir = options.rootDir || __dirname;
     const dbPath = options.dbPath || path.join(rootDir, 'data', 'shop.sqlite');
+    const nodeEnv = String(options.nodeEnv || process.env.NODE_ENV || '').trim();
+    const production = nodeEnv === 'production';
+    assertStrongSecret('ADMIN_TOKEN', options.adminToken ?? process.env.ADMIN_TOKEN, { production });
+    assertStrongSecret('INTERNAL_TOKEN', options.internalToken ?? process.env.INTERNAL_TOKEN, { production });
+    assertStrongSecret('USAGE_EVENT_HMAC_SECRET', options.usageEventHmacSecret ?? process.env.USAGE_EVENT_HMAC_SECRET, { production, required: false });
     const db = options.db || openShopDatabase(dbPath);
     const app = express();
     app.disable('x-powered-by');
-    app.set('trust proxy', 1);
+    app.set('trust proxy', resolveTrustProxy(options));
+    const rateLimitStore = options.rateLimitStore || createRateLimitStore({
+        redisUrl: options.redisUrl || process.env.REDIS_URL,
+        now: options.now
+    });
     const product = {
         name: options.productName || process.env.PRODUCT_NAME || 'Codex 每月额度',
         amount: Number(options.productAmount || process.env.PRODUCT_AMOUNT_CNY || 30)
@@ -561,17 +619,20 @@ function createShopApp(options = {}) {
     }
 
     function publicOrder(order, opts = {}) {
-        return {
+        const payload = {
             id: order.id,
             phone: order.phone,
             productName: order.productName,
             amount: order.amount,
-            apiKey: opts.includeApiKey ? order.apiKey : '',
             apiKeyPreview: order.apiKeyPreview,
             status: getOrderStatus(order),
             redeemedAt: order.redeemedAt,
             expiresAt: order.expiresAt
         };
+        if (opts.includeApiKey) {
+            payload.apiKey = order.apiKey;
+        }
+        return payload;
     }
 
     function publicInvite(invite) {
@@ -816,6 +877,76 @@ function createShopApp(options = {}) {
         return next();
     }
 
+    function adminHeaderOnlyRequest(req) {
+        return Boolean(req.header('x-admin-token')) && !getAccountSessionToken(req);
+    }
+
+    function originFromURL(value) {
+        try {
+            return new URL(value).origin;
+        } catch {
+            return '';
+        }
+    }
+
+    function expectedOrigins(req) {
+        const origins = new Set();
+        const configured = String(options.publicBaseUrl || process.env.PUBLIC_BASE_URL || '').trim();
+        if (configured) {
+            const origin = originFromURL(configured);
+            if (origin) origins.add(origin);
+        }
+        const host = req.header('host');
+        if (host) {
+            const proto = req.secure || req.header('x-forwarded-proto') === 'https' ? 'https' : 'http';
+            origins.add(`${proto}://${host}`);
+        }
+        return origins;
+    }
+
+    function requireSameOrigin(req, res, next) {
+        if (adminHeaderOnlyRequest(req)) {
+            return next();
+        }
+        const origin = String(req.header('origin') || '').trim();
+        const referer = String(req.header('referer') || '').trim();
+        const actual = origin ? originFromURL(origin) : originFromURL(referer);
+        if (!actual || !expectedOrigins(req).has(actual)) {
+            return res.status(403).json({
+                code: 'CSRF_ORIGIN_REJECTED',
+                message: '请求来源不被允许。'
+            });
+        }
+        return next();
+    }
+
+    function requireAccountCsrf(req, res, next) {
+        if (adminHeaderOnlyRequest(req)) {
+            return next();
+        }
+        const session = getCurrentAccountSession(req);
+        if (!session || !session.csrf_token_hash) {
+            return res.status(403).json({
+                code: 'CSRF_TOKEN_REQUIRED',
+                message: '缺少 CSRF token。'
+            });
+        }
+        const actual = String(req.header('x-csrf-token') || '').trim();
+        if (!actual) {
+            return res.status(403).json({
+                code: 'CSRF_TOKEN_REQUIRED',
+                message: '缺少 CSRF token。'
+            });
+        }
+        if (!safeEqual(hashCsrfToken(actual), session.csrf_token_hash)) {
+            return res.status(403).json({
+                code: 'CSRF_TOKEN_INVALID',
+                message: 'CSRF token 无效。'
+            });
+        }
+        return next();
+    }
+
     function blockSensitiveStaticPaths(req, res, next) {
         const requestPath = decodeURIComponent(req.path || '/');
         const normalizedPath = path.posix.normalize(requestPath);
@@ -838,6 +969,12 @@ function createShopApp(options = {}) {
     function setSecurityHeaders(req, res, next) {
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('Referrer-Policy', 'same-origin');
+        res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+        if (req.secure || req.header('x-forwarded-proto') === 'https') {
+            res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+        }
         if (req.path.startsWith('/api/')) {
             res.setHeader('Cache-Control', 'no-store');
         }
@@ -848,26 +985,49 @@ function createShopApp(options = {}) {
         windowMs: 10 * 60 * 1000,
         max: 30,
         code: 'ADMIN_RATE_LIMITED',
-        message: '管理员接口请求过于频繁，请稍后再试。'
+        message: '管理员接口请求过于频繁，请稍后再试。',
+        store: rateLimitStore
     });
     const limitRedeemApi = createRateLimiter({
         windowMs: 10 * 60 * 1000,
         max: 20,
         code: 'REDEEM_RATE_LIMITED',
-        message: '兑换请求过于频繁，请稍后再试。'
+        message: '兑换请求过于频繁，请稍后再试。',
+        store: rateLimitStore
     });
     const limitQueryApi = createRateLimiter({
         windowMs: 10 * 60 * 1000,
         max: 60,
         code: 'QUERY_RATE_LIMITED',
-        message: '查询请求过于频繁，请稍后再试。'
+        message: '查询请求过于频繁，请稍后再试。',
+        store: rateLimitStore
     });
     const limitAuthApi = createRateLimiter({
         windowMs: 10 * 60 * 1000,
         max: 30,
         code: 'AUTH_RATE_LIMITED',
-        message: '登录或注册请求过于频繁，请稍后再试。'
+        message: '登录或注册请求过于频繁，请稍后再试。',
+        store: rateLimitStore
     });
+    const authPhoneFailureWindowMs = Number(options.authPhoneFailureWindowMs || process.env.AUTH_PHONE_FAILURE_WINDOW_MS || 10 * 60 * 1000);
+    const authPhoneFailureLimit = Number(options.authPhoneFailureLimit || process.env.AUTH_PHONE_FAILURE_LIMIT || 8);
+
+    function authPhoneFailureKey(phone) {
+        return `auth:failure:${phone}`;
+    }
+
+    async function isAuthPhoneFailureLimited(phone) {
+        const bucket = await rateLimitStore.get(authPhoneFailureKey(phone));
+        return Boolean(bucket && bucket.count >= authPhoneFailureLimit);
+    }
+
+    async function recordAuthPhoneFailure(phone) {
+        await rateLimitStore.increment(authPhoneFailureKey(phone), authPhoneFailureWindowMs);
+    }
+
+    async function resetAuthPhoneFailures(phone) {
+        await rateLimitStore.reset(authPhoneFailureKey(phone));
+    }
 
     function cookieOptions(req) {
         return {
@@ -889,6 +1049,16 @@ function createShopApp(options = {}) {
         };
     }
 
+    function csrfCookieOptions(req) {
+        return {
+            httpOnly: false,
+            sameSite: 'strict',
+            secure: req.secure || req.header('x-forwarded-proto') === 'https',
+            maxAge: accountSessionMaxAgeMs,
+            path: '/'
+        };
+    }
+
     function clearResultCookies(res) {
         res.clearCookie(resultCookieName, { path: '/' });
         res.clearCookie(legacyRedeemCookieName, { path: '/shop' });
@@ -896,6 +1066,7 @@ function createShopApp(options = {}) {
 
     function clearAccountCookie(res) {
         res.clearCookie(accountCookieName, { path: '/' });
+        res.clearCookie(csrfCookieName, { path: '/' });
     }
 
     function getResultToken(req) {
@@ -942,6 +1113,12 @@ VALUES (?, ?, ?, 'unused', ?)
 SELECT api_key, api_key_preview, status, created_at, used_at, order_id
 FROM api_keys
 WHERE api_key = ?
+`);
+
+    const getApiKeyByHash = db.prepare(`
+SELECT api_key, api_key_preview, api_key_hash, status, created_at, used_at, order_id
+FROM api_keys
+WHERE api_key_hash = ?
 `);
 
     const getNextUnusedApiKey = db.prepare(`
@@ -1139,12 +1316,12 @@ WHERE phone = ?
 `);
 
     const insertAccountSession = db.prepare(`
-INSERT INTO user_sessions (token_hash, phone, created_at, expires_at)
-VALUES (?, ?, ?, ?)
+INSERT INTO user_sessions (token_hash, phone, csrf_token_hash, created_at, expires_at)
+VALUES (?, ?, ?, ?, ?)
 `);
 
     const getAccountSessionByHash = db.prepare(`
-SELECT token_hash, phone, created_at, expires_at, revoked_at
+SELECT token_hash, phone, csrf_token_hash, created_at, expires_at, revoked_at
 FROM user_sessions
 WHERE token_hash = ?
 `);
@@ -1209,6 +1386,12 @@ WHERE result_token = ?
 SELECT id, phone, api_key, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
 FROM orders
 WHERE api_key = ?
+`);
+
+    const getOrderByIdAndPhone = db.prepare(`
+SELECT id, phone, api_key, api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
+FROM orders
+WHERE id = ? AND phone = ?
 `);
 
     const insertUsageEvent = db.prepare(`
@@ -1543,13 +1726,15 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         while (getAccountSessionByHash.get(hashSessionToken(token))) {
             token = createAccountSessionToken();
         }
+        const csrfToken = createCsrfToken();
         insertAccountSession.run(
             hashSessionToken(token),
             phone,
+            hashCsrfToken(csrfToken),
             nowIso(createdAt),
             nowIso(addDays(createdAt, durationDays))
         );
-        return token;
+        return { token, csrfToken };
     }
 
     function createPasswordResetCodeForPhone({ phone, createdByPhone }) {
@@ -2140,12 +2325,28 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return result;
     }
 
-    app.use(express.json({
-        verify: (req, res, buffer) => {
-            req.rawBody = Buffer.from(buffer);
+    function jsonLimitForPath(pathname) {
+        if (pathname === '/api/internal/usage-events') {
+            return options.usageJsonBodyLimit || process.env.USAGE_JSON_BODY_LIMIT || '256kb';
         }
-    }));
-    app.use(express.urlencoded({ extended: false }));
+        return options.jsonBodyLimit || process.env.JSON_BODY_LIMIT || '32kb';
+    }
+
+    app.use((req, res, next) => {
+        return express.json({
+            limit: jsonLimitForPath(req.path),
+            verify: (request, response, buffer) => {
+                request.rawBody = Buffer.from(buffer);
+            }
+        })(req, res, next);
+    });
+    app.use(express.urlencoded({ extended: false, limit: options.urlencodedBodyLimit || process.env.URLENCODED_BODY_LIMIT || '16kb' }));
+    app.use((error, req, res, next) => {
+        if (error && error.type === 'entity.too.large') {
+            return res.status(413).json({ code: 'BODY_TOO_LARGE', message: '请求体过大。' });
+        }
+        return next(error);
+    });
     app.use(setSecurityHeaders);
 
     app.post('/api/auth/register', limitAuthApi, (req, res) => {
@@ -2171,8 +2372,9 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
 
         try {
             const user = registerUser({ phone, password });
-            const token = createAccountSessionForPhone(user.phone);
-            res.cookie(accountCookieName, token, accountCookieOptions(req));
+            const session = createAccountSessionForPhone(user.phone);
+            res.cookie(accountCookieName, session.token, accountCookieOptions(req));
+            res.cookie(csrfCookieName, session.csrfToken, csrfCookieOptions(req));
             return res.status(201).json({ user: publicUser(user.phone) });
         } catch (error) {
             return res.status(error.status || 500).json({
@@ -2182,19 +2384,30 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
-    app.post('/api/auth/login', limitAuthApi, (req, res) => {
+    app.post('/api/auth/login', limitAuthApi, async (req, res) => {
         const phone = String(req.body.phone || '').trim();
         const password = String(req.body.password || '');
         if (!isPhone(phone)) {
             return res.status(400).json({ code: 'INVALID_PHONE', message: '请输入有效的中国大陆手机号。' });
         }
+        if (await isAuthPhoneFailureLimited(phone)) {
+            return res.status(429).json({
+                code: 'AUTH_PHONE_RATE_LIMITED',
+                message: '该手机号登录尝试过于频繁，请稍后再试。'
+            });
+        }
 
         try {
             const user = loginUser({ phone, password });
-            const token = createAccountSessionForPhone(user.phone);
-            res.cookie(accountCookieName, token, accountCookieOptions(req));
+            await resetAuthPhoneFailures(phone);
+            const session = createAccountSessionForPhone(user.phone);
+            res.cookie(accountCookieName, session.token, accountCookieOptions(req));
+            res.cookie(csrfCookieName, session.csrfToken, csrfCookieOptions(req));
             return res.json({ user: publicUser(user.phone) });
         } catch (error) {
+            if (error.code === 'INVALID_CREDENTIALS') {
+                await recordAuthPhoneFailure(phone);
+            }
             return res.status(error.status || 500).json({
                 code: error.code || 'LOGIN_FAILED',
                 message: error.message || '登录失败。'
@@ -2220,8 +2433,9 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
 
         try {
             const user = resetPasswordWithCode({ phone, code, password });
-            const token = createAccountSessionForPhone(user.phone);
-            res.cookie(accountCookieName, token, accountCookieOptions(req));
+            const session = createAccountSessionForPhone(user.phone);
+            res.cookie(accountCookieName, session.token, accountCookieOptions(req));
+            res.cookie(csrfCookieName, session.csrfToken, csrfCookieOptions(req));
             return res.json({ user: publicUser(user.phone) });
         } catch (error) {
             return res.status(error.status || 500).json({
@@ -2231,7 +2445,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
-    app.post('/api/auth/logout', limitAuthApi, (req, res) => {
+    app.post('/api/auth/logout', limitAuthApi, requireSameOrigin, requireAccountCsrf, (req, res) => {
         const token = getAccountSessionToken(req);
         if (token) {
             revokeAccountSession.run(nowIso(), hashSessionToken(token));
@@ -2243,11 +2457,19 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     app.get('/api/account/me', limitQueryApi, requireAccount, (req, res) => {
         const orders = listOrdersByPhone.all(req.account.phone)
             .map(toOrder)
-            .map((order) => publicOrder(order, { includeApiKey: true }));
+            .map((order) => publicOrder(order));
         return res.json({
             user: publicUser(req.account.phone),
             orders
         });
+    });
+
+    app.post('/api/account/orders/:id/reveal-api-key', limitQueryApi, requireSameOrigin, requireAccount, requireAccountCsrf, (req, res) => {
+        const row = getOrderByIdAndPhone.get(req.params.id, req.account.phone);
+        if (!row) {
+            return res.status(404).json({ code: 'ORDER_NOT_FOUND', message: '订单不存在。' });
+        }
+        return res.json({ apiKey: row.api_key, expiresInSeconds: 60 });
     });
 
     app.get('/api/account/balance', limitQueryApi, requireAccount, (req, res) => {
@@ -2258,7 +2480,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         });
     });
 
-    app.post('/api/account/topups', limitQueryApi, requireAccount, (req, res) => {
+    app.post('/api/account/topups', limitQueryApi, requireSameOrigin, requireAccount, requireAccountCsrf, (req, res) => {
         try {
             const topup = createTopupRequest({ phone: req.account.phone, body: req.body });
             return res.status(201).json({
@@ -2346,7 +2568,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return res.json(buildUsageSummary(req.query));
     });
 
-    app.post('/api/admin/usage-key-profiles', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+    app.post('/api/admin/usage-key-profiles', limitAdminApi, requireSameOrigin, requireAdminUsageAccess, requireAccountCsrf, (req, res) => {
         try {
             const profile = saveUsageKeyProfile(req.body);
             return res.status(201).json({ profile: publicUsageKeyProfile(profile) });
@@ -2366,7 +2588,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return res.json({ topups });
     });
 
-    app.post('/api/admin/topups/:id/approve', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+    app.post('/api/admin/topups/:id/approve', limitAdminApi, requireSameOrigin, requireAdminUsageAccess, requireAccountCsrf, (req, res) => {
         try {
             const confirmedAmountCents = parsePositiveCnyToCents(req.body.confirmedAmount ?? req.body.confirmed_amount);
             const result = approveTopupRequest({
@@ -2387,7 +2609,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
-    app.post('/api/admin/topups/:id/reject', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+    app.post('/api/admin/topups/:id/reject', limitAdminApi, requireSameOrigin, requireAdminUsageAccess, requireAccountCsrf, (req, res) => {
         try {
             const result = rejectTopupRequest({
                 id: req.params.id,
@@ -2406,7 +2628,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
-    app.post('/api/admin/password-reset-codes', limitAdminApi, requireAdminAccount, (req, res) => {
+    app.post('/api/admin/password-reset-codes', limitAdminApi, requireSameOrigin, requireAdminAccount, requireAccountCsrf, (req, res) => {
         const phone = String(req.body.phone || '').trim();
         if (!isPhone(phone)) {
             return res.status(400).json({ code: 'INVALID_PHONE', message: '请输入有效的中国大陆手机号。' });
@@ -2425,7 +2647,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
-    app.post('/api/admin/usage-imports', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+    app.post('/api/admin/usage-imports', limitAdminApi, requireSameOrigin, requireAdminUsageAccess, requireAccountCsrf, (req, res) => {
         try {
             return res.json(importUsageEvents(req.body.month));
         } catch (error) {
@@ -2462,7 +2684,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     app.get('/api/orders', limitQueryApi, requireAccount, (req, res) => {
         const orders = listOrdersByPhone.all(req.account.phone)
             .map(toOrder)
-            .map((order) => publicOrder(order, { includeApiKey: true }));
+            .map((order) => publicOrder(order));
 
         return res.json({ orders });
     });
@@ -2480,16 +2702,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return res.json({ order: publicOrder(toOrder(row), { includeApiKey: true }) });
     });
 
-    app.get('/api/internal/api-keys/status', requireInternal, (req, res) => {
-        const apiKey = String(req.query.apiKey || '').trim();
-        if (!apiKey) {
-            return res.status(400).json({
-                code: 'INVALID_API_KEY',
-                message: '请提供 API key。'
-            });
-        }
-
-        const apiKeyRow = getApiKey.get(apiKey);
+    function respondApiKeyStatus(res, apiKeyRow) {
         if (!apiKeyRow) {
             return res.json({
                 managed: false,
@@ -2507,7 +2720,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             });
         }
 
-        const orderRow = getOrderByApiKey.get(apiKey);
+        const orderRow = getOrderByApiKey.get(apiKeyRow.api_key);
         if (!orderRow) {
             return res.json({
                 managed: true,
@@ -2547,6 +2760,29 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             expiresAt: order.expiresAt,
             billing: billingStatus.billing
         });
+    }
+
+    app.get('/api/internal/api-keys/status', requireInternal, (req, res) => {
+        const apiKey = String(req.query.apiKey || '').trim();
+        if (!apiKey) {
+            return res.status(400).json({
+                code: 'INVALID_API_KEY',
+                message: '请提供 API key。'
+            });
+        }
+
+        return respondApiKeyStatus(res, getApiKey.get(apiKey));
+    });
+
+    app.post('/api/internal/api-keys/status', requireInternal, (req, res) => {
+        const apiKeyHash = String(req.body.apiKeyHash || req.body.api_key_hash || '').trim().toLowerCase();
+        if (!/^[a-f0-9]{64}$/.test(apiKeyHash)) {
+            return res.status(400).json({
+                code: 'INVALID_API_KEY_HASH',
+                message: 'api key hash 无效。'
+            });
+        }
+        return respondApiKeyStatus(res, getApiKeyByHash.get(apiKeyHash));
     });
 
     app.post('/api/internal/usage-events', requireInternal, (req, res) => {
