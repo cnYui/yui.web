@@ -308,7 +308,7 @@
         const legend = parts.map((part, index) => `
             <li class="flex items-center justify-between gap-3 text-sm">
                 <span class="flex min-w-0 items-center gap-2">
-                    <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background:${colors[index % colors.length]}"></span>
+                    <span class="admin-revenue-legend-dot" style="background:${colors[index % colors.length]}"></span>
                     <span class="truncate">${escapeHtml(part.label)}</span>
                 </span>
                 <span class="shrink-0 font-medium text-primary dark:text-dark-text">${escapeHtml(formatNanos(part.chargeNanos))}</span>
@@ -318,8 +318,8 @@
         return `
             <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
                 <div class="flex flex-col gap-5 sm:flex-row sm:items-center">
-                    <div class="mx-auto grid h-36 w-36 shrink-0 place-items-center rounded-full" style="background:conic-gradient(${segments})">
-                        <div class="grid h-20 w-20 place-items-center rounded-full bg-white text-center dark:bg-dark-card">
+                    <div class="admin-revenue-pie" style="width:9rem;height:9rem;display:grid;place-items:center;flex-shrink:0;border-radius:9999px;background:conic-gradient(${segments})">
+                        <div class="admin-revenue-pie-inner" style="width:5rem;height:5rem;display:grid;place-items:center;border-radius:9999px">
                             <span class="text-sm font-medium text-primary dark:text-dark-text">${escapeHtml(formatNanos(total))}</span>
                         </div>
                     </div>
@@ -335,13 +335,14 @@
     function renderCustomerSpendingBars(rankings = {}, period = 'month') {
         const items = Array.isArray(rankings[period]) ? rankings[period] : [];
         const maxCharge = Math.max(...items.map((item) => Number(item.chargeNanos || 0)), 1);
+        const maxBarHeightPx = 140;
         const bars = items.length ? items.slice(0, 12).map((item) => {
-            const height = Math.max(6, Math.round((Number(item.chargeNanos || 0) / maxCharge) * 100));
+            const barHeightPx = Math.max(8, Math.round((Number(item.chargeNanos || 0) / maxCharge) * maxBarHeightPx));
             return `
-                <div class="flex min-w-[3rem] flex-1 flex-col items-center justify-end gap-3">
+                <div class="admin-revenue-bar-item">
                     <span class="text-xs font-medium text-primary dark:text-dark-text">${escapeHtml(formatNanos(item.chargeNanos))}</span>
-                    <div class="w-full max-w-12 rounded-t bg-primary dark:bg-dark-text" style="height:${height}%"></div>
-                    <span class="origin-top-left rotate-[-28deg] whitespace-nowrap text-[10px] text-text-muted dark:text-dark-text-muted">${escapeHtml(item.phone || '-')}</span>
+                    <div class="admin-revenue-bar" style="height:${barHeightPx}px"></div>
+                    <span class="admin-revenue-phone-label">${escapeHtml(item.phone || '-')}</span>
                 </div>
             `;
         }).join('') : '<div class="grid h-48 flex-1 place-items-center text-sm text-text-muted dark:text-dark-text-muted">暂无 Shop 用户消费记录。</div>';
@@ -358,7 +359,7 @@
                     </div>
                 </div>
                 <div class="mt-5 overflow-x-auto pb-8">
-                    <div class="flex h-56 min-w-[34rem] items-end gap-4 border-l border-b border-border-subtle dark:border-dark-border px-4 pt-4">
+                    <div class="admin-revenue-bars" style="display:flex;align-items:flex-end;gap:1rem;min-width:34rem;height:14rem;padding:1rem 1rem 0;border-left:1px solid #e5e5e5;border-bottom:1px solid #e5e5e5">
                         ${bars}
                     </div>
                 </div>

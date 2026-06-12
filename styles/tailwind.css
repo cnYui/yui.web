@@ -63,6 +63,86 @@
     background: rgba(36, 36, 36, 0.88);
   }
 
+  .admin-revenue-pie {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 9rem;
+    height: 9rem;
+    margin-inline: auto;
+    border-radius: 9999px;
+  }
+
+  .admin-revenue-pie-inner {
+    display: grid;
+    place-items: center;
+    width: 5rem;
+    height: 5rem;
+    border-radius: 9999px;
+    background: #ffffff;
+    text-align: center;
+  }
+
+  .dark .admin-revenue-pie-inner {
+    background: #242424;
+  }
+
+  .admin-revenue-legend-dot {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 9999px;
+  }
+
+  .admin-revenue-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    min-width: 34rem;
+    height: 14rem;
+    padding: 1rem 1rem 0;
+    border-left: 1px solid #e5e5e5;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .dark .admin-revenue-bars {
+    border-color: #333333;
+  }
+
+  .admin-revenue-bar-item {
+    display: flex;
+    flex: 1 1 0;
+    min-width: 3rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  .admin-revenue-bar {
+    width: 100%;
+    max-width: 3rem;
+    border-radius: 0.25rem 0.25rem 0 0;
+    background: #222222;
+  }
+
+  .dark .admin-revenue-bar {
+    background: #e5e5e5;
+  }
+
+  .admin-revenue-phone-label {
+    transform-origin: top left;
+    transform: rotate(-28deg);
+    white-space: nowrap;
+    font-size: 10px;
+    color: #666666;
+  }
+
+  .dark .admin-revenue-phone-label {
+    color: #a0a0a0;
+  }
+
   @media (max-width: 1023px) {
     .shop-auth-background-figure {
       left: -42vw;

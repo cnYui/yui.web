@@ -321,3 +321,22 @@
 - `/shop/admin/` 新增 `adminRevenueCharts`，位于收银卡片下方、用量明细表上方。
 - 前端使用 `conic-gradient` 渲染今日 / 本月收银饼图，使用 HTML/CSS 渲染 Shop 用户消费柱状图。
 - 全量验证 `npm test` 130 个测试通过；实施记录见 `docs/ai/context/20260612-182355-admin-usage-revenue-charts-implementation_CN.md`。
+
+## 2026-06-12 Admin 收银图表渲染修复
+
+- 图表文字出现但饼图 / 柱状图不可见的根因是 `shop/shop.js` 新增动态 Tailwind class 后，`styles/site.css` 没有同步重新构建并提交。
+- 收银图表关键几何样式改为 `styles/tailwind.css` 中的 `admin-revenue-*` 组件类，避免过度依赖动态 utility class。
+- `shop/shop.js` 对饼图和柱状图容器保留必要内联几何兜底，降低旧 CSS 缓存导致图形空白的风险。
+- Shop 用户消费柱状图单根柱子使用像素高度，不使用 flex 子项中的百分比高度，否则浏览器可能解析为 0。
+- 后续涉及动态 HTML 的新样式必须同步执行 `npm run build:css` 并提交 `styles/site.css`。
+- 修复记录见 `docs/ai/context/20260612-195805-admin-revenue-chart-rendering-fix-design-plan_CN.md` 和 `docs/ai/context/20260612-200029-admin-revenue-chart-rendering-fix-implementation_CN.md`。
+
+## 2026-06-12 Admin 用户余额面板位置设计
+
+- 用户确认新增的所有用户余额面板合并进 `/shop/admin/` 的「业务办理」section。
+- 推荐位置：充值审核下方、邀请码记录 / API key 池记录上方。
+- 余额面板是账户台账视图，不属于「今日收银 / 本月收银」收入分析，也不放进「用量监控」。
+- 第一版只读：展示总余额、欠费用户数、欠费金额、待确认充值金额，以及手机号、余额、欠费、待确认充值、API key 状态或托管 key 数量、最近更新时间。
+- 「业务办理」统一刷新和充值审核确认 / 拒绝后都应刷新余额面板。
+- 设计记录见 `docs/ai/context/20260612-195611-admin-account-balance-panel-placement-design_CN.md`。
+- 实施计划见 `docs/ai/context/20260612-200053-admin-account-balance-panel-implementation-plan_CN.md`。

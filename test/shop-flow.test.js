@@ -2859,6 +2859,25 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.match(html, /id="adminUsageImportSection"[\s\S]*?data-collapsible-default="open"/);
 });
 
+test('Admin 收银图表关键几何样式存在于构建 CSS 中', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+    const siteCss = fs.readFileSync(path.join(__dirname, '..', 'styles/site.css'), 'utf8');
+
+    assert.match(script, /admin-revenue-pie/);
+    assert.match(script, /admin-revenue-pie-inner/);
+    assert.match(script, /admin-revenue-bars/);
+    assert.match(script, /admin-revenue-bar/);
+    assert.match(script, /barHeightPx/);
+    assert.match(script, /admin-revenue-bar" style="height:\$\{barHeightPx\}px/);
+    assert.doesNotMatch(script, /admin-revenue-bar" style="height:\$\{height\}%/);
+    assert.match(siteCss, /\.admin-revenue-pie\{/);
+    assert.match(siteCss, /width:9rem/);
+    assert.match(siteCss, /height:9rem/);
+    assert.match(siteCss, /\.admin-revenue-bars\{/);
+    assert.match(siteCss, /height:14rem/);
+}
+);
+
 test('Admin 日志导入栏目展示自动导入状态容器', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
     assert.match(html, /id="usageImportStatus"/);
