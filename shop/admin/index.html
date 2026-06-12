@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <script src="/js/theme.js"></script>
     <script src="/js/lang.js?v=20260419-2"></script>
-    <script src="/shop/shop.js?v=20260609-admin-session"></script>
+    <script src="/shop/shop.js?v=20260612-admin-revenue-fallback"></script>
 </head>
 <body class="bg-white dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col antialiased transition-colors duration-300">
     <header class="sticky top-0 z-50 w-full border-b border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
@@ -83,6 +83,26 @@
                     <p id="adminTopupMessage" class="mt-3 text-sm text-text-muted dark:text-dark-text-muted"></p>
                     <div id="adminTopupTable" class="mt-4 w-full min-w-0 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
                 </div>
+                <div id="adminAccountBalancesPanel" class="mt-8">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                        <div>
+                            <h3 class="font-display text-2xl text-primary dark:text-dark-text">用户余额</h3>
+                            <p class="mt-2 text-sm text-text-muted dark:text-dark-text-muted">只读查看所有 Shop 用户余额、欠费和待确认充值。</p>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-[minmax(0,16rem)_10rem]">
+                            <input id="adminBalanceSearchInput" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="search" placeholder="搜索手机号"/>
+                            <select id="adminBalanceStatusFilter" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary">
+                                <option value="all">全部余额</option>
+                                <option value="available">有余额</option>
+                                <option value="debt">欠费</option>
+                                <option value="empty">余额为 0</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="adminBalanceSummary" class="mt-4 grid gap-3 md:grid-cols-4"></div>
+                    <div id="adminBalanceTable" class="mt-4 w-full min-w-0 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
+                    <p id="adminBalanceMessage" class="mt-3 text-sm text-text-muted dark:text-dark-text-muted"></p>
+                </div>
                 <div class="mt-8 grid gap-5 xl:grid-cols-2">
                     <div>
                         <h3 class="font-display text-2xl text-primary dark:text-dark-text">邀请码记录</h3>
@@ -127,6 +147,7 @@
                 </div>
                 <div id="usageSummaryCards" class="mt-6 grid gap-3 md:grid-cols-4"></div>
                 <div id="adminBillingUsageCards" class="mt-6 grid gap-3 md:grid-cols-5"></div>
+                <div id="adminRevenueCharts" class="mt-6"></div>
                 <div id="usageTable" class="mt-6 w-full min-w-0 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
                 <div id="adminRecentCharges" class="mt-6 w-full min-w-0 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
                 <p id="usageMessage" class="mt-3 text-sm text-text-muted dark:text-dark-text-muted"></p>
