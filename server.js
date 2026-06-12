@@ -889,6 +889,37 @@ function createShopApp(options = {}) {
         };
     }
 
+    function publicAdminAccountBalance(row) {
+        const balance = publicAccountBalance(row);
+        return {
+            ...balance,
+            managedOrderCount: Number(row.managed_order_count || 0),
+            managedApiKeyCount: Number(row.managed_api_key_count || 0),
+            usedApiKeyCount: Number(row.used_api_key_count || 0),
+            unusedApiKeyCount: Number(row.unused_api_key_count || 0),
+            disabledApiKeyCount: Number(row.disabled_api_key_count || 0)
+        };
+    }
+
+    function adminAccountBalanceSummary(items) {
+        const totalBalanceNanos = items.reduce((sum, item) => sum + Number(item.balanceNanos || 0), 0);
+        const debtNanos = items.reduce((sum, item) => sum + Number(item.debtNanos || 0), 0);
+        const pendingTopupNanos = items.reduce((sum, item) => sum + Number(item.pendingTopupNanos || 0), 0);
+        return {
+            userCount: items.length,
+            totalBalanceCents: nanosToBalanceCents(totalBalanceNanos),
+            totalBalanceNanos,
+            totalBalanceAmount: nanosToCny(totalBalanceNanos),
+            debtUserCount: items.filter((item) => item.status === 'debt').length,
+            debtCents: chargeNanosToCents(debtNanos),
+            debtNanos,
+            debtAmount: nanosToCny(debtNanos),
+            pendingTopupCents: nanosToBalanceCents(pendingTopupNanos),
+            pendingTopupNanos,
+            pendingTopupAmount: nanosToCny(pendingTopupNanos)
+        };
+    }
+
     function billingStatusForPhone(phone) {
         return publicAccountBalance(ensureAccountBalance(phone));
     }
@@ -1389,6 +1420,65 @@ SELECT phone, balance_cents, balance_nanos, pending_topup_cents, pending_topup_n
        credit_limit_cents, credit_limit_nanos, updated_at
 FROM account_balances
 WHERE phone = ?
+`);
+
+    const listUsersForAdminBalances = db.prepare(`
+SELECT phone
+FROM users
+WHERE phone != ?
+ORDER BY created_at DESC, phone ASC
+`);
+
+    const listAccountBalancesForAdmin = db.prepare(`
+SELECT
+  ab.phone,
+  ab.balance_cents,
+  ab.balance_nanos,
+  ab.pending_topup_cents,
+  ab.pending_topup_nanos,
+  ab.credit_limit_cents,
+  ab.credit_limit_nanos,
+  ab.updated_at,
+  (
+    SELECT COUNT(*)
+    FROM orders o
+    WHERE o.phone = ab.phone
+  ) AS managed_order_count,
+  (
+    SELECT COUNT(*)
+    FROM api_keys ak
+    JOIN orders o ON o.id = ak.order_id OR o.api_key = ak.api_key
+    WHERE o.phone = ab.phone
+  ) AS managed_api_key_count,
+  (
+    SELECT COUNT(*)
+    FROM api_keys ak
+    JOIN orders o ON o.id = ak.order_id OR o.api_key = ak.api_key
+    WHERE o.phone = ab.phone AND ak.status = 'used'
+  ) AS used_api_key_count,
+  (
+    SELECT COUNT(*)
+    FROM api_keys ak
+    JOIN orders o ON o.id = ak.order_id OR o.api_key = ak.api_key
+    WHERE o.phone = ab.phone AND ak.status = 'unused'
+  ) AS unused_api_key_count,
+  (
+    SELECT COUNT(*)
+    FROM api_keys ak
+    JOIN orders o ON o.id = ak.order_id OR o.api_key = ak.api_key
+    WHERE o.phone = ab.phone AND ak.status = 'disabled'
+  ) AS disabled_api_key_count
+FROM account_balances ab
+JOIN users u ON u.phone = ab.phone
+WHERE ab.phone != ?
+ORDER BY
+  CASE
+    WHEN ab.balance_nanos < 0 THEN 0
+    WHEN ab.balance_nanos = 0 THEN 1
+    ELSE 2
+  END,
+  ab.updated_at DESC,
+  ab.phone ASC
 `);
 
     const insertTopupRequest = db.prepare(`
@@ -2331,10 +2421,25 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return deepseekProRmbPrice;
     }
 
-    function addCustomerSpending(target, phone, chargeNanos) {
+    function emptyCustomerSpending() {
+        return {
+            chargeNanos: 0,
+            cacheHitInputChargeNanos: 0,
+            cacheMissInputChargeNanos: 0,
+            outputChargeNanos: 0
+        };
+    }
+
+    function addCustomerSpending(target, phone, charges) {
         const normalizedPhone = String(phone || '').trim();
         if (!normalizedPhone) return;
-        target.set(normalizedPhone, (target.get(normalizedPhone) || 0) + chargeNanos);
+        const current = target.get(normalizedPhone) || emptyCustomerSpending();
+        target.set(normalizedPhone, {
+            chargeNanos: current.chargeNanos + nonNegativeInteger(charges.chargeNanos),
+            cacheHitInputChargeNanos: current.cacheHitInputChargeNanos + nonNegativeInteger(charges.cacheHitInputChargeNanos),
+            cacheMissInputChargeNanos: current.cacheMissInputChargeNanos + nonNegativeInteger(charges.cacheMissInputChargeNanos),
+            outputChargeNanos: current.outputChargeNanos + nonNegativeInteger(charges.outputChargeNanos)
+        });
     }
 
     function addBillingStats(stats, row, ranges) {
@@ -2357,7 +2462,12 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             stats.todayCacheHitInputChargeNanos += cacheHitInputChargeNanos;
             stats.todayCacheMissInputChargeNanos += cacheMissInputChargeNanos;
             stats.todayOutputChargeNanos += outputChargeNanos;
-            addCustomerSpending(stats.todayCustomerSpendingByPhone, row.phone, chargeNanos);
+            addCustomerSpending(stats.todayCustomerSpendingByPhone, row.phone, {
+                chargeNanos,
+                cacheHitInputChargeNanos,
+                cacheMissInputChargeNanos,
+                outputChargeNanos
+            });
         }
         if (createdAt >= ranges.monthStart) {
             stats.monthChargeNanos += chargeNanos;
@@ -2367,7 +2477,12 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             stats.cacheHitInputChargeNanos += cacheHitInputChargeNanos;
             stats.cacheMissInputChargeNanos += cacheMissInputChargeNanos;
             stats.outputChargeNanos += outputChargeNanos;
-            addCustomerSpending(stats.monthCustomerSpendingByPhone, row.phone, chargeNanos);
+            addCustomerSpending(stats.monthCustomerSpendingByPhone, row.phone, {
+                chargeNanos,
+                cacheHitInputChargeNanos,
+                cacheMissInputChargeNanos,
+                outputChargeNanos
+            });
         }
     }
 
@@ -2398,12 +2513,36 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }));
     }
 
+    function customerSpendingParts(spending) {
+        return [
+            {
+                key: 'cache_hit_input',
+                label: '缓存命中输入',
+                chargeNanos: nonNegativeInteger(spending.cacheHitInputChargeNanos)
+            },
+            {
+                key: 'cache_miss_input',
+                label: '缓存未命中输入',
+                chargeNanos: nonNegativeInteger(spending.cacheMissInputChargeNanos)
+            },
+            {
+                key: 'output',
+                label: '输出 token',
+                chargeNanos: nonNegativeInteger(spending.outputChargeNanos)
+            }
+        ].map((part) => ({
+            ...part,
+            chargeAmount: nanosToCny(part.chargeNanos)
+        }));
+    }
+
     function customerSpendingRanking(spendingByPhone) {
         return Array.from(spendingByPhone.entries())
-            .map(([phone, chargeNanos]) => ({
+            .map(([phone, spending]) => ({
                 phone,
-                chargeNanos,
-                chargeAmount: nanosToCny(chargeNanos)
+                chargeNanos: nonNegativeInteger(spending.chargeNanos),
+                chargeAmount: nanosToCny(spending.chargeNanos),
+                parts: customerSpendingParts(spending)
             }))
             .sort((left, right) => {
                 if (right.chargeNanos !== left.chargeNanos) return right.chargeNanos - left.chargeNanos;
@@ -2712,6 +2851,30 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             daily: Array.from(dailyByBucket.values()).sort((left, right) => left.bucket.localeCompare(right.bucket)),
             byModel: Array.from(byModel.values()).sort((left, right) => right.totalTokens - left.totalTokens),
             byApiKey: Array.from(byApiKey.values()).sort((left, right) => right.totalTokens - left.totalTokens)
+        };
+    }
+
+    function buildAdminAccountBalances(filters = {}) {
+        for (const user of listUsersForAdminBalances.all(adminAccountPhone)) {
+            ensureAccountBalance(user.phone);
+        }
+
+        const allItems = listAccountBalancesForAdmin.all(adminAccountPhone).map(publicAdminAccountBalance);
+        const q = String(filters.q || '').trim().toLowerCase();
+        const status = String(filters.status || 'all').trim();
+        const normalizedStatus = ['all', 'available', 'debt', 'empty'].includes(status) ? status : 'all';
+        const limit = Math.min(Math.max(Number(filters.limit || 100), 1), 500);
+        const filteredItems = allItems
+            .filter((item) => normalizedStatus === 'all' || item.status === normalizedStatus)
+            .filter((item) => {
+                if (!q) return true;
+                return [item.phone, item.status].some((value) => String(value || '').toLowerCase().includes(q));
+            })
+            .slice(0, limit);
+
+        return {
+            summary: adminAccountBalanceSummary(allItems),
+            items: filteredItems
         };
     }
 
@@ -3167,6 +3330,10 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
 
     app.get('/api/admin/invite-console', limitAdminApi, requireAdminAccount, (req, res) => {
         return res.json(buildInviteConsole());
+    });
+
+    app.get('/api/admin/account-balances', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        return res.json(buildAdminAccountBalances(req.query));
     });
 
     app.post('/api/admin/session-invites', limitAdminApi, requireSameOrigin, requireAdminAccount, requireAccountCsrf, (req, res) => {

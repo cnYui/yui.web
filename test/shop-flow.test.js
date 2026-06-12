@@ -1198,6 +1198,107 @@ test('管理员拒绝充值不会改变余额', async () => {
     });
 });
 
+test('管理员余额接口展示所有 Shop 用户余额并过滤管理员账号', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+
+        await createRedeemedOrder(baseUrl, '13800138821', 'sk-admin-balance-owned');
+        const userCookie = await registerUserAndGetCookie(baseUrl, '13800138821');
+        await submitAndApproveTopup(baseUrl, userCookie, '3');
+
+        const debtCookie = await registerUserAndGetCookie(baseUrl, '13800138822');
+        const pendingTopup = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie: debtCookie },
+            body: JSON.stringify({ amount: '2', paymentMethod: 'wechat' })
+        });
+        assert.equal(pendingTopup.response.status, 201);
+        db.prepare(`
+UPDATE account_balances
+SET balance_cents = ?, balance_nanos = ?, updated_at = ?
+WHERE phone = ?
+`).run(-15, -150000000, '2026-06-12T12:00:00+08:00', '13800138822');
+
+        db.prepare(`
+INSERT INTO usage_key_profiles (api_key_hash, api_key_preview, group_name, phone, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?)
+`).run(
+            hashApiKeyForTest('sk-local-not-shop'),
+            keyPreviewForTest('sk-local-not-shop'),
+            'local',
+            '13900000001',
+            '2026-06-12T12:00:00+08:00',
+            '2026-06-12T12:00:00+08:00'
+        );
+
+        const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
+        });
+        assert.equal(adminLogin.response.status, 200);
+        const adminCookie = cookieHeaderFromSetCookie(adminLogin.response.headers.get('set-cookie') || '');
+
+        const result = await jsonFetch(`${baseUrl}/api/admin/account-balances`, {
+            headers: { cookie: adminCookie }
+        });
+        assert.equal(result.response.status, 200);
+        assert.equal(result.body.summary.userCount, 2);
+        assert.equal(result.body.summary.totalBalanceNanos, 2850000000);
+        assert.equal(result.body.summary.totalBalanceAmount, 2.85);
+        assert.equal(result.body.summary.debtUserCount, 1);
+        assert.equal(result.body.summary.debtNanos, 150000000);
+        assert.equal(result.body.summary.pendingTopupNanos, 2000000000);
+        assert.deepEqual(result.body.items.map((item) => item.phone), ['13800138822', '13800138821']);
+
+        const debtItem = result.body.items.find((item) => item.phone === '13800138822');
+        assert.equal(debtItem.status, 'debt');
+        assert.equal(debtItem.balanceNanos, -150000000);
+        assert.equal(debtItem.debtNanos, 150000000);
+        assert.equal(debtItem.pendingTopupNanos, 2000000000);
+        assert.equal(debtItem.managedApiKeyCount, 0);
+
+        const activeItem = result.body.items.find((item) => item.phone === '13800138821');
+        assert.equal(activeItem.status, 'available');
+        assert.equal(activeItem.balanceNanos, 3000000000);
+        assert.equal(activeItem.managedApiKeyCount, 1);
+        assert.equal(activeItem.usedApiKeyCount, 1);
+        assert.equal(activeItem.unusedApiKeyCount, 0);
+        assert.equal(activeItem.disabledApiKeyCount, 0);
+        assert.ok(!result.body.items.some((item) => item.phone === '15951875192'));
+        assert.ok(!result.body.items.some((item) => item.phone === '13900000001'));
+
+        const filtered = await jsonFetch(`${baseUrl}/api/admin/account-balances?status=debt&q=822`, {
+            headers: { cookie: adminCookie }
+        });
+        assert.equal(filtered.response.status, 200);
+        assert.deepEqual(filtered.body.items.map((item) => item.phone), ['13800138822']);
+        assert.equal(filtered.body.summary.userCount, 2);
+    });
+});
+
+test('管理员余额接口要求管理员登录或管理员 token', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+        const userCookie = await registerUserAndGetCookie(baseUrl, '13800138823');
+
+        const missingAuth = await jsonFetch(`${baseUrl}/api/admin/account-balances`);
+        assert.equal(missingAuth.response.status, 401);
+        assert.equal(missingAuth.body.code, 'UNAUTHORIZED');
+
+        const normalUser = await jsonFetch(`${baseUrl}/api/admin/account-balances`, {
+            headers: { cookie: userCookie }
+        });
+        assert.equal(normalUser.response.status, 403);
+        assert.equal(normalUser.body.code, 'ADMIN_ACCOUNT_REQUIRED');
+
+        const tokenResult = await jsonFetch(`${baseUrl}/api/admin/account-balances`, {
+            headers: { 'x-admin-token': 'test-token' }
+        });
+        assert.equal(tokenResult.response.status, 200);
+        assert.deepEqual(tokenResult.body.items.map((item) => item.phone), ['13800138823']);
+    });
+});
+
 test('托管 API key 在账户余额为 0 时返回余额不足状态', async () => {
     await withServer(async ({ baseUrl }) => {
         const order = await createRedeemedOrder(baseUrl, '13800139009', 'sk-balance-zero');
@@ -1882,6 +1983,16 @@ test('管理员 usage summary 返回 Shop 收银构成和用户消费排行且�
         assert.deepEqual(result.body.billing.customerSpendingRankings.today.map((item) => [item.phone, item.chargeNanos, item.chargeAmount]), [
             ['13800138512', 2100000000, 2.1],
             ['13800138511', 250000000, 0.25]
+        ]);
+        assert.deepEqual(result.body.billing.customerSpendingRankings.today[0].parts.map((part) => [part.key, part.chargeNanos, part.chargeAmount]), [
+            ['cache_hit_input', 0, 0],
+            ['cache_miss_input', 1500000000, 1.5],
+            ['output', 600000000, 0.6]
+        ]);
+        assert.deepEqual(result.body.billing.customerSpendingRankings.today[1].parts.map((part) => [part.key, part.chargeNanos, part.chargeAmount]), [
+            ['cache_hit_input', 250000000, 0.25],
+            ['cache_miss_input', 0, 0],
+            ['output', 0, 0]
         ]);
         assert.deepEqual(result.body.billing.customerSpendingRankings.month.map((item) => [item.phone, item.chargeNanos, item.chargeAmount]), [
             ['13800138512', 2100000000, 2.1],
@@ -2798,8 +2909,20 @@ test('Admin 页面把业务办理合并成一个栏目', () => {
     assert.match(html, /id="adminTopupStatusFilter"/);
     assert.match(html, /id="adminTopupTable"/);
     assert.match(html, /id="adminInviteConsoleSummary"/);
+    assert.match(html, /id="adminAccountBalancesPanel"/);
+    assert.match(html, /id="adminBalanceSearchInput"/);
+    assert.match(html, /id="adminBalanceStatusFilter"/);
+    assert.match(html, /id="adminBalanceSummary"/);
+    assert.match(html, /id="adminBalanceTable"/);
+    assert.match(html, /id="adminBalanceMessage"/);
     assert.match(html, /id="adminInviteTable"/);
     assert.match(html, /id="adminApiKeyPoolTable"/);
+    const topupIndex = html.indexOf('id="adminTopupTable"');
+    const balanceIndex = html.indexOf('id="adminAccountBalancesPanel"');
+    const inviteIndex = html.indexOf('id="adminInviteTable"');
+    assert.ok(topupIndex > -1 && balanceIndex > -1 && inviteIndex > -1);
+    assert.ok(topupIndex < balanceIndex);
+    assert.ok(balanceIndex < inviteIndex);
     assert.doesNotMatch(html, /id="adminInviteSection"/);
     assert.doesNotMatch(html, /id="adminPasswordResetSection"/);
     assert.doesNotMatch(html, /id="adminTopupSection"/);
@@ -2814,6 +2937,15 @@ test('Admin 前端兑换码管理不使用 x-admin-token', () => {
     assert.match(script, /function initAdminInvitePage/);
     assert.match(script, /adminBusinessRefreshButton/);
     assert.match(script, /refreshAdminBusiness/);
+    assert.match(script, /function renderAdminBalanceSummary/);
+    assert.match(script, /function renderAdminBalanceTable/);
+    assert.match(script, /function initAdminAccountBalancesPage/);
+    assert.match(script, /api\/admin\/account-balances/);
+    assert.match(script, /refreshAdminBalances/);
+    assert.match(script, /onBalanceChanged/);
+    assert.match(script, /用户余额/);
+    assert.match(script, /欠费用户/);
+    assert.match(script, /待确认充值/);
     assert.doesNotMatch(script, /x-admin-token/);
 });
 
@@ -2850,6 +2982,9 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.match(script, /今天收银多少钱/);
     assert.match(script, /本月一共收了多少钱/);
     assert.match(script, /今日消费/);
+    const usageSection = html.match(/<section id="adminUsageSection"[\s\S]*?<section id="adminUsageImportSection"/)?.[0] || '';
+    assert.doesNotMatch(usageSection, /adminAccountBalancesPanel/);
+    assert.doesNotMatch(usageSection, /用户余额/);
     assert.doesNotMatch(html, /完整 API key/);
     assert.equal((html.match(/data-collapsible-section/g) || []).length, 3);
     assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 3);
@@ -2867,13 +3002,22 @@ test('Admin 收银图表关键几何样式存在于构建 CSS 中', () => {
     assert.match(script, /admin-revenue-pie-inner/);
     assert.match(script, /admin-revenue-bars/);
     assert.match(script, /admin-revenue-bar/);
+    assert.match(script, /admin-revenue-bar-stack/);
+    assert.match(script, /admin-revenue-bar-segment/);
+    assert.match(script, /admin-revenue-bar-segment-hit/);
+    assert.match(script, /admin-revenue-bar-segment-miss/);
+    assert.match(script, /admin-revenue-bar-segment-output/);
+    assert.match(script, /admin-revenue-ranking-legend/);
     assert.match(script, /barHeightPx/);
-    assert.match(script, /admin-revenue-bar" style="height:\$\{barHeightPx\}px/);
+    assert.match(script, /admin-revenue-bar admin-revenue-bar-stack" style="height:\$\{barHeightPx\}px/);
     assert.doesNotMatch(script, /admin-revenue-bar" style="height:\$\{height\}%/);
     assert.match(siteCss, /\.admin-revenue-pie\{/);
     assert.match(siteCss, /width:9rem/);
     assert.match(siteCss, /height:9rem/);
     assert.match(siteCss, /\.admin-revenue-bars\{/);
+    assert.match(siteCss, /\.admin-revenue-bar-stack\{/);
+    assert.match(siteCss, /\.admin-revenue-bar-segment-miss\{/);
+    assert.match(siteCss, /box-shadow:inset 0 0 0 1px rgba\(34,34,34,\.35\)/);
     assert.match(siteCss, /height:14rem/);
 }
 );

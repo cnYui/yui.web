@@ -83,6 +83,26 @@
                     <p id="adminTopupMessage" class="mt-3 text-sm text-text-muted dark:text-dark-text-muted"></p>
                     <div id="adminTopupTable" class="mt-4 w-full min-w-0 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
                 </div>
+                <div id="adminAccountBalancesPanel" class="mt-8">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                        <div>
+                            <h3 class="font-display text-2xl text-primary dark:text-dark-text">用户余额</h3>
+                            <p class="mt-2 text-sm text-text-muted dark:text-dark-text-muted">只读查看所有 Shop 用户余额、欠费和待确认充值。</p>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-[minmax(0,16rem)_10rem]">
+                            <input id="adminBalanceSearchInput" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="search" placeholder="搜索手机号"/>
+                            <select id="adminBalanceStatusFilter" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary">
+                                <option value="all">全部余额</option>
+                                <option value="available">有余额</option>
+                                <option value="debt">欠费</option>
+                                <option value="empty">余额为 0</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="adminBalanceSummary" class="mt-4 grid gap-3 md:grid-cols-4"></div>
+                    <div id="adminBalanceTable" class="mt-4 w-full min-w-0 overflow-x-auto rounded-lg border border-border-subtle dark:border-dark-border"></div>
+                    <p id="adminBalanceMessage" class="mt-3 text-sm text-text-muted dark:text-dark-text-muted"></p>
+                </div>
                 <div class="mt-8 grid gap-5 xl:grid-cols-2">
                     <div>
                         <h3 class="font-display text-2xl text-primary dark:text-dark-text">邀请码记录</h3>

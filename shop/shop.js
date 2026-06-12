@@ -333,19 +333,46 @@
     }
 
     function renderCustomerSpendingBars(rankings = {}, period = 'month') {
+        const partClassNames = {
+            cache_hit_input: 'admin-revenue-bar-segment-hit',
+            cache_miss_input: 'admin-revenue-bar-segment-miss',
+            output: 'admin-revenue-bar-segment-output'
+        };
+        const partLabels = [
+            ['cache_hit_input', '缓存命中输入'],
+            ['cache_miss_input', '缓存未命中输入'],
+            ['output', '输出 token']
+        ];
         const items = Array.isArray(rankings[period]) ? rankings[period] : [];
         const maxCharge = Math.max(...items.map((item) => Number(item.chargeNanos || 0)), 1);
         const maxBarHeightPx = 140;
         const bars = items.length ? items.slice(0, 12).map((item) => {
             const barHeightPx = Math.max(8, Math.round((Number(item.chargeNanos || 0) / maxCharge) * maxBarHeightPx));
+            const parts = Array.isArray(item.parts) ? item.parts : [];
+            const segments = partLabels.map(([key, label]) => {
+                const part = parts.find((candidate) => candidate.key === key) || { chargeNanos: 0 };
+                const chargeNanos = Number(part.chargeNanos || 0);
+                const segmentHeightPx = chargeNanos > 0
+                    ? Math.max(2, Math.round((chargeNanos / maxCharge) * maxBarHeightPx))
+                    : 0;
+                return `
+                    <div class="admin-revenue-bar-segment ${partClassNames[key]}" style="height:${segmentHeightPx}px" title="${escapeHtml(label)}：${escapeHtml(formatNanos(chargeNanos))}"></div>
+                `;
+            }).join('');
             return `
                 <div class="admin-revenue-bar-item">
                     <span class="text-xs font-medium text-primary dark:text-dark-text">${escapeHtml(formatNanos(item.chargeNanos))}</span>
-                    <div class="admin-revenue-bar" style="height:${barHeightPx}px"></div>
+                    <div class="admin-revenue-bar admin-revenue-bar-stack" style="height:${barHeightPx}px">${segments}</div>
                     <span class="admin-revenue-phone-label">${escapeHtml(item.phone || '-')}</span>
                 </div>
             `;
         }).join('') : '<div class="grid h-48 flex-1 place-items-center text-sm text-text-muted dark:text-dark-text-muted">暂无 Shop 用户消费记录。</div>';
+        const legend = partLabels.map(([key, label]) => `
+            <span class="inline-flex items-center gap-2">
+                <span class="admin-revenue-legend-dot ${partClassNames[key]}"></span>
+                <span>${escapeHtml(label)}</span>
+            </span>
+        `).join('');
         return `
             <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -358,6 +385,7 @@
                         <button class="${period === 'month' ? 'bg-primary text-white dark:bg-dark-text dark:text-dark-bg' : 'text-text-muted dark:text-dark-text-muted'} rounded px-3 py-1" type="button" data-revenue-ranking-period="month">本月</button>
                     </div>
                 </div>
+                <div class="admin-revenue-ranking-legend mt-4">${legend}</div>
                 <div class="mt-5 overflow-x-auto pb-8">
                     <div class="admin-revenue-bars" style="display:flex;align-items:flex-end;gap:1rem;min-width:34rem;height:14rem;padding:1rem 1rem 0;border-left:1px solid #e5e5e5;border-bottom:1px solid #e5e5e5">
                         ${bars}
@@ -424,6 +452,22 @@
         `).join('');
     }
 
+    function renderAdminBalanceSummary(summary = {}) {
+        const cards = [
+            ['用户数', formatNumber(summary.userCount || 0), 'Shop 账号'],
+            ['总余额', summary.totalBalanceNanos === undefined ? formatCents(summary.totalBalanceCents) : formatNanos(summary.totalBalanceNanos), '账户当前余额合计'],
+            ['欠费用户', formatNumber(summary.debtUserCount || 0), summary.debtNanos === undefined ? formatCents(summary.debtCents) : formatNanos(summary.debtNanos)],
+            ['待确认充值', summary.pendingTopupNanos === undefined ? formatCents(summary.pendingTopupCents) : formatNanos(summary.pendingTopupNanos), '用户已提交待审核']
+        ];
+        return cards.map(([label, value, hint]) => `
+            <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(label)}</p>
+                <p class="mt-2 text-2xl font-display text-primary dark:text-dark-text">${escapeHtml(value)}</p>
+                <p class="mt-1 text-xs text-text-muted dark:text-dark-text-muted">${escapeHtml(hint)}</p>
+            </article>
+        `).join('');
+    }
+
     function renderTopups(topups = []) {
         if (!topups.length) return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无充值申请。</p>';
         return `
@@ -480,6 +524,40 @@
                                     </div>
                                 ` : '-'}
                             </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function renderAdminBalanceTable(items = []) {
+        if (!items.length) {
+            return '<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">暂无用户余额记录。</div>';
+        }
+        return `
+            <table class="min-w-full divide-y divide-border-subtle dark:divide-dark-border text-sm">
+                <thead class="bg-background-soft dark:bg-dark-surface text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                    <tr>
+                        <th class="px-4 py-3">用户</th>
+                        <th class="px-4 py-3">状态</th>
+                        <th class="px-4 py-3">余额</th>
+                        <th class="px-4 py-3">欠费</th>
+                        <th class="px-4 py-3">待确认充值</th>
+                        <th class="px-4 py-3">托管 key</th>
+                        <th class="px-4 py-3">更新</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-subtle dark:divide-dark-border bg-white dark:bg-dark-card">
+                    ${items.map((item) => `
+                        <tr>
+                            <td class="px-4 py-3">${escapeHtml(item.phone || '-')}</td>
+                            <td class="px-4 py-3">${escapeHtml(billingStatusText(item.status))}</td>
+                            <td class="px-4 py-3">${escapeHtml(item.balanceNanos === undefined ? formatCents(item.balanceCents) : formatNanos(item.balanceNanos))}</td>
+                            <td class="px-4 py-3">${escapeHtml(item.debtNanos === undefined ? formatCents(item.debtCents) : formatNanos(item.debtNanos))}</td>
+                            <td class="px-4 py-3">${escapeHtml(item.pendingTopupNanos === undefined ? formatCents(item.pendingTopupCents) : formatNanos(item.pendingTopupNanos))}</td>
+                            <td class="px-4 py-3">${escapeHtml(`${formatNumber(item.managedApiKeyCount || 0)} 个（已用 ${formatNumber(item.usedApiKeyCount || 0)}）`)}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatDate(item.updatedAt))}</td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -1212,7 +1290,39 @@
         });
     }
 
-    function initAdminTopupPage() {
+    function initAdminAccountBalancesPage() {
+        const searchInput = document.getElementById('adminBalanceSearchInput');
+        const statusFilter = document.getElementById('adminBalanceStatusFilter');
+        const summaryRoot = document.getElementById('adminBalanceSummary');
+        const tableRoot = document.getElementById('adminBalanceTable');
+        const message = document.getElementById('adminBalanceMessage');
+        if (!summaryRoot || !tableRoot || !message) return null;
+
+        async function fetchAccountBalances() {
+            const params = new URLSearchParams({
+                q: searchInput?.value || '',
+                status: statusFilter?.value || 'all'
+            });
+            message.textContent = '正在刷新余额...';
+            try {
+                const data = await requestJson(`/api/admin/account-balances?${params.toString()}`);
+                summaryRoot.innerHTML = renderAdminBalanceSummary(data.summary || {});
+                tableRoot.innerHTML = renderAdminBalanceTable(data.items || []);
+                message.textContent = `共 ${(data.items || []).length} 个账号。`;
+            } catch (error) {
+                summaryRoot.innerHTML = '';
+                tableRoot.innerHTML = '';
+                message.textContent = error.message;
+            }
+        }
+
+        searchInput?.addEventListener('input', fetchAccountBalances);
+        statusFilter?.addEventListener('change', fetchAccountBalances);
+        fetchAccountBalances();
+        return fetchAccountBalances;
+    }
+
+    function initAdminTopupPage(options = {}) {
         const statusFilter = document.getElementById('adminTopupStatusFilter');
         const tableRoot = document.getElementById('adminTopupTable');
         const message = document.getElementById('adminTopupMessage');
@@ -1252,6 +1362,7 @@
                     });
                 }
                 await fetchTopups();
+                await options.onBalanceChanged?.();
             } catch (error) {
                 message.textContent = error.message;
             }
@@ -1344,14 +1455,16 @@
         const refreshAdminInvites = initAdminInvitePage();
         initAdminUsagePage();
         initAdminPasswordResetPage();
-        const refreshAdminTopups = initAdminTopupPage();
+        const refreshAdminBalances = initAdminAccountBalancesPage();
+        const refreshAdminTopups = initAdminTopupPage({ onBalanceChanged: refreshAdminBalances });
         const businessRefreshButton = document.getElementById('adminBusinessRefreshButton');
         const refreshAdminBusiness = async () => {
             businessRefreshButton?.setAttribute('aria-busy', 'true');
             try {
                 await Promise.all([
                     refreshAdminInvites?.(),
-                    refreshAdminTopups?.()
+                    refreshAdminTopups?.(),
+                    refreshAdminBalances?.()
                 ].filter(Boolean));
             } finally {
                 businessRefreshButton?.removeAttribute('aria-busy');

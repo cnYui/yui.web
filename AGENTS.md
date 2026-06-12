@@ -331,6 +331,16 @@
 - 后续涉及动态 HTML 的新样式必须同步执行 `npm run build:css` 并提交 `styles/site.css`。
 - 修复记录见 `docs/ai/context/20260612-195805-admin-revenue-chart-rendering-fix-design-plan_CN.md` 和 `docs/ai/context/20260612-200029-admin-revenue-chart-rendering-fix-implementation_CN.md`。
 
+## 2026-06-12 Admin 用户消费排行堆叠柱
+
+- `Shop 用户消费排行` 不是余额图，也不是 token 数图；柱顶金额和排序都按 Shop 用户已扣费总金额。
+- 每个手机号的一根柱内部按金额拆成三段：黑色为缓存命中输入、白色为缓存未命中输入、灰色为输出 token。
+- 今日 / 本月两个周期都必须使用同样的三段金额拆分。
+- 后端排行项 `customerSpendingRankings.today/month[].parts` 按每条扣费记录的 `price_version` 拆分金额；Local / 未托管不进入排行。
+- 白色的缓存未命中输入段必须有可见描边，图例白色点也必须保留边界，否则在白底上会像未渲染。
+- 设计与实施记录见 `docs/ai/context/20260612-201447-admin-revenue-ranking-stacked-bars-design-plan_CN.md` 和 `docs/ai/context/20260612-201853-admin-revenue-ranking-stacked-bars-implementation_CN.md`。
+- 可见性修正记录见 `docs/ai/context/20260612-202326-admin-revenue-stacked-bar-visibility-implementation_CN.md`。
+
 ## 2026-06-12 Admin 用户余额面板位置设计
 
 - 用户确认新增的所有用户余额面板合并进 `/shop/admin/` 的「业务办理」section。
@@ -340,3 +350,12 @@
 - 「业务办理」统一刷新和充值审核确认 / 拒绝后都应刷新余额面板。
 - 设计记录见 `docs/ai/context/20260612-195611-admin-account-balance-panel-placement-design_CN.md`。
 - 实施计划见 `docs/ai/context/20260612-200053-admin-account-balance-panel-implementation-plan_CN.md`。
+
+## 2026-06-12 Admin 用户余额面板实施
+
+- `/shop/admin/` 的「业务办理」section 已新增只读「用户余额」面板，位置在充值审核下方、邀请码记录 / API key 池记录上方。
+- 新接口 `/api/admin/account-balances` 返回 Shop 用户余额、欠费、待确认充值和托管 key 数量；管理员账号、Local / 未托管 usage key 不作为余额用户展示。
+- 「业务办理」统一刷新和充值审核确认 / 拒绝后都会刷新余额面板。
+- 余额面板是账户台账视图，不计入 Admin 用量监控的今日 / 本月收银。
+- 第一版不提供直接调余额操作。
+- 实施记录见 `docs/ai/context/20260612-202347-admin-account-balance-panel-implementation_CN.md`。
