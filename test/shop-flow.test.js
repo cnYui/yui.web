@@ -299,12 +299,8 @@ test('Shop 外部脚本会在 CSP 禁止 inline script 时自动初始化 Accoun
         'accountLedger',
         'alipayQrImage',
         'wechatQrImage',
-        'paymentReference',
-        'accountUsageCards',
         'accountBillingUsageCards',
         'accountTokenBreakdown',
-        'accountHourlyChart',
-        'accountDailyChart',
         'usageFreshness',
         'accountUsageMessage'
     ]) {
@@ -366,7 +362,6 @@ test('Shop 外部脚本会在 CSP 禁止 inline script 时自动初始化 Accoun
     assert.equal(elements.get('accountPhone').textContent, '13800139999');
     assert.equal(elements.get('alipayQrImage').src, '/shop/assets/pay/alipay-qr.png');
     assert.equal(elements.get('wechatQrImage').src, '/shop/assets/pay/wechat-qr.png');
-    assert.equal(elements.get('paymentReference').textContent, 'YUI-TEST');
 });
 
 test('Account 页提供登录态邀请码兑换表单且不再引导到独立手机号兑换页', () => {
@@ -421,12 +416,8 @@ test('Account 前端兑换调用登录态接口并且不提交手机号', async 
         'accountLedger',
         'alipayQrImage',
         'wechatQrImage',
-        'paymentReference',
-        'accountUsageCards',
         'accountBillingUsageCards',
         'accountTokenBreakdown',
-        'accountHourlyChart',
-        'accountDailyChart',
         'usageFreshness',
         'accountUsageMessage'
     ]) {
@@ -3101,6 +3092,14 @@ test('Account 页面包含预充值余额、充值申请和扣费流水容器', 
 
     assert.match(html, /id="accountBalanceCards"/);
     assert.match(html, /id="accountBillingUsageCards"/);
+    assert.doesNotMatch(html, /id="accountUsageCards"/);
+    assert.doesNotMatch(html, /id="paymentReference"/);
+    assert.doesNotMatch(html, /付款备注：/);
+    assert.match(html, /id="topupPaymentNote"[^>]+placeholder="备注可填写微信号"/);
+    assert.doesNotMatch(html, /id="accountHourlyChart"/);
+    assert.doesNotMatch(html, /id="accountDailyChart"/);
+    assert.doesNotMatch(html, /最近 24 小时/);
+    assert.doesNotMatch(html, /本月每日/);
     assert.match(html, /id="topupForm"/);
     assert.match(html, /id="topupAmount"/);
     assert.match(html, /id="accountTopups"/);
@@ -3117,6 +3116,14 @@ test('Account 页面包含预充值余额、充值申请和扣费流水容器', 
     assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 5);
     assert.equal((html.match(/data-collapsible-content/g) || []).length, 5);
     assert.match(html, /id="accountGuideSection"[\s\S]*?data-collapsible-default="closed"/);
+});
+
+test('Account 用量卡片不展示无效 token 总览和内部价格版本名', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+
+    assert.doesNotMatch(script, /function renderAccountUsageCards/);
+    assert.doesNotMatch(script, /billing\.priceVersion/);
+    assert.match(script, /本月已扣费/);
 });
 
 test('Account 页把余额和 API key 前置，并默认收起说明和流水', () => {

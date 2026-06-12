@@ -240,24 +240,6 @@
         });
     }
 
-    function renderAccountUsageCards(summary) {
-        const month = summary.month || {};
-        const week = summary.week || {};
-        const today = summary.today || {};
-        const cards = [
-            ['今日 token', today.totalTokens],
-            ['本周 token', week.totalTokens],
-            ['本月 token', month.totalTokens],
-            ['失败请求', month.failedRequests]
-        ];
-        return cards.map(([label, value]) => `
-            <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
-                <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(label)}</p>
-                <p class="mt-2 text-2xl font-display text-primary dark:text-dark-text">${escapeHtml(formatNumber(value))}</p>
-            </article>
-        `).join('');
-    }
-
     function renderTokenBreakdown(month = {}) {
         const items = [
             ['Input', month.inputTokens],
@@ -277,7 +259,7 @@
         const adminRevenue = options.mode === 'adminRevenue';
         const cards = [
             [adminRevenue ? '今日收银' : '今日消费', formatNanos(billing.todayChargeNanos), adminRevenue ? '今天收银多少钱' : '今日已扣费'],
-            [adminRevenue ? '本月收银' : '本月消费', formatNanos(billing.monthChargeNanos), adminRevenue ? '本月一共收了多少钱' : (billing.priceVersion || 'DeepSeek Pro RMB')],
+            [adminRevenue ? '本月收银' : '本月消费', formatNanos(billing.monthChargeNanos), adminRevenue ? '本月一共收了多少钱' : '本月已扣费'],
             ['缓存命中输入', formatNumber(billing.cacheHitInputTokens), '本月 token'],
             ['缓存未命中输入', formatNumber(billing.cacheMissInputTokens), '本月 token'],
             ['输出 token', formatNumber(billing.outputTokens), '本月 token']
@@ -1106,11 +1088,8 @@
         const ordersRoot = document.getElementById('accountOrders');
         const message = document.getElementById('accountMessage');
         const logoutButton = document.getElementById('logoutButton');
-        const usageCards = document.getElementById('accountUsageCards');
         const billingUsageCards = document.getElementById('accountBillingUsageCards');
         const tokenBreakdown = document.getElementById('accountTokenBreakdown');
-        const hourlyChart = document.getElementById('accountHourlyChart');
-        const dailyChart = document.getElementById('accountDailyChart');
         const usageFreshness = document.getElementById('usageFreshness');
         const usageMessage = document.getElementById('accountUsageMessage');
         const balanceCards = document.getElementById('accountBalanceCards');
@@ -1229,11 +1208,8 @@
 
         try {
             const usage = await requestJson('/api/account/usage-summary');
-            if (usageCards) usageCards.innerHTML = renderAccountUsageCards(usage.summary || {});
             if (billingUsageCards) billingUsageCards.innerHTML = renderBillingUsageCards(usage.billing || {});
             if (tokenBreakdown) tokenBreakdown.innerHTML = renderTokenBreakdown(usage.summary?.month || {});
-            if (hourlyChart) hourlyChart.innerHTML = renderBars(usage.hourly || [], (item) => String(item.bucket || '').slice(11, 16));
-            if (dailyChart) dailyChart.innerHTML = renderBars(usage.daily || [], (item) => String(item.bucket || '').slice(5));
             if (usageFreshness) {
                 usageFreshness.textContent = `生成时间 ${formatDate(usage.generatedAt)}，用量统计可能最多延迟 1 小时。`;
             }

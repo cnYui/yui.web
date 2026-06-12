@@ -373,3 +373,12 @@
 - 余额面板是账户台账视图，不计入 Admin 用量监控的今日 / 本月收银。
 - 第一版不提供直接调余额操作。
 - 实施记录见 `docs/ai/context/20260612-202347-admin-account-balance-panel-implementation_CN.md`。
+
+## 2026-06-12 Account 充值与用量展示精简
+
+- `/shop/account/` 充值区域不再展示 `付款备注：YUI-...`，但后端 `paymentReference` 字段保留兼容。
+- 充值申请备注框 placeholder 固定为 `备注可填写微信号`。
+- Token 用量区域已删除 `accountUsageCards` 四个总览卡片，以及 `最近 24 小时` / `本月每日` 两个趋势卡片；保留本月消费、三段 token 和扣费流水。
+- Account 场景的本月消费卡片不再显示内部价格版本名，副标题为 `本月已扣费`；Admin 收银卡片不受影响。
+- 设计与实施记录见 `docs/ai/context/20260612-210011-account-recharge-and-usage-card-cleanup-design-plan_CN.md` 和 `docs/ai/context/20260612-210011-account-recharge-and-usage-card-cleanup-implementation_CN.md`。
+- 趋势卡删除记录见 `docs/ai/context/20260612-210422-account-usage-trend-card-removal-design-plan_CN.md` 和 `docs/ai/context/20260612-210422-account-usage-trend-card-removal-implementation_CN.md`。
