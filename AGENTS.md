@@ -292,3 +292,12 @@
 - 审计 JSONL 只保存 API key hash / preview 和扣费元数据，不保存完整 API key。
 - 实时 usage 扣费和历史补账 apply 都会追加 JSONL；补账 dry-run 不写。
 - 实施记录见 `docs/ai/context/20260612-170849-admin-usage-revenue-charge-log-implementation_CN.md`。
+
+## 2026-06-12 Admin 业务办理区合并实施
+
+- `/shop/admin/` 已将兑换码、生成密码重置码、充值审核合并为一个「业务办理」section。
+- 顶部统一「刷新」同时刷新邀请码 / API key 池记录和充值审核列表；用量监控仍使用自己的刷新。
+- 生成邀请码、生成重置码、补充 API key 池在上方操作台；充值审核优先展示在记录区。
+- 未修改后端 API，未降低管理员 session、Same-Origin 和 CSRF 约束，未引入 `ADMIN_TOKEN`。
+- 设计记录见 `docs/ai/context/20260612-171645-admin-business-section-merge-design_CN.md`。
+- 实施记录见 `docs/ai/context/20260612-172852-admin-business-section-merge-implementation_CN.md`。
