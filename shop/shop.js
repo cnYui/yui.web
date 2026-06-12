@@ -348,15 +348,25 @@
         const maxBarHeightPx = 140;
         const bars = items.length ? items.slice(0, 12).map((item) => {
             const barHeightPx = Math.max(8, Math.round((Number(item.chargeNanos || 0) / maxCharge) * maxBarHeightPx));
-            const parts = Array.isArray(item.parts) ? item.parts : [];
-            const segments = partLabels.map(([key, label]) => {
-                const part = parts.find((candidate) => candidate.key === key) || { chargeNanos: 0 };
+            const rawParts = Array.isArray(item.parts) ? item.parts : [];
+            const normalizedParts = partLabels.map(([key, label]) => {
+                const part = rawParts.find((candidate) => candidate.key === key) || { chargeNanos: 0 };
+                return { key, label, chargeNanos: Number(part.chargeNanos || 0) };
+            });
+            const partChargeTotal = normalizedParts.reduce((sum, part) => sum + Number(part.chargeNanos || 0), 0);
+            const legacyTotalPart = [
+                { key: 'cache_hit_input', label: '旧格式总金额', chargeNanos: Number(item.chargeNanos || 0) },
+                { key: 'cache_miss_input', label: '缓存未命中输入', chargeNanos: 0 },
+                { key: 'output', label: '输出 token', chargeNanos: 0 }
+            ];
+            const effectiveParts = partChargeTotal > 0 ? normalizedParts : legacyTotalPart;
+            const segments = effectiveParts.map((part) => {
                 const chargeNanos = Number(part.chargeNanos || 0);
                 const segmentHeightPx = chargeNanos > 0
                     ? Math.max(2, Math.round((chargeNanos / maxCharge) * maxBarHeightPx))
                     : 0;
                 return `
-                    <div class="admin-revenue-bar-segment ${partClassNames[key]}" style="height:${segmentHeightPx}px" title="${escapeHtml(label)}：${escapeHtml(formatNanos(chargeNanos))}"></div>
+                    <div class="admin-revenue-bar-segment ${partClassNames[part.key]}" style="height:${segmentHeightPx}px" title="${escapeHtml(part.label)}：${escapeHtml(formatNanos(chargeNanos))}"></div>
                 `;
             }).join('');
             return `

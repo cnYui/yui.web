@@ -1497,9 +1497,17 @@ test('余额很少时本次调用可扣成负数且下一次状态检查拒绝',
         const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
             headers: { cookie }
         });
-        assert.equal(balance.body.balance.balanceCents, -15);
-        assert.equal(balance.body.balance.balanceNanos, -149998000);
-        assert.equal(balance.body.balance.debtCents, 15);
+        const expectedCharge = priceUsageTokens({
+            failed: false,
+            cacheHitInputTokens: 0,
+            cacheMissInputTokens: 0,
+            outputTokens: 33333
+        }).chargeNanos;
+        const expectedBalanceNanos = 50000000 - expectedCharge;
+        const expectedDebtCents = Math.ceil(Math.abs(expectedBalanceNanos) / nanosPerCent);
+        assert.equal(balance.body.balance.balanceCents, nanosToBalanceCentsForTest(expectedBalanceNanos));
+        assert.equal(balance.body.balance.balanceNanos, expectedBalanceNanos);
+        assert.equal(balance.body.balance.debtCents, expectedDebtCents);
         assert.equal(balance.body.balance.status, 'debt');
 
         const status = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=${encodeURIComponent(order.apiKey)}`, {
@@ -1507,7 +1515,7 @@ test('余额很少时本次调用可扣成负数且下一次状态检查拒绝',
         });
         assert.equal(status.body.active, false);
         assert.equal(status.body.status, 'insufficient_balance');
-        assert.equal(status.body.billing.debtCents, 15);
+        assert.equal(status.body.billing.debtCents, expectedDebtCents);
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
@@ -1543,8 +1551,14 @@ test('重复 usage event 不会重复扣费', async () => {
         const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
             headers: { cookie }
         });
+        const expectedCharge = priceUsageTokens({
+            failed: false,
+            cacheHitInputTokens: 0,
+            cacheMissInputTokens: 1,
+            outputTokens: 1
+        }).chargeNanos;
         assert.equal(balance.body.balance.balanceCents, 99);
-        assert.equal(balance.body.balance.balanceNanos, 999991000);
+        assert.equal(balance.body.balance.balanceNanos, 1000000000 - expectedCharge);
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
@@ -1682,7 +1696,12 @@ test('用户账户页 API 返回自己的账户流水和扣费记录', async () 
         assert.equal(charges.body.charges.length, 1);
         assert.equal(charges.body.charges[0].usageEventId, 'req-ledger-first');
         assert.equal(charges.body.charges[0].chargeCents, 1);
-        assert.equal(charges.body.charges[0].chargeNanos, 150000);
+        assert.equal(charges.body.charges[0].chargeNanos, priceUsageTokens({
+            failed: false,
+            cacheHitInputTokens: 0,
+            cacheMissInputTokens: 10,
+            outputTokens: 20
+        }).chargeNanos);
 
         const secondLedger = await jsonFetch(`${baseUrl}/api/account/ledger`, {
             headers: { cookie: secondCookie }
@@ -1800,8 +1819,14 @@ test('管理员 usage summary 返回 Shop 和未托管 key 的聚合用量', asy
         assert.equal(result.body.summary.total_tokens, 22);
         assert.equal(result.body.summary.month_tokens, 22);
         assert.equal(result.body.summary.failed_requests, 1);
-        assert.equal(result.body.billing.monthChargeNanos, 75000);
-        assert.equal(result.body.billing.todayChargeNanos, 75000);
+        const expectedShopPricing = priceUsageTokens({
+            failed: false,
+            cacheHitInputTokens: 0,
+            cacheMissInputTokens: 5,
+            outputTokens: 10
+        });
+        assert.equal(result.body.billing.monthChargeNanos, expectedShopPricing.chargeNanos);
+        assert.equal(result.body.billing.todayChargeNanos, expectedShopPricing.chargeNanos);
         assert.equal(result.body.billing.cacheHitInputTokens, 0);
         assert.equal(result.body.billing.cacheMissInputTokens, 5);
         assert.equal(result.body.billing.outputTokens, 10);
@@ -1972,22 +1997,22 @@ test('管理员 usage summary 返回 Shop 收银构成和用户消费排行且�
         });
 
         assert.equal(result.response.status, 200);
-        assert.equal(result.body.billing.todayChargeNanos, 2350000000);
-        assert.equal(result.body.billing.monthChargeNanos, 2350000000);
+        assert.equal(result.body.billing.todayChargeNanos, 3750000000);
+        assert.equal(result.body.billing.monthChargeNanos, 3750000000);
         assert.deepEqual(result.body.billing.todayRevenueParts, [
             { key: 'cache_hit_input', label: '缓存命中输入', tokens: 1000000, chargeNanos: 250000000, chargeAmount: 0.25 },
             { key: 'cache_miss_input', label: '缓存未命中输入', tokens: 500000, chargeNanos: 1500000000, chargeAmount: 1.5 },
-            { key: 'output', label: '输出 token', tokens: 100000, chargeNanos: 600000000, chargeAmount: 0.6 }
+            { key: 'output', label: '输出 token', tokens: 100000, chargeNanos: 2000000000, chargeAmount: 2 }
         ]);
         assert.deepEqual(result.body.billing.monthRevenueParts, result.body.billing.todayRevenueParts);
         assert.deepEqual(result.body.billing.customerSpendingRankings.today.map((item) => [item.phone, item.chargeNanos, item.chargeAmount]), [
-            ['13800138512', 2100000000, 2.1],
+            ['13800138512', 3500000000, 3.5],
             ['13800138511', 250000000, 0.25]
         ]);
         assert.deepEqual(result.body.billing.customerSpendingRankings.today[0].parts.map((part) => [part.key, part.chargeNanos, part.chargeAmount]), [
             ['cache_hit_input', 0, 0],
             ['cache_miss_input', 1500000000, 1.5],
-            ['output', 600000000, 0.6]
+            ['output', 2000000000, 2]
         ]);
         assert.deepEqual(result.body.billing.customerSpendingRankings.today[1].parts.map((part) => [part.key, part.chargeNanos, part.chargeAmount]), [
             ['cache_hit_input', 250000000, 0.25],
@@ -1995,7 +2020,7 @@ test('管理员 usage summary 返回 Shop 收银构成和用户消费排行且�
             ['output', 0, 0]
         ]);
         assert.deepEqual(result.body.billing.customerSpendingRankings.month.map((item) => [item.phone, item.chargeNanos, item.chargeAmount]), [
-            ['13800138512', 2100000000, 2.1],
+            ['13800138512', 3500000000, 3.5],
             ['13800138511', 250000000, 0.25]
         ]);
         assert.equal(
@@ -2008,6 +2033,7 @@ test('管理员 usage summary 返回 Shop 收银构成和用户消费排行且�
 test('管理员 usage summary 收银构成按扣费记录价格版本拆分历史金额', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const order = await createRedeemedOrder(baseUrl, '13800138513', 'sk-summary-chart-old-price');
+        const cacheHit10xOrder = await createRedeemedOrder(baseUrl, '13800138514', 'sk-summary-chart-cache-hit-10x-price');
         const createdAt = new Date().toISOString();
         db.prepare(`
 INSERT INTO api_charge_records (
@@ -2038,17 +2064,46 @@ INSERT INTO api_charge_records (
             'charged',
             createdAt
         );
+        db.prepare(`
+INSERT INTO api_charge_records (
+  id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+  cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+  price_version, charge_cents, charge_nanos, balance_before_cents, balance_before_nanos,
+  balance_after_cents, balance_after_nanos, status, created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`).run(
+            'CHARGE-CACHE-HIT-10X-OUTPUT',
+            '13800138514',
+            'req-summary-chart-cache-hit-10x-output',
+            hashApiKeyForTest(cacheHit10xOrder.apiKey),
+            'gpt-5.4',
+            0,
+            100000,
+            0,
+            0,
+            0,
+            100000,
+            'deepseek-v4-pro-rmb-20260612-cache-hit-10x',
+            60,
+            600000000,
+            100,
+            1000000000,
+            40,
+            400000000,
+            'charged',
+            createdAt
+        );
 
         const result = await jsonFetch(`${baseUrl}/api/admin/usage-summary`, {
             headers: { 'x-admin-token': 'test-token' }
         });
 
         assert.equal(result.response.status, 200);
-        assert.equal(result.body.billing.monthChargeNanos, 25000000);
+        assert.equal(result.body.billing.monthChargeNanos, 625000000);
         assert.deepEqual(result.body.billing.monthRevenueParts, [
             { key: 'cache_hit_input', label: '缓存命中输入', tokens: 1000000, chargeNanos: 25000000, chargeAmount: 0.025 },
             { key: 'cache_miss_input', label: '缓存未命中输入', tokens: 0, chargeNanos: 0, chargeAmount: 0 },
-            { key: 'output', label: '输出 token', tokens: 0, chargeNanos: 0, chargeAmount: 0 }
+            { key: 'output', label: '输出 token', tokens: 100000, chargeNanos: 600000000, chargeAmount: 0.6 }
         ]);
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
@@ -2884,7 +2939,7 @@ test('后台页面使用管理员 session，不渲染管理员 token 输入', ()
 
     assert.match(html, /管理员控制台/);
     assert.match(html, /管理员账号/);
-    assert.match(html, /shop\.js\?v=20260609-admin-session/);
+    assert.match(html, /shop\.js\?v=20260612-admin-revenue-fallback/);
     assert.doesNotMatch(html, /管理员口令/);
     assert.doesNotMatch(html, /解锁用量监控/);
     assert.doesNotMatch(html, /id="adminAccessForm"/);
@@ -3021,6 +3076,15 @@ test('Admin 收银图表关键几何样式存在于构建 CSS 中', () => {
     assert.match(siteCss, /height:14rem/);
 }
 );
+
+test('Admin 收银排行兼容旧排行数据缺少 parts 时不渲染白色空柱', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+
+    assert.match(script, /legacyTotalPart/);
+    assert.match(script, /partChargeTotal/);
+    assert.match(script, /旧格式总金额/);
+    assert.match(script, /chargeNanos: Number\(item\.chargeNanos \|\| 0\)/);
+});
 
 test('Admin 日志导入栏目展示自动导入状态容器', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');

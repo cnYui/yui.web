@@ -260,13 +260,25 @@
 ## 2026-06-12 Shop 缓存命中输入最终涨价
 
 - 用户最终决定采用低冲击涨价：只把缓存命中输入提高 10 倍，缓存未命中输入和输出不变。
-- 当前生效价格版本为 `deepseek-v4-pro-rmb-20260612-cache-hit-10x`：
+- 当时生效价格版本为 `deepseek-v4-pro-rmb-20260612-cache-hit-10x`：
   - 缓存命中输入：250 nanos/token，即 0.25 元 / 100 万 token
   - 缓存未命中输入：3000 nanos/token，即 3 元 / 100 万 token
   - 输出：6000 nanos/token，即 6 元 / 100 万 token
 - 此决策覆盖上一节的更激进推荐方案；后续不要误改成 1/30/60 元每百万 token。
 - 新价格只应用未来 usage；不要重算历史扣费，不覆盖旧 `api_charge_records.price_version`。
 - 设计与计划见 `docs/ai/context/20260612-122658-shop-cache-hit-price-10x-design-plan_CN.md`。
+
+## 2026-06-12 Shop 输出 token 涨价到 20 元每百万
+
+- 用户确认采用方案 1：新增价格版本，不复用旧版本名。
+- 当前生效价格版本为 `deepseek-v4-pro-rmb-20260612-output-20rmb`：
+  - 缓存命中输入：250 nanos/token，即 0.25 元 / 100 万 token
+  - 缓存未命中输入：3000 nanos/token，即 3 元 / 100 万 token
+  - 输出：20000 nanos/token，即 20 元 / 100 万 token
+- 新价格只应用未来 usage；不要重算历史扣费，不覆盖旧 `api_charge_records.price_version`。
+- Admin 收银构成按 `price_version` 回放历史：`deepseek-v4-pro-rmb-20260612-cache-hit-10x` 的输出仍按 6000 nanos/token 拆分，不能被新版本输出单价重算。
+- 设计与计划见 `docs/ai/context/20260612-203049-shop-output-token-20rmb-design-plan_CN.md`。
+- 实施记录见 `docs/ai/context/20260612-203504-shop-output-token-20rmb-implementation_CN.md`。
 
 ## 2026-06-12 `198****2044` models 端口复测
 
@@ -287,7 +299,7 @@
 
 - `/shop/admin/` 用量监控的 Admin 账务卡片已改为“今日收银”和“本月收银”；Account 页面仍保留“今日消费 / 本月消费”。
 - Admin 收银只统计 `api_charge_records.api_key_hash` 能关联到 `api_keys -> orders` 的 Shop 托管 key；Local 和未托管不计入收入。
-- 当前计费规则已由测试锁定：缓存命中输入 250 nanos/token，即 0.25 元 / 100 万 token；未命中输入 3000 nanos/token；输出 6000 nanos/token。
+- 该实施时计费规则已由测试锁定：缓存命中输入 250 nanos/token，即 0.25 元 / 100 万 token；未命中输入 3000 nanos/token；输出 6000 nanos/token。
 - 本地扣费审计日志默认写入 `data/logs/shop-charge-records/api-charge-records-YYYY-MM.jsonl`；可用 `SHOP_CHARGE_AUDIT_LOG_DIR` 或补账脚本 `--audit-log-dir` 覆盖。
 - 审计 JSONL 只保存 API key hash / preview 和扣费元数据，不保存完整 API key。
 - 实时 usage 扣费和历史补账 apply 都会追加 JSONL；补账 dry-run 不写。
@@ -338,8 +350,10 @@
 - 今日 / 本月两个周期都必须使用同样的三段金额拆分。
 - 后端排行项 `customerSpendingRankings.today/month[].parts` 按每条扣费记录的 `price_version` 拆分金额；Local / 未托管不进入排行。
 - 白色的缓存未命中输入段必须有可见描边，图例白色点也必须保留边界，否则在白底上会像未渲染。
+- 如果运行中的旧服务端尚未返回 `parts`，前端只能用黑色「旧格式总金额」兜底，避免白色空框；真实黑 / 白 / 灰三段需要重启 yui.web 让新版接口生效。
 - 设计与实施记录见 `docs/ai/context/20260612-201447-admin-revenue-ranking-stacked-bars-design-plan_CN.md` 和 `docs/ai/context/20260612-201853-admin-revenue-ranking-stacked-bars-implementation_CN.md`。
 - 可见性修正记录见 `docs/ai/context/20260612-202326-admin-revenue-stacked-bar-visibility-implementation_CN.md`。
+- 旧接口颜色兜底记录见 `docs/ai/context/20260612-203831-admin-revenue-ranking-legacy-parts-color-fallback_CN.md`。
 
 ## 2026-06-12 Admin 用户余额面板位置设计
 

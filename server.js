@@ -2418,6 +2418,13 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
                 outputNanosPerToken: 6000
             };
         }
+        if (version === 'deepseek-v4-pro-rmb-20260612-cache-hit-10x') {
+            return {
+                cacheHitInputNanosPerToken: 250,
+                cacheMissInputNanosPerToken: 3000,
+                outputNanosPerToken: 6000
+            };
+        }
         return deepseekProRmbPrice;
     }
 
