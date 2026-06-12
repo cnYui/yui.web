@@ -1097,11 +1097,10 @@
     }
 
     function initAdminTopupPage() {
-        const refreshButton = document.getElementById('adminTopupRefreshButton');
         const statusFilter = document.getElementById('adminTopupStatusFilter');
         const tableRoot = document.getElementById('adminTopupTable');
         const message = document.getElementById('adminTopupMessage');
-        if (!refreshButton || !statusFilter || !tableRoot || !message) return;
+        if (!statusFilter || !tableRoot || !message) return null;
 
         async function fetchTopups() {
             message.textContent = '正在刷新...';
@@ -1142,13 +1141,12 @@
             }
         });
 
-        refreshButton.addEventListener('click', fetchTopups);
         statusFilter.addEventListener('change', fetchTopups);
         fetchTopups();
+        return fetchTopups;
     }
 
     function initAdminInvitePage() {
-        const refreshButton = document.getElementById('adminInviteRefreshButton');
         const createForm = document.getElementById('adminInviteCreateForm');
         const inviteCount = document.getElementById('adminInviteCount');
         const createMessage = document.getElementById('adminInviteCreateMessage');
@@ -1159,7 +1157,7 @@
         const summaryRoot = document.getElementById('adminInviteConsoleSummary');
         const inviteTable = document.getElementById('adminInviteTable');
         const apiKeyPoolTable = document.getElementById('adminApiKeyPoolTable');
-        if (!summaryRoot || !inviteTable || !apiKeyPoolTable) return;
+        if (!summaryRoot || !inviteTable || !apiKeyPoolTable) return null;
 
         async function refreshInviteConsole() {
             summaryRoot.innerHTML = '<p class="text-sm text-text-muted dark:text-dark-text-muted">正在刷新兑换码状态...</p>';
@@ -1220,19 +1218,32 @@
             });
         }
 
-        if (refreshButton) {
-            refreshButton.addEventListener('click', refreshInviteConsole);
-        }
         refreshInviteConsole();
+        return refreshInviteConsole;
     }
 
     function initAdminPage() {
         initCollapsibleSections(document);
 
-        initAdminInvitePage();
+        const refreshAdminInvites = initAdminInvitePage();
         initAdminUsagePage();
         initAdminPasswordResetPage();
-        initAdminTopupPage();
+        const refreshAdminTopups = initAdminTopupPage();
+        const businessRefreshButton = document.getElementById('adminBusinessRefreshButton');
+        const refreshAdminBusiness = async () => {
+            businessRefreshButton?.setAttribute('aria-busy', 'true');
+            try {
+                await Promise.all([
+                    refreshAdminInvites?.(),
+                    refreshAdminTopups?.()
+                ].filter(Boolean));
+            } finally {
+                businessRefreshButton?.removeAttribute('aria-busy');
+            }
+        };
+        if (businessRefreshButton) {
+            businessRefreshButton.addEventListener('click', refreshAdminBusiness);
+        }
         const refreshButton = document.getElementById('usageRefreshButton');
         if (refreshButton) {
             refreshButton.click();

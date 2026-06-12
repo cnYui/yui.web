@@ -2644,16 +2644,23 @@ test('后台页面使用管理员 session，不渲染管理员 token 输入', ()
     assert.doesNotMatch(script, /x-admin-token/);
 });
 
-test('Admin 页面包含兑换码管理栏目', () => {
+test('Admin 页面把业务办理合并成一个栏目', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
 
-    assert.match(html, /id="adminInviteSection"/);
+    assert.match(html, /id="adminBusinessSection"/);
+    assert.match(html, /业务办理/);
+    assert.match(html, /id="adminBusinessRefreshButton"/);
     assert.match(html, /id="adminInviteCreateForm"/);
     assert.match(html, /id="adminApiKeyImportForm"/);
+    assert.match(html, /id="passwordResetCodeForm"/);
+    assert.match(html, /id="adminTopupStatusFilter"/);
+    assert.match(html, /id="adminTopupTable"/);
     assert.match(html, /id="adminInviteConsoleSummary"/);
     assert.match(html, /id="adminInviteTable"/);
     assert.match(html, /id="adminApiKeyPoolTable"/);
-    assert.match(html, /data-collapsible-section/);
+    assert.doesNotMatch(html, /id="adminInviteSection"/);
+    assert.doesNotMatch(html, /id="adminPasswordResetSection"/);
+    assert.doesNotMatch(html, /id="adminTopupSection"/);
 });
 
 test('Admin 前端兑换码管理不使用 x-admin-token', () => {
@@ -2663,6 +2670,8 @@ test('Admin 前端兑换码管理不使用 x-admin-token', () => {
     assert.match(script, /api\/admin\/session-invites/);
     assert.match(script, /api\/admin\/session-api-keys/);
     assert.match(script, /function initAdminInvitePage/);
+    assert.match(script, /adminBusinessRefreshButton/);
+    assert.match(script, /refreshAdminBusiness/);
     assert.doesNotMatch(script, /x-admin-token/);
 });
 
@@ -2670,9 +2679,7 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
     const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
 
-    assert.match(html, /id="adminPasswordResetSection"/);
-    assert.match(html, /id="adminInviteSection"/);
-    assert.match(html, /id="adminTopupSection"/);
+    assert.match(html, /id="adminBusinessSection"/);
     assert.match(html, /id="adminUsageSection"/);
     assert.match(html, /id="adminUsageImportSection"/);
     assert.match(html, /id="usageRefreshButton"/);
@@ -2694,12 +2701,10 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.match(script, /本月一共收了多少钱/);
     assert.match(script, /今日消费/);
     assert.doesNotMatch(html, /完整 API key/);
-    assert.equal((html.match(/data-collapsible-section/g) || []).length, 5);
-    assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 5);
-    assert.equal((html.match(/data-collapsible-content/g) || []).length, 5);
-    assert.match(html, /id="adminPasswordResetSection"[\s\S]*?data-collapsible-default="open"/);
-    assert.match(html, /id="adminInviteSection"[\s\S]*?data-collapsible-default="open"/);
-    assert.match(html, /id="adminTopupSection"[\s\S]*?data-collapsible-default="open"/);
+    assert.equal((html.match(/data-collapsible-section/g) || []).length, 3);
+    assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 3);
+    assert.equal((html.match(/data-collapsible-content/g) || []).length, 3);
+    assert.match(html, /id="adminBusinessSection"[\s\S]*?data-collapsible-default="open"/);
     assert.match(html, /id="adminUsageSection"[\s\S]*?data-collapsible-default="open"/);
     assert.match(html, /id="adminUsageImportSection"[\s\S]*?data-collapsible-default="open"/);
 });
@@ -2775,13 +2780,14 @@ test('Account API key 卡片只展示 key、兑换时间和复制按钮', () => 
     assert.doesNotMatch(compactBranch, /statusText/);
 });
 
-test('Admin 页面包含充值审核容器', () => {
+test('Admin 业务办理栏目包含充值审核容器', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
+    const businessSection = html.match(/<section id="adminBusinessSection"[\s\S]*?<\/section>\s*<section id="adminUsageSection"/)?.[0] || '';
 
-    assert.match(html, /id="adminTopupRefreshButton"/);
-    assert.match(html, /id="adminTopupStatusFilter"/);
-    assert.match(html, /id="adminTopupTable"/);
-    assert.match(html, /id="adminTopupMessage"/);
+    assert.match(businessSection, /充值审核/);
+    assert.match(businessSection, /id="adminTopupStatusFilter"/);
+    assert.match(businessSection, /id="adminTopupTable"/);
+    assert.match(businessSection, /id="adminTopupMessage"/);
 });
 
 test('管理员页和独立重置密码页包含密码重置入口，登录页只保留跳转链接', () => {
@@ -2790,9 +2796,11 @@ test('管理员页和独立重置密码页包含密码重置入口，登录页�
     const resetHtml = fs.readFileSync(path.join(__dirname, '..', 'shop/reset-password/index.html'), 'utf8');
     const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
 
+    assert.match(adminHtml, /id="adminBusinessSection"/);
     assert.match(adminHtml, /id="passwordResetCodeForm"/);
     assert.match(adminHtml, /id="passwordResetPhone"/);
     assert.match(adminHtml, /id="passwordResetCodeResult"/);
+    assert.doesNotMatch(adminHtml, /id="adminPasswordResetSection"/);
 
     assert.match(loginHtml, /href="\/shop\/reset-password\/"/);
     assert.doesNotMatch(loginHtml, /id="showPasswordResetButton"/);
