@@ -1800,6 +1800,148 @@ test('管理员 usage summary 收银只统计 Shop 扣费并使用当前命中 t
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
+test('管理员 usage summary 返回 Shop 收银构成和用户消费排行且排除 Local', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const firstOrder = await createRedeemedOrder(baseUrl, '13800138511', 'sk-summary-chart-first');
+        const secondOrder = await createRedeemedOrder(baseUrl, '13800138512', 'sk-summary-chart-second');
+        const localHash = hashApiKeyForTest('sk-local-chart-revenue');
+        await jsonFetch(`${baseUrl}/api/admin/usage-key-profiles`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({
+                apiKeyHash: localHash,
+                apiKeyPreview: 'sk-l...hart',
+                group: 'local',
+                phone: '15951875192'
+            })
+        });
+
+        const requestedAt = new Date().toISOString();
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-summary-chart-first',
+            api_key_hash: hashApiKeyForTest(firstOrder.apiKey),
+            api_key_preview: keyPreviewForTest(firstOrder.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 1000000,
+            cache_hit_input_tokens: 1000000,
+            cache_miss_input_tokens: 0,
+            output_tokens: 0,
+            total_tokens: 1000000,
+            requested_at: requestedAt
+        });
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-summary-chart-second',
+            api_key_hash: hashApiKeyForTest(secondOrder.apiKey),
+            api_key_preview: keyPreviewForTest(secondOrder.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 500000,
+            cache_hit_input_tokens: 0,
+            cache_miss_input_tokens: 500000,
+            output_tokens: 100000,
+            total_tokens: 600000,
+            requested_at: requestedAt
+        });
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-summary-chart-local',
+            api_key_hash: localHash,
+            api_key_preview: 'sk-l...hart',
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 1000000,
+            cache_hit_input_tokens: 0,
+            cache_miss_input_tokens: 1000000,
+            output_tokens: 0,
+            total_tokens: 1000000,
+            requested_at: requestedAt
+        });
+
+        const result = await jsonFetch(`${baseUrl}/api/admin/usage-summary`, {
+            headers: { 'x-admin-token': 'test-token' }
+        });
+
+        assert.equal(result.response.status, 200);
+        assert.equal(result.body.billing.todayChargeNanos, 2350000000);
+        assert.equal(result.body.billing.monthChargeNanos, 2350000000);
+        assert.deepEqual(result.body.billing.todayRevenueParts, [
+            { key: 'cache_hit_input', label: '缓存命中输入', tokens: 1000000, chargeNanos: 250000000, chargeAmount: 0.25 },
+            { key: 'cache_miss_input', label: '缓存未命中输入', tokens: 500000, chargeNanos: 1500000000, chargeAmount: 1.5 },
+            { key: 'output', label: '输出 token', tokens: 100000, chargeNanos: 600000000, chargeAmount: 0.6 }
+        ]);
+        assert.deepEqual(result.body.billing.monthRevenueParts, result.body.billing.todayRevenueParts);
+        assert.deepEqual(result.body.billing.customerSpendingRankings.today.map((item) => [item.phone, item.chargeNanos, item.chargeAmount]), [
+            ['13800138512', 2100000000, 2.1],
+            ['13800138511', 250000000, 0.25]
+        ]);
+        assert.deepEqual(result.body.billing.customerSpendingRankings.month.map((item) => [item.phone, item.chargeNanos, item.chargeAmount]), [
+            ['13800138512', 2100000000, 2.1],
+            ['13800138511', 250000000, 0.25]
+        ]);
+        assert.equal(
+            result.body.billing.customerSpendingRankings.month.some((item) => item.phone === '15951875192'),
+            false
+        );
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
+test('管理员 usage summary 收银构成按扣费记录价格版本拆分历史金额', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800138513', 'sk-summary-chart-old-price');
+        const createdAt = new Date().toISOString();
+        db.prepare(`
+INSERT INTO api_charge_records (
+  id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+  cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+  price_version, charge_cents, charge_nanos, balance_before_cents, balance_before_nanos,
+  balance_after_cents, balance_after_nanos, status, created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`).run(
+            'CHARGE-OLD-PRICE',
+            '13800138513',
+            'req-summary-chart-old-price',
+            hashApiKeyForTest(order.apiKey),
+            'gpt-5.4',
+            1000000,
+            0,
+            1000000,
+            0,
+            0,
+            1000000,
+            'deepseek-v4-pro-rmb-20260424',
+            3,
+            25000000,
+            100,
+            1000000000,
+            97,
+            975000000,
+            'charged',
+            createdAt
+        );
+
+        const result = await jsonFetch(`${baseUrl}/api/admin/usage-summary`, {
+            headers: { 'x-admin-token': 'test-token' }
+        });
+
+        assert.equal(result.response.status, 200);
+        assert.equal(result.body.billing.monthChargeNanos, 25000000);
+        assert.deepEqual(result.body.billing.monthRevenueParts, [
+            { key: 'cache_hit_input', label: '缓存命中输入', tokens: 1000000, chargeNanos: 25000000, chargeAmount: 0.025 },
+            { key: 'cache_miss_input', label: '缓存未命中输入', tokens: 0, chargeNanos: 0, chargeAmount: 0 },
+            { key: 'output', label: '输出 token', tokens: 0, chargeNanos: 0, chargeAmount: 0 }
+        ]);
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
 test('管理员可以把未托管 usage key 绑定为 local 分组和手机号', async () => {
     await withServer(async ({ baseUrl }) => {
         const requestedAt = new Date().toISOString();
@@ -2689,14 +2831,22 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.match(html, /CLIProxyAPI\/logs\/usage/);
     assert.match(html, /usage-events-YYYY-MM\.jsonl/);
     assert.match(html, /id="adminBillingUsageCards"/);
+    assert.match(html, /id="adminRevenueCharts"/);
     assert.match(html, /id="adminRecentCharges"/);
     assert.match(script, /function initAdminUsagePage/);
     assert.match(script, /function renderBillingUsageCards/);
+    assert.match(script, /function renderAdminRevenueCharts/);
+    assert.match(script, /function renderRevenuePieChart/);
+    assert.match(script, /function renderCustomerSpendingBars/);
     assert.match(script, /function renderAdminRecentCharges/);
     assert.match(script, /api\/admin\/usage-summary/);
     assert.match(script, /api\/admin\/usage-imports/);
     assert.match(script, /今日收银/);
     assert.match(script, /本月收银/);
+    assert.match(script, /收银分析/);
+    assert.match(script, /Shop 用户消费排行/);
+    assert.match(script, /data-revenue-ranking-period="today"/);
+    assert.match(script, /data-revenue-ranking-period="month"/);
     assert.match(script, /今天收银多少钱/);
     assert.match(script, /本月一共收了多少钱/);
     assert.match(script, /今日消费/);

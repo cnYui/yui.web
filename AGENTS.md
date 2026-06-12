@@ -301,3 +301,23 @@
 - 未修改后端 API，未降低管理员 session、Same-Origin 和 CSRF 约束，未引入 `ADMIN_TOKEN`。
 - 设计记录见 `docs/ai/context/20260612-171645-admin-business-section-merge-design_CN.md`。
 - 实施记录见 `docs/ai/context/20260612-172852-admin-business-section-merge-implementation_CN.md`。
+
+## 2026-06-12 Admin 用量收银图表设计
+
+- `/shop/admin/` 用量监控保留原有 token 卡片、收银卡片、用量表和最近扣费记录，在收银卡片下方新增「收银分析」图表区。
+- 今日收银和本月收银饼图只统计 Shop 托管 API key，不统计 Local / 未托管。
+- 饼图按计费类型切分：缓存命中输入、缓存未命中输入、输出 token。
+- 饼图分项金额按每条扣费记录的 `price_version` 拆分；未知版本才回退当前价格，不能把旧价格历史记录按新价格重算。
+- Shop 用户消费柱状图展示已消费 / 已扣费金额，不展示余额；只包含 Shop 用户，不包含 Local。
+- 柱状图默认本月排行，可切换今日排行，切换后按对应金额从高到低排序。
+- 不引入第三方图表库；饼图使用 CSS `conic-gradient`，柱状图使用普通 HTML/CSS。
+- 设计与计划见 `docs/ai/context/20260612-181520-admin-usage-revenue-charts-design_CN.md` 和 `docs/ai/context/20260612-181520-admin-usage-revenue-charts-plan_CN.md`。
+
+## 2026-06-12 Admin 用量收银图表实施
+
+- `/api/admin/usage-summary` 的 `billing` 新增 `todayRevenueParts`、`monthRevenueParts`、`customerSpendingRankings.today/month`。
+- 图表数据继续只统计 Shop 托管 API key，Local / 未托管不进入收银构成或客户消费排行。
+- 收银构成兼容旧价格版本 `deepseek-v4-pro-rmb-20260424`，历史缓存命中输入按 25 nanos/token 拆分；当前版本按 250 nanos/token 拆分。
+- `/shop/admin/` 新增 `adminRevenueCharts`，位于收银卡片下方、用量明细表上方。
+- 前端使用 `conic-gradient` 渲染今日 / 本月收银饼图，使用 HTML/CSS 渲染 Shop 用户消费柱状图。
+- 全量验证 `npm test` 130 个测试通过；实施记录见 `docs/ai/context/20260612-182355-admin-usage-revenue-charts-implementation_CN.md`。

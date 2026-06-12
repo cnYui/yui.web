@@ -2306,10 +2306,35 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             todayCacheHitInputTokens: 0,
             todayCacheMissInputTokens: 0,
             todayOutputTokens: 0,
+            todayCacheHitInputChargeNanos: 0,
+            todayCacheMissInputChargeNanos: 0,
+            todayOutputChargeNanos: 0,
             cacheHitInputTokens: 0,
             cacheMissInputTokens: 0,
-            outputTokens: 0
+            outputTokens: 0,
+            cacheHitInputChargeNanos: 0,
+            cacheMissInputChargeNanos: 0,
+            outputChargeNanos: 0,
+            todayCustomerSpendingByPhone: new Map(),
+            monthCustomerSpendingByPhone: new Map()
         };
+    }
+
+    function billingPriceForVersion(version) {
+        if (version === 'deepseek-v4-pro-rmb-20260424') {
+            return {
+                cacheHitInputNanosPerToken: 25,
+                cacheMissInputNanosPerToken: 3000,
+                outputNanosPerToken: 6000
+            };
+        }
+        return deepseekProRmbPrice;
+    }
+
+    function addCustomerSpending(target, phone, chargeNanos) {
+        const normalizedPhone = String(phone || '').trim();
+        if (!normalizedPhone) return;
+        target.set(normalizedPhone, (target.get(normalizedPhone) || 0) + chargeNanos);
     }
 
     function addBillingStats(stats, row, ranges) {
@@ -2320,18 +2345,70 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         const cacheHitInputTokens = nonNegativeInteger(row.cache_hit_input_tokens);
         const cacheMissInputTokens = nonNegativeInteger(row.cache_miss_input_tokens);
         const outputTokens = nonNegativeInteger(row.output_tokens);
+        const price = billingPriceForVersion(row.price_version);
+        const cacheHitInputChargeNanos = cacheHitInputTokens * price.cacheHitInputNanosPerToken;
+        const cacheMissInputChargeNanos = cacheMissInputTokens * price.cacheMissInputNanosPerToken;
+        const outputChargeNanos = outputTokens * price.outputNanosPerToken;
         if (createdAt >= ranges.todayStart) {
             stats.todayChargeNanos += chargeNanos;
             stats.todayCacheHitInputTokens += cacheHitInputTokens;
             stats.todayCacheMissInputTokens += cacheMissInputTokens;
             stats.todayOutputTokens += outputTokens;
+            stats.todayCacheHitInputChargeNanos += cacheHitInputChargeNanos;
+            stats.todayCacheMissInputChargeNanos += cacheMissInputChargeNanos;
+            stats.todayOutputChargeNanos += outputChargeNanos;
+            addCustomerSpending(stats.todayCustomerSpendingByPhone, row.phone, chargeNanos);
         }
         if (createdAt >= ranges.monthStart) {
             stats.monthChargeNanos += chargeNanos;
             stats.cacheHitInputTokens += cacheHitInputTokens;
             stats.cacheMissInputTokens += cacheMissInputTokens;
             stats.outputTokens += outputTokens;
+            stats.cacheHitInputChargeNanos += cacheHitInputChargeNanos;
+            stats.cacheMissInputChargeNanos += cacheMissInputChargeNanos;
+            stats.outputChargeNanos += outputChargeNanos;
+            addCustomerSpending(stats.monthCustomerSpendingByPhone, row.phone, chargeNanos);
         }
+    }
+
+    function revenueParts(cacheHitInputTokens, cacheHitInputChargeNanos, cacheMissInputTokens, cacheMissInputChargeNanos, outputTokens, outputChargeNanos) {
+        const parts = [
+            {
+                key: 'cache_hit_input',
+                label: '缓存命中输入',
+                tokens: nonNegativeInteger(cacheHitInputTokens),
+                chargeNanos: nonNegativeInteger(cacheHitInputChargeNanos)
+            },
+            {
+                key: 'cache_miss_input',
+                label: '缓存未命中输入',
+                tokens: nonNegativeInteger(cacheMissInputTokens),
+                chargeNanos: nonNegativeInteger(cacheMissInputChargeNanos)
+            },
+            {
+                key: 'output',
+                label: '输出 token',
+                tokens: nonNegativeInteger(outputTokens),
+                chargeNanos: nonNegativeInteger(outputChargeNanos)
+            }
+        ];
+        return parts.map((part) => ({
+            ...part,
+            chargeAmount: nanosToCny(part.chargeNanos)
+        }));
+    }
+
+    function customerSpendingRanking(spendingByPhone) {
+        return Array.from(spendingByPhone.entries())
+            .map(([phone, chargeNanos]) => ({
+                phone,
+                chargeNanos,
+                chargeAmount: nanosToCny(chargeNanos)
+            }))
+            .sort((left, right) => {
+                if (right.chargeNanos !== left.chargeNanos) return right.chargeNanos - left.chargeNanos;
+                return left.phone.localeCompare(right.phone);
+            });
     }
 
     function billingStatsToPublic(stats, chargeRows) {
@@ -2347,6 +2424,26 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             cacheHitInputTokens: stats.cacheHitInputTokens,
             cacheMissInputTokens: stats.cacheMissInputTokens,
             outputTokens: stats.outputTokens,
+            todayRevenueParts: revenueParts(
+                stats.todayCacheHitInputTokens,
+                stats.todayCacheHitInputChargeNanos,
+                stats.todayCacheMissInputTokens,
+                stats.todayCacheMissInputChargeNanos,
+                stats.todayOutputTokens,
+                stats.todayOutputChargeNanos
+            ),
+            monthRevenueParts: revenueParts(
+                stats.cacheHitInputTokens,
+                stats.cacheHitInputChargeNanos,
+                stats.cacheMissInputTokens,
+                stats.cacheMissInputChargeNanos,
+                stats.outputTokens,
+                stats.outputChargeNanos
+            ),
+            customerSpendingRankings: {
+                today: customerSpendingRanking(stats.todayCustomerSpendingByPhone),
+                month: customerSpendingRanking(stats.monthCustomerSpendingByPhone)
+            },
             recentCharges: chargeRows.slice(0, 10).map(publicApiChargeRecord)
         };
     }
