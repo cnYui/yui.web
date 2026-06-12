@@ -273,10 +273,11 @@
         `).join('');
     }
 
-    function renderBillingUsageCards(billing = {}) {
+    function renderBillingUsageCards(billing = {}, options = {}) {
+        const adminRevenue = options.mode === 'adminRevenue';
         const cards = [
-            ['今日消费', formatNanos(billing.todayChargeNanos), '今日已扣费'],
-            ['本月消费', formatNanos(billing.monthChargeNanos), billing.priceVersion || 'DeepSeek Pro RMB'],
+            [adminRevenue ? '今日收银' : '今日消费', formatNanos(billing.todayChargeNanos), adminRevenue ? '今天收银多少钱' : '今日已扣费'],
+            [adminRevenue ? '本月收银' : '本月消费', formatNanos(billing.monthChargeNanos), adminRevenue ? '本月一共收了多少钱' : (billing.priceVersion || 'DeepSeek Pro RMB')],
             ['缓存命中输入', formatNumber(billing.cacheHitInputTokens), '本月 token'],
             ['缓存未命中输入', formatNumber(billing.cacheMissInputTokens), '本月 token'],
             ['输出 token', formatNumber(billing.outputTokens), '本月 token']
@@ -629,7 +630,7 @@
             try {
                 const data = await requestJson(`/api/admin/usage-summary?${params.toString()}`);
                 summaryRoot.innerHTML = renderUsageSummary(data.summary || {});
-                if (billingRoot) billingRoot.innerHTML = renderBillingUsageCards(data.billing || {});
+                if (billingRoot) billingRoot.innerHTML = renderBillingUsageCards(data.billing || {}, { mode: 'adminRevenue' });
                 tableRoot.innerHTML = renderUsageItems(data.items || []);
                 if (recentChargesRoot) recentChargesRoot.innerHTML = renderAdminRecentCharges(data.billing?.recentCharges || []);
                 message.textContent = `共 ${(data.items || []).length} 条。`;

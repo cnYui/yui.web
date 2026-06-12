@@ -18,6 +18,7 @@ const {
     deriveInputTokenBreakdown,
     priceUsageTokens
 } = require('./lib/shop-pricing');
+const { appendShopChargeAuditLog } = require('./lib/shop-charge-audit-log');
 
 const durationDays = 31;
 const resultCookieName = 'yui_shop_result_token';
@@ -734,6 +735,9 @@ function createShopApp(options = {}) {
         : defaultCreditLimitCents;
     const creditLimitNanos = centsToNanos(creditLimitCents);
     const apiKeyEncryptionSecret = String(options.apiKeyEncryptionSecret ?? process.env.SHOP_API_KEY_ENCRYPTION_SECRET ?? '').trim();
+    const shopChargeAuditLogDir = options.shopChargeAuditLogDir
+        || process.env.SHOP_CHARGE_AUDIT_LOG_DIR
+        || path.join(rootDir, 'data', 'logs', 'shop-charge-records');
     if (apiKeyEncryptionSecret) {
         assertStrongSecret('SHOP_API_KEY_ENCRYPTION_SECRET', apiKeyEncryptionSecret, { production });
     }
@@ -1553,6 +1557,21 @@ FROM api_charge_records
 ORDER BY created_at DESC, rowid DESC
 `);
 
+    const listApiChargeRecordsForShopBilling = db.prepare(`
+SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+       cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+       price_version, charge_cents, charge_nanos, balance_before_cents,
+       balance_before_nanos, balance_after_cents, balance_after_nanos, status, created_at
+FROM api_charge_records acr
+WHERE EXISTS (
+  SELECT 1
+  FROM api_keys ak
+  JOIN orders o ON o.id = ak.order_id OR o.api_key = ak.api_key
+  WHERE ak.api_key_hash = acr.api_key_hash
+)
+ORDER BY created_at DESC, rowid DESC
+`);
+
     const getUserByPhone = db.prepare(`
 SELECT phone, created_at, password_hash, password_created_at, updated_at
 FROM users
@@ -1934,6 +1953,17 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return priceUsageTokens(event);
     }
 
+    function appendChargeAuditLog(record) {
+        try {
+            appendShopChargeAuditLog(record, { auditLogDir: shopChargeAuditLogDir });
+        } catch (error) {
+            console.error('shop charge audit log write failed', {
+                usageEventId: record.usageEventId,
+                error: error.message || String(error)
+            });
+        }
+    }
+
     function chargeUsageEventInCurrentTransaction(event) {
         if (getApiChargeByUsageEventId.get(event.requestId)) {
             return { charged: 0, skipped: 1 };
@@ -1949,9 +1979,10 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         const balanceBeforeCents = nanosToBalanceCents(balanceBeforeNanos);
         const balanceAfterCents = nanosToBalanceCents(balanceAfterNanos);
         const now = nowIso();
+        const chargeId = createId('CHARGE');
 
         insertApiChargeRecord.run({
-            id: createId('CHARGE'),
+            id: chargeId,
             phone: owner.phone,
             usageEventId: event.requestId,
             apiKeyHash: event.apiKeyHash,
@@ -1989,6 +2020,30 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
                 createdByPhone: ''
             });
         }
+        appendChargeAuditLog({
+            source: 'realtime',
+            chargeId,
+            phone: owner.phone,
+            usageEventId: event.requestId,
+            apiKeyHash: event.apiKeyHash,
+            apiKeyPreview: event.apiKeyPreview,
+            model: event.model,
+            inputTokens: event.inputTokens,
+            outputTokens: event.outputTokens,
+            cacheHitInputTokens: event.cacheHitInputTokens,
+            cacheMissInputTokens: event.cacheMissInputTokens,
+            reasoningTokens: event.reasoningTokens,
+            totalTokens: event.totalTokens,
+            priceVersion: pricing.priceVersion,
+            chargeCents: pricing.chargeCents,
+            chargeNanos: pricing.chargeNanos,
+            balanceBeforeCents,
+            balanceBeforeNanos,
+            balanceAfterCents,
+            balanceAfterNanos,
+            status: pricing.status,
+            createdAt: now
+        });
 
         return { charged: pricing.chargeNanos > 0 ? 1 : 0, skipped: 0 };
     }
@@ -2640,7 +2695,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
                 total_requests: summaryStats.total_requests,
                 failed_requests: summaryStats.failed_requests
             },
-            billing: buildBillingSummary(listApiChargeRecordsForBilling.all(), {
+            billing: buildBillingSummary(listApiChargeRecordsForShopBilling.all(), {
                 todayStart: startOfChinaDay(now),
                 monthStart: startOfChinaMonth(now)
             }),

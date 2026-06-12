@@ -12,13 +12,21 @@ function timestamp() {
 }
 
 function parseArgs(argv) {
-    const args = { apply: false, db: path.join(__dirname, '..', 'data', 'shop.sqlite') };
+    const args = {
+        apply: false,
+        db: path.join(__dirname, '..', 'data', 'shop.sqlite'),
+        auditLogDir: ''
+    };
     for (let index = 2; index < argv.length; index += 1) {
         const item = argv[index];
         if (item === '--dry-run') args.apply = false;
         if (item === '--apply') args.apply = true;
         if (item === '--db') {
             args.db = argv[index + 1];
+            index += 1;
+        }
+        if (item === '--audit-log-dir') {
+            args.auditLogDir = argv[index + 1];
             index += 1;
         }
     }
@@ -41,7 +49,10 @@ function main(argv = process.argv) {
     const backupPath = args.apply ? backupShopDatabase(dbPath) : '';
     const db = new Database(dbPath);
     try {
-        const result = reconcileUsageBilling(db, { apply: args.apply });
+        const auditLogDir = args.auditLogDir
+            || process.env.SHOP_CHARGE_AUDIT_LOG_DIR
+            || path.join(path.dirname(dbPath), 'logs', 'shop-charge-records');
+        const result = reconcileUsageBilling(db, { apply: args.apply, auditLogDir });
         console.log(JSON.stringify({ mode: args.apply ? 'apply' : 'dry-run', backupPath, result }, null, 2));
     } finally {
         db.close();
