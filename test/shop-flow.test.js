@@ -299,12 +299,8 @@ test('Shop 外部脚本会在 CSP 禁止 inline script 时自动初始化 Accoun
         'accountLedger',
         'alipayQrImage',
         'wechatQrImage',
-        'paymentReference',
-        'accountUsageCards',
         'accountBillingUsageCards',
         'accountTokenBreakdown',
-        'accountHourlyChart',
-        'accountDailyChart',
         'usageFreshness',
         'accountUsageMessage'
     ]) {
@@ -366,7 +362,6 @@ test('Shop 外部脚本会在 CSP 禁止 inline script 时自动初始化 Accoun
     assert.equal(elements.get('accountPhone').textContent, '13800139999');
     assert.equal(elements.get('alipayQrImage').src, '/shop/assets/pay/alipay-qr.png');
     assert.equal(elements.get('wechatQrImage').src, '/shop/assets/pay/wechat-qr.png');
-    assert.equal(elements.get('paymentReference').textContent, 'YUI-TEST');
 });
 
 test('Account 页提供登录态邀请码兑换表单且不再引导到独立手机号兑换页', () => {
@@ -421,12 +416,8 @@ test('Account 前端兑换调用登录态接口并且不提交手机号', async 
         'accountLedger',
         'alipayQrImage',
         'wechatQrImage',
-        'paymentReference',
-        'accountUsageCards',
         'accountBillingUsageCards',
         'accountTokenBreakdown',
-        'accountHourlyChart',
-        'accountDailyChart',
         'usageFreshness',
         'accountUsageMessage'
     ]) {
@@ -1198,6 +1189,107 @@ test('管理员拒绝充值不会改变余额', async () => {
     });
 });
 
+test('管理员余额接口展示所有 Shop 用户余额并过滤管理员账号', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+
+        await createRedeemedOrder(baseUrl, '13800138821', 'sk-admin-balance-owned');
+        const userCookie = await registerUserAndGetCookie(baseUrl, '13800138821');
+        await submitAndApproveTopup(baseUrl, userCookie, '3');
+
+        const debtCookie = await registerUserAndGetCookie(baseUrl, '13800138822');
+        const pendingTopup = await jsonFetch(`${baseUrl}/api/account/topups`, {
+            method: 'POST',
+            headers: { cookie: debtCookie },
+            body: JSON.stringify({ amount: '2', paymentMethod: 'wechat' })
+        });
+        assert.equal(pendingTopup.response.status, 201);
+        db.prepare(`
+UPDATE account_balances
+SET balance_cents = ?, balance_nanos = ?, updated_at = ?
+WHERE phone = ?
+`).run(-15, -150000000, '2026-06-12T12:00:00+08:00', '13800138822');
+
+        db.prepare(`
+INSERT INTO usage_key_profiles (api_key_hash, api_key_preview, group_name, phone, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?)
+`).run(
+            hashApiKeyForTest('sk-local-not-shop'),
+            keyPreviewForTest('sk-local-not-shop'),
+            'local',
+            '13900000001',
+            '2026-06-12T12:00:00+08:00',
+            '2026-06-12T12:00:00+08:00'
+        );
+
+        const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
+        });
+        assert.equal(adminLogin.response.status, 200);
+        const adminCookie = cookieHeaderFromSetCookie(adminLogin.response.headers.get('set-cookie') || '');
+
+        const result = await jsonFetch(`${baseUrl}/api/admin/account-balances`, {
+            headers: { cookie: adminCookie }
+        });
+        assert.equal(result.response.status, 200);
+        assert.equal(result.body.summary.userCount, 2);
+        assert.equal(result.body.summary.totalBalanceNanos, 2850000000);
+        assert.equal(result.body.summary.totalBalanceAmount, 2.85);
+        assert.equal(result.body.summary.debtUserCount, 1);
+        assert.equal(result.body.summary.debtNanos, 150000000);
+        assert.equal(result.body.summary.pendingTopupNanos, 2000000000);
+        assert.deepEqual(result.body.items.map((item) => item.phone), ['13800138822', '13800138821']);
+
+        const debtItem = result.body.items.find((item) => item.phone === '13800138822');
+        assert.equal(debtItem.status, 'debt');
+        assert.equal(debtItem.balanceNanos, -150000000);
+        assert.equal(debtItem.debtNanos, 150000000);
+        assert.equal(debtItem.pendingTopupNanos, 2000000000);
+        assert.equal(debtItem.managedApiKeyCount, 0);
+
+        const activeItem = result.body.items.find((item) => item.phone === '13800138821');
+        assert.equal(activeItem.status, 'available');
+        assert.equal(activeItem.balanceNanos, 3000000000);
+        assert.equal(activeItem.managedApiKeyCount, 1);
+        assert.equal(activeItem.usedApiKeyCount, 1);
+        assert.equal(activeItem.unusedApiKeyCount, 0);
+        assert.equal(activeItem.disabledApiKeyCount, 0);
+        assert.ok(!result.body.items.some((item) => item.phone === '15951875192'));
+        assert.ok(!result.body.items.some((item) => item.phone === '13900000001'));
+
+        const filtered = await jsonFetch(`${baseUrl}/api/admin/account-balances?status=debt&q=822`, {
+            headers: { cookie: adminCookie }
+        });
+        assert.equal(filtered.response.status, 200);
+        assert.deepEqual(filtered.body.items.map((item) => item.phone), ['13800138822']);
+        assert.equal(filtered.body.summary.userCount, 2);
+    });
+});
+
+test('管理员余额接口要求管理员登录或管理员 token', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+        const userCookie = await registerUserAndGetCookie(baseUrl, '13800138823');
+
+        const missingAuth = await jsonFetch(`${baseUrl}/api/admin/account-balances`);
+        assert.equal(missingAuth.response.status, 401);
+        assert.equal(missingAuth.body.code, 'UNAUTHORIZED');
+
+        const normalUser = await jsonFetch(`${baseUrl}/api/admin/account-balances`, {
+            headers: { cookie: userCookie }
+        });
+        assert.equal(normalUser.response.status, 403);
+        assert.equal(normalUser.body.code, 'ADMIN_ACCOUNT_REQUIRED');
+
+        const tokenResult = await jsonFetch(`${baseUrl}/api/admin/account-balances`, {
+            headers: { 'x-admin-token': 'test-token' }
+        });
+        assert.equal(tokenResult.response.status, 200);
+        assert.deepEqual(tokenResult.body.items.map((item) => item.phone), ['13800138823']);
+    });
+});
+
 test('托管 API key 在账户余额为 0 时返回余额不足状态', async () => {
     await withServer(async ({ baseUrl }) => {
         const order = await createRedeemedOrder(baseUrl, '13800139009', 'sk-balance-zero');
@@ -1396,9 +1488,17 @@ test('余额很少时本次调用可扣成负数且下一次状态检查拒绝',
         const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
             headers: { cookie }
         });
-        assert.equal(balance.body.balance.balanceCents, -15);
-        assert.equal(balance.body.balance.balanceNanos, -149998000);
-        assert.equal(balance.body.balance.debtCents, 15);
+        const expectedCharge = priceUsageTokens({
+            failed: false,
+            cacheHitInputTokens: 0,
+            cacheMissInputTokens: 0,
+            outputTokens: 33333
+        }).chargeNanos;
+        const expectedBalanceNanos = 50000000 - expectedCharge;
+        const expectedDebtCents = Math.ceil(Math.abs(expectedBalanceNanos) / nanosPerCent);
+        assert.equal(balance.body.balance.balanceCents, nanosToBalanceCentsForTest(expectedBalanceNanos));
+        assert.equal(balance.body.balance.balanceNanos, expectedBalanceNanos);
+        assert.equal(balance.body.balance.debtCents, expectedDebtCents);
         assert.equal(balance.body.balance.status, 'debt');
 
         const status = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=${encodeURIComponent(order.apiKey)}`, {
@@ -1406,7 +1506,7 @@ test('余额很少时本次调用可扣成负数且下一次状态检查拒绝',
         });
         assert.equal(status.body.active, false);
         assert.equal(status.body.status, 'insufficient_balance');
-        assert.equal(status.body.billing.debtCents, 15);
+        assert.equal(status.body.billing.debtCents, expectedDebtCents);
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
@@ -1442,8 +1542,14 @@ test('重复 usage event 不会重复扣费', async () => {
         const balance = await jsonFetch(`${baseUrl}/api/account/balance`, {
             headers: { cookie }
         });
+        const expectedCharge = priceUsageTokens({
+            failed: false,
+            cacheHitInputTokens: 0,
+            cacheMissInputTokens: 1,
+            outputTokens: 1
+        }).chargeNanos;
         assert.equal(balance.body.balance.balanceCents, 99);
-        assert.equal(balance.body.balance.balanceNanos, 999991000);
+        assert.equal(balance.body.balance.balanceNanos, 1000000000 - expectedCharge);
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
@@ -1581,7 +1687,12 @@ test('用户账户页 API 返回自己的账户流水和扣费记录', async () 
         assert.equal(charges.body.charges.length, 1);
         assert.equal(charges.body.charges[0].usageEventId, 'req-ledger-first');
         assert.equal(charges.body.charges[0].chargeCents, 1);
-        assert.equal(charges.body.charges[0].chargeNanos, 150000);
+        assert.equal(charges.body.charges[0].chargeNanos, priceUsageTokens({
+            failed: false,
+            cacheHitInputTokens: 0,
+            cacheMissInputTokens: 10,
+            outputTokens: 20
+        }).chargeNanos);
 
         const secondLedger = await jsonFetch(`${baseUrl}/api/account/ledger`, {
             headers: { cookie: secondCookie }
@@ -1699,8 +1810,14 @@ test('管理员 usage summary 返回 Shop 和未托管 key 的聚合用量', asy
         assert.equal(result.body.summary.total_tokens, 22);
         assert.equal(result.body.summary.month_tokens, 22);
         assert.equal(result.body.summary.failed_requests, 1);
-        assert.equal(result.body.billing.monthChargeNanos, 75000);
-        assert.equal(result.body.billing.todayChargeNanos, 75000);
+        const expectedShopPricing = priceUsageTokens({
+            failed: false,
+            cacheHitInputTokens: 0,
+            cacheMissInputTokens: 5,
+            outputTokens: 10
+        });
+        assert.equal(result.body.billing.monthChargeNanos, expectedShopPricing.chargeNanos);
+        assert.equal(result.body.billing.todayChargeNanos, expectedShopPricing.chargeNanos);
         assert.equal(result.body.billing.cacheHitInputTokens, 0);
         assert.equal(result.body.billing.cacheMissInputTokens, 5);
         assert.equal(result.body.billing.outputTokens, 10);
@@ -1797,6 +1914,188 @@ test('管理员 usage summary 收银只统计 Shop 扣费并使用当前命中 t
         assert.equal(result.body.billing.outputTokens, 0);
         assert.equal(result.body.billing.recentCharges.length, 1);
         assert.equal(result.body.billing.recentCharges[0].usageEventId, 'req-summary-shop-revenue');
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
+test('管理员 usage summary 返回 Shop 收银构成和用户消费排行且排除 Local', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const firstOrder = await createRedeemedOrder(baseUrl, '13800138511', 'sk-summary-chart-first');
+        const secondOrder = await createRedeemedOrder(baseUrl, '13800138512', 'sk-summary-chart-second');
+        const localHash = hashApiKeyForTest('sk-local-chart-revenue');
+        await jsonFetch(`${baseUrl}/api/admin/usage-key-profiles`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({
+                apiKeyHash: localHash,
+                apiKeyPreview: 'sk-l...hart',
+                group: 'local',
+                phone: '15951875192'
+            })
+        });
+
+        const requestedAt = new Date().toISOString();
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-summary-chart-first',
+            api_key_hash: hashApiKeyForTest(firstOrder.apiKey),
+            api_key_preview: keyPreviewForTest(firstOrder.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 1000000,
+            cache_hit_input_tokens: 1000000,
+            cache_miss_input_tokens: 0,
+            output_tokens: 0,
+            total_tokens: 1000000,
+            requested_at: requestedAt
+        });
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-summary-chart-second',
+            api_key_hash: hashApiKeyForTest(secondOrder.apiKey),
+            api_key_preview: keyPreviewForTest(secondOrder.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 500000,
+            cache_hit_input_tokens: 0,
+            cache_miss_input_tokens: 500000,
+            output_tokens: 100000,
+            total_tokens: 600000,
+            requested_at: requestedAt
+        });
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-summary-chart-local',
+            api_key_hash: localHash,
+            api_key_preview: 'sk-l...hart',
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 1000000,
+            cache_hit_input_tokens: 0,
+            cache_miss_input_tokens: 1000000,
+            output_tokens: 0,
+            total_tokens: 1000000,
+            requested_at: requestedAt
+        });
+
+        const result = await jsonFetch(`${baseUrl}/api/admin/usage-summary`, {
+            headers: { 'x-admin-token': 'test-token' }
+        });
+
+        assert.equal(result.response.status, 200);
+        assert.equal(result.body.billing.todayChargeNanos, 3750000000);
+        assert.equal(result.body.billing.monthChargeNanos, 3750000000);
+        assert.deepEqual(result.body.billing.todayRevenueParts, [
+            { key: 'cache_hit_input', label: '缓存命中输入', tokens: 1000000, chargeNanos: 250000000, chargeAmount: 0.25 },
+            { key: 'cache_miss_input', label: '缓存未命中输入', tokens: 500000, chargeNanos: 1500000000, chargeAmount: 1.5 },
+            { key: 'output', label: '输出 token', tokens: 100000, chargeNanos: 2000000000, chargeAmount: 2 }
+        ]);
+        assert.deepEqual(result.body.billing.monthRevenueParts, result.body.billing.todayRevenueParts);
+        assert.deepEqual(result.body.billing.customerSpendingRankings.today.map((item) => [item.phone, item.chargeNanos, item.chargeAmount]), [
+            ['13800138512', 3500000000, 3.5],
+            ['13800138511', 250000000, 0.25]
+        ]);
+        assert.deepEqual(result.body.billing.customerSpendingRankings.today[0].parts.map((part) => [part.key, part.chargeNanos, part.chargeAmount]), [
+            ['cache_hit_input', 0, 0],
+            ['cache_miss_input', 1500000000, 1.5],
+            ['output', 2000000000, 2]
+        ]);
+        assert.deepEqual(result.body.billing.customerSpendingRankings.today[1].parts.map((part) => [part.key, part.chargeNanos, part.chargeAmount]), [
+            ['cache_hit_input', 250000000, 0.25],
+            ['cache_miss_input', 0, 0],
+            ['output', 0, 0]
+        ]);
+        assert.deepEqual(result.body.billing.customerSpendingRankings.month.map((item) => [item.phone, item.chargeNanos, item.chargeAmount]), [
+            ['13800138512', 3500000000, 3.5],
+            ['13800138511', 250000000, 0.25]
+        ]);
+        assert.equal(
+            result.body.billing.customerSpendingRankings.month.some((item) => item.phone === '15951875192'),
+            false
+        );
+    }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
+test('管理员 usage summary 收银构成按扣费记录价格版本拆分历史金额', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800138513', 'sk-summary-chart-old-price');
+        const cacheHit10xOrder = await createRedeemedOrder(baseUrl, '13800138514', 'sk-summary-chart-cache-hit-10x-price');
+        const createdAt = new Date().toISOString();
+        db.prepare(`
+INSERT INTO api_charge_records (
+  id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+  cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+  price_version, charge_cents, charge_nanos, balance_before_cents, balance_before_nanos,
+  balance_after_cents, balance_after_nanos, status, created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`).run(
+            'CHARGE-OLD-PRICE',
+            '13800138513',
+            'req-summary-chart-old-price',
+            hashApiKeyForTest(order.apiKey),
+            'gpt-5.4',
+            1000000,
+            0,
+            1000000,
+            0,
+            0,
+            1000000,
+            'deepseek-v4-pro-rmb-20260424',
+            3,
+            25000000,
+            100,
+            1000000000,
+            97,
+            975000000,
+            'charged',
+            createdAt
+        );
+        db.prepare(`
+INSERT INTO api_charge_records (
+  id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+  cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+  price_version, charge_cents, charge_nanos, balance_before_cents, balance_before_nanos,
+  balance_after_cents, balance_after_nanos, status, created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`).run(
+            'CHARGE-CACHE-HIT-10X-OUTPUT',
+            '13800138514',
+            'req-summary-chart-cache-hit-10x-output',
+            hashApiKeyForTest(cacheHit10xOrder.apiKey),
+            'gpt-5.4',
+            0,
+            100000,
+            0,
+            0,
+            0,
+            100000,
+            'deepseek-v4-pro-rmb-20260612-cache-hit-10x',
+            60,
+            600000000,
+            100,
+            1000000000,
+            40,
+            400000000,
+            'charged',
+            createdAt
+        );
+
+        const result = await jsonFetch(`${baseUrl}/api/admin/usage-summary`, {
+            headers: { 'x-admin-token': 'test-token' }
+        });
+
+        assert.equal(result.response.status, 200);
+        assert.equal(result.body.billing.monthChargeNanos, 625000000);
+        assert.deepEqual(result.body.billing.monthRevenueParts, [
+            { key: 'cache_hit_input', label: '缓存命中输入', tokens: 1000000, chargeNanos: 25000000, chargeAmount: 0.025 },
+            { key: 'cache_miss_input', label: '缓存未命中输入', tokens: 0, chargeNanos: 0, chargeAmount: 0 },
+            { key: 'output', label: '输出 token', tokens: 100000, chargeNanos: 600000000, chargeAmount: 0.6 }
+        ]);
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
@@ -2631,7 +2930,7 @@ test('后台页面使用管理员 session，不渲染管理员 token 输入', ()
 
     assert.match(html, /管理员控制台/);
     assert.match(html, /管理员账号/);
-    assert.match(html, /shop\.js\?v=20260609-admin-session/);
+    assert.match(html, /shop\.js\?v=20260612-admin-revenue-fallback/);
     assert.doesNotMatch(html, /管理员口令/);
     assert.doesNotMatch(html, /解锁用量监控/);
     assert.doesNotMatch(html, /id="adminAccessForm"/);
@@ -2656,8 +2955,20 @@ test('Admin 页面把业务办理合并成一个栏目', () => {
     assert.match(html, /id="adminTopupStatusFilter"/);
     assert.match(html, /id="adminTopupTable"/);
     assert.match(html, /id="adminInviteConsoleSummary"/);
+    assert.match(html, /id="adminAccountBalancesPanel"/);
+    assert.match(html, /id="adminBalanceSearchInput"/);
+    assert.match(html, /id="adminBalanceStatusFilter"/);
+    assert.match(html, /id="adminBalanceSummary"/);
+    assert.match(html, /id="adminBalanceTable"/);
+    assert.match(html, /id="adminBalanceMessage"/);
     assert.match(html, /id="adminInviteTable"/);
     assert.match(html, /id="adminApiKeyPoolTable"/);
+    const topupIndex = html.indexOf('id="adminTopupTable"');
+    const balanceIndex = html.indexOf('id="adminAccountBalancesPanel"');
+    const inviteIndex = html.indexOf('id="adminInviteTable"');
+    assert.ok(topupIndex > -1 && balanceIndex > -1 && inviteIndex > -1);
+    assert.ok(topupIndex < balanceIndex);
+    assert.ok(balanceIndex < inviteIndex);
     assert.doesNotMatch(html, /id="adminInviteSection"/);
     assert.doesNotMatch(html, /id="adminPasswordResetSection"/);
     assert.doesNotMatch(html, /id="adminTopupSection"/);
@@ -2672,6 +2983,15 @@ test('Admin 前端兑换码管理不使用 x-admin-token', () => {
     assert.match(script, /function initAdminInvitePage/);
     assert.match(script, /adminBusinessRefreshButton/);
     assert.match(script, /refreshAdminBusiness/);
+    assert.match(script, /function renderAdminBalanceSummary/);
+    assert.match(script, /function renderAdminBalanceTable/);
+    assert.match(script, /function initAdminAccountBalancesPage/);
+    assert.match(script, /api\/admin\/account-balances/);
+    assert.match(script, /refreshAdminBalances/);
+    assert.match(script, /onBalanceChanged/);
+    assert.match(script, /用户余额/);
+    assert.match(script, /欠费用户/);
+    assert.match(script, /待确认充值/);
     assert.doesNotMatch(script, /x-admin-token/);
 });
 
@@ -2689,17 +3009,28 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.match(html, /CLIProxyAPI\/logs\/usage/);
     assert.match(html, /usage-events-YYYY-MM\.jsonl/);
     assert.match(html, /id="adminBillingUsageCards"/);
+    assert.match(html, /id="adminRevenueCharts"/);
     assert.match(html, /id="adminRecentCharges"/);
     assert.match(script, /function initAdminUsagePage/);
     assert.match(script, /function renderBillingUsageCards/);
+    assert.match(script, /function renderAdminRevenueCharts/);
+    assert.match(script, /function renderRevenuePieChart/);
+    assert.match(script, /function renderCustomerSpendingBars/);
     assert.match(script, /function renderAdminRecentCharges/);
     assert.match(script, /api\/admin\/usage-summary/);
     assert.match(script, /api\/admin\/usage-imports/);
     assert.match(script, /今日收银/);
     assert.match(script, /本月收银/);
+    assert.match(script, /收银分析/);
+    assert.match(script, /Shop 用户消费排行/);
+    assert.match(script, /data-revenue-ranking-period="today"/);
+    assert.match(script, /data-revenue-ranking-period="month"/);
     assert.match(script, /今天收银多少钱/);
     assert.match(script, /本月一共收了多少钱/);
     assert.match(script, /今日消费/);
+    const usageSection = html.match(/<section id="adminUsageSection"[\s\S]*?<section id="adminUsageImportSection"/)?.[0] || '';
+    assert.doesNotMatch(usageSection, /adminAccountBalancesPanel/);
+    assert.doesNotMatch(usageSection, /用户余额/);
     assert.doesNotMatch(html, /完整 API key/);
     assert.equal((html.match(/data-collapsible-section/g) || []).length, 3);
     assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 3);
@@ -2707,6 +3038,43 @@ test('后台页面包含 usage 监控和 JSONL 导入控件', () => {
     assert.match(html, /id="adminBusinessSection"[\s\S]*?data-collapsible-default="open"/);
     assert.match(html, /id="adminUsageSection"[\s\S]*?data-collapsible-default="open"/);
     assert.match(html, /id="adminUsageImportSection"[\s\S]*?data-collapsible-default="open"/);
+});
+
+test('Admin 收银图表关键几何样式存在于构建 CSS 中', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+    const siteCss = fs.readFileSync(path.join(__dirname, '..', 'styles/site.css'), 'utf8');
+
+    assert.match(script, /admin-revenue-pie/);
+    assert.match(script, /admin-revenue-pie-inner/);
+    assert.match(script, /admin-revenue-bars/);
+    assert.match(script, /admin-revenue-bar/);
+    assert.match(script, /admin-revenue-bar-stack/);
+    assert.match(script, /admin-revenue-bar-segment/);
+    assert.match(script, /admin-revenue-bar-segment-hit/);
+    assert.match(script, /admin-revenue-bar-segment-miss/);
+    assert.match(script, /admin-revenue-bar-segment-output/);
+    assert.match(script, /admin-revenue-ranking-legend/);
+    assert.match(script, /barHeightPx/);
+    assert.match(script, /admin-revenue-bar admin-revenue-bar-stack" style="height:\$\{barHeightPx\}px/);
+    assert.doesNotMatch(script, /admin-revenue-bar" style="height:\$\{height\}%/);
+    assert.match(siteCss, /\.admin-revenue-pie\{/);
+    assert.match(siteCss, /width:9rem/);
+    assert.match(siteCss, /height:9rem/);
+    assert.match(siteCss, /\.admin-revenue-bars\{/);
+    assert.match(siteCss, /\.admin-revenue-bar-stack\{/);
+    assert.match(siteCss, /\.admin-revenue-bar-segment-miss\{/);
+    assert.match(siteCss, /box-shadow:inset 0 0 0 1px rgba\(34,34,34,\.35\)/);
+    assert.match(siteCss, /height:14rem/);
+}
+);
+
+test('Admin 收银排行兼容旧排行数据缺少 parts 时不渲染白色空柱', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+
+    assert.match(script, /legacyTotalPart/);
+    assert.match(script, /partChargeTotal/);
+    assert.match(script, /旧格式总金额/);
+    assert.match(script, /chargeNanos: Number\(item\.chargeNanos \|\| 0\)/);
 });
 
 test('Admin 日志导入栏目展示自动导入状态容器', () => {
@@ -2724,6 +3092,14 @@ test('Account 页面包含预充值余额、充值申请和扣费流水容器', 
 
     assert.match(html, /id="accountBalanceCards"/);
     assert.match(html, /id="accountBillingUsageCards"/);
+    assert.doesNotMatch(html, /id="accountUsageCards"/);
+    assert.doesNotMatch(html, /id="paymentReference"/);
+    assert.doesNotMatch(html, /付款备注：/);
+    assert.match(html, /id="topupPaymentNote"[^>]+placeholder="备注可填写微信号"/);
+    assert.doesNotMatch(html, /id="accountHourlyChart"/);
+    assert.doesNotMatch(html, /id="accountDailyChart"/);
+    assert.doesNotMatch(html, /最近 24 小时/);
+    assert.doesNotMatch(html, /本月每日/);
     assert.match(html, /id="topupForm"/);
     assert.match(html, /id="topupAmount"/);
     assert.match(html, /id="accountTopups"/);
@@ -2740,6 +3116,14 @@ test('Account 页面包含预充值余额、充值申请和扣费流水容器', 
     assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 5);
     assert.equal((html.match(/data-collapsible-content/g) || []).length, 5);
     assert.match(html, /id="accountGuideSection"[\s\S]*?data-collapsible-default="closed"/);
+});
+
+test('Account 用量卡片不展示无效 token 总览和内部价格版本名', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+
+    assert.doesNotMatch(script, /function renderAccountUsageCards/);
+    assert.doesNotMatch(script, /billing\.priceVersion/);
+    assert.match(script, /本月已扣费/);
 });
 
 test('Account 页把余额和 API key 前置，并默认收起说明和流水', () => {

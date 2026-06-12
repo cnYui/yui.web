@@ -260,13 +260,25 @@
 ## 2026-06-12 Shop 缓存命中输入最终涨价
 
 - 用户最终决定采用低冲击涨价：只把缓存命中输入提高 10 倍，缓存未命中输入和输出不变。
-- 当前生效价格版本为 `deepseek-v4-pro-rmb-20260612-cache-hit-10x`：
+- 当时生效价格版本为 `deepseek-v4-pro-rmb-20260612-cache-hit-10x`：
   - 缓存命中输入：250 nanos/token，即 0.25 元 / 100 万 token
   - 缓存未命中输入：3000 nanos/token，即 3 元 / 100 万 token
   - 输出：6000 nanos/token，即 6 元 / 100 万 token
 - 此决策覆盖上一节的更激进推荐方案；后续不要误改成 1/30/60 元每百万 token。
 - 新价格只应用未来 usage；不要重算历史扣费，不覆盖旧 `api_charge_records.price_version`。
 - 设计与计划见 `docs/ai/context/20260612-122658-shop-cache-hit-price-10x-design-plan_CN.md`。
+
+## 2026-06-12 Shop 输出 token 涨价到 20 元每百万
+
+- 用户确认采用方案 1：新增价格版本，不复用旧版本名。
+- 当前生效价格版本为 `deepseek-v4-pro-rmb-20260612-output-20rmb`：
+  - 缓存命中输入：250 nanos/token，即 0.25 元 / 100 万 token
+  - 缓存未命中输入：3000 nanos/token，即 3 元 / 100 万 token
+  - 输出：20000 nanos/token，即 20 元 / 100 万 token
+- 新价格只应用未来 usage；不要重算历史扣费，不覆盖旧 `api_charge_records.price_version`。
+- Admin 收银构成按 `price_version` 回放历史：`deepseek-v4-pro-rmb-20260612-cache-hit-10x` 的输出仍按 6000 nanos/token 拆分，不能被新版本输出单价重算。
+- 设计与计划见 `docs/ai/context/20260612-203049-shop-output-token-20rmb-design-plan_CN.md`。
+- 实施记录见 `docs/ai/context/20260612-203504-shop-output-token-20rmb-implementation_CN.md`。
 
 ## 2026-06-12 `198****2044` models 端口复测
 
@@ -287,7 +299,7 @@
 
 - `/shop/admin/` 用量监控的 Admin 账务卡片已改为“今日收银”和“本月收银”；Account 页面仍保留“今日消费 / 本月消费”。
 - Admin 收银只统计 `api_charge_records.api_key_hash` 能关联到 `api_keys -> orders` 的 Shop 托管 key；Local 和未托管不计入收入。
-- 当前计费规则已由测试锁定：缓存命中输入 250 nanos/token，即 0.25 元 / 100 万 token；未命中输入 3000 nanos/token；输出 6000 nanos/token。
+- 该实施时计费规则已由测试锁定：缓存命中输入 250 nanos/token，即 0.25 元 / 100 万 token；未命中输入 3000 nanos/token；输出 6000 nanos/token。
 - 本地扣费审计日志默认写入 `data/logs/shop-charge-records/api-charge-records-YYYY-MM.jsonl`；可用 `SHOP_CHARGE_AUDIT_LOG_DIR` 或补账脚本 `--audit-log-dir` 覆盖。
 - 审计 JSONL 只保存 API key hash / preview 和扣费元数据，不保存完整 API key。
 - 实时 usage 扣费和历史补账 apply 都会追加 JSONL；补账 dry-run 不写。
@@ -301,3 +313,72 @@
 - 未修改后端 API，未降低管理员 session、Same-Origin 和 CSRF 约束，未引入 `ADMIN_TOKEN`。
 - 设计记录见 `docs/ai/context/20260612-171645-admin-business-section-merge-design_CN.md`。
 - 实施记录见 `docs/ai/context/20260612-172852-admin-business-section-merge-implementation_CN.md`。
+
+## 2026-06-12 Admin 用量收银图表设计
+
+- `/shop/admin/` 用量监控保留原有 token 卡片、收银卡片、用量表和最近扣费记录，在收银卡片下方新增「收银分析」图表区。
+- 今日收银和本月收银饼图只统计 Shop 托管 API key，不统计 Local / 未托管。
+- 饼图按计费类型切分：缓存命中输入、缓存未命中输入、输出 token。
+- 饼图分项金额按每条扣费记录的 `price_version` 拆分；未知版本才回退当前价格，不能把旧价格历史记录按新价格重算。
+- Shop 用户消费柱状图展示已消费 / 已扣费金额，不展示余额；只包含 Shop 用户，不包含 Local。
+- 柱状图默认本月排行，可切换今日排行，切换后按对应金额从高到低排序。
+- 不引入第三方图表库；饼图使用 CSS `conic-gradient`，柱状图使用普通 HTML/CSS。
+- 设计与计划见 `docs/ai/context/20260612-181520-admin-usage-revenue-charts-design_CN.md` 和 `docs/ai/context/20260612-181520-admin-usage-revenue-charts-plan_CN.md`。
+
+## 2026-06-12 Admin 用量收银图表实施
+
+- `/api/admin/usage-summary` 的 `billing` 新增 `todayRevenueParts`、`monthRevenueParts`、`customerSpendingRankings.today/month`。
+- 图表数据继续只统计 Shop 托管 API key，Local / 未托管不进入收银构成或客户消费排行。
+- 收银构成兼容旧价格版本 `deepseek-v4-pro-rmb-20260424`，历史缓存命中输入按 25 nanos/token 拆分；当前版本按 250 nanos/token 拆分。
+- `/shop/admin/` 新增 `adminRevenueCharts`，位于收银卡片下方、用量明细表上方。
+- 前端使用 `conic-gradient` 渲染今日 / 本月收银饼图，使用 HTML/CSS 渲染 Shop 用户消费柱状图。
+- 全量验证 `npm test` 130 个测试通过；实施记录见 `docs/ai/context/20260612-182355-admin-usage-revenue-charts-implementation_CN.md`。
+
+## 2026-06-12 Admin 收银图表渲染修复
+
+- 图表文字出现但饼图 / 柱状图不可见的根因是 `shop/shop.js` 新增动态 Tailwind class 后，`styles/site.css` 没有同步重新构建并提交。
+- 收银图表关键几何样式改为 `styles/tailwind.css` 中的 `admin-revenue-*` 组件类，避免过度依赖动态 utility class。
+- `shop/shop.js` 对饼图和柱状图容器保留必要内联几何兜底，降低旧 CSS 缓存导致图形空白的风险。
+- Shop 用户消费柱状图单根柱子使用像素高度，不使用 flex 子项中的百分比高度，否则浏览器可能解析为 0。
+- 后续涉及动态 HTML 的新样式必须同步执行 `npm run build:css` 并提交 `styles/site.css`。
+- 修复记录见 `docs/ai/context/20260612-195805-admin-revenue-chart-rendering-fix-design-plan_CN.md` 和 `docs/ai/context/20260612-200029-admin-revenue-chart-rendering-fix-implementation_CN.md`。
+
+## 2026-06-12 Admin 用户消费排行堆叠柱
+
+- `Shop 用户消费排行` 不是余额图，也不是 token 数图；柱顶金额和排序都按 Shop 用户已扣费总金额。
+- 每个手机号的一根柱内部按金额拆成三段：黑色为缓存命中输入、白色为缓存未命中输入、灰色为输出 token。
+- 今日 / 本月两个周期都必须使用同样的三段金额拆分。
+- 后端排行项 `customerSpendingRankings.today/month[].parts` 按每条扣费记录的 `price_version` 拆分金额；Local / 未托管不进入排行。
+- 白色的缓存未命中输入段必须有可见描边，图例白色点也必须保留边界，否则在白底上会像未渲染。
+- 如果运行中的旧服务端尚未返回 `parts`，前端只能用黑色「旧格式总金额」兜底，避免白色空框；真实黑 / 白 / 灰三段需要重启 yui.web 让新版接口生效。
+- 设计与实施记录见 `docs/ai/context/20260612-201447-admin-revenue-ranking-stacked-bars-design-plan_CN.md` 和 `docs/ai/context/20260612-201853-admin-revenue-ranking-stacked-bars-implementation_CN.md`。
+- 可见性修正记录见 `docs/ai/context/20260612-202326-admin-revenue-stacked-bar-visibility-implementation_CN.md`。
+- 旧接口颜色兜底记录见 `docs/ai/context/20260612-203831-admin-revenue-ranking-legacy-parts-color-fallback_CN.md`。
+
+## 2026-06-12 Admin 用户余额面板位置设计
+
+- 用户确认新增的所有用户余额面板合并进 `/shop/admin/` 的「业务办理」section。
+- 推荐位置：充值审核下方、邀请码记录 / API key 池记录上方。
+- 余额面板是账户台账视图，不属于「今日收银 / 本月收银」收入分析，也不放进「用量监控」。
+- 第一版只读：展示总余额、欠费用户数、欠费金额、待确认充值金额，以及手机号、余额、欠费、待确认充值、API key 状态或托管 key 数量、最近更新时间。
+- 「业务办理」统一刷新和充值审核确认 / 拒绝后都应刷新余额面板。
+- 设计记录见 `docs/ai/context/20260612-195611-admin-account-balance-panel-placement-design_CN.md`。
+- 实施计划见 `docs/ai/context/20260612-200053-admin-account-balance-panel-implementation-plan_CN.md`。
+
+## 2026-06-12 Admin 用户余额面板实施
+
+- `/shop/admin/` 的「业务办理」section 已新增只读「用户余额」面板，位置在充值审核下方、邀请码记录 / API key 池记录上方。
+- 新接口 `/api/admin/account-balances` 返回 Shop 用户余额、欠费、待确认充值和托管 key 数量；管理员账号、Local / 未托管 usage key 不作为余额用户展示。
+- 「业务办理」统一刷新和充值审核确认 / 拒绝后都会刷新余额面板。
+- 余额面板是账户台账视图，不计入 Admin 用量监控的今日 / 本月收银。
+- 第一版不提供直接调余额操作。
+- 实施记录见 `docs/ai/context/20260612-202347-admin-account-balance-panel-implementation_CN.md`。
+
+## 2026-06-12 Account 充值与用量展示精简
+
+- `/shop/account/` 充值区域不再展示 `付款备注：YUI-...`，但后端 `paymentReference` 字段保留兼容。
+- 充值申请备注框 placeholder 固定为 `备注可填写微信号`。
+- Token 用量区域已删除 `accountUsageCards` 四个总览卡片，以及 `最近 24 小时` / `本月每日` 两个趋势卡片；保留本月消费、三段 token 和扣费流水。
+- Account 场景的本月消费卡片不再显示内部价格版本名，副标题为 `本月已扣费`；Admin 收银卡片不受影响。
+- 设计与实施记录见 `docs/ai/context/20260612-210011-account-recharge-and-usage-card-cleanup-design-plan_CN.md` 和 `docs/ai/context/20260612-210011-account-recharge-and-usage-card-cleanup-implementation_CN.md`。
+- 趋势卡删除记录见 `docs/ai/context/20260612-210422-account-usage-trend-card-removal-design-plan_CN.md` 和 `docs/ai/context/20260612-210422-account-usage-trend-card-removal-implementation_CN.md`。

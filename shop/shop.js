@@ -240,24 +240,6 @@
         });
     }
 
-    function renderAccountUsageCards(summary) {
-        const month = summary.month || {};
-        const week = summary.week || {};
-        const today = summary.today || {};
-        const cards = [
-            ['今日 token', today.totalTokens],
-            ['本周 token', week.totalTokens],
-            ['本月 token', month.totalTokens],
-            ['失败请求', month.failedRequests]
-        ];
-        return cards.map(([label, value]) => `
-            <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
-                <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(label)}</p>
-                <p class="mt-2 text-2xl font-display text-primary dark:text-dark-text">${escapeHtml(formatNumber(value))}</p>
-            </article>
-        `).join('');
-    }
-
     function renderTokenBreakdown(month = {}) {
         const items = [
             ['Input', month.inputTokens],
@@ -277,7 +259,7 @@
         const adminRevenue = options.mode === 'adminRevenue';
         const cards = [
             [adminRevenue ? '今日收银' : '今日消费', formatNanos(billing.todayChargeNanos), adminRevenue ? '今天收银多少钱' : '今日已扣费'],
-            [adminRevenue ? '本月收银' : '本月消费', formatNanos(billing.monthChargeNanos), adminRevenue ? '本月一共收了多少钱' : (billing.priceVersion || 'DeepSeek Pro RMB')],
+            [adminRevenue ? '本月收银' : '本月消费', formatNanos(billing.monthChargeNanos), adminRevenue ? '本月一共收了多少钱' : '本月已扣费'],
             ['缓存命中输入', formatNumber(billing.cacheHitInputTokens), '本月 token'],
             ['缓存未命中输入', formatNumber(billing.cacheMissInputTokens), '本月 token'],
             ['输出 token', formatNumber(billing.outputTokens), '本月 token']
@@ -289,6 +271,141 @@
                 <p class="mt-1 text-xs text-text-muted dark:text-dark-text-muted">${escapeHtml(hint)}</p>
             </article>
         `).join('');
+    }
+
+    function renderRevenuePieChart(title, parts = [], totalNanos = 0) {
+        const colors = ['#111827', '#6b7280', '#d1d5db'];
+        const total = Number(totalNanos || 0);
+        const segmentTotal = parts.reduce((sum, part) => sum + Number(part.chargeNanos || 0), 0);
+        let cursor = 0;
+        const segments = segmentTotal > 0
+            ? parts.map((part, index) => {
+                const value = Number(part.chargeNanos || 0);
+                const start = cursor;
+                const end = cursor + (value / segmentTotal) * 100;
+                cursor = end;
+                return `${colors[index % colors.length]} ${start.toFixed(2)}% ${end.toFixed(2)}%`;
+            }).join(', ')
+            : '#e5e7eb 0% 100%';
+        const legend = parts.map((part, index) => `
+            <li class="flex items-center justify-between gap-3 text-sm">
+                <span class="flex min-w-0 items-center gap-2">
+                    <span class="admin-revenue-legend-dot" style="background:${colors[index % colors.length]}"></span>
+                    <span class="truncate">${escapeHtml(part.label)}</span>
+                </span>
+                <span class="shrink-0 font-medium text-primary dark:text-dark-text">${escapeHtml(formatNanos(part.chargeNanos))}</span>
+            </li>
+            <li class="-mt-2 mb-1 ml-5 text-xs text-text-muted dark:text-dark-text-muted">${escapeHtml(formatNumber(part.tokens))} tokens</li>
+        `).join('');
+        return `
+            <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
+                <div class="flex flex-col gap-5 sm:flex-row sm:items-center">
+                    <div class="admin-revenue-pie" style="width:9rem;height:9rem;display:grid;place-items:center;flex-shrink:0;border-radius:9999px;background:conic-gradient(${segments})">
+                        <div class="admin-revenue-pie-inner" style="width:5rem;height:5rem;display:grid;place-items:center;border-radius:9999px">
+                            <span class="text-sm font-medium text-primary dark:text-dark-text">${escapeHtml(formatNanos(total))}</span>
+                        </div>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(title)}</p>
+                        <ul class="mt-4 space-y-2">${legend || '<li class="text-sm text-text-muted dark:text-dark-text-muted">暂无收银记录。</li>'}</ul>
+                    </div>
+                </div>
+            </article>
+        `;
+    }
+
+    function renderCustomerSpendingBars(rankings = {}, period = 'month') {
+        const partClassNames = {
+            cache_hit_input: 'admin-revenue-bar-segment-hit',
+            cache_miss_input: 'admin-revenue-bar-segment-miss',
+            output: 'admin-revenue-bar-segment-output'
+        };
+        const partLabels = [
+            ['cache_hit_input', '缓存命中输入'],
+            ['cache_miss_input', '缓存未命中输入'],
+            ['output', '输出 token']
+        ];
+        const items = Array.isArray(rankings[period]) ? rankings[period] : [];
+        const maxCharge = Math.max(...items.map((item) => Number(item.chargeNanos || 0)), 1);
+        const maxBarHeightPx = 140;
+        const bars = items.length ? items.slice(0, 12).map((item) => {
+            const barHeightPx = Math.max(8, Math.round((Number(item.chargeNanos || 0) / maxCharge) * maxBarHeightPx));
+            const rawParts = Array.isArray(item.parts) ? item.parts : [];
+            const normalizedParts = partLabels.map(([key, label]) => {
+                const part = rawParts.find((candidate) => candidate.key === key) || { chargeNanos: 0 };
+                return { key, label, chargeNanos: Number(part.chargeNanos || 0) };
+            });
+            const partChargeTotal = normalizedParts.reduce((sum, part) => sum + Number(part.chargeNanos || 0), 0);
+            const legacyTotalPart = [
+                { key: 'cache_hit_input', label: '旧格式总金额', chargeNanos: Number(item.chargeNanos || 0) },
+                { key: 'cache_miss_input', label: '缓存未命中输入', chargeNanos: 0 },
+                { key: 'output', label: '输出 token', chargeNanos: 0 }
+            ];
+            const effectiveParts = partChargeTotal > 0 ? normalizedParts : legacyTotalPart;
+            const segments = effectiveParts.map((part) => {
+                const chargeNanos = Number(part.chargeNanos || 0);
+                const segmentHeightPx = chargeNanos > 0
+                    ? Math.max(2, Math.round((chargeNanos / maxCharge) * maxBarHeightPx))
+                    : 0;
+                return `
+                    <div class="admin-revenue-bar-segment ${partClassNames[part.key]}" style="height:${segmentHeightPx}px" title="${escapeHtml(part.label)}：${escapeHtml(formatNanos(chargeNanos))}"></div>
+                `;
+            }).join('');
+            return `
+                <div class="admin-revenue-bar-item">
+                    <span class="text-xs font-medium text-primary dark:text-dark-text">${escapeHtml(formatNanos(item.chargeNanos))}</span>
+                    <div class="admin-revenue-bar admin-revenue-bar-stack" style="height:${barHeightPx}px">${segments}</div>
+                    <span class="admin-revenue-phone-label">${escapeHtml(item.phone || '-')}</span>
+                </div>
+            `;
+        }).join('') : '<div class="grid h-48 flex-1 place-items-center text-sm text-text-muted dark:text-dark-text-muted">暂无 Shop 用户消费记录。</div>';
+        const legend = partLabels.map(([key, label]) => `
+            <span class="inline-flex items-center gap-2">
+                <span class="admin-revenue-legend-dot ${partClassNames[key]}"></span>
+                <span>${escapeHtml(label)}</span>
+            </span>
+        `).join('');
+        return `
+            <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">Ranking</p>
+                        <h3 class="mt-2 font-display text-2xl text-primary dark:text-dark-text">Shop 用户消费排行</h3>
+                    </div>
+                    <div class="inline-flex w-fit rounded-md border border-border-subtle dark:border-dark-border p-1 text-sm">
+                        <button class="${period === 'today' ? 'bg-primary text-white dark:bg-dark-text dark:text-dark-bg' : 'text-text-muted dark:text-dark-text-muted'} rounded px-3 py-1" type="button" data-revenue-ranking-period="today">今日</button>
+                        <button class="${period === 'month' ? 'bg-primary text-white dark:bg-dark-text dark:text-dark-bg' : 'text-text-muted dark:text-dark-text-muted'} rounded px-3 py-1" type="button" data-revenue-ranking-period="month">本月</button>
+                    </div>
+                </div>
+                <div class="admin-revenue-ranking-legend mt-4">${legend}</div>
+                <div class="mt-5 overflow-x-auto pb-8">
+                    <div class="admin-revenue-bars" style="display:flex;align-items:flex-end;gap:1rem;min-width:34rem;height:14rem;padding:1rem 1rem 0;border-left:1px solid #e5e5e5;border-bottom:1px solid #e5e5e5">
+                        ${bars}
+                    </div>
+                </div>
+            </article>
+        `;
+    }
+
+    function renderAdminRevenueCharts(billing = {}, rankingPeriod = 'month') {
+        return `
+            <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface p-5">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">Revenue</p>
+                        <h3 class="mt-2 font-display text-2xl text-primary dark:text-dark-text">收银分析</h3>
+                    </div>
+                    <p class="text-sm text-text-muted dark:text-dark-text-muted">只统计 Shop 用户已消费金额，不包含 Local。</p>
+                </div>
+                <div class="mt-5 grid gap-4 lg:grid-cols-2">
+                    ${renderRevenuePieChart('今日收银构成', billing.todayRevenueParts || [], billing.todayChargeNanos)}
+                    ${renderRevenuePieChart('本月收银构成', billing.monthRevenueParts || [], billing.monthChargeNanos)}
+                </div>
+                <div class="mt-4">
+                    ${renderCustomerSpendingBars(billing.customerSpendingRankings || {}, rankingPeriod)}
+                </div>
+            </section>
+        `;
     }
 
     function renderBars(items, labelFormatter = (item) => item.bucket) {
@@ -317,6 +434,22 @@
             ['欠费金额', balance.debtNanos === undefined ? formatCents(balance.debtCents) : formatNanos(balance.debtNanos), balance.debtCents > 0 ? '需补缴' : '无欠费'],
             ['待确认充值', balance.pendingTopupNanos === undefined ? formatCents(balance.pendingTopupCents) : formatNanos(balance.pendingTopupNanos), '确认后入账'],
             ['欠费上限', balance.creditLimitNanos === undefined ? formatCents(balance.creditLimitCents) : formatNanos(balance.creditLimitNanos), balance.creditExceeded ? '已超过' : '默认上限']
+        ];
+        return cards.map(([label, value, hint]) => `
+            <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
+                <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(label)}</p>
+                <p class="mt-2 text-2xl font-display text-primary dark:text-dark-text">${escapeHtml(value)}</p>
+                <p class="mt-1 text-xs text-text-muted dark:text-dark-text-muted">${escapeHtml(hint)}</p>
+            </article>
+        `).join('');
+    }
+
+    function renderAdminBalanceSummary(summary = {}) {
+        const cards = [
+            ['用户数', formatNumber(summary.userCount || 0), 'Shop 账号'],
+            ['总余额', summary.totalBalanceNanos === undefined ? formatCents(summary.totalBalanceCents) : formatNanos(summary.totalBalanceNanos), '账户当前余额合计'],
+            ['欠费用户', formatNumber(summary.debtUserCount || 0), summary.debtNanos === undefined ? formatCents(summary.debtCents) : formatNanos(summary.debtNanos)],
+            ['待确认充值', summary.pendingTopupNanos === undefined ? formatCents(summary.pendingTopupCents) : formatNanos(summary.pendingTopupNanos), '用户已提交待审核']
         ];
         return cards.map(([label, value, hint]) => `
             <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
@@ -383,6 +516,40 @@
                                     </div>
                                 ` : '-'}
                             </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function renderAdminBalanceTable(items = []) {
+        if (!items.length) {
+            return '<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">暂无用户余额记录。</div>';
+        }
+        return `
+            <table class="min-w-full divide-y divide-border-subtle dark:divide-dark-border text-sm">
+                <thead class="bg-background-soft dark:bg-dark-surface text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                    <tr>
+                        <th class="px-4 py-3">用户</th>
+                        <th class="px-4 py-3">状态</th>
+                        <th class="px-4 py-3">余额</th>
+                        <th class="px-4 py-3">欠费</th>
+                        <th class="px-4 py-3">待确认充值</th>
+                        <th class="px-4 py-3">托管 key</th>
+                        <th class="px-4 py-3">更新</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-subtle dark:divide-dark-border bg-white dark:bg-dark-card">
+                    ${items.map((item) => `
+                        <tr>
+                            <td class="px-4 py-3">${escapeHtml(item.phone || '-')}</td>
+                            <td class="px-4 py-3">${escapeHtml(billingStatusText(item.status))}</td>
+                            <td class="px-4 py-3">${escapeHtml(item.balanceNanos === undefined ? formatCents(item.balanceCents) : formatNanos(item.balanceNanos))}</td>
+                            <td class="px-4 py-3">${escapeHtml(item.debtNanos === undefined ? formatCents(item.debtCents) : formatNanos(item.debtNanos))}</td>
+                            <td class="px-4 py-3">${escapeHtml(item.pendingTopupNanos === undefined ? formatCents(item.pendingTopupCents) : formatNanos(item.pendingTopupNanos))}</td>
+                            <td class="px-4 py-3">${escapeHtml(`${formatNumber(item.managedApiKeyCount || 0)} 个（已用 ${formatNumber(item.usedApiKeyCount || 0)}）`)}</td>
+                            <td class="px-4 py-3">${escapeHtml(formatDate(item.updatedAt))}</td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -596,6 +763,7 @@
         const statusFilter = document.getElementById('usageStatusFilter');
         const summaryRoot = document.getElementById('usageSummaryCards');
         const billingRoot = document.getElementById('adminBillingUsageCards');
+        const revenueChartsRoot = document.getElementById('adminRevenueCharts');
         const tableRoot = document.getElementById('usageTable');
         const recentChargesRoot = document.getElementById('adminRecentCharges');
         const message = document.getElementById('usageMessage');
@@ -604,6 +772,13 @@
         const importMessage = document.getElementById('usageImportMessage');
         const usageImportStatus = document.getElementById('usageImportStatus');
         if (!refreshButton || !summaryRoot || !tableRoot || !message) return;
+        let latestBilling = {};
+        let revenueRankingPeriod = 'month';
+
+        function renderRevenueCharts() {
+            if (!revenueChartsRoot) return;
+            revenueChartsRoot.innerHTML = renderAdminRevenueCharts(latestBilling, revenueRankingPeriod);
+        }
 
         async function fetchUsageImportStatus() {
             if (!usageImportStatus) return;
@@ -630,7 +805,9 @@
             try {
                 const data = await requestJson(`/api/admin/usage-summary?${params.toString()}`);
                 summaryRoot.innerHTML = renderUsageSummary(data.summary || {});
-                if (billingRoot) billingRoot.innerHTML = renderBillingUsageCards(data.billing || {}, { mode: 'adminRevenue' });
+                latestBilling = data.billing || {};
+                if (billingRoot) billingRoot.innerHTML = renderBillingUsageCards(latestBilling, { mode: 'adminRevenue' });
+                renderRevenueCharts();
                 tableRoot.innerHTML = renderUsageItems(data.items || []);
                 if (recentChargesRoot) recentChargesRoot.innerHTML = renderAdminRecentCharges(data.billing?.recentCharges || []);
                 message.textContent = `共 ${(data.items || []).length} 条。`;
@@ -639,6 +816,15 @@
             } finally {
                 await fetchUsageImportStatus();
             }
+        }
+
+        if (revenueChartsRoot) {
+            revenueChartsRoot.addEventListener('click', (event) => {
+                const button = event.target.closest('[data-revenue-ranking-period]');
+                if (!button) return;
+                revenueRankingPeriod = button.getAttribute('data-revenue-ranking-period') === 'today' ? 'today' : 'month';
+                renderRevenueCharts();
+            });
         }
 
         refreshButton.addEventListener('click', fetchUsage);
@@ -902,11 +1088,8 @@
         const ordersRoot = document.getElementById('accountOrders');
         const message = document.getElementById('accountMessage');
         const logoutButton = document.getElementById('logoutButton');
-        const usageCards = document.getElementById('accountUsageCards');
         const billingUsageCards = document.getElementById('accountBillingUsageCards');
         const tokenBreakdown = document.getElementById('accountTokenBreakdown');
-        const hourlyChart = document.getElementById('accountHourlyChart');
-        const dailyChart = document.getElementById('accountDailyChart');
         const usageFreshness = document.getElementById('usageFreshness');
         const usageMessage = document.getElementById('accountUsageMessage');
         const balanceCards = document.getElementById('accountBalanceCards');
@@ -1025,11 +1208,8 @@
 
         try {
             const usage = await requestJson('/api/account/usage-summary');
-            if (usageCards) usageCards.innerHTML = renderAccountUsageCards(usage.summary || {});
             if (billingUsageCards) billingUsageCards.innerHTML = renderBillingUsageCards(usage.billing || {});
             if (tokenBreakdown) tokenBreakdown.innerHTML = renderTokenBreakdown(usage.summary?.month || {});
-            if (hourlyChart) hourlyChart.innerHTML = renderBars(usage.hourly || [], (item) => String(item.bucket || '').slice(11, 16));
-            if (dailyChart) dailyChart.innerHTML = renderBars(usage.daily || [], (item) => String(item.bucket || '').slice(5));
             if (usageFreshness) {
                 usageFreshness.textContent = `生成时间 ${formatDate(usage.generatedAt)}，用量统计可能最多延迟 1 小时。`;
             }
@@ -1096,7 +1276,39 @@
         });
     }
 
-    function initAdminTopupPage() {
+    function initAdminAccountBalancesPage() {
+        const searchInput = document.getElementById('adminBalanceSearchInput');
+        const statusFilter = document.getElementById('adminBalanceStatusFilter');
+        const summaryRoot = document.getElementById('adminBalanceSummary');
+        const tableRoot = document.getElementById('adminBalanceTable');
+        const message = document.getElementById('adminBalanceMessage');
+        if (!summaryRoot || !tableRoot || !message) return null;
+
+        async function fetchAccountBalances() {
+            const params = new URLSearchParams({
+                q: searchInput?.value || '',
+                status: statusFilter?.value || 'all'
+            });
+            message.textContent = '正在刷新余额...';
+            try {
+                const data = await requestJson(`/api/admin/account-balances?${params.toString()}`);
+                summaryRoot.innerHTML = renderAdminBalanceSummary(data.summary || {});
+                tableRoot.innerHTML = renderAdminBalanceTable(data.items || []);
+                message.textContent = `共 ${(data.items || []).length} 个账号。`;
+            } catch (error) {
+                summaryRoot.innerHTML = '';
+                tableRoot.innerHTML = '';
+                message.textContent = error.message;
+            }
+        }
+
+        searchInput?.addEventListener('input', fetchAccountBalances);
+        statusFilter?.addEventListener('change', fetchAccountBalances);
+        fetchAccountBalances();
+        return fetchAccountBalances;
+    }
+
+    function initAdminTopupPage(options = {}) {
         const statusFilter = document.getElementById('adminTopupStatusFilter');
         const tableRoot = document.getElementById('adminTopupTable');
         const message = document.getElementById('adminTopupMessage');
@@ -1136,6 +1348,7 @@
                     });
                 }
                 await fetchTopups();
+                await options.onBalanceChanged?.();
             } catch (error) {
                 message.textContent = error.message;
             }
@@ -1228,14 +1441,16 @@
         const refreshAdminInvites = initAdminInvitePage();
         initAdminUsagePage();
         initAdminPasswordResetPage();
-        const refreshAdminTopups = initAdminTopupPage();
+        const refreshAdminBalances = initAdminAccountBalancesPage();
+        const refreshAdminTopups = initAdminTopupPage({ onBalanceChanged: refreshAdminBalances });
         const businessRefreshButton = document.getElementById('adminBusinessRefreshButton');
         const refreshAdminBusiness = async () => {
             businessRefreshButton?.setAttribute('aria-busy', 'true');
             try {
                 await Promise.all([
                     refreshAdminInvites?.(),
-                    refreshAdminTopups?.()
+                    refreshAdminTopups?.(),
+                    refreshAdminBalances?.()
                 ].filter(Boolean));
             } finally {
                 businessRefreshButton?.removeAttribute('aria-busy');
