@@ -394,3 +394,38 @@
 - Admin / Account 的收银构成必须按每条 `price_version` 回放历史价格；旧 DeepSeek 价格版本只作为历史记录解析保留。
 - 设计与计划见 `docs/ai/context/20260613-090855-gpt-model-rmb-pricing-design_CN.md` 和 `docs/ai/context/20260613-090855-gpt-model-rmb-pricing-plan_CN.md`。
 - 实施记录见 `docs/ai/context/20260613-091616-gpt-model-rmb-pricing-implementation_CN.md`。
+
+## 2026-06-13 Account Token 英文总览卡片删除
+
+- `/shop/account/` 的 Token 用量区域不再展示 `Input`、`Output`、`Reasoning`、`Cached` 四张英文总览卡片。
+- 保留 `今日消费`、`本月消费`、`缓存命中输入`、`缓存未命中输入`、`输出 token` 五张业务卡片。
+- 前端不再保留 `accountTokenBreakdown` 空容器或 `renderTokenBreakdown` 渲染函数。
+- 设计与计划见 `docs/ai/context/20260613-092144-account-token-breakdown-card-removal-design-plan_CN.md`。
+
+## 2026-06-13 Blog 文章列表 CSP 修复
+
+- 线上 `/blog/` 文章不显示的直接原因是 CSP `script-src 'self'` 阻止了页面内联渲染脚本，不是 `js/blog-data.js` 缺数据。
+- `/blog/index.html` 不应再依赖无 `src` 的内联 `<script>` 渲染文章；列表逻辑已迁移到 `js/blog-index.js`。
+- Blog 首屏主题 / 语言预初始化逻辑已迁移到 `js/blog-ui-init.js`，保持同源外部脚本以符合 CSP。
+- Cloudflare beacon CSP 报错和 favicon 404 是旁支，不是文章列表为空的根因。
+- 设计与计划见 `docs/ai/context/20260613-093905-blog-inline-script-csp-rendering-fix-design-plan_CN.md`，实施记录见 `docs/ai/context/20260613-094115-blog-inline-script-csp-rendering-fix-implementation_CN.md`。
+
+## 2026-06-13 `173****1728` API key 加入 CLIProxyAPI 入口
+
+- 已从 `data/shop.sqlite` 找到手机号 `17371571728` 的已兑换订单 `ORDER266688966871`，API key preview 为 `sk-yui-oDUW3...vpe3s4`。
+- 该 key 已追加到 `/Users/wujianxiang/CodeSpace/CLIProxyAPI/config.yaml` 顶层 `api-keys` 列表；完整 key 不写入项目记忆。
+- 配置备份为 `/Users/wujianxiang/CodeSpace/CLIProxyAPI/backups/config-before-add-17371571728-key-20260613T050542Z.yaml`。
+- 验证结果：使用该 key 请求 `http://127.0.0.1:8317/v1/models` 返回 HTTP 200，模型数为 5。
+- 记录见 `docs/ai/context/20260613-140406-add-17371571728-key-to-cliproxyapi-plan_CN.md` 和 `docs/ai/context/20260613-140542-add-17371571728-key-to-cliproxyapi-implementation_CN.md`。
+
+## 2026-06-13 Account 模型总览
+
+- `/shop/account/` 的账户余额区域顶部新增「模型总览」表格，展示当前中转站模型和人民币计费价格。
+- 模型总览后端接口为 `GET /api/account/model-overview`，必须登录；浏览器不接触完整 API key。
+- 后端优先使用当前账号已兑换托管 API key 请求 `CLIPROXY_BASE_URL` 或默认 `http://127.0.0.1:8317/v1` 的 `/models`。
+- 同账号有多把已兑换 key 时，模型总览会跳过不可用 key 继续尝试下一把；全部失败才回退价格表。
+- 模型端点失败或账号暂无 API key 时，接口回退到 `lib/shop-pricing.js` 的价格表模型，不影响余额展示。
+- 当前模型端点返回 5 个模型：`codex-auto-review`、`gpt-5.3-codex-spark`、`gpt-5.4`、`gpt-5.4-mini`、`gpt-5.5`。
+- 未知模型在模型总览中标记为沿用 `gpt-5.4`，与计费回退规则一致。
+- 浏览器验证使用临时 SQLite 服务完成：未兑换时显示价格表回退，兑换后显示实时 5 个模型。
+- 设计与计划见 `docs/ai/context/20260613-141903-account-model-overview-design-plan_CN.md`，实施记录见 `docs/ai/context/20260613-142550-account-model-overview-implementation_CN.md`，浏览器验证见 `docs/ai/context/20260613-142846-account-model-overview-browser-verification_CN.md`，多 key 修正见 `docs/ai/context/20260613-143322-account-model-overview-multi-key-retry_CN.md`。

@@ -17,6 +17,7 @@ const {
     currentDefaultRmbPrice,
     deriveInputTokenBreakdown,
     gptModelRmbPrices,
+    priceForModel,
     priceUsageTokens
 } = require('./lib/shop-pricing');
 const { appendShopChargeAuditLog } = require('./lib/shop-charge-audit-log');
@@ -744,6 +745,12 @@ function createShopApp(options = {}) {
     const shopChargeAuditLogDir = options.shopChargeAuditLogDir
         || process.env.SHOP_CHARGE_AUDIT_LOG_DIR
         || path.join(rootDir, 'data', 'logs', 'shop-charge-records');
+    const modelListBaseUrl = String(
+        options.modelListBaseUrl
+        || process.env.CLIPROXY_BASE_URL
+        || 'http://127.0.0.1:8317/v1'
+    ).trim().replace(/\/+$/, '');
+    const modelListFetch = options.modelListFetch || globalThis.fetch;
     if (apiKeyEncryptionSecret) {
         assertStrongSecret('SHOP_API_KEY_ENCRYPTION_SECRET', apiKeyEncryptionSecret, { production });
     }
@@ -827,6 +834,85 @@ function createShopApp(options = {}) {
             createdAt: invite.createdAt,
             redeemedAt: invite.redeemedAt
         };
+    }
+
+    function cnyPerMillionTokens(nanosPerToken) {
+        return Number(nanosPerToken || 0) * 1000000 / nanosPerYuan;
+    }
+
+    function modelPriceOverview(modelId, available) {
+        const id = String(modelId || '').trim();
+        const normalizedId = id.toLowerCase();
+        const price = priceForModel(normalizedId);
+        return {
+            id,
+            available: Boolean(available),
+            priceModel: price.model,
+            usesDefaultPrice: normalizedId !== price.model,
+            priceVersion: price.version,
+            cacheHitInputCnyPerMillion: cnyPerMillionTokens(price.cacheHitInputNanosPerToken),
+            cacheMissInputCnyPerMillion: cnyPerMillionTokens(price.cacheMissInputNanosPerToken),
+            outputCnyPerMillion: cnyPerMillionTokens(price.outputNanosPerToken)
+        };
+    }
+
+    function pricingFallbackModelOverview() {
+        return Object.keys(gptModelRmbPrices).map((model) => modelPriceOverview(model, false));
+    }
+
+    function normalizeModelList(body = {}) {
+        const source = Array.isArray(body.data)
+            ? body.data
+            : Array.isArray(body.models)
+                ? body.models
+                : [];
+        const seen = new Set();
+        const models = [];
+        for (const item of source) {
+            const id = String(item?.id || item?.model || item?.name || '').trim();
+            if (!id || seen.has(id)) continue;
+            seen.add(id);
+            models.push(id);
+        }
+        return models;
+    }
+
+    async function fetchModelIds(apiKey) {
+        if (!apiKey || typeof modelListFetch !== 'function') return [];
+        const response = await modelListFetch(`${modelListBaseUrl}/models`, {
+            headers: {
+                Authorization: `Bearer ${apiKey}`
+            }
+        });
+        if (!response?.ok) return [];
+        return normalizeModelList(await response.json().catch(() => ({})));
+    }
+
+    async function accountModelOverview(phone) {
+        const checkedAt = nowIso(appNow());
+        let source = 'pricing_fallback';
+        let models = pricingFallbackModelOverview();
+        const orders = listOrdersByPhone.all(phone)
+            .map(toOrder)
+            .filter((order) => order.apiKey);
+        if (!orders.length) {
+            return { source, checkedAt, models };
+        }
+
+        for (const order of orders) {
+            try {
+                const modelIds = await fetchModelIds(order.apiKey);
+                if (modelIds.length) {
+                    source = 'live';
+                    models = modelIds.map((model) => modelPriceOverview(model, true));
+                    break;
+                }
+            } catch (error) {
+                source = 'pricing_fallback';
+                models = pricingFallbackModelOverview();
+            }
+        }
+        return { source, checkedAt, models };
     }
 
     function publicApiKeyPoolItem(row) {
@@ -3424,6 +3510,10 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
 
     app.get('/api/account/usage-summary', limitQueryApi, requireAccount, (req, res) => {
         return res.json(accountUsageSummary(req.account.phone));
+    });
+
+    app.get('/api/account/model-overview', limitQueryApi, requireAccount, async (req, res) => {
+        return res.json(await accountModelOverview(req.account.phone));
     });
 
     app.post('/api/account/invites/redeem', limitRedeemApi, requireAccount, requireSameOrigin, requireAccountCsrf, (req, res) => {

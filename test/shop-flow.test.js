@@ -300,7 +300,6 @@ test('Shop 外部脚本会在 CSP 禁止 inline script 时自动初始化 Accoun
         'alipayQrImage',
         'wechatQrImage',
         'accountBillingUsageCards',
-        'accountTokenBreakdown',
         'usageFreshness',
         'accountUsageMessage'
     ]) {
@@ -364,6 +363,124 @@ test('Shop 外部脚本会在 CSP 禁止 inline script 时自动初始化 Accoun
     assert.equal(elements.get('wechatQrImage').src, '/shop/assets/pay/wechat-qr.png');
 });
 
+test('Account 前端读取模型总览并渲染人民币价格表', async () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+    const elements = new Map();
+    const createElement = () => ({
+        innerHTML: '',
+        textContent: '',
+        src: '',
+        value: '',
+        classList: {
+            add() {},
+            remove() {},
+            toggle() {}
+        },
+        addEventListener() {},
+        querySelectorAll: () => [],
+        querySelector: () => null,
+        focus() {}
+    });
+    for (const id of [
+        'accountPhone',
+        'accountOrders',
+        'accountMessage',
+        'logoutButton',
+        'accountModelOverview',
+        'accountBalanceCards',
+        'accountTopups',
+        'accountCharges',
+        'accountLedger',
+        'alipayQrImage',
+        'wechatQrImage',
+        'accountBillingUsageCards',
+        'usageFreshness',
+        'accountUsageMessage'
+    ]) {
+        elements.set(id, createElement());
+    }
+    const requests = [];
+    const responses = {
+        '/api/account/me': { user: { phone: '13800139998' }, orders: [] },
+        '/api/account/model-overview': {
+            source: 'live',
+            checkedAt: '2026-06-13T14:00:00+08:00',
+            models: [
+                {
+                    id: 'gpt-5.4',
+                    available: true,
+                    priceModel: 'gpt-5.4',
+                    usesDefaultPrice: false,
+                    priceVersion: 'gpt-5.4-rmb-20260613',
+                    cacheHitInputCnyPerMillion: 0.25,
+                    cacheMissInputCnyPerMillion: 2.5,
+                    outputCnyPerMillion: 15
+                },
+                {
+                    id: 'gpt-5.4-mini',
+                    available: true,
+                    priceModel: 'gpt-5.4',
+                    usesDefaultPrice: true,
+                    priceVersion: 'gpt-5.4-rmb-20260613',
+                    cacheHitInputCnyPerMillion: 0.25,
+                    cacheMissInputCnyPerMillion: 2.5,
+                    outputCnyPerMillion: 15
+                },
+                {
+                    id: 'gpt-5.5',
+                    available: true,
+                    priceModel: 'gpt-5.5',
+                    usesDefaultPrice: false,
+                    priceVersion: 'gpt-5.5-rmb-20260613',
+                    cacheHitInputCnyPerMillion: 0.5,
+                    cacheMissInputCnyPerMillion: 5,
+                    outputCnyPerMillion: 30
+                }
+            ]
+        },
+        '/api/account/balance': { balance: {}, payment: {} },
+        '/api/account/topups': { topups: [] },
+        '/api/account/api-charges': { charges: [] },
+        '/api/account/ledger': { entries: [] },
+        '/api/account/usage-summary': { summary: {}, billing: {}, hourly: [], daily: [] }
+    };
+    const sandbox = {
+        document: {
+            cookie: '',
+            readyState: 'loading',
+            querySelectorAll: () => [],
+            getElementById: (id) => elements.get(id) || null,
+            addEventListener() {}
+        },
+        fetch: async (url) => {
+            requests.push(url);
+            return {
+                ok: true,
+                status: 200,
+                json: async () => responses[url] || {}
+            };
+        },
+        window: {
+            location: {
+                pathname: '/shop/account/',
+                replace() {}
+            }
+        },
+        Intl,
+        URL
+    };
+    sandbox.window.document = sandbox.document;
+
+    vm.runInNewContext(script, sandbox);
+    await sandbox.window.YuiShop.initAccountPage();
+
+    assert.ok(requests.includes('/api/account/model-overview'));
+    assert.match(elements.get('accountModelOverview').innerHTML, /gpt-5\.4-mini/);
+    assert.match(elements.get('accountModelOverview').innerHTML, /¥2\.50/);
+    assert.match(elements.get('accountModelOverview').innerHTML, /¥30\.00/);
+    assert.match(elements.get('accountModelOverview').innerHTML, /沿用 gpt-5\.4/);
+});
+
 test('Account 页提供登录态邀请码兑换表单且不再引导到独立手机号兑换页', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
 
@@ -417,7 +534,6 @@ test('Account 前端兑换调用登录态接口并且不提交手机号', async 
         'alipayQrImage',
         'wechatQrImage',
         'accountBillingUsageCards',
-        'accountTokenBreakdown',
         'usageFreshness',
         'accountUsageMessage'
     ]) {
@@ -2868,6 +2984,139 @@ test('Account usage summary 只聚合当前登录手机号关联的 token 用量
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
+test('Account 模型总览接口使用托管 API key 探测模型并按人民币价格返回', async () => {
+    let capturedModelRequest = null;
+    await withServer(async ({ baseUrl }) => {
+        const unauthorized = await fetch(`${baseUrl}/api/account/model-overview`);
+        assert.equal(unauthorized.status, 401);
+        assert.deepEqual(await unauthorized.json(), {
+            code: 'ACCOUNT_LOGIN_REQUIRED',
+            message: '请先登录。'
+        });
+
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138696');
+        const apiKeyResult = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ apiKeys: ['sk-model-overview-test'] })
+        });
+        assert.equal(apiKeyResult.response.status, 201);
+        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ count: 1 })
+        });
+        const redeemResult = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ code: inviteResult.body.invites[0].code })
+        });
+        assert.equal(redeemResult.response.status, 201);
+
+        const result = await fetch(`${baseUrl}/api/account/model-overview`, {
+            headers: { cookie }
+        });
+        assert.equal(result.status, 200);
+        const body = await result.json();
+
+        assert.equal(body.source, 'live');
+        assert.ok(body.checkedAt);
+        assert.equal(capturedModelRequest.url, 'http://cliproxy.test/v1/models');
+        assert.equal(capturedModelRequest.authorization, 'Bearer sk-model-overview-test');
+
+        const mini = body.models.find((model) => model.id === 'gpt-5.4-mini');
+        assert.equal(mini.available, true);
+        assert.equal(mini.priceModel, 'gpt-5.4');
+        assert.equal(mini.usesDefaultPrice, true);
+        assert.equal(mini.cacheHitInputCnyPerMillion, 0.25);
+        assert.equal(mini.cacheMissInputCnyPerMillion, 2.5);
+        assert.equal(mini.outputCnyPerMillion, 15);
+
+        const gpt55 = body.models.find((model) => model.id === 'gpt-5.5');
+        assert.equal(gpt55.available, true);
+        assert.equal(gpt55.priceModel, 'gpt-5.5');
+        assert.equal(gpt55.usesDefaultPrice, false);
+        assert.equal(gpt55.cacheHitInputCnyPerMillion, 0.5);
+        assert.equal(gpt55.cacheMissInputCnyPerMillion, 5);
+        assert.equal(gpt55.outputCnyPerMillion, 30);
+    }, {
+        modelListBaseUrl: 'http://cliproxy.test/v1',
+        modelListFetch: async (url, requestOptions = {}) => {
+            capturedModelRequest = {
+                url,
+                authorization: requestOptions.headers?.Authorization
+            };
+            return {
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    data: [
+                        { id: 'gpt-5.4-mini' },
+                        { id: 'gpt-5.5' }
+                    ]
+                })
+            };
+        }
+    });
+});
+
+test('Account 模型总览接口会跳过不可用托管 API key 继续探测同账号其他 key', async () => {
+    const requestedAuthorizations = [];
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138697');
+        const apiKeyResult = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ apiKeys: ['sk-model-overview-good', 'sk-model-overview-bad'] })
+        });
+        assert.equal(apiKeyResult.response.status, 201);
+        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ count: 2 })
+        });
+        const goodRedeem = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ code: inviteResult.body.invites[0].code })
+        });
+        assert.equal(goodRedeem.response.status, 201);
+        const badRedeem = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ code: inviteResult.body.invites[1].code })
+        });
+        assert.equal(badRedeem.response.status, 201);
+
+        const result = await fetch(`${baseUrl}/api/account/model-overview`, {
+            headers: { cookie }
+        });
+        assert.equal(result.status, 200);
+        const body = await result.json();
+
+        assert.equal(requestedAuthorizations.length, 2);
+        assert.equal(body.source, 'live');
+        assert.ok(body.models.some((model) => model.id === 'gpt-5.5'));
+    }, {
+        modelListBaseUrl: 'http://cliproxy.test/v1',
+        modelListFetch: async (url, requestOptions = {}) => {
+            requestedAuthorizations.push(requestOptions.headers?.Authorization);
+            if (requestedAuthorizations.length === 2) {
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({ data: [{ id: 'gpt-5.5' }] })
+                };
+            }
+            return {
+                ok: false,
+                status: 401,
+                json: async () => ({ error: 'Invalid API key' })
+            };
+        }
+    });
+});
+
 test('邀请码使用 SQLite 主键精确匹配，大小写归一后只能兑换一次', async () => {
     await withServer(async ({ baseUrl, db }) => {
         await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
@@ -3231,8 +3480,10 @@ test('Admin 前端读取 usage 自动导入状态接口', () => {
 test('Account 页面包含预充值余额、充值申请和扣费流水容器', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
 
+    assert.match(html, /id="accountModelOverview"/);
     assert.match(html, /id="accountBalanceCards"/);
     assert.match(html, /id="accountBillingUsageCards"/);
+    assert.doesNotMatch(html, /id="accountTokenBreakdown"/);
     assert.doesNotMatch(html, /id="accountUsageCards"/);
     assert.doesNotMatch(html, /id="paymentReference"/);
     assert.doesNotMatch(html, /付款备注：/);
@@ -3253,11 +3504,23 @@ test('Account 页面包含预充值余额、充值申请和扣费流水容器', 
     assert.match(html, /OPENAI_API_KEY/);
     assert.match(html, /Authorization: Bearer/);
     assert.match(html, /不要使用 x-api-key/);
+
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+    assert.doesNotMatch(script, /renderTokenBreakdown/);
+    assert.doesNotMatch(script, /\['Input', month\.inputTokens\]/);
+    assert.doesNotMatch(script, /\['Output', month\.outputTokens\]/);
+    assert.doesNotMatch(script, /\['Reasoning', month\.reasoningTokens\]/);
+    assert.doesNotMatch(script, /\['Cached', month\.cachedTokens\]/);
     assert.match(html, /sk-xx/);
     assert.equal((html.match(/data-collapsible-section/g) || []).length, 5);
     assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 5);
     assert.equal((html.match(/data-collapsible-content/g) || []).length, 5);
     assert.match(html, /id="accountGuideSection"[\s\S]*?data-collapsible-default="closed"/);
+
+    const modelOverviewIndex = html.indexOf('id="accountModelOverview"');
+    const balanceCardsIndex = html.indexOf('id="accountBalanceCards"');
+    assert.ok(modelOverviewIndex >= 0);
+    assert.ok(balanceCardsIndex > modelOverviewIndex);
 });
 
 test('Account 前端渲染周消费柱状图并提供上一周下一周切换', () => {

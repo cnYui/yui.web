@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <script src="/js/theme.js"></script>
     <script src="/js/lang.js?v=20260419-2"></script>
-    <script src="/shop/shop.js?v=20260613-account-weekly-admin-style"></script>
+    <script src="/shop/shop.js?v=20260613-account-model-overview"></script>
 </head>
 <body class="bg-white dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col antialiased transition-colors duration-300">
     <header class="sticky top-0 z-50 w-full border-b border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
@@ -44,6 +44,15 @@
                 </div>
             </div>
             <div data-collapsible-content>
+                <section class="mt-6 overflow-hidden rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card">
+                    <div class="flex flex-col gap-1 border-b border-border-subtle dark:border-dark-border p-5">
+                        <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">Models</p>
+                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">模型总览</h3>
+                    </div>
+                    <div id="accountModelOverview" class="overflow-x-auto p-5">
+                        <p class="text-sm text-text-muted dark:text-dark-text-muted">正在读取模型...</p>
+                    </div>
+                </section>
                 <div id="accountBalanceCards" class="mt-6 grid gap-3 md:grid-cols-4"></div>
                 <div class="mt-6 grid gap-5 lg:grid-cols-[1fr_1.2fr]">
                     <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
@@ -224,7 +233,6 @@ curl -sS https://api.aaccx.pw/v1/models \
             </div>
             <div data-collapsible-content>
                 <div id="accountBillingUsageCards" class="mt-6 grid gap-3 md:grid-cols-5"></div>
-                <div id="accountTokenBreakdown" class="mt-6 grid gap-3 md:grid-cols-4"></div>
                 <p id="accountUsageMessage" class="mt-4 min-h-5 text-sm text-text-muted dark:text-dark-text-muted"></p>
             </div>
         </section>
