@@ -240,21 +240,6 @@
         });
     }
 
-    function renderTokenBreakdown(month = {}) {
-        const items = [
-            ['Input', month.inputTokens],
-            ['Output', month.outputTokens],
-            ['Reasoning', month.reasoningTokens],
-            ['Cached', month.cachedTokens]
-        ];
-        return items.map(([label, value]) => `
-            <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
-                <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(label)}</p>
-                <p class="mt-2 text-xl font-display text-primary dark:text-dark-text">${escapeHtml(formatNumber(value))}</p>
-            </article>
-        `).join('');
-    }
-
     function renderBillingUsageCards(billing = {}, options = {}) {
         const adminRevenue = options.mode === 'adminRevenue';
         const cards = [
@@ -528,6 +513,45 @@
                 <p class="mt-1 text-xs text-text-muted dark:text-dark-text-muted">${escapeHtml(hint)}</p>
             </article>
         `).join('');
+    }
+
+    function formatModelPrice(value) {
+        return `¥${Number(value || 0).toFixed(2)}`;
+    }
+
+    function renderAccountModelOverview(data = {}) {
+        const models = Array.isArray(data.models) ? data.models : [];
+        if (!models.length) {
+            return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无模型价格。</p>';
+        }
+        const sourceText = data.source === 'live' ? '实时模型' : '价格表回退';
+        return `
+            <div class="mb-3 text-sm text-text-muted dark:text-dark-text-muted">${escapeHtml(sourceText)}，更新时间 ${escapeHtml(formatDate(data.checkedAt))}</div>
+            <table class="min-w-full text-sm">
+                <thead class="text-left text-xs uppercase tracking-[0.14em] text-text-muted dark:text-dark-text-muted">
+                    <tr>
+                        <th class="py-2 pr-4">模型</th>
+                        <th class="py-2 pr-4">状态</th>
+                        <th class="py-2 pr-4">缓存命中输入 / 1M</th>
+                        <th class="py-2 pr-4">未命中输入 / 1M</th>
+                        <th class="py-2 pr-4">输出 / 1M</th>
+                        <th class="py-2">计价</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${models.map((model) => `
+                        <tr class="border-t border-border-subtle dark:border-dark-border">
+                            <td class="py-3 pr-4 font-mono text-primary dark:text-dark-text">${escapeHtml(model.id || '-')}</td>
+                            <td class="py-3 pr-4">${escapeHtml(model.available ? '可用' : '价格表')}</td>
+                            <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.cacheHitInputCnyPerMillion))}</td>
+                            <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.cacheMissInputCnyPerMillion))}</td>
+                            <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.outputCnyPerMillion))}</td>
+                            <td class="py-3 whitespace-nowrap">${escapeHtml(model.usesDefaultPrice ? `沿用 ${model.priceModel}` : model.priceModel || '-')}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
     }
 
     function renderAdminBalanceSummary(summary = {}) {
@@ -1175,10 +1199,10 @@
         const message = document.getElementById('accountMessage');
         const logoutButton = document.getElementById('logoutButton');
         const billingUsageCards = document.getElementById('accountBillingUsageCards');
-        const tokenBreakdown = document.getElementById('accountTokenBreakdown');
         const accountWeeklySpendingChart = document.getElementById('accountWeeklySpendingChart');
         const usageFreshness = document.getElementById('usageFreshness');
         const usageMessage = document.getElementById('accountUsageMessage');
+        const modelOverviewRoot = document.getElementById('accountModelOverview');
         const balanceCards = document.getElementById('accountBalanceCards');
         const billingMessage = document.getElementById('accountBillingMessage');
         const topupForm = document.getElementById('topupForm');
@@ -1221,6 +1245,17 @@
             window.location.replace('/shop/login/');
         }
 
+        async function refreshModelOverview() {
+            if (!modelOverviewRoot) return;
+            modelOverviewRoot.innerHTML = '<p class="text-sm text-text-muted dark:text-dark-text-muted">正在读取模型...</p>';
+            try {
+                const data = await requestJson('/api/account/model-overview');
+                modelOverviewRoot.innerHTML = renderAccountModelOverview(data);
+            } catch (error) {
+                modelOverviewRoot.innerHTML = `<p class="text-sm text-text-muted dark:text-dark-text-muted">${escapeHtml(error.message)}</p>`;
+            }
+        }
+
         async function refreshBilling() {
             if (billingMessage) billingMessage.textContent = '正在读取账务信息...';
             const [balanceData, topupData, chargeData, ledgerData] = await Promise.all([
@@ -1238,6 +1273,8 @@
             if (paymentReference) paymentReference.textContent = balanceData.payment?.paymentReference || '-';
             if (billingMessage) billingMessage.textContent = '';
         }
+
+        await refreshModelOverview();
 
         try {
             await refreshBilling();
@@ -1312,7 +1349,6 @@
         try {
             const usage = await requestJson('/api/account/usage-summary');
             if (billingUsageCards) billingUsageCards.innerHTML = renderBillingUsageCards(usage.billing || {});
-            if (tokenBreakdown) tokenBreakdown.innerHTML = renderTokenBreakdown(usage.summary?.month || {});
             accountWeeklySpending = usage.billing?.weeklySpending || {};
             selectedAccountWeekStart = accountWeeklySpending.currentWeekStart || accountWeeklySpending.weekStarts?.[accountWeeklySpending.weekStarts.length - 1] || '';
             if (accountWeeklySpendingChart) accountWeeklySpendingChart.innerHTML = renderAccountWeeklySpendingChart(accountWeeklySpending, selectedAccountWeekStart);
