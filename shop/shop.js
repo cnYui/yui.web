@@ -387,6 +387,92 @@
         `;
     }
 
+    function renderAccountWeeklySpendingChart(weeklySpending = {}, selectedWeekStart = '') {
+        const partClassNames = {
+            cache_hit_input: 'admin-revenue-bar-segment-hit',
+            cache_miss_input: 'admin-revenue-bar-segment-miss',
+            output: 'admin-revenue-bar-segment-output'
+        };
+        const partLabels = [
+            ['cache_hit_input', '缓存命中输入'],
+            ['cache_miss_input', '缓存未命中输入'],
+            ['output', '输出 token']
+        ];
+        const weeks = weeklySpending.weeks || {};
+        const weekStarts = Array.isArray(weeklySpending.weekStarts)
+            ? weeklySpending.weekStarts.filter((weekStart) => weeks[weekStart])
+            : Object.keys(weeks).sort();
+        const effectiveWeekStart = weekStarts.includes(selectedWeekStart)
+            ? selectedWeekStart
+            : (weeklySpending.currentWeekStart && weeks[weeklySpending.currentWeekStart]
+                ? weeklySpending.currentWeekStart
+                : weekStarts[weekStarts.length - 1]);
+        const selectedIndex = weekStarts.indexOf(effectiveWeekStart);
+        const selectedWeek = weeks[effectiveWeekStart] || { days: [] };
+        const days = Array.isArray(selectedWeek.days) ? selectedWeek.days : [];
+        const maxCharge = Math.max(...days.map((day) => Number(day.chargeNanos || 0)), 1);
+        const maxBarHeightPx = 140;
+        const bars = days.length ? days.map((day) => {
+            const dayCharge = Number(day.chargeNanos || 0);
+            const barHeightPx = dayCharge > 0 ? Math.max(8, Math.round((dayCharge / maxCharge) * maxBarHeightPx)) : 8;
+            const rawParts = Array.isArray(day.parts) ? day.parts : [];
+            const normalizedParts = partLabels.map(([key, label]) => {
+                const part = rawParts.find((candidate) => candidate.key === key) || { chargeNanos: 0 };
+                return { key, label, chargeNanos: Number(part.chargeNanos || 0) };
+            });
+            const segments = normalizedParts.map((part) => {
+                const chargeNanos = Number(part.chargeNanos || 0);
+                const segmentHeightPx = chargeNanos > 0
+                    ? Math.max(2, Math.round((chargeNanos / maxCharge) * maxBarHeightPx))
+                    : 0;
+                return `
+                    <div class="admin-revenue-bar-segment ${partClassNames[part.key]}" style="height:${segmentHeightPx}px" title="${escapeHtml(part.label)}：${escapeHtml(formatNanos(chargeNanos))}"></div>
+                `;
+            }).join('');
+            return `
+                <div class="admin-revenue-bar-item">
+                    <span class="text-xs font-medium text-primary dark:text-dark-text">${escapeHtml(formatNanos(day.chargeNanos))}</span>
+                    <div class="admin-revenue-bar admin-revenue-bar-stack" style="height:${barHeightPx}px">${segments}</div>
+                    <span class="admin-revenue-phone-label">${escapeHtml(day.label || '')}</span>
+                </div>
+            `;
+        }).join('') : '<div class="grid h-48 flex-1 place-items-center text-sm text-text-muted dark:text-dark-text-muted">暂无扣费记录。</div>';
+        const legend = partLabels.map(([key, label]) => `
+            <span class="inline-flex items-center gap-2">
+                <span class="admin-revenue-legend-dot ${partClassNames[key]}"></span>
+                <span>${escapeHtml(label)}</span>
+            </span>
+        `).join('');
+        const canPrev = selectedIndex > 0;
+        const canNext = selectedIndex >= 0 && selectedIndex < weekStarts.length - 1;
+        const buttonClass = 'inline-flex h-9 w-9 items-center justify-center rounded-md border border-border-subtle dark:border-dark-border text-primary dark:text-dark-text disabled:cursor-not-allowed disabled:opacity-40';
+        return `
+            <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">Weekly billing</p>
+                        <h3 class="mt-2 font-display text-2xl text-primary dark:text-dark-text">每周消费</h3>
+                        <p class="mt-1 text-sm text-text-muted dark:text-dark-text-muted">${escapeHtml(selectedWeek.label || '本周')}，合计 ${escapeHtml(formatNanos(selectedWeek.totalChargeNanos))}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button class="${buttonClass}" type="button" data-account-week-offset="-1" ${canPrev ? '' : 'disabled'} aria-label="上一周">
+                            <span class="material-symbols-outlined text-base" aria-hidden="true">chevron_left</span>
+                        </button>
+                        <button class="${buttonClass}" type="button" data-account-week-offset="1" ${canNext ? '' : 'disabled'} aria-label="下一周">
+                            <span class="material-symbols-outlined text-base" aria-hidden="true">chevron_right</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="admin-revenue-ranking-legend mt-4">${legend}</div>
+                <div class="mt-5 overflow-x-auto pb-8">
+                    <div class="admin-revenue-bars" style="display:flex;align-items:flex-end;gap:1rem;min-width:34rem;height:14rem;padding:1rem 1rem 0;border-left:1px solid #e5e5e5;border-bottom:1px solid #e5e5e5">
+                        ${bars}
+                    </div>
+                </div>
+            </section>
+        `;
+    }
+
     function renderAdminRevenueCharts(billing = {}, rankingPeriod = 'month') {
         return `
             <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface p-5">
@@ -1090,6 +1176,7 @@
         const logoutButton = document.getElementById('logoutButton');
         const billingUsageCards = document.getElementById('accountBillingUsageCards');
         const tokenBreakdown = document.getElementById('accountTokenBreakdown');
+        const accountWeeklySpendingChart = document.getElementById('accountWeeklySpendingChart');
         const usageFreshness = document.getElementById('usageFreshness');
         const usageMessage = document.getElementById('accountUsageMessage');
         const balanceCards = document.getElementById('accountBalanceCards');
@@ -1109,6 +1196,8 @@
         const accountRedeemForm = document.getElementById('accountRedeemForm');
         const accountInviteCodeInput = document.getElementById('accountInviteCodeInput');
         const accountRedeemMessage = document.getElementById('accountRedeemMessage');
+        let accountWeeklySpending = null;
+        let selectedAccountWeekStart = '';
         if (!phoneRoot || !ordersRoot || !message || !logoutButton) return;
 
         ordersRoot.innerHTML = '<p class="text-sm text-text-muted dark:text-dark-text-muted">正在读取账户信息...</p>';
@@ -1206,10 +1295,27 @@
             });
         }
 
+        if (accountWeeklySpendingChart) {
+            accountWeeklySpendingChart.addEventListener('click', (event) => {
+                const button = event.target.closest('[data-account-week-offset]');
+                if (!button || !accountWeeklySpending) return;
+                const weekStarts = Array.isArray(accountWeeklySpending.weekStarts) ? accountWeeklySpending.weekStarts : [];
+                const currentIndex = weekStarts.indexOf(selectedAccountWeekStart);
+                const offset = Number(button.getAttribute('data-account-week-offset') || 0);
+                const nextWeekStart = weekStarts[currentIndex + offset];
+                if (!nextWeekStart) return;
+                selectedAccountWeekStart = nextWeekStart;
+                accountWeeklySpendingChart.innerHTML = renderAccountWeeklySpendingChart(accountWeeklySpending, selectedAccountWeekStart);
+            });
+        }
+
         try {
             const usage = await requestJson('/api/account/usage-summary');
             if (billingUsageCards) billingUsageCards.innerHTML = renderBillingUsageCards(usage.billing || {});
             if (tokenBreakdown) tokenBreakdown.innerHTML = renderTokenBreakdown(usage.summary?.month || {});
+            accountWeeklySpending = usage.billing?.weeklySpending || {};
+            selectedAccountWeekStart = accountWeeklySpending.currentWeekStart || accountWeeklySpending.weekStarts?.[accountWeeklySpending.weekStarts.length - 1] || '';
+            if (accountWeeklySpendingChart) accountWeeklySpendingChart.innerHTML = renderAccountWeeklySpendingChart(accountWeeklySpending, selectedAccountWeekStart);
             if (usageFreshness) {
                 usageFreshness.textContent = `生成时间 ${formatDate(usage.generatedAt)}，用量统计可能最多延迟 1 小时。`;
             }

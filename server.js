@@ -14,8 +14,9 @@ const {
 } = require('./lib/shop-api-key-crypto');
 const {
     chargeNanosToCents,
-    deepseekProRmbPrice,
+    currentDefaultRmbPrice,
     deriveInputTokenBreakdown,
+    gptModelRmbPrices,
     priceUsageTokens
 } = require('./lib/shop-pricing');
 const { appendShopChargeAuditLog } = require('./lib/shop-charge-audit-log');
@@ -728,6 +729,11 @@ function createShopApp(options = {}) {
         name: options.productName || process.env.PRODUCT_NAME || 'Codex 每月额度',
         amount: Number(options.productAmount || process.env.PRODUCT_AMOUNT_CNY || 30)
     };
+    function appNow() {
+        const value = typeof options.now === 'function' ? options.now() : new Date();
+        const date = new Date(value);
+        return Number.isFinite(date.getTime()) ? date : new Date();
+    }
     const adminAccountPhone = String(options.adminAccountPhone ?? process.env.SHOP_ADMIN_PHONE ?? defaultAdminAccountPhone).trim();
     const configuredCreditLimitCents = Number(options.defaultCreditLimitCents ?? process.env.SHOP_DEFAULT_CREDIT_LIMIT_CENTS ?? defaultCreditLimitCents);
     const creditLimitCents = Number.isSafeInteger(configuredCreditLimitCents) && configuredCreditLimitCents >= 0
@@ -2425,7 +2431,20 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
                 outputNanosPerToken: 6000
             };
         }
-        return deepseekProRmbPrice;
+        if (version === 'deepseek-v4-pro-rmb-20260612-output-20rmb') {
+            return {
+                cacheHitInputNanosPerToken: 250,
+                cacheMissInputNanosPerToken: 3000,
+                outputNanosPerToken: 20000
+            };
+        }
+        if (version === gptModelRmbPrices['gpt-5.4'].version) {
+            return gptModelRmbPrices['gpt-5.4'];
+        }
+        if (version === gptModelRmbPrices['gpt-5.5'].version) {
+            return gptModelRmbPrices['gpt-5.5'];
+        }
+        return currentDefaultRmbPrice;
     }
 
     function emptyCustomerSpending() {
@@ -2520,6 +2539,126 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }));
     }
 
+    function chinaDateKeyToDayStart(dateKey) {
+        const [year, month, day] = String(dateKey || '').split('-').map(Number);
+        return new Date(Date.UTC(year, month - 1, day) - chinaOffsetMs);
+    }
+
+    function chinaDateLabel(dateKey) {
+        const [, month, day] = String(dateKey || '').split('-').map(Number);
+        return `${month}/${day}`;
+    }
+
+    function addSpendingPartCharges(target, row) {
+        const cacheHitInputTokens = nonNegativeInteger(row.cache_hit_input_tokens);
+        const cacheMissInputTokens = nonNegativeInteger(row.cache_miss_input_tokens);
+        const outputTokens = nonNegativeInteger(row.output_tokens);
+        const price = billingPriceForVersion(row.price_version);
+        target.chargeNanos += nonNegativeInteger(row.charge_nanos);
+        target.cacheHitInputTokens += cacheHitInputTokens;
+        target.cacheMissInputTokens += cacheMissInputTokens;
+        target.outputTokens += outputTokens;
+        target.cacheHitInputChargeNanos += cacheHitInputTokens * price.cacheHitInputNanosPerToken;
+        target.cacheMissInputChargeNanos += cacheMissInputTokens * price.cacheMissInputNanosPerToken;
+        target.outputChargeNanos += outputTokens * price.outputNanosPerToken;
+    }
+
+    function emptyDailySpending(dateKey) {
+        return {
+            date: dateKey,
+            label: chinaDateLabel(dateKey),
+            chargeNanos: 0,
+            cacheHitInputTokens: 0,
+            cacheMissInputTokens: 0,
+            outputTokens: 0,
+            cacheHitInputChargeNanos: 0,
+            cacheMissInputChargeNanos: 0,
+            outputChargeNanos: 0
+        };
+    }
+
+    function publicDailySpending(day) {
+        return {
+            date: day.date,
+            label: day.label,
+            chargeNanos: nonNegativeInteger(day.chargeNanos),
+            chargeAmount: nanosToCny(day.chargeNanos),
+            parts: revenueParts(
+                day.cacheHitInputTokens,
+                day.cacheHitInputChargeNanos,
+                day.cacheMissInputTokens,
+                day.cacheMissInputChargeNanos,
+                day.outputTokens,
+                day.outputChargeNanos
+            )
+        };
+    }
+
+    function createWeeklySpendingBucket(weekStartKey) {
+        const weekStart = chinaDateKeyToDayStart(weekStartKey);
+        const dayMap = new Map();
+        const days = Array.from({ length: 7 }, (_, index) => {
+            const dateKey = chinaDateKey(new Date(weekStart.getTime() + index * 24 * 60 * 60 * 1000));
+            const day = emptyDailySpending(dateKey);
+            dayMap.set(dateKey, day);
+            return day;
+        });
+        return {
+            weekStart: weekStartKey,
+            weekEnd: days[6]?.date || weekStartKey,
+            dayMap,
+            days
+        };
+    }
+
+    function publicWeeklySpendingBucket(week) {
+        const days = week.days.map(publicDailySpending);
+        const totalChargeNanos = days.reduce((sum, day) => sum + nonNegativeInteger(day.chargeNanos), 0);
+        return {
+            weekStart: week.weekStart,
+            weekEnd: week.weekEnd,
+            label: `${chinaDateLabel(week.weekStart)}-${chinaDateLabel(week.weekEnd)}`,
+            totalChargeNanos,
+            totalChargeAmount: nanosToCny(totalChargeNanos),
+            days
+        };
+    }
+
+    function buildWeeklySpending(chargeRows, now) {
+        const currentWeekStart = chinaDateKey(startOfChinaWeek(now));
+        const weeksByStart = new Map();
+        const ensureWeek = (weekStartKey) => {
+            if (!weeksByStart.has(weekStartKey)) {
+                weeksByStart.set(weekStartKey, createWeeklySpendingBucket(weekStartKey));
+            }
+            return weeksByStart.get(weekStartKey);
+        };
+        ensureWeek(currentWeekStart);
+
+        for (const row of chargeRows) {
+            if (row.status !== 'charged') continue;
+            const createdAt = new Date(row.created_at);
+            if (!Number.isFinite(createdAt.getTime())) continue;
+            const weekStartKey = chinaDateKey(startOfChinaWeek(createdAt));
+            const dayKey = chinaDateKey(createdAt);
+            const week = ensureWeek(weekStartKey);
+            const day = week.dayMap.get(dayKey);
+            if (!day) continue;
+            addSpendingPartCharges(day, row);
+        }
+
+        const weekStarts = Array.from(weeksByStart.keys()).sort();
+        const weeks = {};
+        for (const weekStart of weekStarts) {
+            weeks[weekStart] = publicWeeklySpendingBucket(weeksByStart.get(weekStart));
+        }
+        return {
+            currentWeekStart,
+            weekStarts,
+            weeks
+        };
+    }
+
     function customerSpendingParts(spending) {
         return [
             {
@@ -2559,7 +2698,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
 
     function billingStatsToPublic(stats, chargeRows) {
         return {
-            priceVersion: deepseekProRmbPrice.version,
+            priceVersion: currentDefaultRmbPrice.version,
             todayChargeNanos: stats.todayChargeNanos,
             todayChargeAmount: nanosToCny(stats.todayChargeNanos),
             monthChargeNanos: stats.monthChargeNanos,
@@ -2783,7 +2922,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     }
 
     function accountUsageSummary(phone) {
-        const now = new Date();
+        const now = appNow();
         const todayStart = startOfChinaDay(now);
         const weekStart = startOfChinaWeek(now);
         const monthStart = startOfChinaMonth(now);
@@ -2844,6 +2983,9 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             byApiKey.get(row.api_key_hash).totalTokens += nonNegativeInteger(row.total_tokens);
             byApiKey.get(row.api_key_hash).requests += 1;
         }
+        const chargeRows = listApiChargeRecordsForBillingByPhone.all(phone);
+        const billing = buildBillingSummary(chargeRows, ranges);
+        billing.weeklySpending = buildWeeklySpending(chargeRows, now);
 
         return {
             generatedAt: nowIso(now),
@@ -2853,7 +2995,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
                 lastEventAt
             },
             summary,
-            billing: buildBillingSummary(listApiChargeRecordsForBillingByPhone.all(phone), ranges),
+            billing,
             hourly: Array.from(hourlyByBucket.values()).sort((left, right) => left.bucket.localeCompare(right.bucket)).slice(-24),
             daily: Array.from(dailyByBucket.values()).sort((left, right) => left.bucket.localeCompare(right.bucket)),
             byModel: Array.from(byModel.values()).sort((left, right) => right.totalTokens - left.totalTokens),

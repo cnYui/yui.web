@@ -382,3 +382,15 @@
 - Account 场景的本月消费卡片不再显示内部价格版本名，副标题为 `本月已扣费`；Admin 收银卡片不受影响。
 - 设计与实施记录见 `docs/ai/context/20260612-210011-account-recharge-and-usage-card-cleanup-design-plan_CN.md` 和 `docs/ai/context/20260612-210011-account-recharge-and-usage-card-cleanup-implementation_CN.md`。
 - 趋势卡删除记录见 `docs/ai/context/20260612-210422-account-usage-trend-card-removal-design-plan_CN.md` 和 `docs/ai/context/20260612-210422-account-usage-trend-card-removal-implementation_CN.md`。
+
+## 2026-06-13 GPT 模型人民币分模型计费
+
+- 当前计费规则按 usage event 的 `model` 区分 `gpt-5.4` 和 `gpt-5.5`，金额数字按人民币元 / 100 万 tokens 理解，不做美元汇率换算。
+- 当前价格版本：
+  - `gpt-5.4-rmb-20260613`：缓存命中输入 250 nanos/token，缓存未命中输入 2500 nanos/token，输出 15000 nanos/token。
+  - `gpt-5.5-rmb-20260613`：缓存命中输入 500 nanos/token，缓存未命中输入 5000 nanos/token，输出 30000 nanos/token。
+- 未知模型沿用 `gpt-5.4-rmb-20260613` 价格扣费，但 `api_charge_records.model`、ledger memo 和审计日志继续保留原始模型名。
+- 新价格只应用未来 usage；不要重算历史扣费，不覆盖旧 `api_charge_records.price_version`。
+- Admin / Account 的收银构成必须按每条 `price_version` 回放历史价格；旧 DeepSeek 价格版本只作为历史记录解析保留。
+- 设计与计划见 `docs/ai/context/20260613-090855-gpt-model-rmb-pricing-design_CN.md` 和 `docs/ai/context/20260613-090855-gpt-model-rmb-pricing-plan_CN.md`。
+- 实施记录见 `docs/ai/context/20260613-091616-gpt-model-rmb-pricing-implementation_CN.md`。
