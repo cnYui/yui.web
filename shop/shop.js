@@ -524,9 +524,7 @@
         if (!models.length) {
             return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无模型价格。</p>';
         }
-        const sourceText = data.source === 'live' ? '实时模型' : '价格表回退';
         return `
-            <div class="mb-3 text-sm text-text-muted dark:text-dark-text-muted">${escapeHtml(sourceText)}，更新时间 ${escapeHtml(formatDate(data.checkedAt))}</div>
             <table class="min-w-full text-sm">
                 <thead class="text-left text-xs uppercase tracking-[0.14em] text-text-muted dark:text-dark-text-muted">
                     <tr>
@@ -535,7 +533,6 @@
                         <th class="py-2 pr-4">缓存命中输入 / 1M</th>
                         <th class="py-2 pr-4">未命中输入 / 1M</th>
                         <th class="py-2 pr-4">输出 / 1M</th>
-                        <th class="py-2">计价</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -546,7 +543,6 @@
                             <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.cacheHitInputCnyPerMillion))}</td>
                             <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.cacheMissInputCnyPerMillion))}</td>
                             <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.outputCnyPerMillion))}</td>
-                            <td class="py-3 whitespace-nowrap">${escapeHtml(model.usesDefaultPrice ? `沿用 ${model.priceModel}` : model.priceModel || '-')}</td>
                         </tr>
                     `).join('')}
                 </tbody>

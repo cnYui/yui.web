@@ -478,7 +478,11 @@ test('Account 前端读取模型总览并渲染人民币价格表', async () => 
     assert.match(elements.get('accountModelOverview').innerHTML, /gpt-5\.4-mini/);
     assert.match(elements.get('accountModelOverview').innerHTML, /¥2\.50/);
     assert.match(elements.get('accountModelOverview').innerHTML, /¥30\.00/);
-    assert.match(elements.get('accountModelOverview').innerHTML, /沿用 gpt-5\.4/);
+    assert.doesNotMatch(elements.get('accountModelOverview').innerHTML, /计价/);
+    assert.doesNotMatch(elements.get('accountModelOverview').innerHTML, /沿用 gpt-5\.4/);
+    assert.doesNotMatch(elements.get('accountModelOverview').innerHTML, /价格表回退/);
+    assert.doesNotMatch(elements.get('accountModelOverview').innerHTML, /实时模型/);
+    assert.doesNotMatch(elements.get('accountModelOverview').innerHTML, /更新时间/);
 });
 
 test('Account 页提供登录态邀请码兑换表单且不再引导到独立手机号兑换页', () => {

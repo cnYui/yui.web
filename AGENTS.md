@@ -429,3 +429,15 @@
 - 未知模型在模型总览中标记为沿用 `gpt-5.4`，与计费回退规则一致。
 - 浏览器验证使用临时 SQLite 服务完成：未兑换时显示价格表回退，兑换后显示实时 5 个模型。
 - 设计与计划见 `docs/ai/context/20260613-141903-account-model-overview-design-plan_CN.md`，实施记录见 `docs/ai/context/20260613-142550-account-model-overview-implementation_CN.md`，浏览器验证见 `docs/ai/context/20260613-142846-account-model-overview-browser-verification_CN.md`，多 key 修正见 `docs/ai/context/20260613-143322-account-model-overview-multi-key-retry_CN.md`。
+
+## 2026-06-13 Account 模型总览删除计价列
+
+- `/shop/account/` 模型总览前端不再展示「计价」列，也不展示 `gpt-5.4`、`gpt-5.5` 或 `沿用 gpt-5.4` 文案。
+- 后端 `/api/account/model-overview` 仍保留 `priceModel` 和 `usesDefaultPrice` 字段，真实计费与未知模型沿用 `gpt-5.4` 的规则不变。
+- 记录见 `docs/ai/context/20260613-144235-account-model-overview-remove-pricing-column_CN.md`。
+
+## 2026-06-13 Account 模型总览删除来源提示
+
+- `/shop/account/` 模型总览前端不再展示「价格表回退 / 实时模型，更新时间 ...」提示。
+- 后端 `/api/account/model-overview` 仍保留 `source` 和 `checkedAt` 字段，模型端点探测与价格表回退逻辑不变。
+- 记录见 `docs/ai/context/20260613-144458-account-model-overview-remove-source-hint_CN.md`。
