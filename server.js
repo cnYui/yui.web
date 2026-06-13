@@ -14,12 +14,24 @@ const {
 } = require('./lib/shop-api-key-crypto');
 const {
     chargeNanosToCents,
-    currentDefaultRmbPrice,
     deriveInputTokenBreakdown,
-    gptModelRmbPrices,
-    priceForModel,
     priceUsageTokens
 } = require('./lib/shop-pricing');
+const { buildBillingSummary, buildWeeklySpending } = require('./lib/shop-billing-summary');
+const {
+    modelPriceOverview,
+    normalizeModelList,
+    pricingFallbackModelOverview
+} = require('./lib/shop-model-overview');
+const {
+    centsToCny,
+    centsToNanos,
+    nanosToBalanceCents,
+    nanosToCny,
+    nonNegativeInteger,
+    parsePositiveCnyToCents,
+    signedCentsToNanos
+} = require('./lib/shop-money');
 const { appendShopChargeAuditLog } = require('./lib/shop-charge-audit-log');
 
 const durationDays = 31;
@@ -39,8 +51,6 @@ const authPhoneFailureBuckets = new Map();
 const chinaOffsetMs = 8 * 60 * 60 * 1000;
 const defaultAdminAccountPhone = '15951875192';
 const defaultCreditLimitCents = 1000;
-const nanosPerYuan = 1000000000;
-const nanosPerCent = 10000000;
 const supportedPaymentMethods = new Set(['alipay', 'wechat']);
 
 function assertStrongSecret(name, value, { required = true, production = false } = {}) {
@@ -194,55 +204,6 @@ function safeEqual(a, b) {
     const right = Buffer.from(String(b || ''));
     if (left.length !== right.length) return false;
     return crypto.timingSafeEqual(left, right);
-}
-
-function nonNegativeInteger(value) {
-    const number = Number(value);
-    if (!Number.isFinite(number) || number < 0) return 0;
-    return Math.floor(number);
-}
-
-function parsePositiveCnyToCents(value) {
-    const text = String(value ?? '').trim();
-    if (!/^\d+(?:\.\d{1,2})?$/.test(text)) {
-        const error = new Error('金额必须是大于 0 的人民币数字，最多保留两位小数。');
-        error.status = 400;
-        error.code = 'INVALID_AMOUNT';
-        throw error;
-    }
-    const [yuanPart, centPart = ''] = text.split('.');
-    const cents = Number(yuanPart) * 100 + Number(centPart.padEnd(2, '0'));
-    if (!Number.isSafeInteger(cents) || cents <= 0) {
-        const error = new Error('金额必须大于 0。');
-        error.status = 400;
-        error.code = 'INVALID_AMOUNT';
-        throw error;
-    }
-    return cents;
-}
-
-function centsToCny(cents) {
-    return Number(cents || 0) / 100;
-}
-
-function centsToNanos(cents) {
-    return nonNegativeInteger(cents) * nanosPerCent;
-}
-
-function signedCentsToNanos(cents) {
-    const value = Number(cents || 0);
-    if (!Number.isSafeInteger(value)) return 0;
-    return value * nanosPerCent;
-}
-
-function nanosToCny(nanos) {
-    return Number(nanos || 0) / nanosPerYuan;
-}
-
-function nanosToBalanceCents(nanos) {
-    const value = Number(nanos || 0);
-    if (value >= 0) return Math.floor(value / nanosPerCent);
-    return -Math.ceil(Math.abs(value) / nanosPerCent);
 }
 
 function normalizePaymentMethod(value) {
@@ -834,47 +795,6 @@ function createShopApp(options = {}) {
             createdAt: invite.createdAt,
             redeemedAt: invite.redeemedAt
         };
-    }
-
-    function cnyPerMillionTokens(nanosPerToken) {
-        return Number(nanosPerToken || 0) * 1000000 / nanosPerYuan;
-    }
-
-    function modelPriceOverview(modelId, available) {
-        const id = String(modelId || '').trim();
-        const normalizedId = id.toLowerCase();
-        const price = priceForModel(normalizedId);
-        return {
-            id,
-            available: Boolean(available),
-            priceModel: price.model,
-            usesDefaultPrice: normalizedId !== price.model,
-            priceVersion: price.version,
-            cacheHitInputCnyPerMillion: cnyPerMillionTokens(price.cacheHitInputNanosPerToken),
-            cacheMissInputCnyPerMillion: cnyPerMillionTokens(price.cacheMissInputNanosPerToken),
-            outputCnyPerMillion: cnyPerMillionTokens(price.outputNanosPerToken)
-        };
-    }
-
-    function pricingFallbackModelOverview() {
-        return Object.keys(gptModelRmbPrices).map((model) => modelPriceOverview(model, false));
-    }
-
-    function normalizeModelList(body = {}) {
-        const source = Array.isArray(body.data)
-            ? body.data
-            : Array.isArray(body.models)
-                ? body.models
-                : [];
-        const seen = new Set();
-        const models = [];
-        for (const item of source) {
-            const id = String(item?.id || item?.model || item?.name || '').trim();
-            if (!id || seen.has(id)) continue;
-            seen.add(id);
-            models.push(id);
-        }
-        return models;
     }
 
     async function fetchModelIds(apiKey) {
@@ -2481,352 +2401,6 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         };
     }
 
-    function emptyBillingStats() {
-        return {
-            todayChargeNanos: 0,
-            monthChargeNanos: 0,
-            todayCacheHitInputTokens: 0,
-            todayCacheMissInputTokens: 0,
-            todayOutputTokens: 0,
-            todayCacheHitInputChargeNanos: 0,
-            todayCacheMissInputChargeNanos: 0,
-            todayOutputChargeNanos: 0,
-            cacheHitInputTokens: 0,
-            cacheMissInputTokens: 0,
-            outputTokens: 0,
-            cacheHitInputChargeNanos: 0,
-            cacheMissInputChargeNanos: 0,
-            outputChargeNanos: 0,
-            todayCustomerSpendingByPhone: new Map(),
-            monthCustomerSpendingByPhone: new Map()
-        };
-    }
-
-    function billingPriceForVersion(version) {
-        if (version === 'deepseek-v4-pro-rmb-20260424') {
-            return {
-                cacheHitInputNanosPerToken: 25,
-                cacheMissInputNanosPerToken: 3000,
-                outputNanosPerToken: 6000
-            };
-        }
-        if (version === 'deepseek-v4-pro-rmb-20260612-cache-hit-10x') {
-            return {
-                cacheHitInputNanosPerToken: 250,
-                cacheMissInputNanosPerToken: 3000,
-                outputNanosPerToken: 6000
-            };
-        }
-        if (version === 'deepseek-v4-pro-rmb-20260612-output-20rmb') {
-            return {
-                cacheHitInputNanosPerToken: 250,
-                cacheMissInputNanosPerToken: 3000,
-                outputNanosPerToken: 20000
-            };
-        }
-        if (version === gptModelRmbPrices['gpt-5.4'].version) {
-            return gptModelRmbPrices['gpt-5.4'];
-        }
-        if (version === gptModelRmbPrices['gpt-5.5'].version) {
-            return gptModelRmbPrices['gpt-5.5'];
-        }
-        return currentDefaultRmbPrice;
-    }
-
-    function emptyCustomerSpending() {
-        return {
-            chargeNanos: 0,
-            cacheHitInputChargeNanos: 0,
-            cacheMissInputChargeNanos: 0,
-            outputChargeNanos: 0
-        };
-    }
-
-    function addCustomerSpending(target, phone, charges) {
-        const normalizedPhone = String(phone || '').trim();
-        if (!normalizedPhone) return;
-        const current = target.get(normalizedPhone) || emptyCustomerSpending();
-        target.set(normalizedPhone, {
-            chargeNanos: current.chargeNanos + nonNegativeInteger(charges.chargeNanos),
-            cacheHitInputChargeNanos: current.cacheHitInputChargeNanos + nonNegativeInteger(charges.cacheHitInputChargeNanos),
-            cacheMissInputChargeNanos: current.cacheMissInputChargeNanos + nonNegativeInteger(charges.cacheMissInputChargeNanos),
-            outputChargeNanos: current.outputChargeNanos + nonNegativeInteger(charges.outputChargeNanos)
-        });
-    }
-
-    function addBillingStats(stats, row, ranges) {
-        if (row.status !== 'charged') return;
-        const createdAt = new Date(row.created_at);
-        if (!Number.isFinite(createdAt.getTime())) return;
-        const chargeNanos = nonNegativeInteger(row.charge_nanos);
-        const cacheHitInputTokens = nonNegativeInteger(row.cache_hit_input_tokens);
-        const cacheMissInputTokens = nonNegativeInteger(row.cache_miss_input_tokens);
-        const outputTokens = nonNegativeInteger(row.output_tokens);
-        const price = billingPriceForVersion(row.price_version);
-        const cacheHitInputChargeNanos = cacheHitInputTokens * price.cacheHitInputNanosPerToken;
-        const cacheMissInputChargeNanos = cacheMissInputTokens * price.cacheMissInputNanosPerToken;
-        const outputChargeNanos = outputTokens * price.outputNanosPerToken;
-        if (createdAt >= ranges.todayStart) {
-            stats.todayChargeNanos += chargeNanos;
-            stats.todayCacheHitInputTokens += cacheHitInputTokens;
-            stats.todayCacheMissInputTokens += cacheMissInputTokens;
-            stats.todayOutputTokens += outputTokens;
-            stats.todayCacheHitInputChargeNanos += cacheHitInputChargeNanos;
-            stats.todayCacheMissInputChargeNanos += cacheMissInputChargeNanos;
-            stats.todayOutputChargeNanos += outputChargeNanos;
-            addCustomerSpending(stats.todayCustomerSpendingByPhone, row.phone, {
-                chargeNanos,
-                cacheHitInputChargeNanos,
-                cacheMissInputChargeNanos,
-                outputChargeNanos
-            });
-        }
-        if (createdAt >= ranges.monthStart) {
-            stats.monthChargeNanos += chargeNanos;
-            stats.cacheHitInputTokens += cacheHitInputTokens;
-            stats.cacheMissInputTokens += cacheMissInputTokens;
-            stats.outputTokens += outputTokens;
-            stats.cacheHitInputChargeNanos += cacheHitInputChargeNanos;
-            stats.cacheMissInputChargeNanos += cacheMissInputChargeNanos;
-            stats.outputChargeNanos += outputChargeNanos;
-            addCustomerSpending(stats.monthCustomerSpendingByPhone, row.phone, {
-                chargeNanos,
-                cacheHitInputChargeNanos,
-                cacheMissInputChargeNanos,
-                outputChargeNanos
-            });
-        }
-    }
-
-    function revenueParts(cacheHitInputTokens, cacheHitInputChargeNanos, cacheMissInputTokens, cacheMissInputChargeNanos, outputTokens, outputChargeNanos) {
-        const parts = [
-            {
-                key: 'cache_hit_input',
-                label: '缓存命中输入',
-                tokens: nonNegativeInteger(cacheHitInputTokens),
-                chargeNanos: nonNegativeInteger(cacheHitInputChargeNanos)
-            },
-            {
-                key: 'cache_miss_input',
-                label: '缓存未命中输入',
-                tokens: nonNegativeInteger(cacheMissInputTokens),
-                chargeNanos: nonNegativeInteger(cacheMissInputChargeNanos)
-            },
-            {
-                key: 'output',
-                label: '输出 token',
-                tokens: nonNegativeInteger(outputTokens),
-                chargeNanos: nonNegativeInteger(outputChargeNanos)
-            }
-        ];
-        return parts.map((part) => ({
-            ...part,
-            chargeAmount: nanosToCny(part.chargeNanos)
-        }));
-    }
-
-    function chinaDateKeyToDayStart(dateKey) {
-        const [year, month, day] = String(dateKey || '').split('-').map(Number);
-        return new Date(Date.UTC(year, month - 1, day) - chinaOffsetMs);
-    }
-
-    function chinaDateLabel(dateKey) {
-        const [, month, day] = String(dateKey || '').split('-').map(Number);
-        return `${month}/${day}`;
-    }
-
-    function addSpendingPartCharges(target, row) {
-        const cacheHitInputTokens = nonNegativeInteger(row.cache_hit_input_tokens);
-        const cacheMissInputTokens = nonNegativeInteger(row.cache_miss_input_tokens);
-        const outputTokens = nonNegativeInteger(row.output_tokens);
-        const price = billingPriceForVersion(row.price_version);
-        target.chargeNanos += nonNegativeInteger(row.charge_nanos);
-        target.cacheHitInputTokens += cacheHitInputTokens;
-        target.cacheMissInputTokens += cacheMissInputTokens;
-        target.outputTokens += outputTokens;
-        target.cacheHitInputChargeNanos += cacheHitInputTokens * price.cacheHitInputNanosPerToken;
-        target.cacheMissInputChargeNanos += cacheMissInputTokens * price.cacheMissInputNanosPerToken;
-        target.outputChargeNanos += outputTokens * price.outputNanosPerToken;
-    }
-
-    function emptyDailySpending(dateKey) {
-        return {
-            date: dateKey,
-            label: chinaDateLabel(dateKey),
-            chargeNanos: 0,
-            cacheHitInputTokens: 0,
-            cacheMissInputTokens: 0,
-            outputTokens: 0,
-            cacheHitInputChargeNanos: 0,
-            cacheMissInputChargeNanos: 0,
-            outputChargeNanos: 0
-        };
-    }
-
-    function publicDailySpending(day) {
-        return {
-            date: day.date,
-            label: day.label,
-            chargeNanos: nonNegativeInteger(day.chargeNanos),
-            chargeAmount: nanosToCny(day.chargeNanos),
-            parts: revenueParts(
-                day.cacheHitInputTokens,
-                day.cacheHitInputChargeNanos,
-                day.cacheMissInputTokens,
-                day.cacheMissInputChargeNanos,
-                day.outputTokens,
-                day.outputChargeNanos
-            )
-        };
-    }
-
-    function createWeeklySpendingBucket(weekStartKey) {
-        const weekStart = chinaDateKeyToDayStart(weekStartKey);
-        const dayMap = new Map();
-        const days = Array.from({ length: 7 }, (_, index) => {
-            const dateKey = chinaDateKey(new Date(weekStart.getTime() + index * 24 * 60 * 60 * 1000));
-            const day = emptyDailySpending(dateKey);
-            dayMap.set(dateKey, day);
-            return day;
-        });
-        return {
-            weekStart: weekStartKey,
-            weekEnd: days[6]?.date || weekStartKey,
-            dayMap,
-            days
-        };
-    }
-
-    function publicWeeklySpendingBucket(week) {
-        const days = week.days.map(publicDailySpending);
-        const totalChargeNanos = days.reduce((sum, day) => sum + nonNegativeInteger(day.chargeNanos), 0);
-        return {
-            weekStart: week.weekStart,
-            weekEnd: week.weekEnd,
-            label: `${chinaDateLabel(week.weekStart)}-${chinaDateLabel(week.weekEnd)}`,
-            totalChargeNanos,
-            totalChargeAmount: nanosToCny(totalChargeNanos),
-            days
-        };
-    }
-
-    function buildWeeklySpending(chargeRows, now) {
-        const currentWeekStart = chinaDateKey(startOfChinaWeek(now));
-        const weeksByStart = new Map();
-        const ensureWeek = (weekStartKey) => {
-            if (!weeksByStart.has(weekStartKey)) {
-                weeksByStart.set(weekStartKey, createWeeklySpendingBucket(weekStartKey));
-            }
-            return weeksByStart.get(weekStartKey);
-        };
-        ensureWeek(currentWeekStart);
-
-        for (const row of chargeRows) {
-            if (row.status !== 'charged') continue;
-            const createdAt = new Date(row.created_at);
-            if (!Number.isFinite(createdAt.getTime())) continue;
-            const weekStartKey = chinaDateKey(startOfChinaWeek(createdAt));
-            const dayKey = chinaDateKey(createdAt);
-            const week = ensureWeek(weekStartKey);
-            const day = week.dayMap.get(dayKey);
-            if (!day) continue;
-            addSpendingPartCharges(day, row);
-        }
-
-        const weekStarts = Array.from(weeksByStart.keys()).sort();
-        const weeks = {};
-        for (const weekStart of weekStarts) {
-            weeks[weekStart] = publicWeeklySpendingBucket(weeksByStart.get(weekStart));
-        }
-        return {
-            currentWeekStart,
-            weekStarts,
-            weeks
-        };
-    }
-
-    function customerSpendingParts(spending) {
-        return [
-            {
-                key: 'cache_hit_input',
-                label: '缓存命中输入',
-                chargeNanos: nonNegativeInteger(spending.cacheHitInputChargeNanos)
-            },
-            {
-                key: 'cache_miss_input',
-                label: '缓存未命中输入',
-                chargeNanos: nonNegativeInteger(spending.cacheMissInputChargeNanos)
-            },
-            {
-                key: 'output',
-                label: '输出 token',
-                chargeNanos: nonNegativeInteger(spending.outputChargeNanos)
-            }
-        ].map((part) => ({
-            ...part,
-            chargeAmount: nanosToCny(part.chargeNanos)
-        }));
-    }
-
-    function customerSpendingRanking(spendingByPhone) {
-        return Array.from(spendingByPhone.entries())
-            .map(([phone, spending]) => ({
-                phone,
-                chargeNanos: nonNegativeInteger(spending.chargeNanos),
-                chargeAmount: nanosToCny(spending.chargeNanos),
-                parts: customerSpendingParts(spending)
-            }))
-            .sort((left, right) => {
-                if (right.chargeNanos !== left.chargeNanos) return right.chargeNanos - left.chargeNanos;
-                return left.phone.localeCompare(right.phone);
-            });
-    }
-
-    function billingStatsToPublic(stats, chargeRows) {
-        return {
-            priceVersion: currentDefaultRmbPrice.version,
-            todayChargeNanos: stats.todayChargeNanos,
-            todayChargeAmount: nanosToCny(stats.todayChargeNanos),
-            monthChargeNanos: stats.monthChargeNanos,
-            monthChargeAmount: nanosToCny(stats.monthChargeNanos),
-            todayCacheHitInputTokens: stats.todayCacheHitInputTokens,
-            todayCacheMissInputTokens: stats.todayCacheMissInputTokens,
-            todayOutputTokens: stats.todayOutputTokens,
-            cacheHitInputTokens: stats.cacheHitInputTokens,
-            cacheMissInputTokens: stats.cacheMissInputTokens,
-            outputTokens: stats.outputTokens,
-            todayRevenueParts: revenueParts(
-                stats.todayCacheHitInputTokens,
-                stats.todayCacheHitInputChargeNanos,
-                stats.todayCacheMissInputTokens,
-                stats.todayCacheMissInputChargeNanos,
-                stats.todayOutputTokens,
-                stats.todayOutputChargeNanos
-            ),
-            monthRevenueParts: revenueParts(
-                stats.cacheHitInputTokens,
-                stats.cacheHitInputChargeNanos,
-                stats.cacheMissInputTokens,
-                stats.cacheMissInputChargeNanos,
-                stats.outputTokens,
-                stats.outputChargeNanos
-            ),
-            customerSpendingRankings: {
-                today: customerSpendingRanking(stats.todayCustomerSpendingByPhone),
-                month: customerSpendingRanking(stats.monthCustomerSpendingByPhone)
-            },
-            recentCharges: chargeRows.slice(0, 10).map(publicApiChargeRecord)
-        };
-    }
-
-    function buildBillingSummary(chargeRows, ranges) {
-        const stats = emptyBillingStats();
-        for (const row of chargeRows) {
-            addBillingStats(stats, row, ranges);
-        }
-        return billingStatsToPublic(stats, chargeRows);
-    }
-
     function addUsageStats(stats, row, ranges) {
         const requestedAt = new Date(row.requested_at);
         const isToday = requestedAt >= ranges.todayStart;
@@ -3070,7 +2644,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             byApiKey.get(row.api_key_hash).requests += 1;
         }
         const chargeRows = listApiChargeRecordsForBillingByPhone.all(phone);
-        const billing = buildBillingSummary(chargeRows, ranges);
+        const billing = buildBillingSummary(chargeRows, ranges, { publicChargeRecord: publicApiChargeRecord });
         billing.weeklySpending = buildWeeklySpending(chargeRows, now);
 
         return {
@@ -3193,7 +2767,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             billing: buildBillingSummary(listApiChargeRecordsForShopBilling.all(), {
                 todayStart: startOfChinaDay(now),
                 monthStart: startOfChinaMonth(now)
-            }),
+            }, { publicChargeRecord: publicApiChargeRecord }),
             items: filteredItems
         };
     }

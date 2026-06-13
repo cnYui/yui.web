@@ -436,8 +436,29 @@
 - 后端 `/api/account/model-overview` 仍保留 `priceModel` 和 `usesDefaultPrice` 字段，真实计费与未知模型沿用 `gpt-5.4` 的规则不变。
 - 记录见 `docs/ai/context/20260613-144235-account-model-overview-remove-pricing-column_CN.md`。
 
+## 2026-06-13 Shop B 级模块化重构设计
+
+- 用户确认采用 B 级重构：中等力度拆分 Shop 前端模块和后端纯逻辑，不做一次性 C 级路由 / SQL / 迁移深拆。
+- 当前本地运行网页会映射到公网；实现阶段不能在当前公网实例目录直接改业务代码，必须使用独立 worktree。
+- 开发验收实例使用独立端口，例如 `4174`，并使用独立 SQLite，例如 `data/dev/shop-refactor.sqlite`。
+- 开发实例必须禁用 usage 自动导入，避免写入真实账务库或读取 CLIProxyAPI usage 日志。
+- 后端优先抽 `shop-money`、价格版本回放、收银统计和模型总览纯逻辑；`server.js` 暂保留路由、SQL statement 和事务边界。
+- 前端保留 `/shop/shop.js` 作为入口，页面逻辑拆到 `shop/js/*`，并保持 `window.YuiShop` 对外初始化函数兼容。
+- 设计见 `docs/ai/context/20260613-144411-shop-modular-refactor-design_CN.md`；实施计划见 `docs/ai/context/20260613-144411-shop-modular-refactor-plan_CN.md`。
+
 ## 2026-06-13 Account 模型总览删除来源提示
 
 - `/shop/account/` 模型总览前端不再展示「价格表回退 / 实时模型，更新时间 ...」提示。
 - 后端 `/api/account/model-overview` 仍保留 `source` 和 `checkedAt` 字段，模型端点探测与价格表回退逻辑不变。
 - 记录见 `docs/ai/context/20260613-144458-account-model-overview-remove-source-hint_CN.md`。
+
+## 2026-06-13 Shop B 级模块化重构实施
+
+- Shop B 级模块化重构已在隔离 worktree `codex/shop-modular-refactor-20260613` 中实施，不影响当前公网映射实例。
+- 后端金额、历史价格回放、收银统计、周消费和模型总览纯逻辑已拆入 `lib/shop-money.js`、`lib/shop-pricing.js`、`lib/shop-billing-summary.js`、`lib/shop-model-overview.js`。
+- `server.js` 暂保留路由、SQL statement 和事务边界；后续不要把已抽出的纯逻辑再合回 `server.js`。
+- Shop 前端已拆为 `shop/js/core.js`、`charts.js`、`auth.js`、`account.js`、`admin.js`、`legacy-redirects.js`；`shop/shop.js` 只做入口和 `window.YuiShop` 兼容层。
+- 所有 Shop HTML 只直接加载 `/shop/shop.js` 入口，入口脚本会动态加载 `shop/js/*` 模块；后续新增 Shop 页面不要重复硬编码模块列表。
+- `test/shop-frontend.test.js` 承接前端 VM、HTML、CSS 静态断言；`test/shop-flow.test.js` 保留后端集成流程和数据库行为测试。
+- 独立验收实例使用 `http://127.0.0.1:4174` 和 `data/dev/shop-refactor.sqlite`，usage 自动导入关闭；后续涉及公网映射时继续使用独立 worktree、独立端口、独立 SQLite。
+- 实施记录见 `docs/ai/context/20260613-152130-shop-modular-refactor-implementation_CN.md`。
