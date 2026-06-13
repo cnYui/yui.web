@@ -505,6 +505,15 @@ test('Account 前端读取模型总览并渲染人民币价格表', async () => 
     assert.doesNotMatch(elements.get('accountModelOverview').innerHTML, /更新时间/);
 });
 
+test('Account 页提供登录态邀请码兑换表单且不再引导到独立手机号兑换页', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
+
+    assert.match(html, /id="accountRedeemForm"/);
+    assert.match(html, /id="accountInviteCodeInput"/);
+    assert.match(html, /id="accountRedeemMessage"/);
+    assert.doesNotMatch(html, /href="\/shop\/redeem\/"/);
+});
+
 test('Account 前端兑换调用登录态接口并且不提交手机号', async () => {
     const script = readShopFrontendSource();
     const elements = new Map();
