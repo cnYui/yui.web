@@ -429,3 +429,25 @@
 - 未知模型在模型总览中标记为沿用 `gpt-5.4`，与计费回退规则一致。
 - 浏览器验证使用临时 SQLite 服务完成：未兑换时显示价格表回退，兑换后显示实时 5 个模型。
 - 设计与计划见 `docs/ai/context/20260613-141903-account-model-overview-design-plan_CN.md`，实施记录见 `docs/ai/context/20260613-142550-account-model-overview-implementation_CN.md`，浏览器验证见 `docs/ai/context/20260613-142846-account-model-overview-browser-verification_CN.md`，多 key 修正见 `docs/ai/context/20260613-143322-account-model-overview-multi-key-retry_CN.md`。
+
+## 2026-06-13 Account 模型总览删除计价列
+
+- `/shop/account/` 模型总览前端不再展示「计价」列，也不展示 `gpt-5.4`、`gpt-5.5` 或 `沿用 gpt-5.4` 文案。
+- 后端 `/api/account/model-overview` 仍保留 `priceModel` 和 `usesDefaultPrice` 字段，真实计费与未知模型沿用 `gpt-5.4` 的规则不变。
+- 记录见 `docs/ai/context/20260613-144235-account-model-overview-remove-pricing-column_CN.md`。
+
+## 2026-06-13 Shop B 级模块化重构设计
+
+- 用户确认采用 B 级重构：中等力度拆分 Shop 前端模块和后端纯逻辑，不做一次性 C 级路由 / SQL / 迁移深拆。
+- 当前本地运行网页会映射到公网；实现阶段不能在当前公网实例目录直接改业务代码，必须使用独立 worktree。
+- 开发验收实例使用独立端口，例如 `4174`，并使用独立 SQLite，例如 `data/dev/shop-refactor.sqlite`。
+- 开发实例必须禁用 usage 自动导入，避免写入真实账务库或读取 CLIProxyAPI usage 日志。
+- 后端优先抽 `shop-money`、价格版本回放、收银统计和模型总览纯逻辑；`server.js` 暂保留路由、SQL statement 和事务边界。
+- 前端保留 `/shop/shop.js` 作为入口，页面逻辑拆到 `shop/js/*`，并保持 `window.YuiShop` 对外初始化函数兼容。
+- 设计见 `docs/ai/context/20260613-144411-shop-modular-refactor-design_CN.md`；实施计划见 `docs/ai/context/20260613-144411-shop-modular-refactor-plan_CN.md`。
+
+## 2026-06-13 Account 模型总览删除来源提示
+
+- `/shop/account/` 模型总览前端不再展示「价格表回退 / 实时模型，更新时间 ...」提示。
+- 后端 `/api/account/model-overview` 仍保留 `source` 和 `checkedAt` 字段，模型端点探测与价格表回退逻辑不变。
+- 记录见 `docs/ai/context/20260613-144458-account-model-overview-remove-source-hint_CN.md`。
