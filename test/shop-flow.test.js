@@ -951,7 +951,7 @@ test('配置 API key 加密 secret 后，新导入 key 写入密文且 reveal �
     });
 });
 
-test('Shop 数据库包含 DeepSeek 人民币 nanos 扣费字段', async () => {
+test('Shop 数据库包含人民币 nanos 扣费字段', async () => {
     await withServer(async ({ db }) => {
         const usageColumns = tableColumns(db, 'usage_events');
         assert.ok(usageColumns.includes('cache_hit_input_tokens'));
@@ -1325,7 +1325,7 @@ test('托管 API key 充值确认后恢复可用', async () => {
     });
 });
 
-test('usage event 写入后按 DeepSeek Pro 人民币 nanos 扣余额并生成用户可见扣费记录', async () => {
+test('usage event 写入后未知模型按 gpt-5.4 人民币 nanos 扣余额并生成用户可见扣费记录', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const order = await createRedeemedOrder(baseUrl, '13800139011', 'sk-charge-positive');
         const cookie = await registerUserAndGetCookie(baseUrl, '13800139011');
@@ -1337,7 +1337,7 @@ test('usage event 写入后按 DeepSeek Pro 人民币 nanos 扣余额并生成�
             api_key_hash: hashApiKeyForTest(order.apiKey),
             api_key_preview: keyPreviewForTest(order.apiKey),
             provider: 'deepseek',
-            model: 'deepseek-v4-pro',
+            model: 'gpt-5.unknown',
             endpoint: '/v1/chat/completions',
             success: true,
             failed: false,
@@ -1356,6 +1356,7 @@ test('usage event 写入后按 DeepSeek Pro 人民币 nanos 扣余额并生成�
 	        const inserted = await usageEventFetch(baseUrl, event);
 	        assert.equal(inserted.response.status, 201);
 	        const pricing = priceUsageTokens({
+	            model: event.model,
 	            failed: event.failed,
 	            cacheHitInputTokens: event.cache_hit_input_tokens,
 	            cacheMissInputTokens: event.cache_miss_input_tokens,
@@ -1441,6 +1442,7 @@ test('旧 usage event 只有 cached_tokens 时可推导未命中输入并按 nan
 	WHERE usage_event_id = ?
 	`).get('req-charge-legacy-cache');
 	        const pricing = priceUsageTokens({
+	            model: 'gpt-5.5',
 	            failed: false,
 	            cacheHitInputTokens: 700,
 	            cacheMissInputTokens: 300,
@@ -1489,6 +1491,7 @@ test('余额很少时本次调用可扣成负数且下一次状态检查拒绝',
             headers: { cookie }
         });
         const expectedCharge = priceUsageTokens({
+            model: 'gpt-5.4',
             failed: false,
             cacheHitInputTokens: 0,
             cacheMissInputTokens: 0,
@@ -1543,6 +1546,7 @@ test('重复 usage event 不会重复扣费', async () => {
             headers: { cookie }
         });
         const expectedCharge = priceUsageTokens({
+            model: 'gpt-5.4',
             failed: false,
             cacheHitInputTokens: 0,
             cacheMissInputTokens: 1,
@@ -1637,6 +1641,7 @@ test('实时 usage 扣费会追加本地 JSONL 审计日志且不保存完整 AP
         assert.equal(record.cacheMissInputTokens, 6);
         assert.equal(record.outputTokens, 20);
         assert.equal(record.chargeNanos, priceUsageTokens({
+            model: 'gpt-5.4',
             failed: false,
             cacheHitInputTokens: 4,
             cacheMissInputTokens: 6,
@@ -1688,6 +1693,7 @@ test('用户账户页 API 返回自己的账户流水和扣费记录', async () 
         assert.equal(charges.body.charges[0].usageEventId, 'req-ledger-first');
         assert.equal(charges.body.charges[0].chargeCents, 1);
         assert.equal(charges.body.charges[0].chargeNanos, priceUsageTokens({
+            model: 'gpt-5.4',
             failed: false,
             cacheHitInputTokens: 0,
             cacheMissInputTokens: 10,
@@ -1699,6 +1705,108 @@ test('用户账户页 API 返回自己的账户流水和扣费记录', async () 
         });
         assert.equal(secondLedger.body.entries.length, 0);
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
+});
+
+test('用户 usage summary 返回自己的按周扣费金额和三段构成', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const firstOrder = await createRedeemedOrder(baseUrl, '13800139018', 'sk-weekly-spending-first');
+        const secondOrder = await createRedeemedOrder(baseUrl, '13800139019', 'sk-weekly-spending-second');
+        const firstCookie = await registerUserAndGetCookie(baseUrl, '13800139018');
+        const secondCookie = await registerUserAndGetCookie(baseUrl, '13800139019');
+        await submitAndApproveTopup(baseUrl, firstCookie, '10');
+        await submitAndApproveTopup(baseUrl, secondCookie, '10');
+
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-weekly-current',
+            api_key_hash: hashApiKeyForTest(firstOrder.apiKey),
+            api_key_preview: keyPreviewForTest(firstOrder.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 1500000,
+            cache_hit_input_tokens: 1000000,
+            cache_miss_input_tokens: 500000,
+            output_tokens: 100000,
+            total_tokens: 1600000,
+            requested_at: '2026-06-10T12:00:00+08:00'
+        });
+        db.prepare('UPDATE api_charge_records SET created_at = ? WHERE usage_event_id = ?')
+            .run('2026-06-10T12:01:00+08:00', 'req-weekly-current');
+
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-weekly-previous',
+            api_key_hash: hashApiKeyForTest(firstOrder.apiKey),
+            api_key_preview: keyPreviewForTest(firstOrder.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 1000000,
+            cache_hit_input_tokens: 0,
+            cache_miss_input_tokens: 1000000,
+            output_tokens: 0,
+            total_tokens: 1000000,
+            requested_at: '2026-06-03T12:00:00+08:00'
+        });
+        db.prepare('UPDATE api_charge_records SET created_at = ? WHERE usage_event_id = ?')
+            .run('2026-06-03T12:01:00+08:00', 'req-weekly-previous');
+
+        await usageEventFetch(baseUrl, {
+            version: 1,
+            request_id: 'req-weekly-other-user',
+            api_key_hash: hashApiKeyForTest(secondOrder.apiKey),
+            api_key_preview: keyPreviewForTest(secondOrder.apiKey),
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 1000000,
+            cache_hit_input_tokens: 1000000,
+            cache_miss_input_tokens: 0,
+            output_tokens: 0,
+            total_tokens: 1000000,
+            requested_at: '2026-06-10T12:00:00+08:00'
+        });
+        db.prepare('UPDATE api_charge_records SET created_at = ? WHERE usage_event_id = ?')
+            .run('2026-06-10T12:01:00+08:00', 'req-weekly-other-user');
+
+        const result = await jsonFetch(`${baseUrl}/api/account/usage-summary`, {
+            headers: { cookie: firstCookie }
+        });
+
+        assert.equal(result.response.status, 200);
+        assert.equal(result.body.billing.weeklySpending.currentWeekStart, '2026-06-08');
+        assert.deepEqual(result.body.billing.weeklySpending.weekStarts, ['2026-06-01', '2026-06-08']);
+
+        const currentWeek = result.body.billing.weeklySpending.weeks['2026-06-08'];
+        assert.equal(currentWeek.days.length, 7);
+        assert.deepEqual(currentWeek.days.map((day) => day.date), [
+            '2026-06-08',
+            '2026-06-09',
+            '2026-06-10',
+            '2026-06-11',
+            '2026-06-12',
+            '2026-06-13',
+            '2026-06-14'
+        ]);
+        assert.deepEqual(currentWeek.days.map((day) => day.label), ['6/8', '6/9', '6/10', '6/11', '6/12', '6/13', '6/14']);
+
+        const currentDay = currentWeek.days.find((day) => day.date === '2026-06-10');
+        assert.equal(currentDay.chargeNanos, 3000000000);
+        assert.equal(currentDay.chargeAmount, 3);
+        assert.deepEqual(currentDay.parts.map((part) => [part.key, part.chargeNanos, part.chargeAmount]), [
+            ['cache_hit_input', 250000000, 0.25],
+            ['cache_miss_input', 1250000000, 1.25],
+            ['output', 1500000000, 1.5]
+        ]);
+
+        const previousWeek = result.body.billing.weeklySpending.weeks['2026-06-01'];
+        assert.equal(previousWeek.days.length, 7);
+        assert.equal(previousWeek.days.find((day) => day.date === '2026-06-03').chargeNanos, 2500000000);
+    }, { usageEventHmacSecret: 'usage-hmac-secret', now: () => new Date('2026-06-12T12:00:00+08:00') });
 });
 
 test('内部 usage event 接口校验 token、HMAC、timestamp 并幂等写入', async () => {
@@ -1811,6 +1919,7 @@ test('管理员 usage summary 返回 Shop 和未托管 key 的聚合用量', asy
         assert.equal(result.body.summary.month_tokens, 22);
         assert.equal(result.body.summary.failed_requests, 1);
         const expectedShopPricing = priceUsageTokens({
+            model: 'gpt-5.4',
             failed: false,
             cacheHitInputTokens: 0,
             cacheMissInputTokens: 5,
@@ -1894,6 +2003,7 @@ test('管理员 usage summary 收银只统计 Shop 扣费并使用当前命中 t
         });
 
         const expectedShopPricing = priceUsageTokens({
+            model: 'gpt-5.4',
             failed: false,
             cacheHitInputTokens: 1000000,
             cacheMissInputTokens: 0,
@@ -1956,7 +2066,7 @@ test('管理员 usage summary 返回 Shop 收银构成和用户消费排行且�
             api_key_hash: hashApiKeyForTest(secondOrder.apiKey),
             api_key_preview: keyPreviewForTest(secondOrder.apiKey),
             provider: 'codex',
-            model: 'gpt-5.4',
+            model: 'gpt-5.5',
             success: true,
             failed: false,
             input_tokens: 500000,
@@ -1988,22 +2098,22 @@ test('管理员 usage summary 返回 Shop 收银构成和用户消费排行且�
         });
 
         assert.equal(result.response.status, 200);
-        assert.equal(result.body.billing.todayChargeNanos, 3750000000);
-        assert.equal(result.body.billing.monthChargeNanos, 3750000000);
+        assert.equal(result.body.billing.todayChargeNanos, 5750000000);
+        assert.equal(result.body.billing.monthChargeNanos, 5750000000);
         assert.deepEqual(result.body.billing.todayRevenueParts, [
             { key: 'cache_hit_input', label: '缓存命中输入', tokens: 1000000, chargeNanos: 250000000, chargeAmount: 0.25 },
-            { key: 'cache_miss_input', label: '缓存未命中输入', tokens: 500000, chargeNanos: 1500000000, chargeAmount: 1.5 },
-            { key: 'output', label: '输出 token', tokens: 100000, chargeNanos: 2000000000, chargeAmount: 2 }
+            { key: 'cache_miss_input', label: '缓存未命中输入', tokens: 500000, chargeNanos: 2500000000, chargeAmount: 2.5 },
+            { key: 'output', label: '输出 token', tokens: 100000, chargeNanos: 3000000000, chargeAmount: 3 }
         ]);
         assert.deepEqual(result.body.billing.monthRevenueParts, result.body.billing.todayRevenueParts);
         assert.deepEqual(result.body.billing.customerSpendingRankings.today.map((item) => [item.phone, item.chargeNanos, item.chargeAmount]), [
-            ['13800138512', 3500000000, 3.5],
+            ['13800138512', 5500000000, 5.5],
             ['13800138511', 250000000, 0.25]
         ]);
         assert.deepEqual(result.body.billing.customerSpendingRankings.today[0].parts.map((part) => [part.key, part.chargeNanos, part.chargeAmount]), [
             ['cache_hit_input', 0, 0],
-            ['cache_miss_input', 1500000000, 1.5],
-            ['output', 2000000000, 2]
+            ['cache_miss_input', 2500000000, 2.5],
+            ['output', 3000000000, 3]
         ]);
         assert.deepEqual(result.body.billing.customerSpendingRankings.today[1].parts.map((part) => [part.key, part.chargeNanos, part.chargeAmount]), [
             ['cache_hit_input', 250000000, 0.25],
@@ -2011,7 +2121,7 @@ test('管理员 usage summary 返回 Shop 收银构成和用户消费排行且�
             ['output', 0, 0]
         ]);
         assert.deepEqual(result.body.billing.customerSpendingRankings.month.map((item) => [item.phone, item.chargeNanos, item.chargeAmount]), [
-            ['13800138512', 3500000000, 3.5],
+            ['13800138512', 5500000000, 5.5],
             ['13800138511', 250000000, 0.25]
         ]);
         assert.equal(
@@ -2025,6 +2135,7 @@ test('管理员 usage summary 收银构成按扣费记录价格版本拆分历�
     await withServer(async ({ baseUrl, db }) => {
         const order = await createRedeemedOrder(baseUrl, '13800138513', 'sk-summary-chart-old-price');
         const cacheHit10xOrder = await createRedeemedOrder(baseUrl, '13800138514', 'sk-summary-chart-cache-hit-10x-price');
+        const gpt55Order = await createRedeemedOrder(baseUrl, '13800138515', 'sk-summary-chart-gpt-55-price');
         const createdAt = new Date().toISOString();
         db.prepare(`
 INSERT INTO api_charge_records (
@@ -2084,17 +2195,46 @@ INSERT INTO api_charge_records (
             'charged',
             createdAt
         );
+        db.prepare(`
+INSERT INTO api_charge_records (
+  id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+  cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+  price_version, charge_cents, charge_nanos, balance_before_cents, balance_before_nanos,
+  balance_after_cents, balance_after_nanos, status, created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`).run(
+            'CHARGE-GPT-55-PRICE',
+            '13800138515',
+            'req-summary-chart-gpt-55-price',
+            hashApiKeyForTest(gpt55Order.apiKey),
+            'gpt-5.5',
+            1000000,
+            100000,
+            0,
+            1000000,
+            0,
+            1100000,
+            'gpt-5.5-rmb-20260613',
+            800,
+            8000000000,
+            1000,
+            10000000000,
+            200,
+            2000000000,
+            'charged',
+            createdAt
+        );
 
         const result = await jsonFetch(`${baseUrl}/api/admin/usage-summary`, {
             headers: { 'x-admin-token': 'test-token' }
         });
 
         assert.equal(result.response.status, 200);
-        assert.equal(result.body.billing.monthChargeNanos, 625000000);
+        assert.equal(result.body.billing.monthChargeNanos, 8625000000);
         assert.deepEqual(result.body.billing.monthRevenueParts, [
             { key: 'cache_hit_input', label: '缓存命中输入', tokens: 1000000, chargeNanos: 25000000, chargeAmount: 0.025 },
-            { key: 'cache_miss_input', label: '缓存未命中输入', tokens: 0, chargeNanos: 0, chargeAmount: 0 },
-            { key: 'output', label: '输出 token', tokens: 100000, chargeNanos: 600000000, chargeAmount: 0.6 }
+            { key: 'cache_miss_input', label: '缓存未命中输入', tokens: 1000000, chargeNanos: 5000000000, chargeAmount: 5 },
+            { key: 'output', label: '输出 token', tokens: 200000, chargeNanos: 3600000000, chargeAmount: 3.6 }
         ]);
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
@@ -2706,6 +2846,7 @@ test('Account usage summary 只聚合当前登录手机号关联的 token 用量
 	        assert.equal(result.body.summary.month.reasoningTokens, 3);
 	        assert.equal(result.body.summary.month.cachedTokens, 4);
 	        const ownPricing = priceUsageTokens({
+	            model: 'gpt-5.4',
 	            failed: false,
 	            cacheHitInputTokens: 4,
 	            cacheMissInputTokens: 6,
@@ -3103,6 +3244,7 @@ test('Account 页面包含预充值余额、充值申请和扣费流水容器', 
     assert.match(html, /id="topupForm"/);
     assert.match(html, /id="topupAmount"/);
     assert.match(html, /id="accountTopups"/);
+    assert.match(html, /id="accountWeeklySpendingChart"/);
     assert.match(html, /id="accountCharges"/);
     assert.match(html, /id="accountLedger"/);
     assert.match(html, /id="accountGuideSection"/);
@@ -3116,6 +3258,25 @@ test('Account 页面包含预充值余额、充值申请和扣费流水容器', 
     assert.equal((html.match(/data-collapsible-toggle/g) || []).length, 5);
     assert.equal((html.match(/data-collapsible-content/g) || []).length, 5);
     assert.match(html, /id="accountGuideSection"[\s\S]*?data-collapsible-default="closed"/);
+});
+
+test('Account 前端渲染周消费柱状图并提供上一周下一周切换', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+    const accountChartScript = script.slice(
+        script.indexOf('function renderAccountWeeklySpendingChart'),
+        script.indexOf('function renderAdminRevenueCharts')
+    );
+
+    assert.match(script, /function renderAccountWeeklySpendingChart/);
+    assert.match(script, /data-account-week-offset="-1"/);
+    assert.match(script, /data-account-week-offset="1"/);
+    assert.match(accountChartScript, /admin-revenue-bar-segment-hit/);
+    assert.match(accountChartScript, /admin-revenue-bar-segment-miss/);
+    assert.match(accountChartScript, /admin-revenue-bar-segment-output/);
+    assert.match(accountChartScript, /admin-revenue-bar admin-revenue-bar-stack/);
+    assert.match(accountChartScript, /admin-revenue-ranking-legend/);
+    assert.doesNotMatch(accountChartScript, /account-revenue-bar/);
+    assert.match(script, /accountWeeklySpendingChart\.innerHTML = renderAccountWeeklySpendingChart/);
 });
 
 test('Account 用量卡片不展示无效 token 总览和内部价格版本名', () => {
