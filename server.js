@@ -23,6 +23,7 @@ const {
     normalizeModelList,
     pricingFallbackModelOverview
 } = require('./lib/shop-model-overview');
+const { syncApiKeyToCliProxyConfig } = require('./lib/cliproxy-api-key-sync');
 const {
     centsToCny,
     centsToNanos,
@@ -712,6 +713,8 @@ function createShopApp(options = {}) {
         || 'http://127.0.0.1:8317/v1'
     ).trim().replace(/\/+$/, '');
     const modelListFetch = options.modelListFetch || globalThis.fetch;
+    const cliproxyConfigPath = String(options.cliproxyConfigPath ?? process.env.CLIPROXY_CONFIG_PATH ?? '').trim();
+    const cliproxyConfigBackupDir = String(options.cliproxyConfigBackupDir ?? process.env.CLIPROXY_CONFIG_BACKUP_DIR ?? '').trim();
     if (apiKeyEncryptionSecret) {
         assertStrongSecret('SHOP_API_KEY_ENCRYPTION_SECRET', apiKeyEncryptionSecret, { production });
     }
@@ -737,6 +740,22 @@ function createShopApp(options = {}) {
 
     function plainApiKey(row) {
         return readStoredApiKey(row, apiKeyEncryptionSecret);
+    }
+
+    function syncRedeemedApiKeyToCliProxy(apiKey) {
+        try {
+            return syncApiKeyToCliProxyConfig({
+                apiKey,
+                configPath: cliproxyConfigPath,
+                backupDir: cliproxyConfigBackupDir,
+                now: appNow
+            });
+        } catch (cause) {
+            const error = new Error(`CLIProxyAPI 入口配置同步失败：${cause.message}`);
+            error.status = 500;
+            error.code = 'CLIPROXY_SYNC_FAILED';
+            throw error;
+        }
     }
 
     function toOrder(row) {
@@ -1043,7 +1062,8 @@ function createShopApp(options = {}) {
             balanceAfterNanos: row.balance_after_nanos,
             balanceAfter: nanosToCny(row.balance_after_nanos ?? signedCentsToNanos(row.balance_after_cents)),
             status: row.status,
-            createdAt: row.created_at
+            createdAt: row.created_at,
+            usageRequestedAt: row.usage_requested_at || ''
         };
     }
 
@@ -1630,48 +1650,56 @@ LIMIT ?
 `);
 
     const listApiChargeRecordsByPhone = db.prepare(`
-SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
-       cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
-       price_version, charge_cents, charge_nanos, balance_before_cents,
-       balance_before_nanos, balance_after_cents, balance_after_nanos, status, created_at
-FROM api_charge_records
-WHERE phone = ?
-ORDER BY created_at DESC, rowid DESC
+SELECT acr.id, acr.phone, acr.usage_event_id, acr.api_key_hash, acr.model, acr.input_tokens, acr.output_tokens,
+       acr.cache_hit_input_tokens, acr.cache_miss_input_tokens, acr.reasoning_tokens, acr.total_tokens,
+       acr.price_version, acr.charge_cents, acr.charge_nanos, acr.balance_before_cents,
+       acr.balance_before_nanos, acr.balance_after_cents, acr.balance_after_nanos, acr.status, acr.created_at,
+       ue.requested_at AS usage_requested_at
+FROM api_charge_records acr
+LEFT JOIN usage_events ue ON ue.request_id = acr.usage_event_id
+WHERE acr.phone = ?
+ORDER BY acr.created_at DESC, acr.rowid DESC
 LIMIT ?
 `);
 
     const listApiChargeRecordsForBillingByPhone = db.prepare(`
-SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
-       cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
-       price_version, charge_cents, charge_nanos, balance_before_cents,
-       balance_before_nanos, balance_after_cents, balance_after_nanos, status, created_at
-FROM api_charge_records
-WHERE phone = ?
-ORDER BY created_at DESC, rowid DESC
+SELECT acr.id, acr.phone, acr.usage_event_id, acr.api_key_hash, acr.model, acr.input_tokens, acr.output_tokens,
+       acr.cache_hit_input_tokens, acr.cache_miss_input_tokens, acr.reasoning_tokens, acr.total_tokens,
+       acr.price_version, acr.charge_cents, acr.charge_nanos, acr.balance_before_cents,
+       acr.balance_before_nanos, acr.balance_after_cents, acr.balance_after_nanos, acr.status, acr.created_at,
+       ue.requested_at AS usage_requested_at
+FROM api_charge_records acr
+LEFT JOIN usage_events ue ON ue.request_id = acr.usage_event_id
+WHERE acr.phone = ?
+ORDER BY acr.created_at DESC, acr.rowid DESC
 `);
 
     const listApiChargeRecordsForBilling = db.prepare(`
-SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
-       cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
-       price_version, charge_cents, charge_nanos, balance_before_cents,
-       balance_before_nanos, balance_after_cents, balance_after_nanos, status, created_at
-FROM api_charge_records
-ORDER BY created_at DESC, rowid DESC
+SELECT acr.id, acr.phone, acr.usage_event_id, acr.api_key_hash, acr.model, acr.input_tokens, acr.output_tokens,
+       acr.cache_hit_input_tokens, acr.cache_miss_input_tokens, acr.reasoning_tokens, acr.total_tokens,
+       acr.price_version, acr.charge_cents, acr.charge_nanos, acr.balance_before_cents,
+       acr.balance_before_nanos, acr.balance_after_cents, acr.balance_after_nanos, acr.status, acr.created_at,
+       ue.requested_at AS usage_requested_at
+FROM api_charge_records acr
+LEFT JOIN usage_events ue ON ue.request_id = acr.usage_event_id
+ORDER BY acr.created_at DESC, acr.rowid DESC
 `);
 
     const listApiChargeRecordsForShopBilling = db.prepare(`
-SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
-       cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
-       price_version, charge_cents, charge_nanos, balance_before_cents,
-       balance_before_nanos, balance_after_cents, balance_after_nanos, status, created_at
+SELECT acr.id, acr.phone, acr.usage_event_id, acr.api_key_hash, acr.model, acr.input_tokens, acr.output_tokens,
+       acr.cache_hit_input_tokens, acr.cache_miss_input_tokens, acr.reasoning_tokens, acr.total_tokens,
+       acr.price_version, acr.charge_cents, acr.charge_nanos, acr.balance_before_cents,
+       acr.balance_before_nanos, acr.balance_after_cents, acr.balance_after_nanos, acr.status, acr.created_at,
+       ue.requested_at AS usage_requested_at
 FROM api_charge_records acr
+LEFT JOIN usage_events ue ON ue.request_id = acr.usage_event_id
 WHERE EXISTS (
   SELECT 1
   FROM api_keys ak
   JOIN orders o ON o.id = ak.order_id OR o.api_key = ak.api_key
   WHERE ak.api_key_hash = acr.api_key_hash
 )
-ORDER BY created_at DESC, rowid DESC
+ORDER BY acr.created_at DESC, acr.rowid DESC
 `);
 
     const getUserByPhone = db.prepare(`
@@ -1921,6 +1949,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             resultToken = createResultToken();
         }
         const apiKey = plainApiKey(apiKeyRow);
+        syncRedeemedApiKeyToCliProxy(apiKey);
         const orderStorage = apiKeyStorage(apiKey);
         const order = {
             id: createId('ORDER'),
@@ -2688,10 +2717,9 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     }
 
     function buildUsageSummary(filters = {}) {
-        const now = new Date();
-        const todayStart = new Date(now);
-        todayStart.setHours(0, 0, 0, 0);
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const now = appNow();
+        const todayStart = startOfChinaDay(now);
+        const monthStart = startOfChinaMonth(now);
         const ranges = { todayStart, monthStart };
         const statsByHash = new Map();
         const summaryStats = emptyUsageStats();
@@ -2765,8 +2793,8 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
                 failed_requests: summaryStats.failed_requests
             },
             billing: buildBillingSummary(listApiChargeRecordsForShopBilling.all(), {
-                todayStart: startOfChinaDay(now),
-                monthStart: startOfChinaMonth(now)
+                todayStart,
+                monthStart
             }, { publicChargeRecord: publicApiChargeRecord }),
             items: filteredItems
         };

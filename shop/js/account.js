@@ -193,7 +193,10 @@ function renderBalanceCards(balance = {}) {
 }
 
 function formatModelPrice(value) {
-    return `¥${Number(value || 0).toFixed(2)}`;
+    const amount = Number(value || 0);
+    if (!Number.isFinite(amount)) return '¥0.00';
+    const cents = amount * 100;
+    return `¥${Number.isInteger(cents) ? amount.toFixed(2) : amount.toFixed(3)}`;
 }
 
 function renderAccountModelOverview(data = {}) {

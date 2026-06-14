@@ -462,3 +462,117 @@
 - `test/shop-frontend.test.js` 承接前端 VM、HTML、CSS 静态断言；`test/shop-flow.test.js` 保留后端集成流程和数据库行为测试。
 - 独立验收实例使用 `http://127.0.0.1:4174` 和 `data/dev/shop-refactor.sqlite`，usage 自动导入关闭；后续涉及公网映射时继续使用独立 worktree、独立端口、独立 SQLite。
 - 实施记录见 `docs/ai/context/20260613-152130-shop-modular-refactor-implementation_CN.md`。
+
+## 2026-06-13 `193****7925` API key 加入 CLIProxyAPI 入口
+
+- `193****7925` 对应 Shop 订单为 `ORDER367217111004`，API key preview 为 `sk-yui-3l5x_...fWnc6g`。
+- 该 key 在 yui.web 内部状态为 `used`，hash 前 16 位为 `e21fa6adcd3c2b8e`，账号余额为 30 元。
+- CLIProxyAPI 当前入口白名单来自 `/Users/wujianxiang/CodeSpace/CLIProxyAPI/config.yaml` 顶层 `api-keys`，不是 `.env`。
+- 已备份配置到 `/Users/wujianxiang/CodeSpace/CLIProxyAPI/backups/config-before-add-19301367925-key-20260613-165117.yaml`，并将该 key 追加到 `api-keys`。
+- 验证结果：请求 `http://127.0.0.1:8317/v1/models` 返回 HTTP 200，模型数 5，说明热加载已生效。
+- 计划与实施记录见 `docs/ai/context/20260613-165117-add-19301367925-key-to-cliproxyapi-plan_CN.md` 和 `docs/ai/context/20260613-165117-add-19301367925-key-to-cliproxyapi-implementation_CN.md`。
+
+## 2026-06-13 `152****8391` API key 加入 CLIProxyAPI 入口
+
+- `152****8391` 对应 Shop 订单为 `ORDER407573319301`，API key preview 为 `sk-yui-OKeCq...hc9zuG`。
+- 该 key 在 yui.web 内部状态为 `used`，hash 前 16 位为 `1124b890fb5fbc5c`，账号余额为 5 元。
+- CLIProxyAPI 当前入口白名单来自 `/Users/wujianxiang/CodeSpace/CLIProxyAPI/config.yaml` 顶层 `api-keys`，不是 `.env`。
+- 已备份配置到 `/Users/wujianxiang/CodeSpace/CLIProxyAPI/backups/config-before-add-15279148391-key-20260613-203919.yaml`；检查发现该完整 key 已存在于 `api-keys`，本次未重复写入。
+- 验证结果：请求 `http://127.0.0.1:8317/v1/models` 返回 HTTP 200，模型数 5。
+- 计划与实施记录见 `docs/ai/context/20260613-203919-add-15279148391-key-to-cliproxyapi-plan_CN.md` 和 `docs/ai/context/20260613-203919-add-15279148391-key-to-cliproxyapi-implementation_CN.md`。
+
+## 2026-06-13 `193****7925` usage 导入排查
+
+- CLIProxyAPI 本地 JSONL 已记录该用户 usage，但 yui.web 一开始只收到 1 条失败 usage event，`total_tokens=0`，所以 Admin 和 Account 都没有真实 token 消耗。
+- 根因是 yui.web 本地 `.env` 未启用 `SHOP_USAGE_AUTO_IMPORT_ENABLED=true`；当前月 JSONL 没有被定时导入 SQLite。
+- 已备份真实库到 `data/backups/shop-before-usage-auto-import-19301367925-20260613-170418.sqlite`。
+- 已开启 `SHOP_USAGE_AUTO_IMPORT_ENABLED=true` 并重启 yui.web，启动自动导入当前月 JSONL。
+- 验证结果：Admin 和 Account 侧均可看到该用户 `71385` tokens，5 次成功请求、2 次失败请求，扣费记录共 7 条。
+- 记录见 `docs/ai/context/20260613-170613-19301367925-usage-import-investigation_CN.md`。
+
+## 2026-06-13 usage 实时同步链路排查
+
+- yui.web `/api/internal/usage-events` 接收端隔离验证正常：坏签名 401，合法签名 201，重复 `request_id` 幂等跳过。
+- `193****7925` 的 2 条失败 usage 几乎实时入库，但 5 条成功 usage 是后来由 JSONL 自动导入补齐，说明问题集中在 CLIProxyAPI 实时 POST 链路。
+- CLIProxyAPI 当前运行 dirty build，二进制包含 `internal/usage` publisher；干净实现位于 `codex/usage-event-publisher-clean`，当前 main 源码没有这些文件。
+- CLIProxyAPI usage manager 会把请求 context 放进异步队列；sync client 使用该 context 发 POST。临时测试确认已取消 context 下 sync 请求不会到达接收端。
+- 可靠兜底是 yui.web 自动导入 JSONL；如果需要秒级实时同步，应修 CLIProxyAPI publisher：事后 POST 使用独立短超时 context，不继承请求 context。
+- 记录见 `docs/ai/context/20260613-171756-usage-realtime-sync-investigation_CN.md`。
+
+## 2026-06-13 Admin / Account 消费统计日期口径
+
+- `183****0091` 截图中的今日 `¥16.37` 是历史 usage 在 `2026-06-13 16:05 +08` 补导 / 补扣后按 `api_charge_records.created_at` 统计造成的，不是该账号当天实际调用消费。
+- 该账号本月总扣费 `¥18.8035458` 是真实账本金额；按 usage 发生时间计算，当前今日消费为 `0`。
+- Admin 收银构成、Shop 用户消费排行、Account billing 和周消费图表改为优先按 `usage_events.requested_at` 切分周期；缺失 usage 时才回退 `created_at`。
+- 近期扣费记录仍按 `created_at` 排序，用于审计入账 / 补扣时间。
+- 测试 helper 默认禁用 usage 自动导入，避免本地 `.env` 污染临时测试库。
+- 已重启本地 `yui.web` 4173 服务；验证 `npm test` 160 个测试通过。
+- 设计与计划见 `docs/ai/context/20260613-172727-admin-account-spending-date-basis-design-plan_CN.md`，实施记录见 `docs/ai/context/20260613-172727-admin-account-spending-date-basis-implementation_CN.md`。
+
+## 2026-06-13 补充 20 个 Shop API key 池
+
+- 已向 `data/shop.sqlite` 的 `api_keys` 池新增 20 个 `sk-yui-...` API key；导入完成时均为 `unused`。
+- 最终复核时其中 1 个新增 key 已被兑换，当前状态为 `unused=19`、`used=14`；已兑换 preview 为 `sk-yui-OKeCq...hc9zuG`，订单 `ORDER407573319301`，手机号 `152****8391`。
+- 新增 key 使用 `SHOP_API_KEY_ENCRYPTION_SECRET` 加密保存，`api_key` 列为 `enc_<hash>` 占位；完整 key 不写入协作文档或 AGENTS。
+- 执行前已备份真实库到 `data/backups/shop-before-add-20-api-keys-20260613-174633.sqlite`。
+- 导入脚本先把 `created_at` 写成了 UTC 时间加 `+08:00` 后缀，已修正为实际北京时间 `2026-06-13T16:47:24.506+08:00`；修正前备份为 `data/backups/shop-before-fix-add-20-api-key-created-at-20260613-175300.sqlite`。
+- 已将同一批 key 追加到 CLIProxyAPI `/Users/wujianxiang/CodeSpace/CLIProxyAPI/config.yaml` 顶层 `api-keys`，配置备份为 `/Users/wujianxiang/CodeSpace/CLIProxyAPI/backups/config-before-add-20-shop-api-keys-20260613-174633.yaml`。
+- 验证结果：CLIProxyAPI 入口 key 数量为 35 且无重复。
+- 抽样新 key 请求 `/v1/models` 返回 `401 api_key_inactive` 是预期行为：CLIProxyAPI 已识别该入口 key，但 Shop 内仍未兑换，未绑定订单和余额，不能直接使用。
+- 后续兑换后 key 状态会变为 `used` 并绑定订单；账户余额有效时内部状态接口才会返回 active。
+- 计划与实施记录见 `docs/ai/context/20260613-174633-add-20-shop-api-keys-plan_CN.md` 和 `docs/ai/context/20260613-174633-add-20-shop-api-keys-implementation_CN.md`。
+
+## 2026-06-13 Shop 账务时间口径与历史补账价格
+
+- 扣费统计周期按 usage 实际发生时间 `usage_events.requested_at` 归属今日 / 本月 / 每日；`api_charge_records.created_at` 只表示入账或补扣时间。
+- 历史补账价格必须按 usage 发生时间选择价格版本，不能按补账执行时间套用当前价格。
+- `priceUsageTokens(event)` 应传入 `requestedAt` / `requested_at`；缺失或非法时间才回退当前模型价格。
+- `lib/shop-usage-reconcile.js` 补账候选必须查询并传入 `requested_at`。
+- Admin usage summary 的 token 统计、收银统计和 Account usage summary 都使用 UTC+8 日期边界。
+- `183****0091` 当前真实账本本月消费为 `18.803545800` 元，但按发生时价格应扣 `6.914881000` 元，净多扣 `11.888664800` 元；本次只修代码和 dry-run，未改真实库余额 / 流水 / 历史扣费记录。
+- Admin `/api/admin/usage-summary` 的 `q/group/status` 当前只过滤 `items` 用量分组表，不过滤 `summary` 和 `billing`；排查单个手机号时不要把全局收银卡片误读为该手机号金额。
+- 核对与实施记录见 `docs/ai/context/20260613-174516-billing-temporal-pricing-audit-plan_CN.md` 和 `docs/ai/context/20260613-175610-billing-temporal-pricing-audit-implementation_CN.md`。
+
+## 2026-06-13 Admin 用户余额状态文案修复
+
+- `/shop/admin/` 用户余额面板的 `billingStatusText is not defined` 来自前端模块化后的作用域隔离，不是后端余额接口错误。
+- `billingStatusText` 和 `topupStatusText` 由 `window.YuiShopAccount` 导出；Admin 模块使用时必须显式解构，不要假设它们是全局函数。
+- 已新增前端 VM 回归测试覆盖 `renderAdminBalanceTable` 和 `renderAdminTopups` 状态文案渲染。
+- 设计与计划见 `docs/ai/context/20260613-175752-admin-balance-status-helper-fix-design-plan_CN.md`，实施记录见 `docs/ai/context/20260613-175845-admin-balance-status-helper-fix-implementation_CN.md`。
+
+## 2026-06-14 Account 兑换自动同步 CLIProxyAPI 入口
+
+- 新兑换 API key 出现 401 的根因是 yui.web SQLite 状态已 active，但 CLIProxyAPI 入口鉴权只读取 `/Users/wujianxiang/CodeSpace/CLIProxyAPI/config.yaml` 顶层 `api-keys`。
+- 已采用方案 A：`redeemInvite()` 分配出完整 key 后、订单落库前同步追加到 CLIProxyAPI `api-keys`。
+- 生产或真实本机服务需配置 `CLIPROXY_CONFIG_PATH=/Users/wujianxiang/CodeSpace/CLIProxyAPI/config.yaml`；可选 `CLIPROXY_CONFIG_BACKUP_DIR` 指向备份目录。
+- 未配置 `CLIPROXY_CONFIG_PATH` 时同步禁用，测试 helper 默认传空路径，避免 `.env` 污染测试误写真实配置。
+- 同步失败返回 `CLIPROXY_SYNC_FAILED` 并回滚兑换事务，避免用户拿到 Shop 已兑换但代理入口不可用的半成功 key。
+- 后续不要再依赖手工为单个兑换用户追加 CLIProxyAPI `api-keys`，除非是在修复历史遗留 key。
+- 设计、计划与实施记录见 `docs/ai/context/20260614-130424-account-redeem-cliproxy-auto-sync-design_CN.md`、`docs/ai/context/20260614-130424-account-redeem-cliproxy-auto-sync-plan_CN.md` 和 `docs/ai/context/20260614-130800-account-redeem-cliproxy-auto-sync-implementation_CN.md`。
+
+## 2026-06-14 GPT 缓存命中与输出价格砍半
+
+- 当前生效价格版本改为：
+  - `gpt-5.4-rmb-20260614-half-cache-hit-output`：缓存命中输入 125 nanos/token，即 0.125 元 / 100 万 token；缓存未命中输入 2500 nanos/token，即 2.5 元 / 100 万 token；输出 7500 nanos/token，即 7.5 元 / 100 万 token。
+  - `gpt-5.5-rmb-20260614-half-cache-hit-output`：缓存命中输入 250 nanos/token，即 0.25 元 / 100 万 token；缓存未命中输入 5000 nanos/token，即 5 元 / 100 万 token；输出 15000 nanos/token，即 15 元 / 100 万 token。
+- 本次只砍半缓存命中输入和输出价格；未命中输入保持 2026-06-13 价格不变。
+- 新价格从 `2026-06-14T13:01:06+09:00` 起按 usage 实际发生时间生效；之前的 GPT usage 继续按 `gpt-5.4-rmb-20260613` / `gpt-5.5-rmb-20260613` 回放。
+- 未知模型继续沿用当前默认模型 `gpt-5.4`，因此新 usage 使用 `gpt-5.4-rmb-20260614-half-cache-hit-output`。
+- 不重算历史扣费，不覆盖旧 `api_charge_records.price_version`，不修改真实库余额。
+- 设计与计划见 `docs/ai/context/20260614-130106-gpt-price-half-cache-hit-output-design-plan_CN.md`。
+
+## 2026-06-14 Account 模型价格展示精度
+
+- `/shop/account/` 模型总览价格展示不能固定 `toFixed(2)`，否则 `0.125 元 / 100 万 token` 会被四舍五入成 `¥0.13`。
+- Account 模型价格展示规则：能用两位精确表达的价格显示两位，例如 `¥2.50`、`¥15.00`；需要三位才能精确表达的价格显示三位，例如 `¥0.125`。
+- Account 页和动态加载的 `shop/js/account.js` 已更新缓存版本为 `20260614-account-price-display`。
+- 设计与计划见 `docs/ai/context/20260614-131025-account-model-price-display-design-plan_CN.md`，实施记录见 `docs/ai/context/20260614-131025-account-model-price-display-implementation_CN.md`。
+
+## 2026-06-14 Admin 收银金额核对
+
+- `/shop/admin/` 收银分析和 Shop 用户消费排行当前金额按每条 `api_charge_records.price_version` 回放历史价格并汇总，不按当前最新价格重算历史 usage。
+- 2026-06-14 13:05 核对真实库：本月 Shop charged 记录 1350 条，按 `price_version` 复算与账本 `charge_nanos` 完全一致，0 条不匹配。
+- 截图今日 `¥5.30` 来自 `19301367925` 的 41 条 `gpt-5.5-rmb-20260613` 记录；若按 2026-06-14 最新 `gpt-5.5` 半价规则重算则为 `¥3.684334`，不应替代真实账本收银。
+- 截图本月 `¥97.07` 是多个历史价格版本混合回放；若按当前最新模型价格强行重算本月全部 Shop token，则为 `¥84.446874500`。
+- 如果后续需要“按当前最新价模拟重算历史区间”，应新增模拟分析口径，不能覆盖 Admin 收银金额、真实扣费、余额和流水。
+- 核账记录见 `docs/ai/context/20260614-130541-admin-revenue-ranking-pricing-audit_CN.md`。

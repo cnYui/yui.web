@@ -12,7 +12,12 @@
         requestJson
     } = window.YuiShopCore;
     const { renderAdminRevenueCharts } = window.YuiShopCharts;
-    const { renderBillingUsageCards, renderCharges } = window.YuiShopAccount;
+    const {
+        billingStatusText,
+        renderBillingUsageCards,
+        renderCharges,
+        topupStatusText
+    } = window.YuiShopAccount;
 
 function renderAdminBalanceSummary(summary = {}) {
     const cards = [
@@ -310,7 +315,7 @@ function initAdminUsagePage() {
             renderRevenueCharts();
             tableRoot.innerHTML = renderUsageItems(data.items || []);
             if (recentChargesRoot) recentChargesRoot.innerHTML = renderAdminRecentCharges(data.billing?.recentCharges || []);
-            message.textContent = `共 ${(data.items || []).length} 条。`;
+            message.textContent = `共 ${(data.items || []).length} 个用量分组，${(data.billing?.recentCharges || []).length} 条扣费日志。`;
         } catch (error) {
             message.textContent = error.message;
         } finally {
