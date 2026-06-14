@@ -8,7 +8,7 @@ const shopModuleScripts = [
     '/shop/js/core.js',
     '/shop/js/charts.js',
     '/shop/js/auth.js',
-    '/shop/js/account.js',
+    '/shop/js/account.js?v=20260614-account-price-display',
     '/shop/js/admin.js',
     '/shop/js/legacy-redirects.js'
 ];
@@ -74,6 +74,56 @@ test('前端图表模块复用同一个堆叠柱渲染入口', () => {
     });
     assert.match(html, /admin-revenue-bar-stack/);
     assert.match(html, /输出 token/);
+});
+
+test('Admin 余额和充值表渲染复用账户状态文案函数', () => {
+    const sandbox = {
+        window: {},
+        document: {
+            cookie: '',
+            readyState: 'loading',
+            addEventListener() {}
+        },
+        Intl,
+        URL
+    };
+    sandbox.window.document = sandbox.document;
+
+    for (const file of [
+        'shop/js/core.js',
+        'shop/js/charts.js',
+        'shop/js/account.js',
+        'shop/js/admin.js'
+    ]) {
+        vm.runInNewContext(readScript(file), sandbox, { filename: file });
+    }
+
+    const balanceHtml = sandbox.window.YuiShopAdmin.renderAdminBalanceTable([
+        {
+            phone: '13800138000',
+            status: 'debt',
+            balanceNanos: -120000000,
+            debtNanos: 120000000,
+            pendingTopupNanos: 0,
+            managedApiKeyCount: 1,
+            usedApiKeyCount: 1,
+            updatedAt: '2026-06-13T09:00:00.000Z'
+        }
+    ]);
+    const topupHtml = sandbox.window.YuiShopAdmin.renderAdminTopups([
+        {
+            id: 'topup-test',
+            phone: '13800138000',
+            requestedAmountCents: 2000,
+            requestedAmount: 20,
+            paymentMethod: 'alipay',
+            paymentNote: '',
+            status: 'pending'
+        }
+    ]);
+
+    assert.match(balanceHtml, /欠费/);
+    assert.match(topupHtml, /待确认/);
 });
 
 test('Shop 入口加载页面模块后仍暴露兼容的 YuiShop 初始化函数', async () => {

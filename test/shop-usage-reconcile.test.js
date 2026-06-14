@@ -38,18 +38,19 @@ test('usage 补账 dry-run 不写数据库，apply 后幂等扣费', () => {
         assert.equal(db.prepare('SELECT cache_hit_input_tokens FROM usage_events WHERE request_id = ?').get('req-reconcile-owned').cache_hit_input_tokens, 0);
         assert.equal(fs.existsSync(auditLogDir), false);
 
-	        const applied = reconcileUsageBilling(db, { apply: true, auditLogDir, now: () => '2026-06-11T11:00:00+08:00' });
-	        const expectedPricing = priceUsageTokens({
-	            model: 'gpt-5.5',
-	            failed: false,
-	            cacheHitInputTokens: 40,
-	            cacheMissInputTokens: 60,
-	            outputTokens: 10,
-	            reasoningTokens: 88
-	        });
-	        assert.equal(applied.updatedUsageBreakdowns, 1);
-	        assert.equal(applied.createdCharges, 1);
-	        assert.equal(applied.totalChargeNanos, expectedPricing.chargeNanos);
+        const applied = reconcileUsageBilling(db, { apply: true, auditLogDir, now: () => '2026-06-11T11:00:00+08:00' });
+        const expectedPricing = priceUsageTokens({
+            model: 'gpt-5.5',
+            requestedAt: '2026-06-11T10:01:00Z',
+            failed: false,
+            cacheHitInputTokens: 40,
+            cacheMissInputTokens: 60,
+            outputTokens: 10,
+            reasoningTokens: 88
+        });
+        assert.equal(applied.updatedUsageBreakdowns, 1);
+        assert.equal(applied.createdCharges, 1);
+        assert.equal(applied.totalChargeNanos, expectedPricing.chargeNanos);
         assert.deepEqual(
             db.prepare('SELECT cache_hit_input_tokens, cache_miss_input_tokens FROM usage_events WHERE request_id = ?').get('req-reconcile-owned'),
             { cache_hit_input_tokens: 40, cache_miss_input_tokens: 60 }
@@ -63,10 +64,10 @@ test('usage 补账 dry-run 不写数据库，apply 后幂等扣费', () => {
                 charge_nanos: expectedPricing.chargeNanos
             }
         );
-	        assert.equal(
-	            db.prepare('SELECT balance_nanos FROM account_balances WHERE phone = ?').get('13800138201').balance_nanos,
-	            1000000000 - expectedPricing.chargeNanos
-	        );
+        assert.equal(
+            db.prepare('SELECT balance_nanos FROM account_balances WHERE phone = ?').get('13800138201').balance_nanos,
+            1000000000 - expectedPricing.chargeNanos
+        );
         const logFiles = fs.readdirSync(auditLogDir).filter((file) => file.endsWith('.jsonl'));
         assert.equal(logFiles.length, 1);
         const records = fs.readFileSync(path.join(auditLogDir, logFiles[0]), 'utf8').trim().split(/\r?\n/).map((line) => JSON.parse(line));

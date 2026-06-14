@@ -4,7 +4,7 @@
         '/shop/js/core.js',
         '/shop/js/charts.js',
         '/shop/js/auth.js',
-        '/shop/js/account.js',
+        '/shop/js/account.js?v=20260614-account-price-display',
         '/shop/js/admin.js',
         '/shop/js/legacy-redirects.js'
     ];
