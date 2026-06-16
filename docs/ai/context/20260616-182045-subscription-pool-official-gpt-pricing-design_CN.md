@@ -19,20 +19,14 @@
 
 来源：OpenAI 官方 API Pricing 页面，`https://developers.openai.com/api/docs/pricing`。
 
-截至 2026-06-16，该页面公开展示的相关价格为：
+截至 2026-06-16，用户截图和官方价格页中本项目需要采用的价格为：
 
-| 模型 | 计费模式 | 上下文 | 输入 | 缓存命中输入 | 输出 |
-| --- | --- | --- | ---: | ---: | ---: |
-| `gpt-5.4` | Standard | <= 272K tokens | $2.50 / 100 万 token | $0.25 / 100 万 token | $15.00 / 100 万 token |
-| `gpt-5.4` | Standard | > 272K tokens | $5.00 / 100 万 token | $0.50 / 100 万 token | $22.50 / 100 万 token |
-| `gpt-5.5` | Standard | <= 272K tokens | $5.00 / 100 万 token | $0.50 / 100 万 token | $30.00 / 100 万 token |
-| `gpt-5.5` | Standard | > 272K tokens | $10.00 / 100 万 token | $1.00 / 100 万 token | $45.00 / 100 万 token |
-| `gpt-5.4` | Priority | <= 272K tokens | $5.00 / 100 万 token | $0.50 / 100 万 token | $30.00 / 100 万 token |
-| `gpt-5.4` | Priority | > 272K tokens | $10.00 / 100 万 token | $1.00 / 100 万 token | $45.00 / 100 万 token |
-| `gpt-5.5` | Priority | <= 272K tokens | $10.00 / 100 万 token | $1.00 / 100 万 token | $60.00 / 100 万 token |
-| `gpt-5.5` | Priority | > 272K tokens | $20.00 / 100 万 token | $2.00 / 100 万 token | $90.00 / 100 万 token |
+| 模型 | 输入 Token 价格（每 100 万 tokens） | 命中缓存输入价格（每 100 万 tokens） | 输出 Token 价格（每 100 万 tokens） |
+| --- | ---: | ---: | ---: |
+| `gpt-5.4` | $2.50 | $0.25 | $15.00 |
+| `gpt-5.5` | $5.00 | $0.50 | $30.00 |
 
-本项目默认采用 Standard 在线调用价格。Batch / Flex 不作为默认价格来源，因为当前业务是实时 API key 代理，不是异步批处理或 Flex 队列。Priority 只在后续明确接入 Priority 服务层时启用。
+本项目第一版只实现这一套计价规则。不要在实现中引入 Batch / Flex / Priority，也不要区分长短上下文。Codex / CLIProxyAPI 侧会处理上下文压缩；yui.web 只按 usage event 最终上报的 token 数和上表价格扣每日美元额度。
 
 ## 必须解决的问题
 
@@ -44,10 +38,7 @@
    - 新规则只应用新分支上线后的 usage。
 3. 必须记录官方价格快照版本。
    - 官方价格会变化，账务记录必须保存当时使用的价格版本，不能根据当前价格重算历史。
-4. 必须区分短上下文和长上下文。
-   - 官方价格对超过 272K tokens 的上下文单独定价。
-   - 如果 usage event 当前没有上下文层级字段，第一版可用 `input_tokens > 272000` 判定长上下文；后续更推荐由 CLIProxyAPI 显式传入 `context_tier`。
-5. 必须让超额行为可解释。
+4. 必须让超额行为可解释。
    - 请求前额度已用尽：阻止请求。
    - 请求前还有额度，但请求后扣成负数：允许本次完成，下一次阻止。
    - 这与当前“余额很少时本次调用可扣成负数且下一次状态检查拒绝”的项目语义一致。
@@ -133,7 +124,7 @@
 1 USD = 1_000_000 usd_micros
 ```
 
-短上下文 Standard：
+官方美元价格：
 
 ```text
 gpt-5.4:
@@ -171,7 +162,7 @@ ceil(tokens * usd_micros_per_million_tokens / 1_000_000)
 例如：
 
 ```text
-gpt-5.4 短上下文缓存未命中输入:
+gpt-5.4 缓存未命中输入:
   usd_micros_per_million_tokens = 2_500_000
 ```
 
@@ -265,8 +256,6 @@ gpt-5.4 短上下文缓存未命中输入:
 - `usage_event_id TEXT NOT NULL UNIQUE`
 - `api_key_hash TEXT NOT NULL`
 - `model TEXT NOT NULL`
-- `service_tier TEXT NOT NULL DEFAULT 'standard'`
-- `context_tier TEXT NOT NULL CHECK (context_tier IN ('short', 'long'))`
 - `input_tokens INTEGER NOT NULL DEFAULT 0`
 - `output_tokens INTEGER NOT NULL DEFAULT 0`
 - `cache_hit_input_tokens INTEGER NOT NULL DEFAULT 0`
@@ -303,23 +292,13 @@ gpt-5.4 短上下文缓存未命中输入:
 - `officialGptUsdPrices`
 - `priceOfficialUsageUsd(event)`
 - `priceForOfficialVersion(version)`
-- `deriveContextTier(event)`
 
 价格版本命名：
 
-- `openai-gpt-5.4-usd-20260616-standard-short`
-- `openai-gpt-5.4-usd-20260616-standard-long`
-- `openai-gpt-5.5-usd-20260616-standard-short`
-- `openai-gpt-5.5-usd-20260616-standard-long`
+- `openai-gpt-5.4-usd-20260616`
+- `openai-gpt-5.5-usd-20260616`
 
-Priority 预留：
-
-- `openai-gpt-5.4-usd-20260616-priority-short`
-- `openai-gpt-5.4-usd-20260616-priority-long`
-- `openai-gpt-5.5-usd-20260616-priority-short`
-- `openai-gpt-5.5-usd-20260616-priority-long`
-
-第一版只启用 Standard，Priority 放入历史/配置表但不对外开放。
+第一版只有这一种计费规则，不设置 `service_tier` 或 `context_tier` 字段。后续如果官方账单口径变化，再新增价格版本，不回写旧记录。
 
 ## 前端展示
 
@@ -338,7 +317,7 @@ Admin 页建议新增：
 - 今日全站人民币收入。
 - 订阅池毛利估算：人民币收入按固定汇率展示为估算，不作为账务事实。
 - 每个用户今日额度、今日消耗、是否用尽。
-- 异常用户：高频、高输出、高长上下文、高 gpt-5.5 占比。
+- 异常用户：高频、高输出、高 `gpt-5.5` 占比。
 
 ## 风控
 
@@ -348,8 +327,7 @@ Admin 页建议新增：
 - 单用户每分钟请求数限制。
 - 单用户每日最大请求数限制。
 - 全站每日官方成本熔断。
-- 长上下文调用单独阈值提醒。
-- 三档都开放 `gpt-5.5` 后，29 元套餐需要更严格的并发、请求频率和长上下文阈值，避免单个用户长期吃满 $19/天。
+- 三档都开放 `gpt-5.5` 后，29 元套餐需要更严格的并发、请求频率和单次请求 token 阈值，避免单个用户长期吃满 $19/天。
 
 ## 迁移策略
 
@@ -363,8 +341,7 @@ Admin 页建议新增：
 ## 测试计划
 
 - `lib/shop-official-gpt-pricing.test.js`
-  - 覆盖 `gpt-5.4` / `gpt-5.5` 短上下文价格。
-  - 覆盖长上下文价格。
+  - 覆盖 `gpt-5.4` / `gpt-5.5` 官方美元价格。
   - 覆盖缓存命中输入、未命中输入、输出 token 分项。
   - 覆盖失败 usage 不扣额度。
 - `test/shop-flow.test.js`
