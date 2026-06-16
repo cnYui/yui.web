@@ -452,7 +452,7 @@ test('Shop 外部脚本会在 CSP 禁止 inline script 时自动初始化 Accoun
     assert.equal(elements.get('wechatQrImage').src, '/shop/assets/pay/wechat-qr.png');
 });
 
-test('Account 前端读取模型总览并渲染人民币价格表', async () => {
+test('Account 前端读取模型总览并渲染官方美元价格表', async () => {
     const script = readShopFrontendSource();
     const elements = new Map();
     const createElement = () => ({
@@ -500,30 +500,30 @@ test('Account 前端读取模型总览并渲染人民币价格表', async () => 
                     available: true,
                     priceModel: 'gpt-5.4',
                     usesDefaultPrice: false,
-                    priceVersion: 'gpt-5.4-rmb-20260614-half-cache-hit-output',
-                    cacheHitInputCnyPerMillion: 0.125,
-                    cacheMissInputCnyPerMillion: 2.5,
-                    outputCnyPerMillion: 7.5
+                    priceVersion: 'openai-standard-short-usd-20260616',
+                    cacheHitInputUsdPerMillion: 0.25,
+                    cacheMissInputUsdPerMillion: 2.5,
+                    outputUsdPerMillion: 15
                 },
                 {
                     id: 'gpt-5.4-mini',
                     available: true,
                     priceModel: 'gpt-5.4',
                     usesDefaultPrice: true,
-                    priceVersion: 'gpt-5.4-rmb-20260614-half-cache-hit-output',
-                    cacheHitInputCnyPerMillion: 0.125,
-                    cacheMissInputCnyPerMillion: 2.5,
-                    outputCnyPerMillion: 7.5
+                    priceVersion: 'openai-standard-short-usd-20260616',
+                    cacheHitInputUsdPerMillion: 0.25,
+                    cacheMissInputUsdPerMillion: 2.5,
+                    outputUsdPerMillion: 15
                 },
                 {
                     id: 'gpt-5.5',
                     available: true,
                     priceModel: 'gpt-5.5',
                     usesDefaultPrice: false,
-                    priceVersion: 'gpt-5.5-rmb-20260614-half-cache-hit-output',
-                    cacheHitInputCnyPerMillion: 0.25,
-                    cacheMissInputCnyPerMillion: 5,
-                    outputCnyPerMillion: 15
+                    priceVersion: 'openai-standard-short-usd-20260616',
+                    cacheHitInputUsdPerMillion: 0.5,
+                    cacheMissInputUsdPerMillion: 5,
+                    outputUsdPerMillion: 30
                 }
             ]
         },
@@ -566,10 +566,10 @@ test('Account 前端读取模型总览并渲染人民币价格表', async () => 
 
     assert.ok(requests.includes('/api/account/model-overview'));
     assert.match(elements.get('accountModelOverview').innerHTML, /gpt-5\.4-mini/);
-    assert.match(elements.get('accountModelOverview').innerHTML, /¥0\.125/);
-    assert.match(elements.get('accountModelOverview').innerHTML, /¥2\.50/);
-    assert.match(elements.get('accountModelOverview').innerHTML, /¥7\.50/);
-    assert.match(elements.get('accountModelOverview').innerHTML, /¥15\.00/);
+    assert.match(elements.get('accountModelOverview').innerHTML, /\$0\.25/);
+    assert.match(elements.get('accountModelOverview').innerHTML, /\$2\.50/);
+    assert.match(elements.get('accountModelOverview').innerHTML, /\$15\.00/);
+    assert.match(elements.get('accountModelOverview').innerHTML, /\$30\.00/);
     assert.doesNotMatch(elements.get('accountModelOverview').innerHTML, /计价/);
     assert.doesNotMatch(elements.get('accountModelOverview').innerHTML, /沿用 gpt-5\.4/);
     assert.doesNotMatch(elements.get('accountModelOverview').innerHTML, /价格表回退/);
@@ -3272,7 +3272,7 @@ test('Account usage summary 只聚合当前登录手机号关联的 token 用量
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
-test('Account 模型总览接口使用托管 API key 探测模型并按人民币价格返回', async () => {
+test('Account 模型总览接口使用托管 API key 探测模型并按官方美元价格返回', async () => {
     let capturedModelRequest = null;
     await withServer(async ({ baseUrl }) => {
         const unauthorized = await fetch(`${baseUrl}/api/account/model-overview`);
@@ -3316,17 +3316,17 @@ test('Account 模型总览接口使用托管 API key 探测模型并按人民币
         assert.equal(mini.available, true);
         assert.equal(mini.priceModel, 'gpt-5.4');
         assert.equal(mini.usesDefaultPrice, true);
-        assert.equal(mini.cacheHitInputCnyPerMillion, 0.125);
-        assert.equal(mini.cacheMissInputCnyPerMillion, 2.5);
-        assert.equal(mini.outputCnyPerMillion, 7.5);
+        assert.equal(mini.cacheHitInputUsdPerMillion, 0.25);
+        assert.equal(mini.cacheMissInputUsdPerMillion, 2.5);
+        assert.equal(mini.outputUsdPerMillion, 15);
 
         const gpt55 = body.models.find((model) => model.id === 'gpt-5.5');
         assert.equal(gpt55.available, true);
         assert.equal(gpt55.priceModel, 'gpt-5.5');
         assert.equal(gpt55.usesDefaultPrice, false);
-        assert.equal(gpt55.cacheHitInputCnyPerMillion, 0.25);
-        assert.equal(gpt55.cacheMissInputCnyPerMillion, 5);
-        assert.equal(gpt55.outputCnyPerMillion, 15);
+        assert.equal(gpt55.cacheHitInputUsdPerMillion, 0.5);
+        assert.equal(gpt55.cacheMissInputUsdPerMillion, 5);
+        assert.equal(gpt55.outputUsdPerMillion, 30);
     }, {
         modelListBaseUrl: 'http://cliproxy.test/v1',
         modelListFetch: async (url, requestOptions = {}) => {

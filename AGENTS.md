@@ -17,6 +17,15 @@
 - 禁止重复套餐覆盖记录见 `docs/ai/context/20260616-202029-subscription-order-no-duplicate-active-plan_CN.md`。
 - 退款 MVP 设计与实施记录见 `docs/ai/context/20260616-203809-subscription-refund-mvp-design-plan_CN.md` 和 `docs/ai/context/20260616-205344-subscription-refund-mvp-implementation_CN.md`。
 
+## 2026-06-16 Account 模型总览官方美元价格修正
+
+- 当前订阅池分支中，`/shop/account/` 模型总览展示官方美元价格，不再展示旧人民币半价表。
+- 后端 `/api/account/model-overview` 使用 `lib/shop-subscription-billing.js` 的 `officialUsdPrices`，字段为 `cacheHitInputUsdPerMillion`、`cacheMissInputUsdPerMillion`、`outputUsdPerMillion`。
+- 展示价格固定为：`gpt-5.4` 缓存命中输入 `$0.25`、未命中输入 `$2.50`、输出 `$15.00`；`gpt-5.5` 缓存命中输入 `$0.50`、未命中输入 `$5.00`、输出 `$30.00`。
+- 这次只修 Account 模型价格展示，不重算历史人民币 `api_charge_records`，也不改变旧 `lib/shop-pricing.js` 价格版本回放。
+- 旧 2026-06-13 / 2026-06-14 的人民币模型总览展示记忆只代表订阅池切换前的历史行为；后续不要恢复 `¥0.125`、`¥7.50` 或 `¥15.00` 的 Account 模型展示。
+- 设计与计划见 `docs/ai/context/20260616-210931-account-model-overview-official-usd-price-fix_CN.md`。
+
 ## 2026-06-16 订阅池长期加量包与页面设计
 
 - 加量包不再是当日额度；未用完的加量包美元额度长期保留，续费和换套餐后也继续保留。

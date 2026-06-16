@@ -411,9 +411,9 @@ function renderAddonLedger(entries = []) {
 
 function formatModelPrice(value) {
     const amount = Number(value || 0);
-    if (!Number.isFinite(amount)) return '¥0.00';
+    if (!Number.isFinite(amount)) return '$0.00';
     const cents = amount * 100;
-    return `¥${Number.isInteger(cents) ? amount.toFixed(2) : amount.toFixed(3)}`;
+    return `$${Number.isInteger(cents) ? amount.toFixed(2) : amount.toFixed(3)}`;
 }
 
 function renderAccountModelOverview(data = {}) {
@@ -437,9 +437,9 @@ function renderAccountModelOverview(data = {}) {
                     <tr class="border-t border-border-subtle dark:border-dark-border">
                         <td class="py-3 pr-4 font-mono text-primary dark:text-dark-text">${escapeHtml(model.id || '-')}</td>
                         <td class="py-3 pr-4">${escapeHtml(model.available ? '可用' : '价格表')}</td>
-                        <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.cacheHitInputCnyPerMillion))}</td>
-                        <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.cacheMissInputCnyPerMillion))}</td>
-                        <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.outputCnyPerMillion))}</td>
+                        <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.cacheHitInputUsdPerMillion))}</td>
+                        <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.cacheMissInputUsdPerMillion))}</td>
+                        <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.outputUsdPerMillion))}</td>
                     </tr>
                 `).join('')}
             </tbody>
