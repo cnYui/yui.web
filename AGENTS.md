@@ -576,3 +576,10 @@
 - 截图本月 `¥97.07` 是多个历史价格版本混合回放；若按当前最新模型价格强行重算本月全部 Shop token，则为 `¥84.446874500`。
 - 如果后续需要“按当前最新价模拟重算历史区间”，应新增模拟分析口径，不能覆盖 Admin 收银金额、真实扣费、余额和流水。
 - 核账记录见 `docs/ai/context/20260614-130541-admin-revenue-ranking-pricing-audit_CN.md`。
+
+## 2026-06-16 Account 欠费上限展示移除
+
+- 当前 API key 放行逻辑是余额必须大于 0；余额等于 0 或负数都会返回 `insufficient_balance`。
+- `account_balances.credit_limit_*` 的 10 元字段不参与 API 调用放行，只保留为历史兼容字段。
+- `/shop/account/` 不应展示「欠费上限」，避免用户误解为可以欠费 10 元后才停用。
+- 设计与计划见 `docs/ai/context/20260616-101833-account-remove-credit-limit-display-design-plan_CN.md`。

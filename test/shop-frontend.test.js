@@ -8,7 +8,7 @@ const shopModuleScripts = [
     '/shop/js/core.js',
     '/shop/js/charts.js',
     '/shop/js/auth.js',
-    '/shop/js/account.js?v=20260614-account-price-display',
+    '/shop/js/account.js?v=20260616-account-credit-limit-display',
     '/shop/js/admin.js',
     '/shop/js/legacy-redirects.js'
 ];
@@ -124,6 +124,44 @@ test('Admin 余额和充值表渲染复用账户状态文案函数', () => {
 
     assert.match(balanceHtml, /欠费/);
     assert.match(topupHtml, /待确认/);
+});
+
+test('Account 余额卡片不展示未参与放行逻辑的欠费上限', () => {
+    const sandbox = {
+        window: {},
+        document: {
+            cookie: '',
+            readyState: 'loading',
+            addEventListener() {}
+        },
+        Intl,
+        URL
+    };
+    sandbox.window.document = sandbox.document;
+
+    for (const file of [
+        'shop/js/core.js',
+        'shop/js/charts.js',
+        'shop/js/account.js'
+    ]) {
+        vm.runInNewContext(readScript(file), sandbox, { filename: file });
+    }
+
+    const html = sandbox.window.YuiShopAccount.renderBalanceCards({
+        balanceNanos: 1000000000,
+        debtNanos: 0,
+        pendingTopupNanos: 0,
+        creditLimitNanos: 10000000000,
+        creditExceeded: false,
+        status: 'available'
+    });
+
+    assert.match(html, /当前余额/);
+    assert.match(html, /欠费金额/);
+    assert.match(html, /待确认充值/);
+    assert.doesNotMatch(html, /欠费上限/);
+    assert.doesNotMatch(html, /默认上限/);
+    assert.doesNotMatch(html, /10\.00/);
 });
 
 test('Shop 入口加载页面模块后仍暴露兼容的 YuiShop 初始化函数', async () => {
