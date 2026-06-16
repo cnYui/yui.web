@@ -35,8 +35,8 @@
         <section id="accountBillingSection" class="mb-10" data-collapsible-section data-collapsible-default="open">
             <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                 <div>
-                    <p class="text-xs uppercase tracking-[0.24em] text-text-muted dark:text-dark-text-muted">Balance</p>
-                    <h2 class="mt-2 font-display text-3xl text-primary dark:text-dark-text">账户余额</h2>
+                    <p class="text-xs uppercase tracking-[0.24em] text-text-muted dark:text-dark-text-muted">Subscription</p>
+                    <h2 class="mt-2 font-display text-3xl text-primary dark:text-dark-text">订阅池</h2>
                 </div>
                 <div class="flex items-center gap-3">
                     <p id="accountBillingMessage" class="text-sm text-text-muted dark:text-dark-text-muted"></p>
@@ -44,19 +44,20 @@
                 </div>
             </div>
             <div data-collapsible-content>
-                <section class="mt-6 overflow-hidden rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card">
-                    <div class="flex flex-col gap-1 border-b border-border-subtle dark:border-dark-border p-5">
-                        <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">Models</p>
-                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">模型总览</h3>
+                <div id="accountQuotaCards" class="mt-6 grid gap-3 md:grid-cols-4"></div>
+                <section class="mt-6 rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
+                    <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">Daily quota</p>
+                            <h3 class="font-display text-2xl text-primary dark:text-dark-text">今日可用额度</h3>
+                        </div>
+                        <p id="accountQuotaHint" class="text-sm text-text-muted dark:text-dark-text-muted"></p>
                     </div>
-                    <div id="accountModelOverview" class="overflow-x-auto p-5">
-                        <p class="text-sm text-text-muted dark:text-dark-text-muted">正在读取模型...</p>
-                    </div>
+                    <div id="accountQuotaBar" class="mt-5"></div>
                 </section>
-                <div id="accountBalanceCards" class="mt-6 grid gap-3 md:grid-cols-3"></div>
-                <div class="mt-6 grid gap-5 lg:grid-cols-[1fr_1.2fr]">
+                <div class="mt-6 grid gap-5 lg:grid-cols-[1fr_1fr]">
                     <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
-                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">充值</h3>
+                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">购买套餐</h3>
                         <div class="mt-5 grid gap-4 sm:grid-cols-2">
                             <figure class="rounded-md border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface p-3">
                                 <img id="alipayQrImage" class="aspect-square w-full object-contain" alt="支付宝收款码"/>
@@ -67,23 +68,50 @@
                                 <figcaption class="mt-2 text-center text-sm text-text-muted dark:text-dark-text-muted">微信</figcaption>
                             </figure>
                         </div>
-                        <form id="topupForm" class="mt-5 grid gap-3">
-                            <input id="topupAmount" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="充值金额，单位元" required/>
-                            <select id="topupPaymentMethod" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary">
+                        <form id="subscriptionOrderForm" class="mt-5 grid gap-3">
+                            <select id="subscriptionPlanSelect" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" required></select>
+                            <select id="subscriptionPaymentMethod" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary">
                                 <option value="alipay">支付宝</option>
                                 <option value="wechat">微信</option>
                             </select>
-                            <input id="topupPaymentTime" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" type="datetime-local"/>
-                            <textarea id="topupPaymentNote" class="min-h-24 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" placeholder="备注可填写微信号"></textarea>
-                            <button class="btn-primary" type="submit">提交充值申请</button>
+                            <textarea id="subscriptionPaymentNote" class="min-h-20 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" placeholder="备注可填写微信号"></textarea>
+                            <button class="btn-primary" type="submit">提交套餐订单</button>
                         </form>
-                        <p id="topupMessage" class="mt-3 min-h-5 text-sm text-text-muted dark:text-dark-text-muted"></p>
+                        <p id="subscriptionOrderMessage" class="mt-3 min-h-5 text-sm text-text-muted dark:text-dark-text-muted"></p>
                     </section>
                     <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
-                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">充值记录</h3>
-                        <div id="accountTopups" class="mt-5"></div>
+                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">购买加量包</h3>
+                        <form id="addonOrderForm" class="mt-5 grid gap-3">
+                            <select id="addonAmountSelect" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" required></select>
+                            <select id="addonPaymentMethod" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary">
+                                <option value="alipay">支付宝</option>
+                                <option value="wechat">微信</option>
+                            </select>
+                            <textarea id="addonPaymentNote" class="min-h-20 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" placeholder="备注可填写微信号"></textarea>
+                            <button class="btn-primary" type="submit">提交加量包订单</button>
+                        </form>
+                        <p id="addonOrderMessage" class="mt-3 min-h-5 text-sm text-text-muted dark:text-dark-text-muted"></p>
                     </section>
                 </div>
+                <div class="mt-6 grid gap-5 lg:grid-cols-2">
+                    <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
+                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">套餐订单</h3>
+                        <div id="accountSubscriptionOrders" class="mt-5"></div>
+                    </section>
+                    <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
+                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">加量包订单</h3>
+                        <div id="accountAddonOrders" class="mt-5"></div>
+                    </section>
+                </div>
+                <section class="mt-6 overflow-hidden rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card">
+                    <div class="flex flex-col gap-1 border-b border-border-subtle dark:border-dark-border p-5">
+                        <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">Models</p>
+                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">模型价格</h3>
+                    </div>
+                    <div id="accountModelOverview" class="overflow-x-auto p-5">
+                        <p class="text-sm text-text-muted dark:text-dark-text-muted">正在读取模型...</p>
+                    </div>
+                </section>
             </div>
         </section>
         <section id="accountKeysSection" class="mb-10" data-collapsible-section data-collapsible-default="open">
@@ -248,11 +276,11 @@ curl -sS https://api.aaccx.pw/v1/models \
                 <div id="accountWeeklySpendingChart" class="mt-6"></div>
                 <div class="mt-6 grid gap-5 lg:grid-cols-2">
                     <section class="min-w-0 rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5 overflow-x-auto">
-                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">API 扣费记录</h3>
+                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">美元扣费记录</h3>
                         <div id="accountCharges" class="mt-5"></div>
                     </section>
                     <section class="min-w-0 rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5 overflow-x-auto">
-                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">账户流水</h3>
+                        <h3 class="font-display text-2xl text-primary dark:text-dark-text">加量包流水</h3>
                         <div id="accountLedger" class="mt-5"></div>
                     </section>
                 </div>

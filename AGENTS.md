@@ -1,5 +1,15 @@
 # AI 协作记忆
 
+## 2026-06-16 订阅池 MVP 实施
+
+- 订阅池 MVP 已在分支 `codex/subscription-pool-pricing-design` 实施，仍保持“不自动分配 API key，用户找管理员领取邀请码后登录态兑换”的流程。
+- Account 页面主流程为：选择 29 / 39 / 59 元套餐下拉框提交订单，管理员审批后展示当前套餐、今日额度、加量包余额和黑色额度条；加量包单独下单审批，余额长期保留。
+- Admin 页面新增订阅订单审核、加量包订单审核、用户额度面板和美元消耗日志，至少展示手机号、套餐档位、每日额度、今日已用 / 剩余、加量包余额。
+- 新美元账本表为 `subscription_plans`、`account_subscriptions`、`subscription_orders`、`account_addon_balances`、`account_addon_ledger_entries`、`api_usd_charge_records`。
+- API key 新放行条件为：已兑换托管 key + 有效订阅 + 今日套餐剩余额度或加量包余额大于 0；无有效订阅时加量包保留但不放行。
+- usage 美元扣费必须按 usage 发生时间判断订阅有效性：`started_at <= requested_at < expires_at`；不要回退成按当前时间判断历史 usage。
+- 实施记录见 `docs/ai/context/20260616-195021-subscription-mvp-implementation_CN.md`。
+
 ## 2026-06-16 订阅池长期加量包与页面设计
 
 - 加量包不再是当日额度；未用完的加量包美元额度长期保留，续费和换套餐后也继续保留。

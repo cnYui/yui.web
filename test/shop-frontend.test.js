@@ -569,24 +569,32 @@ test('Admin 前端读取 usage 自动导入状态接口', () => {
     assert.match(script, /api\/admin\/usage-import-status/);
 });
 
-test('Account 页面包含预充值余额、充值申请和扣费流水容器', () => {
+test('Account 页面包含订阅池购买、额度条和美元流水容器', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
 
     assert.match(html, /id="accountModelOverview"/);
-    assert.match(html, /id="accountBalanceCards"/);
+    assert.match(html, /id="accountQuotaCards"/);
+    assert.match(html, /id="accountQuotaBar"/);
+    assert.match(html, /id="subscriptionOrderForm"/);
+    assert.match(html, /id="subscriptionPlanSelect"/);
+    assert.match(html, /id="addonOrderForm"/);
+    assert.match(html, /id="addonAmountSelect"/);
+    assert.match(html, /id="accountSubscriptionOrders"/);
+    assert.match(html, /id="accountAddonOrders"/);
     assert.match(html, /id="accountBillingUsageCards"/);
     assert.doesNotMatch(html, /id="accountTokenBreakdown"/);
     assert.doesNotMatch(html, /id="accountUsageCards"/);
     assert.doesNotMatch(html, /id="paymentReference"/);
     assert.doesNotMatch(html, /付款备注：/);
-    assert.match(html, /id="topupPaymentNote"[^>]+placeholder="备注可填写微信号"/);
+    assert.match(html, /id="subscriptionPaymentNote"[^>]+placeholder="备注可填写微信号"/);
+    assert.match(html, /id="addonPaymentNote"[^>]+placeholder="备注可填写微信号"/);
     assert.doesNotMatch(html, /id="accountHourlyChart"/);
     assert.doesNotMatch(html, /id="accountDailyChart"/);
     assert.doesNotMatch(html, /最近 24 小时/);
     assert.doesNotMatch(html, /本月每日/);
-    assert.match(html, /id="topupForm"/);
-    assert.match(html, /id="topupAmount"/);
-    assert.match(html, /id="accountTopups"/);
+    assert.doesNotMatch(html, /id="topupForm"/);
+    assert.doesNotMatch(html, /id="topupAmount"/);
+    assert.doesNotMatch(html, /id="accountTopups"/);
     assert.match(html, /id="accountWeeklySpendingChart"/);
     assert.match(html, /id="accountCharges"/);
     assert.match(html, /id="accountLedger"/);
@@ -609,10 +617,10 @@ test('Account 页面包含预充值余额、充值申请和扣费流水容器', 
     assert.equal((html.match(/data-collapsible-content/g) || []).length, 5);
     assert.match(html, /id="accountGuideSection"[\s\S]*?data-collapsible-default="closed"/);
 
+    const quotaCardsIndex = html.indexOf('id="accountQuotaCards"');
     const modelOverviewIndex = html.indexOf('id="accountModelOverview"');
-    const balanceCardsIndex = html.indexOf('id="accountBalanceCards"');
-    assert.ok(modelOverviewIndex >= 0);
-    assert.ok(balanceCardsIndex > modelOverviewIndex);
+    assert.ok(quotaCardsIndex >= 0);
+    assert.ok(modelOverviewIndex > quotaCardsIndex);
 });
 
 test('Account 前端渲染周消费柱状图并提供上一周下一周切换', () => {

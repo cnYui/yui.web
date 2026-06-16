@@ -174,6 +174,58 @@ async function submitAndApproveTopup(baseUrl, cookie, amount, adminToken = 'test
     return approved.body;
 }
 
+async function submitSubscriptionOrder(baseUrl, cookie, planId = 'sub_39_daily_29_usd') {
+    const created = await jsonFetch(`${baseUrl}/api/account/subscription-orders`, {
+        method: 'POST',
+        headers: { cookie },
+        body: JSON.stringify({ planId, paymentMethod: 'wechat', paymentNote: 'test-subscription' })
+    });
+    assert.equal(created.response.status, 201);
+    return created.body.order;
+}
+
+async function approveSubscriptionOrder(baseUrl, orderId, adminToken = 'test-token') {
+    const approved = await jsonFetch(`${baseUrl}/api/admin/subscription-orders/${encodeURIComponent(orderId)}/approve`, {
+        method: 'POST',
+        headers: { 'x-admin-token': adminToken },
+        body: JSON.stringify({ adminNote: 'approved for test' })
+    });
+    assert.equal(approved.response.status, 200);
+    return approved.body;
+}
+
+async function submitAndApproveSubscription(baseUrl, cookie, planId = 'sub_39_daily_29_usd') {
+    const order = await submitSubscriptionOrder(baseUrl, cookie, planId);
+    const approved = await approveSubscriptionOrder(baseUrl, order.id);
+    return approved.subscription;
+}
+
+async function submitAddonOrder(baseUrl, cookie, amount = 5) {
+    const created = await jsonFetch(`${baseUrl}/api/account/addon-orders`, {
+        method: 'POST',
+        headers: { cookie },
+        body: JSON.stringify({ amount, paymentMethod: 'alipay', paymentNote: 'test-addon' })
+    });
+    assert.equal(created.response.status, 201);
+    return created.body.order;
+}
+
+async function approveAddonOrder(baseUrl, orderId, adminToken = 'test-token') {
+    const approved = await jsonFetch(`${baseUrl}/api/admin/addon-orders/${encodeURIComponent(orderId)}/approve`, {
+        method: 'POST',
+        headers: { 'x-admin-token': adminToken },
+        body: JSON.stringify({ adminNote: 'approved for test' })
+    });
+    assert.equal(approved.response.status, 200);
+    return approved.body;
+}
+
+async function submitAndApproveAddon(baseUrl, cookie, amount = 5) {
+    const order = await submitAddonOrder(baseUrl, cookie, amount);
+    const approved = await approveAddonOrder(baseUrl, order.id);
+    return approved.order;
+}
+
 async function withServer(run, appOptions = {}) {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yui-shop-test-'));
     const dbPath = path.join(tempDir, 'shop.sqlite');
@@ -330,17 +382,21 @@ test('Shop 外部脚本会在 CSP 禁止 inline script 时自动初始化 Accoun
     const requests = [];
     const responses = {
         '/api/account/me': { user: { phone: '13800139999' }, orders: [] },
-        '/api/account/balance': {
-            balance: {},
+        '/api/account/subscription-state': {
+            plans: [],
+            addonPackages: [],
+            subscription: null,
+            quota: {},
             payment: {
                 alipayQrUrl: '/shop/assets/pay/alipay-qr.png',
                 wechatQrUrl: '/shop/assets/pay/wechat-qr.png',
                 paymentReference: 'YUI-TEST'
             }
         },
-        '/api/account/topups': { topups: [] },
-        '/api/account/api-charges': { charges: [] },
-        '/api/account/ledger': { entries: [] },
+        '/api/account/subscription-orders': { orders: [] },
+        '/api/account/addon-orders': { orders: [] },
+        '/api/account/usd-charges': { charges: [] },
+        '/api/account/addon-ledger': { entries: [] },
         '/api/account/usage-summary': {
             generatedAt: '2026-06-11T10:00:00+08:00',
             summary: { month: {} },
@@ -1527,7 +1583,7 @@ test('管理员余额接口要求管理员登录或管理员 token', async () =>
     });
 });
 
-test('托管 API key 在账户余额为 0 时返回余额不足状态', async () => {
+test('托管 API key 没有有效订阅时返回订阅必需状态', async () => {
     await withServer(async ({ baseUrl }) => {
         const order = await createRedeemedOrder(baseUrl, '13800139009', 'sk-balance-zero');
 
@@ -1538,17 +1594,16 @@ test('托管 API key 在账户余额为 0 时返回余额不足状态', async ()
         assert.equal(status.response.status, 200);
         assert.equal(status.body.managed, true);
         assert.equal(status.body.active, false);
-        assert.equal(status.body.status, 'insufficient_balance');
-        assert.equal(status.body.billing.balanceCents, 0);
-        assert.equal(status.body.billing.debtCents, 0);
+        assert.equal(status.body.status, 'subscription_required');
+        assert.equal(status.body.quota.addonBalanceUsdMicros, 0);
     });
 });
 
-test('托管 API key 充值确认后恢复可用', async () => {
+test('托管 API key 订阅确认后恢复可用', async () => {
     await withServer(async ({ baseUrl }) => {
         const order = await createRedeemedOrder(baseUrl, '13800139010', 'sk-balance-positive');
         const cookie = await registerUserAndGetCookie(baseUrl, '13800139010');
-        await submitAndApproveTopup(baseUrl, cookie, '5');
+        await submitAndApproveSubscription(baseUrl, cookie, 'sub_29_daily_19_usd');
 
         const status = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=${encodeURIComponent(order.apiKey)}`, {
             headers: { 'x-internal-token': 'internal-test-token' }
@@ -1558,7 +1613,7 @@ test('托管 API key 充值确认后恢复可用', async () => {
         assert.equal(status.body.managed, true);
         assert.equal(status.body.active, true);
         assert.equal(status.body.status, 'active');
-        assert.equal(status.body.billing.balanceCents, 500);
+        assert.equal(status.body.quota.remainingUsdMicros, 19000000);
     });
 });
 
@@ -1748,8 +1803,8 @@ test('余额很少时本次调用可扣成负数且下一次状态检查拒绝',
             headers: { 'x-internal-token': 'internal-test-token' }
         });
         assert.equal(status.body.active, false);
-        assert.equal(status.body.status, 'insufficient_balance');
-        assert.equal(status.body.billing.debtCents, expectedDebtCents);
+        assert.equal(status.body.status, 'subscription_required');
+        assert.equal(status.body.quota.remainingUsdMicros, 0);
     }, { usageEventHmacSecret: 'usage-hmac-secret' });
 });
 
@@ -3500,7 +3555,7 @@ test('内部 API key 状态接口支持 POST api_key_hash 且不需要 raw key',
     await withServer(async ({ baseUrl }) => {
         await createRedeemedOrder(baseUrl, '13800138302', 'sk-status-v2');
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138302');
-        await submitAndApproveTopup(baseUrl, cookie, '1');
+        await submitAndApproveSubscription(baseUrl, cookie, 'sub_29_daily_19_usd');
 
         const active = await jsonFetch(`${baseUrl}/api/internal/api-keys/status`, {
             method: 'POST',
@@ -3538,7 +3593,7 @@ test('内部 API key 状态接口对未过期且余额充足的订单返回 acti
     await withServer(async ({ baseUrl }) => {
         await createRedeemedOrder(baseUrl, '13800138301', 'sk-active-status');
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138301');
-        await submitAndApproveTopup(baseUrl, cookie, '1');
+        await submitAndApproveSubscription(baseUrl, cookie, 'sub_29_daily_19_usd');
 
         const active = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=sk-active-status`, {
             headers: { 'x-internal-token': 'internal-test-token' }
@@ -3547,7 +3602,7 @@ test('内部 API key 状态接口对未过期且余额充足的订单返回 acti
         assert.equal(active.body.managed, true);
         assert.equal(active.body.active, true);
         assert.equal(active.body.status, 'active');
-        assert.equal(active.body.billing.balanceCents, 100);
+        assert.equal(active.body.quota.remainingUsdMicros, 19000000);
         assert.match(active.body.expiresAt, /^\d{4}-\d{2}-\d{2}T/);
     });
 });
@@ -4063,6 +4118,237 @@ test('已登录管理员访问注册页仍看到注册表单', async () => {
         });
         assert.equal(registerPage.status, 200);
         assert.match(await registerPage.text(), /id="registerForm"/);
+    });
+});
+
+test('订阅池 MVP 数据表和默认套餐存在', async () => {
+    await withServer(async ({ db }) => {
+        const tables = [
+            'subscription_plans',
+            'account_subscriptions',
+            'subscription_orders',
+            'account_addon_balances',
+            'account_addon_ledger_entries',
+            'api_usd_charge_records'
+        ].filter((tableName) => db.prepare(`
+SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?
+`).get(tableName));
+        assert.deepEqual(tables, [
+            'subscription_plans',
+            'account_subscriptions',
+            'subscription_orders',
+            'account_addon_balances',
+            'account_addon_ledger_entries',
+            'api_usd_charge_records'
+        ]);
+
+        const plans = db.prepare(`
+SELECT id, monthly_price_cents, daily_quota_usd_micros
+FROM subscription_plans
+ORDER BY monthly_price_cents ASC
+`).all();
+        assert.deepEqual(plans, [
+            { id: 'sub_29_daily_19_usd', monthly_price_cents: 2900, daily_quota_usd_micros: 19000000 },
+            { id: 'sub_39_daily_29_usd', monthly_price_cents: 3900, daily_quota_usd_micros: 29000000 },
+            { id: 'sub_59_daily_49_usd', monthly_price_cents: 5900, daily_quota_usd_micros: 49000000 }
+        ]);
+    });
+});
+
+test('用户选择套餐提交订单，管理员审批后 Account 展示会员额度', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138901');
+        const order = await submitSubscriptionOrder(baseUrl, cookie, 'sub_39_daily_29_usd');
+        assert.equal(order.status, 'pending');
+        assert.equal(order.planId, 'sub_39_daily_29_usd');
+        assert.equal(order.amountCents, 3900);
+
+        const approved = await approveSubscriptionOrder(baseUrl, order.id);
+        assert.equal(approved.subscription.planId, 'sub_39_daily_29_usd');
+        assert.equal(approved.subscription.dailyQuotaUsdMicros, 29000000);
+
+        const state = await jsonFetch(`${baseUrl}/api/account/subscription-state`, {
+            headers: { cookie }
+        });
+        assert.equal(state.response.status, 200);
+        assert.equal(state.body.subscription.planId, 'sub_39_daily_29_usd');
+        assert.equal(state.body.quota.dailyQuotaUsdMicros, 29000000);
+        assert.equal(state.body.quota.dailyRemainingUsdMicros, 29000000);
+        assert.equal(state.body.quota.addonBalanceUsdMicros, 0);
+        assert.equal(state.body.quota.remainingUsdMicros, 29000000);
+
+        const row = db.prepare('SELECT phone, plan_id, status FROM account_subscriptions WHERE phone = ?').get('13800138901');
+        assert.deepEqual(row, { phone: '13800138901', plan_id: 'sub_39_daily_29_usd', status: 'active' });
+    }, { now: () => new Date('2026-06-16T10:00:00+08:00') });
+});
+
+test('用户购买加量包后长期余额进入 Account 状态并且续费不清零', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138902');
+        await submitAndApproveSubscription(baseUrl, cookie, 'sub_29_daily_19_usd');
+        const addonOrder = await submitAndApproveAddon(baseUrl, cookie, 5);
+        assert.equal(addonOrder.quotaUsdMicros, 5000000);
+
+        let state = await jsonFetch(`${baseUrl}/api/account/subscription-state`, {
+            headers: { cookie }
+        });
+        assert.equal(state.body.quota.addonBalanceUsdMicros, 5000000);
+        assert.equal(state.body.quota.remainingUsdMicros, 24000000);
+
+        await submitAndApproveSubscription(baseUrl, cookie, 'sub_59_daily_49_usd');
+        state = await jsonFetch(`${baseUrl}/api/account/subscription-state`, {
+            headers: { cookie }
+        });
+        assert.equal(state.body.subscription.planId, 'sub_59_daily_49_usd');
+        assert.equal(state.body.quota.dailyQuotaUsdMicros, 49000000);
+        assert.equal(state.body.quota.addonBalanceUsdMicros, 5000000);
+    }, { now: () => new Date('2026-06-16T11:00:00+08:00') });
+});
+
+test('API key 状态和 usage 扣费按订阅池美元额度执行', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800138903', 'sk-subscription-mvp-38903');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138903');
+        const apiKeyHash = hashApiKeyForTest(order.apiKey);
+
+        const beforeSubscription = await jsonFetch(`${baseUrl}/api/internal/api-keys/status`, {
+            method: 'POST',
+            headers: { 'x-internal-token': 'internal-test-token' },
+            body: JSON.stringify({ apiKeyHash })
+        });
+        assert.equal(beforeSubscription.body.active, false);
+        assert.equal(beforeSubscription.body.status, 'subscription_required');
+
+        await submitAndApproveSubscription(baseUrl, cookie, 'sub_29_daily_19_usd');
+        await submitAndApproveAddon(baseUrl, cookie, 5);
+
+        const active = await jsonFetch(`${baseUrl}/api/internal/api-keys/status`, {
+            method: 'POST',
+            headers: { 'x-internal-token': 'internal-test-token' },
+            body: JSON.stringify({ apiKeyHash })
+        });
+        assert.equal(active.body.active, true);
+        assert.equal(active.body.quota.remainingUsdMicros, 24000000);
+
+        await usageEventFetch(baseUrl, {
+            request_id: 'req-usd-daily-first',
+            api_key_hash: apiKeyHash,
+            api_key_preview: order.apiKeyPreview,
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 0,
+            cache_hit_input_tokens: 0,
+            cache_miss_input_tokens: 0,
+            output_tokens: 1200000,
+            total_tokens: 1200000,
+            requested_at: '2026-06-16T18:03:00+08:00'
+        });
+        await usageEventFetch(baseUrl, {
+            request_id: 'req-usd-addon-second',
+            api_key_hash: apiKeyHash,
+            api_key_preview: order.apiKeyPreview,
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 0,
+            cache_hit_input_tokens: 0,
+            cache_miss_input_tokens: 0,
+            output_tokens: 200000,
+            total_tokens: 200000,
+            requested_at: '2026-06-16T18:04:00+08:00'
+        });
+
+        const records = db.prepare(`
+SELECT usage_event_id, charge_usd_micros, daily_quota_deducted_usd_micros, addon_deducted_usd_micros, addon_balance_after_usd_micros
+FROM api_usd_charge_records
+ORDER BY created_at ASC, rowid ASC
+`).all();
+        assert.deepEqual(records, [
+            {
+                usage_event_id: 'req-usd-daily-first',
+                charge_usd_micros: 18000000,
+                daily_quota_deducted_usd_micros: 18000000,
+                addon_deducted_usd_micros: 0,
+                addon_balance_after_usd_micros: 5000000
+            },
+            {
+                usage_event_id: 'req-usd-addon-second',
+                charge_usd_micros: 3000000,
+                daily_quota_deducted_usd_micros: 1000000,
+                addon_deducted_usd_micros: 2000000,
+                addon_balance_after_usd_micros: 3000000
+            }
+        ]);
+
+        const state = await jsonFetch(`${baseUrl}/api/account/subscription-state`, {
+            headers: { cookie }
+        });
+        assert.equal(state.body.quota.dailyRemainingUsdMicros, 0);
+        assert.equal(state.body.quota.addonBalanceUsdMicros, 3000000);
+        assert.equal(state.body.quota.remainingUsdMicros, 3000000);
+
+        const users = await jsonFetch(`${baseUrl}/api/admin/subscription-users`, {
+            headers: { 'x-admin-token': 'test-token' }
+        });
+        assert.equal(users.response.status, 200);
+        assert.equal(users.body.items[0].phone, '13800138903');
+        assert.equal(users.body.items[0].planId, 'sub_29_daily_19_usd');
+        assert.equal(users.body.items[0].dailyRemainingUsdMicros, 0);
+        assert.equal(users.body.items[0].addonBalanceUsdMicros, 3000000);
+
+        const logs = await jsonFetch(`${baseUrl}/api/admin/usd-charges`, {
+            headers: { 'x-admin-token': 'test-token' }
+        });
+        assert.equal(logs.response.status, 200);
+        assert.equal(logs.charges?.length ?? logs.body.charges.length, logs.body.charges.length);
+        assert.equal(logs.body.charges[0].usageEventId, 'req-usd-addon-second');
+        assert.equal(logs.body.charges[0].addonDeductedUsdMicros, 2000000);
+    }, {
+        usageEventHmacSecret: 'usage-hmac-secret',
+        now: () => new Date('2026-06-16T18:02:00+08:00')
+    });
+});
+
+test('订阅开通前发生的 usage 不消耗订阅池美元额度', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800138904', 'sk-subscription-mvp-38904');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138904');
+        const apiKeyHash = hashApiKeyForTest(order.apiKey);
+
+        await submitAndApproveSubscription(baseUrl, cookie, 'sub_29_daily_19_usd');
+        await usageEventFetch(baseUrl, {
+            request_id: 'req-usd-before-subscription',
+            api_key_hash: apiKeyHash,
+            api_key_preview: order.apiKeyPreview,
+            provider: 'codex',
+            model: 'gpt-5.4',
+            success: true,
+            failed: false,
+            input_tokens: 0,
+            cache_hit_input_tokens: 0,
+            cache_miss_input_tokens: 0,
+            output_tokens: 100000,
+            total_tokens: 100000,
+            requested_at: '2026-06-15T23:59:00+08:00'
+        });
+
+        assert.equal(
+            db.prepare('SELECT COUNT(*) AS count FROM api_usd_charge_records WHERE usage_event_id = ?')
+                .get('req-usd-before-subscription').count,
+            0
+        );
+
+        const state = await jsonFetch(`${baseUrl}/api/account/subscription-state`, {
+            headers: { cookie }
+        });
+        assert.equal(state.body.quota.dailyRemainingUsdMicros, 19000000);
+        assert.equal(state.body.quota.addonBalanceUsdMicros, 0);
+    }, {
+        usageEventHmacSecret: 'usage-hmac-secret',
+        now: () => new Date('2026-06-16T10:00:00+08:00')
     });
 });
 
