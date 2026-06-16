@@ -1,5 +1,14 @@
 # AI 协作记忆
 
+## 2026-06-16 订阅池官方 GPT 计价设计
+
+- 已在独立 worktree 分支 `codex/subscription-pool-pricing-design` 设计订阅池方案，不影响当前 main 上的按量计费分支。
+- 当前订阅池口径：29 元 / 月每日 19 美元额度，39 元 / 月每日 29 美元额度，59 元 / 月每日 49 美元额度。
+- 项目只使用 `gpt-5.4` 和 `gpt-5.5`；官方价格按 OpenAI API Pricing 的 2026-06-16 快照记录。
+- 默认采用 Standard 在线调用价格：`gpt-5.4` 短上下文输入 / 缓存命中输入 / 输出分别为 2.50 / 0.25 / 15 美元每百万 token，`gpt-5.5` 短上下文分别为 5 / 0.5 / 30 美元每百万 token；长上下文价格单独记录。
+- 新规则必须使用独立美元额度账本，不能复用 `account_balances.balance_nanos`，不能污染现有人民币余额和历史 `api_charge_records`。
+- 设计文档见 `docs/ai/context/20260616-182045-subscription-pool-official-gpt-pricing-design_CN.md`。
+
 ## 2026-06-11 DeepSeek 真实扣费
 
 - Shop 真实扣费以 yui.web 内部固定人民币价格为准，不信任 usage event 的 `price_amount_micros`。

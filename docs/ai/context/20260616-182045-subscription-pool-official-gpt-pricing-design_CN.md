@@ -1,0 +1,404 @@
+# 订阅池官方 GPT 计价设计
+
+## 背景
+
+- 本分支：`codex/subscription-pool-pricing-design`。
+- 目标：设计一套不影响当前线上按量计费分支的新计价规则。
+- 当前项目只允许两个模型：`gpt-5.4` 和 `gpt-5.5`。
+- 新规则从“人民币余额按项目内部价格扣费”切到“人民币订阅费购买每日美元 API 成本额度”。
+- 用户确认三档订阅：
+  - 29 元 / 月：每日 19 美元额度。
+  - 39 元 / 月：每日 29 美元额度。
+  - 59 元 / 月：每日 49 美元额度。
+- 加量包口径沿用用户示例：5 元可购买 5 美元额度。
+
+## 官方价格调查
+
+来源：OpenAI 官方 API Pricing 页面，`https://developers.openai.com/api/docs/pricing`。
+
+截至 2026-06-16，该页面公开展示的相关价格为：
+
+| 模型 | 计费模式 | 上下文 | 输入 | 缓存命中输入 | 输出 |
+| --- | --- | --- | ---: | ---: | ---: |
+| `gpt-5.4` | Standard | <= 272K tokens | $2.50 / 100 万 token | $0.25 / 100 万 token | $15.00 / 100 万 token |
+| `gpt-5.4` | Standard | > 272K tokens | $5.00 / 100 万 token | $0.50 / 100 万 token | $22.50 / 100 万 token |
+| `gpt-5.5` | Standard | <= 272K tokens | $5.00 / 100 万 token | $0.50 / 100 万 token | $30.00 / 100 万 token |
+| `gpt-5.5` | Standard | > 272K tokens | $10.00 / 100 万 token | $1.00 / 100 万 token | $45.00 / 100 万 token |
+| `gpt-5.4` | Priority | <= 272K tokens | $5.00 / 100 万 token | $0.50 / 100 万 token | $30.00 / 100 万 token |
+| `gpt-5.4` | Priority | > 272K tokens | $10.00 / 100 万 token | $1.00 / 100 万 token | $45.00 / 100 万 token |
+| `gpt-5.5` | Priority | <= 272K tokens | $10.00 / 100 万 token | $1.00 / 100 万 token | $60.00 / 100 万 token |
+| `gpt-5.5` | Priority | > 272K tokens | $20.00 / 100 万 token | $2.00 / 100 万 token | $90.00 / 100 万 token |
+
+本项目默认采用 Standard 在线调用价格。Batch / Flex 不作为默认价格来源，因为当前业务是实时 API key 代理，不是异步批处理或 Flex 队列。Priority 只在后续明确接入 Priority 服务层时启用。
+
+## 必须解决的问题
+
+1. 不能污染现有 `account_balances.balance_nanos`。
+   - 现有余额字段语义是人民币余额，且已被 Admin 收银、Account 余额、扣费流水、充值审核、API key 放行逻辑使用。
+   - 新订阅池是美元额度，不应复用人民币余额字段。
+2. 不能重算历史 `api_charge_records`。
+   - 现有按量计费历史仍按旧 `price_version` 回放。
+   - 新规则只应用新分支上线后的 usage。
+3. 必须记录官方价格快照版本。
+   - 官方价格会变化，账务记录必须保存当时使用的价格版本，不能根据当前价格重算历史。
+4. 必须区分短上下文和长上下文。
+   - 官方价格对超过 272K tokens 的上下文单独定价。
+   - 如果 usage event 当前没有上下文层级字段，第一版可用 `input_tokens > 272000` 判定长上下文；后续更推荐由 CLIProxyAPI 显式传入 `context_tier`。
+5. 必须让超额行为可解释。
+   - 请求前额度已用尽：阻止请求。
+   - 请求前还有额度，但请求后扣成负数：允许本次完成，下一次阻止。
+   - 这与当前“余额很少时本次调用可扣成负数且下一次状态检查拒绝”的项目语义一致。
+
+## 方案对比
+
+### 方案 A：把美元额度折成人民币余额
+
+- 做法：用户购买订阅后按某个汇率写入 `account_balances.balance_nanos`。
+- 优点：改动最少，复用现有余额和扣费记录。
+- 问题：
+  - 汇率和美元额度混在人民币余额里，Admin 收银和 Account 消费会失真。
+  - 历史按量计费与订阅池无法清晰拆账。
+  - 以后改官方价格或汇率会影响用户理解。
+- 结论：不采用。
+
+### 方案 B：独立美元额度账本
+
+- 做法：新增订阅、每日额度、加量包、美元扣费记录四类事实表。
+- 优点：
+  - 保留现有按量计费分支和历史账务。
+  - 新规则可独立灰度，不影响现在线上扣费。
+  - Admin 可同时看人民币收入和美元额度消耗。
+  - 官方价格版本可以单独回放。
+- 问题：
+  - 数据表和前端展示改动更多。
+- 结论：推荐采用。
+
+### 方案 C：只在 CLIProxyAPI 侧限流，不在 yui.web 记账
+
+- 做法：CLIProxyAPI 直接按 usage JSONL 计算每日额度并拦截。
+- 优点：yui.web 改动少。
+- 问题：
+  - yui.web 不是账务事实来源，Account / Admin 不能可靠展示额度和流水。
+  - 容易出现 JSONL 重放、实时同步延迟、手动修正无法审计的问题。
+- 结论：不采用。
+
+## 推荐设计
+
+采用方案 B：独立美元额度账本。
+
+核心原则：
+
+- 人民币只表示用户支付金额和商店收入。
+- 美元只表示官方 API 成本额度和消耗。
+- usage 扣费按 token 和官方价格快照计算。
+- 每日额度按 UTC+8 日期边界重置，不结转。
+- 加量包默认当日有效，不结转。
+- 当前线上按量计费逻辑保留在 main，不在本设计分支直接替换。
+
+## 套餐规则
+
+| 套餐 id | 展示名 | 月费 | 每日基础额度 | 周期 |
+| --- | --- | ---: | ---: | --- |
+| `sub_29_daily_19_usd` | 29 元订阅池 | 29 元 / 月 | $19 / 天 | 自开通日起 30 天 |
+| `sub_39_daily_29_usd` | 39 元订阅池 | 39 元 / 月 | $29 / 天 | 自开通日起 30 天 |
+| `sub_59_daily_49_usd` | 59 元订阅池 | 59 元 / 月 | $49 / 天 | 自开通日起 30 天 |
+
+建议第一版使用“30 天周期”，不要绑定自然月。原因：
+
+- 用户任意日期开通都容易解释。
+- 续费逻辑简单。
+- 当前项目已有订单过期时间语义，可复用一部分展示和状态判断。
+
+## 加量包规则
+
+| 加量包 id | 价格 | 增加额度 | 有效期 |
+| --- | ---: | ---: | --- |
+| `addon_5_usd_daily` | 5 元 | $5 | 当日有效 |
+| `addon_10_usd_daily` | 10 元 | $10 | 当日有效 |
+| `addon_20_usd_daily` | 20 元 | $20 | 当日有效 |
+| `addon_50_usd_daily` | 50 元 | $50 | 当日有效 |
+
+第一版不做赠送额度，避免用户用低价加量包绕过套餐分层。
+
+## 扣费公式
+
+金额事实字段建议使用 USD micros：
+
+```text
+1 USD = 1_000_000 usd_micros
+```
+
+短上下文 Standard：
+
+```text
+gpt-5.4:
+  cache_hit_input_usd_micros = cache_hit_input_tokens * 0.25
+  cache_miss_input_usd_micros = cache_miss_input_tokens * 2.50
+  output_usd_micros = output_tokens * 15.00
+
+gpt-5.5:
+  cache_hit_input_usd_micros = cache_hit_input_tokens * 0.50
+  cache_miss_input_usd_micros = cache_miss_input_tokens * 5.00
+  output_usd_micros = output_tokens * 30.00
+```
+
+上面的每 token 计算要按“每百万 token 价格”换算：
+
+```text
+charge_usd_micros =
+  ceil(cache_hit_input_tokens * cache_hit_input_usd_per_million)
++ ceil(cache_miss_input_tokens * cache_miss_input_usd_per_million)
++ ceil(output_tokens * output_usd_per_million)
+```
+
+其中 `usd_per_million` 直接等价为每 token 的 `usd_micros`：
+
+```text
+$2.50 / 100 万 token = 2.5 usd_micros / token
+```
+
+JS 实现不能用浮点直接落库。推荐把价格保存成 `usd_micros_per_million_tokens`，计算时：
+
+```text
+ceil(tokens * usd_micros_per_million_tokens / 1_000_000)
+```
+
+例如：
+
+```text
+gpt-5.4 短上下文缓存未命中输入:
+  usd_micros_per_million_tokens = 2_500_000
+```
+
+## 额度检查
+
+请求前状态接口返回：
+
+```json
+{
+  "active": true,
+  "planId": "sub_39_daily_29_usd",
+  "dailyQuotaUsdMicros": 29000000,
+  "addonQuotaUsdMicros": 5000000,
+  "usedUsdMicros": 13420000,
+  "remainingUsdMicros": 20580000,
+  "quotaDate": "2026-06-16"
+}
+```
+
+放行规则：
+
+1. API key 未托管、未兑换、过期：拒绝。
+2. 没有有效订阅：拒绝，提示开通订阅。
+3. 今日剩余额度 `<= 0`：拒绝，提示今日额度已用完。
+4. 今日剩余额度 `> 0`：允许本次调用。
+5. usage 回传后按官方价格扣美元额度；如果扣成负数，下一次请求拒绝。
+
+错误建议：
+
+```json
+{
+  "error": "daily_quota_exhausted",
+  "message": "今日额度已用完，请明天再试或购买加量包。"
+}
+```
+
+## 数据模型
+
+新增表建议：
+
+### `subscription_plans`
+
+- `id TEXT PRIMARY KEY`
+- `name TEXT NOT NULL`
+- `monthly_price_cents INTEGER NOT NULL`
+- `daily_quota_usd_micros INTEGER NOT NULL`
+- `period_days INTEGER NOT NULL DEFAULT 30`
+- `status TEXT NOT NULL CHECK (status IN ('active', 'archived'))`
+- `created_at TEXT NOT NULL`
+- `updated_at TEXT NOT NULL`
+
+### `account_subscriptions`
+
+- `id TEXT PRIMARY KEY`
+- `phone TEXT NOT NULL`
+- `plan_id TEXT NOT NULL`
+- `status TEXT NOT NULL CHECK (status IN ('active', 'expired', 'cancelled'))`
+- `started_at TEXT NOT NULL`
+- `expires_at TEXT NOT NULL`
+- `created_at TEXT NOT NULL`
+- `updated_at TEXT NOT NULL`
+
+同一手机号同一时间只能有一个 active 订阅。
+
+### `quota_addon_packages`
+
+- `id TEXT PRIMARY KEY`
+- `name TEXT NOT NULL`
+- `price_cents INTEGER NOT NULL`
+- `quota_usd_micros INTEGER NOT NULL`
+- `validity_scope TEXT NOT NULL CHECK (validity_scope IN ('same_day'))`
+- `status TEXT NOT NULL CHECK (status IN ('active', 'archived'))`
+
+### `account_quota_addons`
+
+- `id TEXT PRIMARY KEY`
+- `phone TEXT NOT NULL`
+- `package_id TEXT NOT NULL`
+- `quota_date TEXT NOT NULL`
+- `quota_usd_micros INTEGER NOT NULL`
+- `price_cents INTEGER NOT NULL`
+- `status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected'))`
+- `created_at TEXT NOT NULL`
+- `confirmed_at TEXT`
+- `confirmed_by_phone TEXT`
+
+### `api_usd_charge_records`
+
+- `id TEXT PRIMARY KEY`
+- `phone TEXT NOT NULL`
+- `usage_event_id TEXT NOT NULL UNIQUE`
+- `api_key_hash TEXT NOT NULL`
+- `model TEXT NOT NULL`
+- `service_tier TEXT NOT NULL DEFAULT 'standard'`
+- `context_tier TEXT NOT NULL CHECK (context_tier IN ('short', 'long'))`
+- `input_tokens INTEGER NOT NULL DEFAULT 0`
+- `output_tokens INTEGER NOT NULL DEFAULT 0`
+- `cache_hit_input_tokens INTEGER NOT NULL DEFAULT 0`
+- `cache_miss_input_tokens INTEGER NOT NULL DEFAULT 0`
+- `reasoning_tokens INTEGER NOT NULL DEFAULT 0`
+- `total_tokens INTEGER NOT NULL DEFAULT 0`
+- `official_price_version TEXT NOT NULL`
+- `charge_usd_micros INTEGER NOT NULL`
+- `quota_before_usd_micros INTEGER NOT NULL`
+- `quota_after_usd_micros INTEGER NOT NULL`
+- `quota_date TEXT NOT NULL`
+- `status TEXT NOT NULL CHECK (status IN ('charged', 'failed_no_charge', 'unpriced_no_charge', 'adjusted'))`
+- `created_at TEXT NOT NULL`
+
+### `account_quota_ledger_entries`
+
+- `id TEXT PRIMARY KEY`
+- `phone TEXT NOT NULL`
+- `entry_type TEXT NOT NULL CHECK (entry_type IN ('subscription_daily_grant', 'addon_grant', 'api_usd_charge', 'admin_adjustment', 'refund'))`
+- `amount_usd_micros INTEGER NOT NULL`
+- `quota_after_usd_micros INTEGER NOT NULL`
+- `quota_date TEXT NOT NULL`
+- `related_id TEXT`
+- `memo TEXT`
+- `created_at TEXT NOT NULL`
+- `created_by_phone TEXT`
+
+## 价格模块
+
+新增 `lib/shop-official-gpt-pricing.js`，不要直接覆盖现有 `lib/shop-pricing.js`。
+
+建议导出：
+
+- `officialGptUsdPrices`
+- `priceOfficialUsageUsd(event)`
+- `priceForOfficialVersion(version)`
+- `deriveContextTier(event)`
+
+价格版本命名：
+
+- `openai-gpt-5.4-usd-20260616-standard-short`
+- `openai-gpt-5.4-usd-20260616-standard-long`
+- `openai-gpt-5.5-usd-20260616-standard-short`
+- `openai-gpt-5.5-usd-20260616-standard-long`
+
+Priority 预留：
+
+- `openai-gpt-5.4-usd-20260616-priority-short`
+- `openai-gpt-5.4-usd-20260616-priority-long`
+- `openai-gpt-5.5-usd-20260616-priority-short`
+- `openai-gpt-5.5-usd-20260616-priority-long`
+
+第一版只启用 Standard，Priority 放入历史/配置表但不对外开放。
+
+## 前端展示
+
+Account 页建议新增：
+
+- 当前订阅：套餐名、到期时间、今日额度。
+- 今日用量：已用美元、剩余美元、进度条。
+- 模型价格：展示官方美元价格，不再展示项目内部人民币 token 单价。
+- 加量包：5 / 10 / 20 / 50 元购买当日美元额度。
+- 扣费流水：显示每次 API 调用消耗多少美元额度，以及模型、缓存命中输入、未命中输入、输出 token。
+
+Admin 页建议新增：
+
+- 订阅用户列表。
+- 今日全站美元消耗。
+- 今日全站人民币收入。
+- 订阅池毛利估算：人民币收入按固定汇率展示为估算，不作为账务事实。
+- 每个用户今日额度、今日消耗、是否用尽。
+- 异常用户：高频、高输出、高长上下文、高 gpt-5.5 占比。
+
+## 风控
+
+这套价格是强超售模型，必须加硬限制：
+
+- 单用户并发限制。
+- 单用户每分钟请求数限制。
+- 单用户每日最大请求数限制。
+- 全站每日官方成本熔断。
+- 长上下文调用单独阈值提醒。
+- `gpt-5.5` 可作为高档套餐专属或后台开关控制。
+
+第一版建议：
+
+- 29 元套餐：允许 `gpt-5.4`，不默认开放 `gpt-5.5`。
+- 39 元套餐：允许 `gpt-5.4`，`gpt-5.5` 后台开关。
+- 59 元套餐：允许 `gpt-5.4` 和 `gpt-5.5`。
+
+如果产品必须三档都开放两个模型，也应至少对 29 元套餐设置更低的并发和长上下文阈值。
+
+## 迁移策略
+
+1. 保留现有按量计费逻辑和数据表。
+2. 新增订阅池表，不修改旧表含义。
+3. 新兑换用户默认仍可以走旧按量计费，直到后台切换到订阅池计划。
+4. 增加环境变量开关：
+   - `SHOP_BILLING_MODE=metered|subscription_pool`
+   - 默认保持 `metered`。
+5. 内部 API key 状态接口根据 billing mode 返回不同状态：
+   - `metered`：沿用余额大于等于 0 的逻辑。
+   - `subscription_pool`：检查有效订阅和今日美元额度。
+6. usage 入库后根据 billing mode 分流：
+   - `metered`：写 `api_charge_records` 和人民币 ledger。
+   - `subscription_pool`：写 `api_usd_charge_records` 和美元额度 ledger。
+
+## 测试计划
+
+- `lib/shop-official-gpt-pricing.test.js`
+  - 覆盖 `gpt-5.4` / `gpt-5.5` 短上下文价格。
+  - 覆盖长上下文价格。
+  - 覆盖缓存命中输入、未命中输入、输出 token 分项。
+  - 覆盖失败 usage 不扣额度。
+- `test/shop-flow.test.js`
+  - 有有效订阅且今日额度大于 0 时 API key active。
+  - 今日额度用尽时返回 `daily_quota_exhausted`。
+  - usage 扣美元额度后下一次状态检查拒绝。
+  - 加量包审核通过后恢复可用额度。
+  - `SHOP_BILLING_MODE=metered` 时旧按量计费测试继续通过。
+- `lib/shop-billing-summary.test.js`
+  - 新增订阅池 summary，不影响旧人民币收银 summary。
+
+## 待确认项
+
+1. 三档是否都开放 `gpt-5.5`。
+2. 加量包是否只当日有效。
+3. 订阅周期是否采用 30 天，而不是自然月。
+4. 长上下文是否第一版按 `input_tokens > 272000` 判断，还是要求 CLIProxyAPI 显式传 `context_tier`。
+5. 是否需要保留旧按量充值入口，还是订阅池上线后隐藏充值入口。
+
+## 当前建议结论
+
+先在新分支实现可灰度的订阅池，不替换 main 上正在运行的按量计费：
+
+- 默认环境仍为 `SHOP_BILLING_MODE=metered`。
+- 订阅池通过配置开关启用。
+- 官方价格单独做美元价格模块。
+- 美元额度账本独立于人民币余额账本。
+- 历史人民币扣费记录不重算、不迁移。
