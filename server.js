@@ -2581,6 +2581,14 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             throw error;
         }
         ensureUser.run(phone, nowIso());
+        const checkedAt = nowIso(appNow());
+        const subscription = getActiveSubscriptionWithPlanByPhone.get(phone, checkedAt, checkedAt);
+        if (subscription) {
+            const error = new Error('您当前已经有套餐了。');
+            error.status = 409;
+            error.code = 'ACTIVE_SUBSCRIPTION_EXISTS';
+            throw error;
+        }
         const order = {
             id: createId('SUB'),
             phone,
@@ -2647,6 +2655,13 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
         const now = appNow();
         const nowText = nowIso(now);
+        const activeSubscription = getActiveSubscriptionWithPlanByPhone.get(row.phone, nowText, nowText);
+        if (activeSubscription) {
+            const error = new Error('您当前已经有套餐了。');
+            error.status = 409;
+            error.code = 'ACTIVE_SUBSCRIPTION_EXISTS';
+            throw error;
+        }
         const current = getAnyActiveSubscriptionByPhone.get(row.phone);
         const currentExpires = current ? new Date(current.expires_at) : null;
         const base = currentExpires && currentExpires > now ? currentExpires : now;

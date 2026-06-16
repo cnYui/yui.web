@@ -4182,8 +4182,45 @@ test('用户选择套餐提交订单，管理员审批后 Account 展示会员�
     }, { now: () => new Date('2026-06-16T10:00:00+08:00') });
 });
 
-test('用户购买加量包后长期余额进入 Account 状态并且续费不清零', async () => {
+test('已有有效套餐时不能再次提交或审批套餐订单覆盖当前套餐', async () => {
     await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138906');
+        const firstOrder = await submitSubscriptionOrder(baseUrl, cookie, 'sub_59_daily_49_usd');
+        const secondOrder = await submitSubscriptionOrder(baseUrl, cookie, 'sub_29_daily_19_usd');
+
+        await approveSubscriptionOrder(baseUrl, firstOrder.id);
+
+        const duplicateSubmit = await jsonFetch(`${baseUrl}/api/account/subscription-orders`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({
+                planId: 'sub_29_daily_19_usd',
+                paymentMethod: 'wechat',
+                paymentNote: 'duplicate subscription'
+            })
+        });
+        assert.equal(duplicateSubmit.response.status, 409);
+        assert.equal(duplicateSubmit.body.code, 'ACTIVE_SUBSCRIPTION_EXISTS');
+        assert.match(duplicateSubmit.body.message, /当前已经有套餐/);
+
+        const duplicateApprove = await jsonFetch(`${baseUrl}/api/admin/subscription-orders/${encodeURIComponent(secondOrder.id)}/approve`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ adminNote: 'should not override' })
+        });
+        assert.equal(duplicateApprove.response.status, 409);
+        assert.equal(duplicateApprove.body.code, 'ACTIVE_SUBSCRIPTION_EXISTS');
+
+        const state = await jsonFetch(`${baseUrl}/api/account/subscription-state`, {
+            headers: { cookie }
+        });
+        assert.equal(state.body.subscription.planId, 'sub_59_daily_49_usd');
+        assert.equal(state.body.quota.dailyQuotaUsdMicros, 49000000);
+    }, { now: () => new Date('2026-06-16T10:30:00+08:00') });
+});
+
+test('用户购买加量包后长期余额进入 Account 状态并且套餐过期后续费不清零', async () => {
+    await withServer(async ({ baseUrl, db }) => {
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138902');
         await submitAndApproveSubscription(baseUrl, cookie, 'sub_29_daily_19_usd');
         const addonOrder = await submitAndApproveAddon(baseUrl, cookie, 5);
@@ -4194,6 +4231,12 @@ test('用户购买加量包后长期余额进入 Account 状态并且续费不�
         });
         assert.equal(state.body.quota.addonBalanceUsdMicros, 5000000);
         assert.equal(state.body.quota.remainingUsdMicros, 24000000);
+
+        db.prepare(`
+UPDATE account_subscriptions
+SET expires_at = ?, updated_at = ?
+WHERE phone = ?
+`).run('2026-06-16T10:30:00+08:00', '2026-06-16T10:30:00+08:00', '13800138902');
 
         await submitAndApproveSubscription(baseUrl, cookie, 'sub_59_daily_49_usd');
         state = await jsonFetch(`${baseUrl}/api/account/subscription-state`, {

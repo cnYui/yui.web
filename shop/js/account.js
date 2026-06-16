@@ -259,6 +259,19 @@ function hasActiveSubscription(state = {}) {
     return Boolean(subscription.planId && subscription.expiresAt);
 }
 
+function renderSubscriptionMembershipGuard(state = {}) {
+    const canBuySubscription = !hasActiveSubscription(state);
+    const subscriptionMembershipHint = document.getElementById('subscriptionMembershipHint');
+    const subscriptionSubmitButton = document.getElementById('subscriptionSubmitButton');
+    if (subscriptionMembershipHint) {
+        subscriptionMembershipHint.textContent = canBuySubscription
+            ? '请选择一个套餐提交订单。'
+            : '您当前已经有套餐了。';
+    }
+    if (subscriptionSubmitButton) subscriptionSubmitButton.disabled = !canBuySubscription;
+    return canBuySubscription;
+}
+
 function renderAddonMembershipGuard(state = {}) {
     const canBuyAddon = hasActiveSubscription(state);
     const addonMembershipHint = document.getElementById('addonMembershipHint');
@@ -538,6 +551,7 @@ async function initAccountPage() {
     const addonPaymentMethod = document.getElementById('addonPaymentMethod');
     const addonPaymentNote = document.getElementById('addonPaymentNote');
     const addonOrderMessage = document.getElementById('addonOrderMessage');
+    let canSubmitSubscriptionOrder = false;
     let canSubmitAddonOrder = false;
     const accountSubscriptionOrders = document.getElementById('accountSubscriptionOrders');
     const accountAddonOrders = document.getElementById('accountAddonOrders');
@@ -595,6 +609,7 @@ async function initAccountPage() {
             requestJson('/api/account/addon-ledger')
         ]);
         fillSubscriptionControls(stateData);
+        canSubmitSubscriptionOrder = renderSubscriptionMembershipGuard(stateData);
         canSubmitAddonOrder = renderAddonMembershipGuard(stateData);
         if (quotaCards) quotaCards.innerHTML = renderQuotaCards(stateData);
         if (quotaBar) quotaBar.innerHTML = renderQuotaBar(stateData);
@@ -623,6 +638,10 @@ async function initAccountPage() {
     if (subscriptionOrderForm && subscriptionPlanSelect && subscriptionPaymentMethod && subscriptionOrderMessage) {
         subscriptionOrderForm.addEventListener('submit', async (event) => {
             event.preventDefault();
+            if (!canSubmitSubscriptionOrder) {
+                subscriptionOrderMessage.textContent = '您当前已经有套餐了。';
+                return;
+            }
             if (!subscriptionPlanSelect.value) {
                 subscriptionOrderMessage.textContent = '请选择套餐。';
                 subscriptionPlanSelect.focus();

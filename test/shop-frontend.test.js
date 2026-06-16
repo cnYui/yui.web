@@ -577,6 +577,8 @@ test('Account 页面包含订阅池购买、额度条和美元流水容器', () 
     assert.match(html, /id="accountQuotaBar"/);
     assert.match(html, /id="subscriptionOrderForm"/);
     assert.match(html, /id="subscriptionPlanSelect"/);
+    assert.match(html, /id="subscriptionMembershipHint"/);
+    assert.match(html, /id="subscriptionSubmitButton"/);
     assert.match(html, /id="addonOrderForm"/);
     assert.match(html, /id="addonAmountSelect"/);
     assert.match(html, /id="addonMembershipHint"/);
@@ -651,6 +653,14 @@ test('Account 加量包表单要求先开通套餐', () => {
     assert.match(script, /function hasActiveSubscription/);
     assert.match(script, /addonSubmitButton\.disabled = !canBuyAddon/);
     assert.match(script, /请先开通套餐，再购买加量包。/);
+});
+
+test('Account 套餐表单已有套餐时不能重复提交', () => {
+    const script = readShopFrontendSource();
+
+    assert.match(script, /function renderSubscriptionMembershipGuard/);
+    assert.match(script, /subscriptionSubmitButton\.disabled = !canBuySubscription/);
+    assert.match(script, /您当前已经有套餐了。/);
 });
 
 test('Account 用量卡片不展示无效 token 总览和内部价格版本名', () => {
