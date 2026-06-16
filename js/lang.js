@@ -909,7 +909,9 @@
             '/blog/vibe-coding',
             '/blog/vibe-coding.html',
             '/blog/ai-native-hackathon',
-            '/blog/ai-native-hackathon.html'
+            '/blog/ai-native-hackathon.html',
+            '/blog/back-to-vibe-coding-ai-driven-dev-before',
+            '/blog/back-to-vibe-coding-ai-driven-dev-before.html'
         ].includes(path);
     }
     

@@ -1,6 +1,39 @@
 (function () {
     window.YuiBlogData = [
         {
+            id: 12,
+            publishedAt: '2026-06-16',
+            image: '/images/blog/back-to-vibe-coding/00-cover-prompt-to-loop.png',
+            category: 'AI',
+            author: 'Yui',
+            link: '/blog/back-to-vibe-coding-ai-driven-dev-before',
+            title: {
+                zh: 'Back to Vibe Coding：AI驱动开发之前，你需要知道的几件事（上）',
+                en: 'Back to Vibe Coding: What to Know Before AI-Driven Development (Part 1)',
+                ja: 'Back to Vibe Coding：AI駆動開発の前に知っておきたいこと（上）'
+            },
+            date: {
+                zh: '2026年6月16日',
+                en: 'Jun 16, 2026',
+                ja: '2026年6月16日'
+            },
+            shortDate: {
+                zh: '6月16日',
+                en: 'Jun 16',
+                ja: '6月16日'
+            },
+            readTime: {
+                zh: '13 分钟阅读',
+                en: '13 min read',
+                ja: '13分で読める'
+            },
+            excerpt: {
+                zh: '从 Prompt 到 Loop，从聊天框到 Agent Harness，重新理解真正高效使用 AI Coding 工具之前需要建立的规则、记忆和工作流。',
+                en: 'From Prompt to Loop, from chat box to Agent Harness, a practical note on rules, memory, and workflows before AI-driven development.',
+                ja: 'Prompt から Loop へ、チャット欄から Agent Harness へ。AI駆動開発の前に整えるべきルール、記憶、ワークフローを整理します。'
+            }
+        },
+        {
             id: 11,
             publishedAt: '2026-06-06',
             image: '/images/blog/codex-token-low-cost-cover.png',
