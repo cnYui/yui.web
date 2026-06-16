@@ -1,5 +1,16 @@
 # AI 协作记忆
 
+## 2026-06-16 订阅池长期加量包与页面设计
+
+- 加量包不再是当日额度；未用完的加量包美元额度长期保留，续费和换套餐后也继续保留。
+- usage 扣费优先级固定为：先扣东八区当天套餐额度，套餐额度用完后才扣长期加量包余额；每日额度仍按东八区 0 点刷新且不累计。
+- 加量包是订阅附属备用额度，不是新的按量余额；无有效订阅时加量包余额保留但不放行 API，续费后继续可用。
+- 加量包余额必须使用独立 USD micros 账本，不能写入 `account_balances.balance_nanos`，不能按 `quota_date` 绑定某一天。
+- OpenAI 官方价格页存在 short / long context 价格，但本项目第一版只实现用户确认的一套 `openai-standard-short-usd-20260616` 项目计价，不在用户侧暴露上下文计费模式；后续如上游账单偏离，再新增价格版本。
+- Account 页面目标主视图改为订阅池：当前套餐、今日额度、加量包余额、购买套餐、购买加量包、API key、模型价格、美元扣费流水。
+- Admin 页面目标主视图改为订单与额度运营：订阅 / 加量包订单审核、用户额度面板、美元用量监控、人民币订单收入、扣费来源拆分。
+- 详细设计见 `docs/ai/context/20260616-191817-subscription-account-admin-addon-retention-design_CN.md`；实施计划修正见 `docs/ai/context/20260616-191817-subscription-addon-retention-plan-update_CN.md`。
+
 ## 2026-06-16 订阅池官方 GPT 计价设计
 
 - 已在独立 worktree 分支 `codex/subscription-pool-pricing-design` 设计订阅池方案，不影响当前 main 上的按量计费分支。
