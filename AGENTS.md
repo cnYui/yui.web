@@ -7,7 +7,8 @@
 - 项目只使用 `gpt-5.4` 和 `gpt-5.5`；官方价格按 OpenAI API Pricing 的 2026-06-16 快照记录。
 - 默认采用 Standard 在线调用价格：`gpt-5.4` 短上下文输入 / 缓存命中输入 / 输出分别为 2.50 / 0.25 / 15 美元每百万 token，`gpt-5.5` 短上下文分别为 5 / 0.5 / 30 美元每百万 token；长上下文价格单独记录。
 - 新规则必须使用独立美元额度账本，不能复用 `account_balances.balance_nanos`，不能污染现有人民币余额和历史 `api_charge_records`。
-- 设计文档见 `docs/ai/context/20260616-182045-subscription-pool-official-gpt-pricing-design_CN.md`。
+- 用户已确认采用方案 B，整个计费系统在该分支目标运行态改为美元计费和扣费，东八区 0 点刷新，当天未用完额度不累计，三个套餐都能使用 `gpt-5.4` 和 `gpt-5.5`。
+- 设计文档见 `docs/ai/context/20260616-182045-subscription-pool-official-gpt-pricing-design_CN.md`；实施计划见 `docs/ai/context/20260616-182903-subscription-pool-usd-billing-implementation-plan_CN.md`。
 
 ## 2026-06-11 DeepSeek 真实扣费
 
