@@ -436,6 +436,9 @@ test('Admin 页面把业务办理合并成一个栏目', () => {
     assert.match(html, /id="passwordResetCodeForm"/);
     assert.match(html, /id="adminTopupStatusFilter"/);
     assert.match(html, /id="adminTopupTable"/);
+    assert.match(html, /id="adminRefundStatusFilter"/);
+    assert.match(html, /id="adminRefundRequestTable"/);
+    assert.match(html, /id="adminRefundRequestMessage"/);
     assert.match(html, /id="adminInviteConsoleSummary"/);
     assert.match(html, /id="adminAccountBalancesPanel"/);
     assert.match(html, /id="adminBalanceSearchInput"/);
@@ -446,10 +449,12 @@ test('Admin 页面把业务办理合并成一个栏目', () => {
     assert.match(html, /id="adminInviteTable"/);
     assert.match(html, /id="adminApiKeyPoolTable"/);
     const topupIndex = html.indexOf('id="adminTopupTable"');
+    const refundIndex = html.indexOf('id="adminRefundRequestTable"');
     const balanceIndex = html.indexOf('id="adminAccountBalancesPanel"');
     const inviteIndex = html.indexOf('id="adminInviteTable"');
-    assert.ok(topupIndex > -1 && balanceIndex > -1 && inviteIndex > -1);
+    assert.ok(topupIndex > -1 && refundIndex > -1 && balanceIndex > -1 && inviteIndex > -1);
     assert.ok(topupIndex < balanceIndex);
+    assert.ok(refundIndex < balanceIndex);
     assert.ok(balanceIndex < inviteIndex);
     assert.doesNotMatch(html, /id="adminInviteSection"/);
     assert.doesNotMatch(html, /id="adminPasswordResetSection"/);
@@ -585,6 +590,11 @@ test('Account 页面包含订阅池购买、额度条和美元流水容器', () 
     assert.match(html, /id="addonSubmitButton"/);
     assert.match(html, /id="accountSubscriptionOrders"/);
     assert.match(html, /id="accountAddonOrders"/);
+    assert.match(html, /id="subscriptionRefundPanel"/);
+    assert.match(html, /id="subscriptionRefundEstimate"/);
+    assert.match(html, /id="subscriptionRefundButton"/);
+    assert.match(html, /id="subscriptionRefundMessage"/);
+    assert.match(html, /id="accountRefundRequests"/);
     assert.match(html, /id="accountBillingUsageCards"/);
     assert.doesNotMatch(html, /id="accountTokenBreakdown"/);
     assert.doesNotMatch(html, /id="accountUsageCards"/);
@@ -661,6 +671,28 @@ test('Account 套餐表单已有套餐时不能重复提交', () => {
     assert.match(script, /function renderSubscriptionMembershipGuard/);
     assert.match(script, /subscriptionSubmitButton\.disabled = !canBuySubscription/);
     assert.match(script, /您当前已经有套餐了。/);
+});
+
+test('Account 前端包含退款申请逻辑', () => {
+    const script = readShopFrontendSource();
+
+    assert.match(script, /function renderSubscriptionRefundPanel/);
+    assert.match(script, /api\/account\/subscription-refund-requests/);
+    assert.match(script, /subscriptionRefundButton/);
+    assert.match(script, /正在提交退款申请/);
+});
+
+test('Admin 前端包含退款审核逻辑', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
+    const script = readShopFrontendSource();
+
+    assert.match(html, /退款审核/);
+    assert.match(html, /id="adminRefundStatusFilter"/);
+    assert.match(html, /id="adminRefundRequestTable"/);
+    assert.match(script, /function renderAdminRefundRequests/);
+    assert.match(script, /api\/admin\/subscription-refund-requests/);
+    assert.match(script, /data-approve-refund-request/);
+    assert.match(script, /data-reject-refund-request/);
 });
 
 test('Account 用量卡片不展示无效 token 总览和内部价格版本名', () => {

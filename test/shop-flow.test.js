@@ -226,6 +226,16 @@ async function submitAndApproveAddon(baseUrl, cookie, amount = 5) {
     return approved.order;
 }
 
+async function submitSubscriptionRefundRequest(baseUrl, cookie) {
+    const created = await jsonFetch(`${baseUrl}/api/account/subscription-refund-requests`, {
+        method: 'POST',
+        headers: { cookie },
+        body: JSON.stringify({})
+    });
+    assert.equal(created.response.status, 201);
+    return created.body.refundRequest;
+}
+
 async function withServer(run, appOptions = {}) {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yui-shop-test-'));
     const dbPath = path.join(tempDir, 'shop.sqlite');
@@ -4127,6 +4137,7 @@ test('订阅池 MVP 数据表和默认套餐存在', async () => {
             'subscription_plans',
             'account_subscriptions',
             'subscription_orders',
+            'subscription_refund_requests',
             'account_addon_balances',
             'account_addon_ledger_entries',
             'api_usd_charge_records'
@@ -4137,6 +4148,7 @@ SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?
             'subscription_plans',
             'account_subscriptions',
             'subscription_orders',
+            'subscription_refund_requests',
             'account_addon_balances',
             'account_addon_ledger_entries',
             'api_usd_charge_records'
@@ -4262,6 +4274,100 @@ test('未开通套餐时不能提交加量包订单', async () => {
         assert.equal(result.body.code, 'SUBSCRIPTION_REQUIRED_FOR_ADDON');
         assert.match(result.body.message, /先开通套餐/);
     }, { now: () => new Date('2026-06-16T11:30:00+08:00') });
+});
+
+test('用户申请退款后管理员批准会立即取消套餐并让 API key 不可用', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const order = await createRedeemedOrder(baseUrl, '13800138907', 'sk-subscription-refund-38907');
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138907');
+        const apiKeyHash = hashApiKeyForTest(order.apiKey);
+        await submitAndApproveSubscription(baseUrl, cookie, 'sub_59_daily_49_usd');
+        db.prepare(`
+UPDATE account_subscriptions
+SET started_at = ?, expires_at = ?, updated_at = ?
+WHERE phone = ? AND status = 'active'
+`).run(
+            '2026-06-16T10:00:00+08:00',
+            '2026-07-16T10:00:00+08:00',
+            '2026-06-16T10:00:00+08:00',
+            '13800138907'
+        );
+
+        const refund = await submitSubscriptionRefundRequest(baseUrl, cookie);
+        assert.equal(refund.status, 'pending');
+        assert.equal(refund.planId, 'sub_59_daily_49_usd');
+        assert.equal(refund.planAmountCents, 5900);
+        assert.equal(refund.periodDays, 30);
+        assert.equal(refund.remainingDays, 20);
+        assert.equal(refund.refundAmountCents, 3933);
+
+        const duplicate = await jsonFetch(`${baseUrl}/api/account/subscription-refund-requests`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({})
+        });
+        assert.equal(duplicate.response.status, 409);
+        assert.equal(duplicate.body.code, 'REFUND_REQUEST_PENDING');
+
+        const adminList = await jsonFetch(`${baseUrl}/api/admin/subscription-refund-requests`, {
+            headers: { 'x-admin-token': 'test-token' }
+        });
+        assert.equal(adminList.response.status, 200);
+        assert.equal(adminList.body.refundRequests[0].id, refund.id);
+        assert.equal(adminList.body.refundRequests[0].refundAmountCents, 3933);
+
+        const approved = await jsonFetch(`${baseUrl}/api/admin/subscription-refund-requests/${encodeURIComponent(refund.id)}/approve`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ adminNote: 'refund approved' })
+        });
+        assert.equal(approved.response.status, 200);
+        assert.equal(approved.body.refundRequest.status, 'approved');
+        assert.equal(approved.body.subscription.status, 'cancelled');
+
+        const subscriptionRow = db.prepare('SELECT status FROM account_subscriptions WHERE phone = ?').get('13800138907');
+        assert.equal(subscriptionRow.status, 'cancelled');
+
+        const state = await jsonFetch(`${baseUrl}/api/account/subscription-state`, {
+            headers: { cookie }
+        });
+        assert.equal(state.body.subscription, null);
+        assert.equal(state.body.quota.code, 'subscription_required');
+
+        const keyStatus = await jsonFetch(`${baseUrl}/api/internal/api-keys/status`, {
+            method: 'POST',
+            headers: { 'x-internal-token': 'internal-test-token' },
+            body: JSON.stringify({ apiKeyHash })
+        });
+        assert.equal(keyStatus.body.active, false);
+        assert.equal(keyStatus.body.status, 'subscription_required');
+    }, { now: () => new Date('2026-06-26T10:00:00+08:00') });
+});
+
+test('管理员拒绝退款后套餐继续有效', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138908');
+        await submitAndApproveSubscription(baseUrl, cookie, 'sub_29_daily_19_usd');
+        const refund = await submitSubscriptionRefundRequest(baseUrl, cookie);
+
+        const rejected = await jsonFetch(`${baseUrl}/api/admin/subscription-refund-requests/${encodeURIComponent(refund.id)}/reject`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({ adminNote: 'refund rejected' })
+        });
+        assert.equal(rejected.response.status, 200);
+        assert.equal(rejected.body.refundRequest.status, 'rejected');
+        assert.equal(rejected.body.subscription.status, 'active');
+
+        const subscriptionRow = db.prepare('SELECT status FROM account_subscriptions WHERE phone = ?').get('13800138908');
+        assert.equal(subscriptionRow.status, 'active');
+
+        const state = await jsonFetch(`${baseUrl}/api/account/subscription-state`, {
+            headers: { cookie }
+        });
+        assert.equal(state.body.subscription.planId, 'sub_29_daily_19_usd');
+        assert.equal(state.body.quota.code, 'active');
+    }, { now: () => new Date('2026-06-20T09:00:00+08:00') });
 });
 
 test('API key 状态和 usage 扣费按订阅池美元额度执行', async () => {

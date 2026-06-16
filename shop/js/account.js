@@ -259,6 +259,23 @@ function hasActiveSubscription(state = {}) {
     return Boolean(subscription.planId && subscription.expiresAt);
 }
 
+function calculateSubscriptionRefundEstimate(subscription = {}) {
+    const periodDays = Math.max(1, Number(subscription.periodDays || 30));
+    const priceCents = Math.max(0, Number(subscription.monthlyPriceCents || 0));
+    const expiresAt = new Date(subscription.expiresAt || '');
+    const now = new Date();
+    const remainingMs = Number.isFinite(expiresAt.getTime()) ? Math.max(0, expiresAt.getTime() - now.getTime()) : 0;
+    const remainingDays = Math.min(periodDays, Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000))));
+    return {
+        remainingDays,
+        refundAmountCents: Math.floor((priceCents * remainingDays) / periodDays)
+    };
+}
+
+function hasPendingRefundRequest(refundRequests = []) {
+    return refundRequests.some((request) => request.status === 'pending');
+}
+
 function renderSubscriptionMembershipGuard(state = {}) {
     const canBuySubscription = !hasActiveSubscription(state);
     const subscriptionMembershipHint = document.getElementById('subscriptionMembershipHint');
@@ -303,6 +320,48 @@ function renderSubscriptionOrders(orders = []) {
             `).join('')}
         </div>
     `;
+}
+
+function renderSubscriptionRefundRequests(refundRequests = []) {
+    if (!refundRequests.length) return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无退款申请。</p>';
+    return `
+        <div class="space-y-3">
+            ${refundRequests.map((request) => `
+                <article class="rounded-md border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="font-medium text-primary dark:text-dark-text">${escapeHtml(request.planName || request.planId || '套餐退款')}</p>
+                            <p class="mt-1 text-sm text-text-muted dark:text-dark-text-muted">${escapeHtml(formatCents(request.refundAmountCents))} · 剩余 ${escapeHtml(String(request.remainingDays || 0))} 天</p>
+                            <p class="mt-1 text-xs text-text-muted dark:text-dark-text-muted">申请 ${escapeHtml(formatDate(request.createdAt))}</p>
+                        </div>
+                        <span class="rounded-full border border-border-subtle dark:border-dark-border px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted">${escapeHtml(subscriptionOrderStatusText(request.status))}</span>
+                    </div>
+                </article>
+            `).join('')}
+        </div>
+    `;
+}
+
+function renderSubscriptionRefundPanel(state = {}, refundRequests = []) {
+    const estimateRoot = document.getElementById('subscriptionRefundEstimate');
+    const button = document.getElementById('subscriptionRefundButton');
+    const listRoot = document.getElementById('accountRefundRequests');
+    const subscription = state.subscription || {};
+    const active = hasActiveSubscription(state);
+    const hasPending = hasPendingRefundRequest(refundRequests);
+    if (estimateRoot) {
+        if (!active) {
+            estimateRoot.textContent = '开通套餐后才可申请退款。';
+        } else {
+            const estimate = calculateSubscriptionRefundEstimate(subscription);
+            estimateRoot.textContent = hasPending
+                ? `已有退款申请待审核，预计退款 ${formatCents(estimate.refundAmountCents)}。`
+                : `预计退款 ${formatCents(estimate.refundAmountCents)}，按剩余 ${estimate.remainingDays} 天计算。`;
+        }
+    }
+    if (button) button.disabled = !active || hasPending;
+    if (listRoot) listRoot.innerHTML = renderSubscriptionRefundRequests(refundRequests);
+    return active && !hasPending;
 }
 
 function renderUsdCharges(charges = []) {
@@ -551,8 +610,11 @@ async function initAccountPage() {
     const addonPaymentMethod = document.getElementById('addonPaymentMethod');
     const addonPaymentNote = document.getElementById('addonPaymentNote');
     const addonOrderMessage = document.getElementById('addonOrderMessage');
+    const subscriptionRefundButton = document.getElementById('subscriptionRefundButton');
+    const subscriptionRefundMessage = document.getElementById('subscriptionRefundMessage');
     let canSubmitSubscriptionOrder = false;
     let canSubmitAddonOrder = false;
+    let canSubmitRefundRequest = false;
     const accountSubscriptionOrders = document.getElementById('accountSubscriptionOrders');
     const accountAddonOrders = document.getElementById('accountAddonOrders');
     const accountCharges = document.getElementById('accountCharges');
@@ -601,16 +663,18 @@ async function initAccountPage() {
 
     async function refreshBilling() {
         if (billingMessage) billingMessage.textContent = '正在读取账务信息...';
-        const [stateData, subscriptionOrdersData, addonOrdersData, chargeData, ledgerData] = await Promise.all([
+        const [stateData, subscriptionOrdersData, addonOrdersData, refundData, chargeData, ledgerData] = await Promise.all([
             requestJson('/api/account/subscription-state'),
             requestJson('/api/account/subscription-orders'),
             requestJson('/api/account/addon-orders'),
+            requestJson('/api/account/subscription-refund-requests'),
             requestJson('/api/account/usd-charges'),
             requestJson('/api/account/addon-ledger')
         ]);
         fillSubscriptionControls(stateData);
         canSubmitSubscriptionOrder = renderSubscriptionMembershipGuard(stateData);
         canSubmitAddonOrder = renderAddonMembershipGuard(stateData);
+        canSubmitRefundRequest = renderSubscriptionRefundPanel(stateData, refundData.refundRequests || []);
         if (quotaCards) quotaCards.innerHTML = renderQuotaCards(stateData);
         if (quotaBar) quotaBar.innerHTML = renderQuotaBar(stateData);
         if (quotaHint) {
@@ -693,6 +757,26 @@ async function initAccountPage() {
                 await refreshBilling();
             } catch (error) {
                 addonOrderMessage.textContent = error.message;
+            }
+        });
+    }
+
+    if (subscriptionRefundButton && subscriptionRefundMessage) {
+        subscriptionRefundButton.addEventListener('click', async () => {
+            if (!canSubmitRefundRequest) {
+                subscriptionRefundMessage.textContent = '当前不能提交退款申请。';
+                return;
+            }
+            subscriptionRefundMessage.textContent = '正在提交退款申请...';
+            try {
+                await requestJson('/api/account/subscription-refund-requests', {
+                    method: 'POST',
+                    body: JSON.stringify({})
+                });
+                subscriptionRefundMessage.textContent = '退款申请已提交，等待管理员审核。';
+                await refreshBilling();
+            } catch (error) {
+                subscriptionRefundMessage.textContent = error.message;
             }
         });
     }
@@ -789,6 +873,8 @@ async function initAccountLinks() {
         renderAccountModelOverview,
         renderTopups,
         renderSubscriptionOrders,
+        renderSubscriptionRefundPanel,
+        renderSubscriptionRefundRequests,
         renderCharges,
         renderUsdCharges,
         renderLedger,

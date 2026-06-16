@@ -9,10 +9,13 @@
 - API key 新放行条件为：已兑换托管 key + 有效订阅 + 今日套餐剩余额度或加量包余额大于 0；无有效订阅时加量包保留但不放行。
 - 有效套餐期间不能重复购买或审批新的套餐订单，避免 29 元订单覆盖 59 元订单；重复提交或审批返回 `ACTIVE_SUBSCRIPTION_EXISTS`。
 - 加量包只能在账号已有有效订阅套餐时提交订单；无套餐时后端返回 `SUBSCRIPTION_REQUIRED_FOR_ADDON`，前端禁用提交按钮并提示先开通套餐。
+- 退款申请只针对当前有效套餐，金额使用人民币 cents 按剩余会员天数计算；不按当天已使用额度计算，也不触碰加量包余额。
+- 管理员批准退款后，对应 `account_subscriptions` 立即变为 `cancelled`，API key 因无有效订阅立即不可用；管理员拒绝后套餐保持有效。
 - usage 美元扣费必须按 usage 发生时间判断订阅有效性：`started_at <= requested_at < expires_at`；不要回退成按当前时间判断历史 usage。
 - 实施记录见 `docs/ai/context/20260616-195021-subscription-mvp-implementation_CN.md`。
 - 加量包依附套餐规则记录见 `docs/ai/context/20260616-200650-addon-requires-active-subscription-plan_CN.md`。
 - 禁止重复套餐覆盖记录见 `docs/ai/context/20260616-202029-subscription-order-no-duplicate-active-plan_CN.md`。
+- 退款 MVP 设计与实施记录见 `docs/ai/context/20260616-203809-subscription-refund-mvp-design-plan_CN.md` 和 `docs/ai/context/20260616-205344-subscription-refund-mvp-implementation_CN.md`。
 
 ## 2026-06-16 订阅池长期加量包与页面设计
 

@@ -675,6 +675,34 @@ ON subscription_orders(phone, created_at);
 CREATE INDEX IF NOT EXISTS idx_subscription_orders_type_status_created
 ON subscription_orders(order_type, status, created_at);
 
+CREATE TABLE IF NOT EXISTS subscription_refund_requests (
+  id TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  subscription_id TEXT NOT NULL,
+  plan_id TEXT NOT NULL,
+  plan_amount_cents INTEGER NOT NULL,
+  period_days INTEGER NOT NULL,
+  remaining_days INTEGER NOT NULL,
+  refund_amount_cents INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')),
+  created_at TEXT NOT NULL,
+  confirmed_at TEXT,
+  confirmed_by_phone TEXT,
+  admin_note TEXT,
+  FOREIGN KEY (phone) REFERENCES users(phone),
+  FOREIGN KEY (subscription_id) REFERENCES account_subscriptions(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subscription_refund_one_pending
+ON subscription_refund_requests(subscription_id)
+WHERE status = 'pending';
+
+CREATE INDEX IF NOT EXISTS idx_subscription_refund_phone_created
+ON subscription_refund_requests(phone, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_subscription_refund_status_created
+ON subscription_refund_requests(status, created_at);
+
 CREATE TABLE IF NOT EXISTS account_addon_balances (
   phone TEXT PRIMARY KEY,
   balance_usd_micros INTEGER NOT NULL DEFAULT 0,
@@ -1053,6 +1081,29 @@ function createShopApp(options = {}) {
             paymentMethod: row.payment_method,
             paymentNote: row.payment_note || '',
             status: row.status,
+            createdAt: row.created_at,
+            confirmedAt: row.confirmed_at || '',
+            confirmedByPhone: row.confirmed_by_phone || '',
+            adminNote: row.admin_note || ''
+        };
+    }
+
+    function publicSubscriptionRefundRequest(row) {
+        if (!row) return null;
+        const plan = row.plan_id ? getSubscriptionPlanById.get(row.plan_id) : null;
+        return {
+            id: row.id,
+            phone: row.phone,
+            subscriptionId: row.subscription_id,
+            planId: row.plan_id,
+            planName: row.plan_name || plan?.name || '',
+            planAmountCents: row.plan_amount_cents,
+            periodDays: row.period_days,
+            remainingDays: row.remaining_days,
+            refundAmountCents: row.refund_amount_cents,
+            status: row.status,
+            startedAt: row.started_at || '',
+            expiresAt: row.expires_at || '',
             createdAt: row.created_at,
             confirmedAt: row.confirmed_at || '',
             confirmedByPhone: row.confirmed_by_phone || '',
@@ -1844,6 +1895,99 @@ SET plan_id = @planId,
     expires_at = @expiresAt,
     updated_at = @updatedAt
 WHERE id = @id
+`);
+
+    const getAccountSubscriptionWithPlanById = db.prepare(`
+SELECT s.id, s.phone, s.plan_id, s.status, s.started_at, s.expires_at, s.created_at, s.updated_at,
+       p.name AS plan_name, p.monthly_price_cents, p.daily_quota_usd_micros, p.period_days
+FROM account_subscriptions s
+JOIN subscription_plans p ON p.id = s.plan_id
+WHERE s.id = ?
+`);
+
+    const cancelAccountSubscriptionById = db.prepare(`
+UPDATE account_subscriptions
+SET status = 'cancelled',
+    updated_at = ?
+WHERE id = ? AND status = 'active'
+`);
+
+    const insertSubscriptionRefundRequest = db.prepare(`
+INSERT INTO subscription_refund_requests (
+  id, phone, subscription_id, plan_id, plan_amount_cents, period_days,
+  remaining_days, refund_amount_cents, status, created_at
+)
+VALUES (
+  @id, @phone, @subscriptionId, @planId, @planAmountCents, @periodDays,
+  @remainingDays, @refundAmountCents, 'pending', @createdAt
+)
+`);
+
+    const getSubscriptionRefundRequestById = db.prepare(`
+SELECT r.id, r.phone, r.subscription_id, r.plan_id, r.plan_amount_cents, r.period_days,
+       r.remaining_days, r.refund_amount_cents, r.status, r.created_at,
+       r.confirmed_at, r.confirmed_by_phone, r.admin_note,
+       s.started_at, s.expires_at, p.name AS plan_name
+FROM subscription_refund_requests r
+LEFT JOIN account_subscriptions s ON s.id = r.subscription_id
+LEFT JOIN subscription_plans p ON p.id = r.plan_id
+WHERE r.id = ?
+`);
+
+    const getPendingSubscriptionRefundBySubscriptionId = db.prepare(`
+SELECT r.id, r.phone, r.subscription_id, r.plan_id, r.plan_amount_cents, r.period_days,
+       r.remaining_days, r.refund_amount_cents, r.status, r.created_at,
+       r.confirmed_at, r.confirmed_by_phone, r.admin_note,
+       s.started_at, s.expires_at, p.name AS plan_name
+FROM subscription_refund_requests r
+LEFT JOIN account_subscriptions s ON s.id = r.subscription_id
+LEFT JOIN subscription_plans p ON p.id = r.plan_id
+WHERE r.subscription_id = ? AND r.status = 'pending'
+LIMIT 1
+`);
+
+    const listSubscriptionRefundRequestsByPhone = db.prepare(`
+SELECT r.id, r.phone, r.subscription_id, r.plan_id, r.plan_amount_cents, r.period_days,
+       r.remaining_days, r.refund_amount_cents, r.status, r.created_at,
+       r.confirmed_at, r.confirmed_by_phone, r.admin_note,
+       s.started_at, s.expires_at, p.name AS plan_name
+FROM subscription_refund_requests r
+LEFT JOIN account_subscriptions s ON s.id = r.subscription_id
+LEFT JOIN subscription_plans p ON p.id = r.plan_id
+WHERE r.phone = ?
+ORDER BY r.created_at DESC, r.rowid DESC
+LIMIT ?
+`);
+
+    const listSubscriptionRefundRequestsForAdmin = db.prepare(`
+SELECT r.id, r.phone, r.subscription_id, r.plan_id, r.plan_amount_cents, r.period_days,
+       r.remaining_days, r.refund_amount_cents, r.status, r.created_at,
+       r.confirmed_at, r.confirmed_by_phone, r.admin_note,
+       s.started_at, s.expires_at, p.name AS plan_name
+FROM subscription_refund_requests r
+LEFT JOIN account_subscriptions s ON s.id = r.subscription_id
+LEFT JOIN subscription_plans p ON p.id = r.plan_id
+WHERE (? = 'all' OR r.status = ?)
+ORDER BY r.created_at DESC, r.rowid DESC
+LIMIT ?
+`);
+
+    const approveSubscriptionRefundById = db.prepare(`
+UPDATE subscription_refund_requests
+SET status = 'approved',
+    confirmed_at = ?,
+    confirmed_by_phone = ?,
+    admin_note = ?
+WHERE id = ? AND status = 'pending'
+`);
+
+    const rejectSubscriptionRefundById = db.prepare(`
+UPDATE subscription_refund_requests
+SET status = 'rejected',
+    confirmed_at = ?,
+    confirmed_by_phone = ?,
+    admin_note = ?
+WHERE id = ? AND status = 'pending'
 `);
 
     const ensureAddonBalanceRow = db.prepare(`
@@ -2638,6 +2782,65 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return getSubscriptionOrderById.get(order.id);
     }
 
+    function calculateSubscriptionRefundSnapshot(subscription, date = appNow()) {
+        const periodDays = Math.max(1, Number(subscription.period_days || 30));
+        const planAmountCents = Math.max(0, Number(subscription.monthly_price_cents || 0));
+        const expiresAt = new Date(subscription.expires_at);
+        const now = new Date(date);
+        const remainingMs = Number.isFinite(expiresAt.getTime()) && Number.isFinite(now.getTime())
+            ? Math.max(0, expiresAt.getTime() - now.getTime())
+            : 0;
+        const remainingDays = Math.min(periodDays, Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000))));
+        return {
+            planAmountCents,
+            periodDays,
+            remainingDays,
+            refundAmountCents: Math.floor((planAmountCents * remainingDays) / periodDays)
+        };
+    }
+
+    function createSubscriptionRefundRequest({ phone }) {
+        const checkedAt = nowIso(appNow());
+        const subscription = getActiveSubscriptionWithPlanByPhone.get(phone, checkedAt, checkedAt);
+        if (!subscription) {
+            const error = new Error('当前没有可退款的有效套餐。');
+            error.status = 409;
+            error.code = 'ACTIVE_SUBSCRIPTION_REQUIRED_FOR_REFUND';
+            throw error;
+        }
+        const pending = getPendingSubscriptionRefundBySubscriptionId.get(subscription.id);
+        if (pending) {
+            const error = new Error('您已有待审核退款申请。');
+            error.status = 409;
+            error.code = 'REFUND_REQUEST_PENDING';
+            throw error;
+        }
+        const snapshot = calculateSubscriptionRefundSnapshot(subscription, appNow());
+        const request = {
+            id: createId('REFUND'),
+            phone,
+            subscriptionId: subscription.id,
+            planId: subscription.plan_id,
+            planAmountCents: snapshot.planAmountCents,
+            periodDays: snapshot.periodDays,
+            remainingDays: snapshot.remainingDays,
+            refundAmountCents: snapshot.refundAmountCents,
+            createdAt: nowIso(appNow())
+        };
+        try {
+            insertSubscriptionRefundRequest.run(request);
+        } catch (error) {
+            if (String(error?.message || '').includes('UNIQUE')) {
+                const conflict = new Error('您已有待审核退款申请。');
+                conflict.status = 409;
+                conflict.code = 'REFUND_REQUEST_PENDING';
+                throw conflict;
+            }
+            throw error;
+        }
+        return getSubscriptionRefundRequestById.get(request.id);
+    }
+
     const approveSubscriptionOrder = db.transaction(({ id, adminNote, adminPhone }) => {
         const row = getSubscriptionOrderById.get(id);
         if (!row || row.order_type !== 'subscription' || row.status !== 'pending') {
@@ -2730,6 +2933,64 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return {
             order: getSubscriptionOrderById.get(id),
             addonBalance: getAddonBalanceRow.get(row.phone)
+        };
+    });
+
+    const approveSubscriptionRefundRequest = db.transaction(({ id, adminNote, adminPhone }) => {
+        const row = getSubscriptionRefundRequestById.get(id);
+        if (!row || row.status !== 'pending') {
+            const error = new Error('退款申请不是待确认状态。');
+            error.status = 409;
+            error.code = 'REFUND_REQUEST_NOT_PENDING';
+            throw error;
+        }
+        const subscription = getAccountSubscriptionWithPlanById.get(row.subscription_id);
+        if (!subscription || subscription.status !== 'active') {
+            const error = new Error('当前套餐已经不可退款。');
+            error.status = 409;
+            error.code = 'SUBSCRIPTION_NOT_ACTIVE_FOR_REFUND';
+            throw error;
+        }
+        const now = nowIso(appNow());
+        const cancelResult = cancelAccountSubscriptionById.run(now, row.subscription_id);
+        if (cancelResult.changes !== 1) {
+            const error = new Error('套餐取消失败。');
+            error.status = 409;
+            error.code = 'SUBSCRIPTION_CANCEL_FAILED';
+            throw error;
+        }
+        const approveResult = approveSubscriptionRefundById.run(now, adminPhone, adminNote, id);
+        if (approveResult.changes !== 1) {
+            const error = new Error('退款申请确认失败。');
+            error.status = 409;
+            error.code = 'REFUND_REQUEST_NOT_PENDING';
+            throw error;
+        }
+        return {
+            refundRequest: getSubscriptionRefundRequestById.get(id),
+            subscription: getAccountSubscriptionWithPlanById.get(row.subscription_id)
+        };
+    });
+
+    const rejectSubscriptionRefundRequest = db.transaction(({ id, adminNote, adminPhone }) => {
+        const row = getSubscriptionRefundRequestById.get(id);
+        if (!row || row.status !== 'pending') {
+            const error = new Error('退款申请不是待确认状态。');
+            error.status = 409;
+            error.code = 'REFUND_REQUEST_NOT_PENDING';
+            throw error;
+        }
+        const now = nowIso(appNow());
+        const result = rejectSubscriptionRefundById.run(now, adminPhone, adminNote, id);
+        if (result.changes !== 1) {
+            const error = new Error('退款申请拒绝失败。');
+            error.status = 409;
+            error.code = 'REFUND_REQUEST_NOT_PENDING';
+            throw error;
+        }
+        return {
+            refundRequest: getSubscriptionRefundRequestById.get(id),
+            subscription: getAccountSubscriptionWithPlanById.get(row.subscription_id)
         };
     });
 
@@ -3884,6 +4145,24 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return res.json({ entries });
     });
 
+    app.post('/api/account/subscription-refund-requests', limitQueryApi, requireSameOrigin, requireAccount, requireAccountCsrf, (req, res) => {
+        try {
+            const refundRequest = createSubscriptionRefundRequest({ phone: req.account.phone });
+            return res.status(201).json({ refundRequest: publicSubscriptionRefundRequest(refundRequest) });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'SUBSCRIPTION_REFUND_REQUEST_FAILED',
+                message: error.message || '退款申请提交失败。'
+            });
+        }
+    });
+
+    app.get('/api/account/subscription-refund-requests', limitQueryApi, requireAccount, (req, res) => {
+        const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 100);
+        const refundRequests = listSubscriptionRefundRequestsByPhone.all(req.account.phone, limit).map(publicSubscriptionRefundRequest);
+        return res.json({ refundRequests });
+    });
+
     app.post('/api/account/topups', limitQueryApi, requireSameOrigin, requireAccount, requireAccountCsrf, (req, res) => {
         try {
             const topup = createTopupRequest({ phone: req.account.phone, body: req.body });
@@ -4129,6 +4408,53 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             return res.status(error.status || 500).json({
                 code: error.code || 'API_KEY_IMPORT_FAILED',
                 message: error.message || 'API key 导入失败。'
+            });
+        }
+    });
+
+    app.get('/api/admin/subscription-refund-requests', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        const status = String(req.query.status || 'pending').trim();
+        const normalizedStatus = ['pending', 'approved', 'rejected', 'all'].includes(status) ? status : 'pending';
+        const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
+        const refundRequests = listSubscriptionRefundRequestsForAdmin.all(normalizedStatus, normalizedStatus, limit)
+            .map(publicSubscriptionRefundRequest);
+        return res.json({ refundRequests });
+    });
+
+    app.post('/api/admin/subscription-refund-requests/:id/approve', limitAdminApi, requireSameOrigin, requireAdminUsageAccess, requireAccountCsrf, (req, res) => {
+        try {
+            const result = approveSubscriptionRefundRequest({
+                id: req.params.id,
+                adminNote: String(req.body.adminNote || req.body.admin_note || '').trim().slice(0, 500),
+                adminPhone: req.account?.phone || defaultAdminAccountPhone
+            });
+            return res.json({
+                refundRequest: publicSubscriptionRefundRequest(result.refundRequest),
+                subscription: publicAccountSubscription(result.subscription)
+            });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'SUBSCRIPTION_REFUND_APPROVE_FAILED',
+                message: error.message || '退款申请确认失败。'
+            });
+        }
+    });
+
+    app.post('/api/admin/subscription-refund-requests/:id/reject', limitAdminApi, requireSameOrigin, requireAdminUsageAccess, requireAccountCsrf, (req, res) => {
+        try {
+            const result = rejectSubscriptionRefundRequest({
+                id: req.params.id,
+                adminNote: String(req.body.adminNote || req.body.admin_note || '').trim().slice(0, 500),
+                adminPhone: req.account?.phone || defaultAdminAccountPhone
+            });
+            return res.json({
+                refundRequest: publicSubscriptionRefundRequest(result.refundRequest),
+                subscription: publicAccountSubscription(result.subscription)
+            });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'SUBSCRIPTION_REFUND_REJECT_FAILED',
+                message: error.message || '退款申请拒绝失败。'
             });
         }
     });
