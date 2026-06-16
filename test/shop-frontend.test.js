@@ -632,9 +632,15 @@ test('Account 页面包含订阅池购买、额度条和美元流水容器', () 
     assert.match(html, /id="accountGuideSection"[\s\S]*?data-collapsible-default="closed"/);
 
     const quotaCardsIndex = html.indexOf('id="accountQuotaCards"');
+    const quotaBarIndex = html.indexOf('id="accountQuotaBar"');
+    const usageSectionIndex = html.indexOf('id="accountUsageSection"');
     const modelOverviewIndex = html.indexOf('id="accountModelOverview"');
+    const subscriptionOrderFormIndex = html.indexOf('id="subscriptionOrderForm"');
     assert.ok(quotaCardsIndex >= 0);
-    assert.ok(modelOverviewIndex > quotaCardsIndex);
+    assert.ok(quotaBarIndex > quotaCardsIndex);
+    assert.ok(usageSectionIndex > quotaBarIndex);
+    assert.ok(modelOverviewIndex > usageSectionIndex);
+    assert.ok(subscriptionOrderFormIndex > modelOverviewIndex);
 });
 
 test('Account 前端渲染周消费柱状图并提供上一周下一周切换', () => {
@@ -713,10 +719,10 @@ test('Account 页把余额和 API key 前置，并默认收起说明和流水', 
     const historyIndex = accountHtml.indexOf('id="accountBillingHistorySection"');
 
     assert.ok(billingIndex >= 0);
-    assert.ok(keysIndex > billingIndex);
+    assert.ok(usageIndex > billingIndex);
+    assert.ok(keysIndex > usageIndex);
     assert.ok(guideIndex > keysIndex);
-    assert.ok(usageIndex > guideIndex);
-    assert.ok(historyIndex > usageIndex);
+    assert.ok(historyIndex > guideIndex);
 
     assert.match(accountHtml, /id="accountBillingSection"[^>]*data-collapsible-default="open"/);
     assert.match(accountHtml, /id="accountKeysSection"[^>]*data-collapsible-default="open"/);
