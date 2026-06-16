@@ -180,8 +180,7 @@ function renderBalanceCards(balance = {}) {
     const cards = [
         ['当前余额', balance.balanceNanos === undefined ? formatCents(balance.balanceCents) : formatNanos(balance.balanceNanos), billingStatusText(balance.status)],
         ['欠费金额', balance.debtNanos === undefined ? formatCents(balance.debtCents) : formatNanos(balance.debtNanos), balance.debtCents > 0 ? '需补缴' : '无欠费'],
-        ['待确认充值', balance.pendingTopupNanos === undefined ? formatCents(balance.pendingTopupCents) : formatNanos(balance.pendingTopupNanos), '确认后入账'],
-        ['欠费上限', balance.creditLimitNanos === undefined ? formatCents(balance.creditLimitCents) : formatNanos(balance.creditLimitNanos), balance.creditExceeded ? '已超过' : '默认上限']
+        ['待确认充值', balance.pendingTopupNanos === undefined ? formatCents(balance.pendingTopupCents) : formatNanos(balance.pendingTopupNanos), '确认后入账']
     ];
     return cards.map(([label, value, hint]) => `
         <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
