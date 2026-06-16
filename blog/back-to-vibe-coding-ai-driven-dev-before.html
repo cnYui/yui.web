@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Back to Vibe Coding：AI驱动开发之前，你需要知道的几件事（上） - Tech Blog</title>
+    <meta name="description" content="从桌面端、CLI、Agent Harness、Prompt Engineering、AGENTS.md、Skill 和 Automation，重新理解 AI 驱动开发之前真正需要建立的工作流。"/>
+    <script>
+        (function() {
+            const html = document.documentElement;
+            html.setAttribute('data-ui-ready', 'false');
+            try {
+                const theme = localStorage.getItem('yui-portfolio-theme');
+                const lang = localStorage.getItem('yui-portfolio-lang');
+                const langMap = { zh: 'zh-CN', en: 'en', ja: 'ja' };
+                const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+                html.classList.toggle('dark', resolvedTheme === 'dark');
+                html.style.colorScheme = resolvedTheme;
+                html.style.backgroundColor = resolvedTheme === 'dark' ? '#0f0f0f' : '#ffffff';
+                html.lang = langMap[lang] || 'zh-CN';
+            } catch (error) {
+                html.style.colorScheme = 'light';
+                html.style.backgroundColor = '#ffffff';
+                html.lang = 'zh-CN';
+            }
+        })();
+    </script>
+    <style>
+        html { background-color: #ffffff; }
+        html.dark { background-color: #0f0f0f; }
+        html[data-ui-ready="false"] body { opacity: 0; }
+        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
+    </style>
+    <link href="/styles/site.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="/js/theme.js"></script>
+    <script src="/js/lang.js?v=20260419-2"></script>
+    <script src="/js/mobile-menu.js"></script>
+    <style>
+        .prose, article {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        .prose h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; }
+        .prose h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .prose p { margin-bottom: 1rem; line-height: 1.8; }
+        .prose ul, .prose ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .prose li { margin-bottom: 0.5rem; line-height: 1.7; }
+        .prose strong { font-weight: 600; color: inherit; }
+        .prose code { border-radius: 0.25rem; background: rgba(229, 229, 229, 0.7); padding: 0.12rem 0.35rem; font-size: 0.92em; }
+        .dark .prose code { background: rgba(51, 51, 51, 0.9); }
+        .prose blockquote { border-left: 4px solid #e5e5e5; padding-left: 1rem; margin: 1.5rem 0; font-style: italic; color: #71717a; }
+        .dark .prose blockquote { border-left-color: #333; color: #a0a0a0; }
+        .dark .prose strong { color: #ffffff; }
+        .prose hr { border: none; border-top: 1px solid #e5e5e5; margin: 2rem 0; }
+        .dark .prose hr { border-top-color: #333; }
+        .prose pre { margin: 1.5rem 0; border-radius: 0.5rem; background: rgba(245, 245, 245, 0.92); padding: 1rem; overflow-x: auto; font-size: 0.9rem; line-height: 1.7; }
+        .dark .prose pre { background: rgba(31, 31, 31, 0.95); }
+        .prose pre code { background: transparent; padding: 0; }
+        .prose table { width: 100%; margin: 1.5rem 0; border-collapse: collapse; font-size: 0.95rem; }
+        .prose th, .prose td { border: 1px solid #e5e5e5; padding: 0.85rem; text-align: left; vertical-align: top; line-height: 1.7; }
+        .dark .prose th, .dark .prose td { border-color: #333; }
+        .prose th { background: rgba(245, 245, 245, 0.9); font-weight: 600; }
+        .dark .prose th { background: rgba(31, 31, 31, 0.9); }
+        .article-figure { margin: 1.25rem 0 2rem; border-radius: 0.75rem; overflow: hidden; background: #f5f5f5; box-shadow: 0 18px 45px rgba(15, 15, 15, 0.08); }
+        .dark .article-figure { background: #1f1f1f; box-shadow: none; }
+        .article-figure img { display: block; width: 100%; height: auto; }
+    </style>
+</head>
+<body class="bg-background dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col overflow-x-hidden antialiased transition-colors duration-300">
+    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
+        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
+            <div class="flex items-center gap-4">
+                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">作品集.</a>
+            </div>
+            <div class="flex items-center gap-10">
+                <nav class="hidden md:flex items-center gap-8">
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
+                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/blog/">博客</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">音乐</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">动漫</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
+                </nav>
+                <div class="flex gap-2">
+                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="中/EN/日">
+                        <span class="text-xs font-bold">EN</span>
+                    </button>
+                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
+                        <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
+                    </button>
+                    <button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card transition-colors" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu">
+                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <nav id="mobileMenu" class="hidden md:hidden border-t border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
+            <div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
+                <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 w-fit" href="/blog/">博客</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">音乐</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">动漫</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-1 w-full">
+        <div class="w-full bg-background-soft dark:bg-dark-surface py-16">
+            <div class="max-w-3xl mx-auto px-6">
+                <a href="/blog/" class="inline-flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors mb-8">
+                    <span class="material-symbols-outlined text-lg">arrow_back</span>
+                    <span data-i18n="backToBlog">返回博客</span>
+                </a>
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="px-3 py-1 rounded bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-xs font-semibold uppercase tracking-wider">AI</span>
+                    <span class="text-sm text-text-muted dark:text-dark-text-muted">2026年6月16日</span>
+                    <span class="text-text-muted dark:text-dark-text-muted">•</span>
+                    <span class="text-sm text-text-muted dark:text-dark-text-muted">13 分钟阅读</span>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-display font-bold text-primary dark:text-dark-text leading-tight mb-6">
+                    Back to Vibe Coding：AI驱动开发之前，你需要知道的几件事（上）
+                </h1>
+                <p class="text-xl text-text-muted dark:text-dark-text-muted font-light leading-relaxed">
+                    从 Prompt 到 Loop，从聊天框到 Agent Harness，重新理解真正高效使用 AI Coding 工具之前需要建立的规则、记忆和工作流。
+                </p>
+                <div class="flex items-center gap-4 mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
+                    <div class="w-12 h-12 rounded-full overflow-hidden">
+                        <img src="/images/profile/avatar-small.jpg" alt="Yui" class="w-full h-full object-cover" decoding="async"/>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-primary dark:text-dark-text">Yui</p>
+                        <p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="authorRole">开发者 & 创作者</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full max-w-4xl mx-auto px-6">
+            <div class="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-lg">
+                <img class="w-full h-full object-cover" src="/images/blog/back-to-vibe-coding/00-cover-prompt-to-loop.png" alt="从 Prompt 到 Loop 的文章封面"/>
+            </div>
+        </div>
+
+        <article class="w-full max-w-3xl mx-auto px-6 py-16">
+            <div class="prose prose-lg max-w-none text-text-main dark:text-dark-text">
+                <p>上周我和朋友聊到了一些 AI 开发相关的问题。</p>
+                <p>一开始只是一个很具体的工具使用问题：Claude Code 的桌面端和 CLI 到底有什么区别？他平时用终端比较多，但又觉得终端复制 Markdown 不方便。比如写邮件、写文档、整理内容时，他希望复制出来就是渲染好的格式，而不是一堆原始 Markdown 文本。</p>
+                <p>但聊着聊着，话题很快就从“桌面端和 CLI 哪个更顺手”，延伸到了 AGENTS.md、上下文记忆、项目规则、Spec 开发这些东西。</p>
+                <p>聊完之后我有一个很强的感受：这些东西并不是学不会，而是很多人根本不知道自己需要学，也不知道应该从哪里开始学。</p>
+                <p>今天又看到有人在讨论 Loop Engineering，也就是所谓的“循环工程”。这个概念一下子把我最近的很多感受串起来了。</p>
+                <p>过去我们总是在讨论 Prompt 怎么写，怎么把一句话写得更准、更完整、更能让 AI 听懂。但真正开始高频使用 Claude Code、Codex、Cursor 这类 AI Coding 工具之后，我越来越觉得，Prompt 只是入口，真正决定效率上限的，是你有没有设计出一套能持续运转的工作流。</p>
+                <p>这个问题表面上是在问工具形态：一个是桌面端，一个是命令行。但越往后聊，我越觉得它背后其实是另一个更大的问题：</p>
+                <blockquote><p>我们到底应该怎么正确使用 AI Coding 工具？</p></blockquote>
+                <p>很多人第一次接触 Claude Code、Codex、Cursor 这类工具时，本能上还是把它们当成一个更强的 ChatGPT。打开对话框，输入一句 Prompt，让它写代码；不满意，再补一句；跑不通，再让它 debug。</p>
+                <p>这个流程当然能用，但它本质上还是“人一轮一轮推着 AI 往前走”。</p>
+                <p>Addy Osmani 最近在 Loop Engineering 视频里讲了一个很有意思的判断：未来真正重要的，不是你自己一遍遍去 Prompt Agent，而是设计一个系统，让这个系统去驱动 Agent。换句话说，Prompt 不是没用了，而是它的位置变了。它不再是整个工作流的核心，而只是 Loop 里的一个零件。</p>
+                <p>这也是我最近越来越强烈的感受。AI 驱动开发真正改变的，不是“我少写了几行代码”，而是开发者的工作重心开始往后退一层：从写代码，退到写 Spec；从写 Prompt，退到写 AGENTS.md；从临时沟通，退到设计规则、记忆、验证和循环。</p>
+                <p>所以这篇文章不想写成一篇单纯的工具测评，也不想只讨论“Claude Code 和 Codex 谁更好用”。我更想借着这次和朋友的聊天，重新梳理一件事：</p>
+                <blockquote><p>在真正进入 AI 驱动开发之前，我们到底需要先知道什么？</p></blockquote>
+
+                <h2 class="text-primary dark:text-dark-text">01 你到底在用哪种 AI Coding 工具？</h2>
+                <figure class="article-figure">
+                    <img src="/images/blog/back-to-vibe-coding/01-tool-entry-desktop-cli.png" alt="工具入口不同，工作流也不同" loading="lazy" decoding="async"/>
+                </figure>
+                <p>先从最小白的问题开始：桌面端和 CLI 到底有什么区别？</p>
+                <p>在我看来，桌面端更像“人看的工作台”。它适合聊天、复制内容、整理 PDF 等文档、生成图片、跨应用操作。比如你让 AI 写一段邮件、整理一份文档、生成一张图片，桌面端的体验通常会更自然，因为它更接近我们平时使用软件的方式。</p>
+                <p>CLI 则是另一种完全不同的入口。它需要在终端里启动，也就是那个黑黑的窗口。你不会像使用普通软件一样到处点按钮，而是主要通过键盘输入命令来操作。对于刚接触的人来说，这个界面一开始会有点陌生，甚至有点“不像软件”。</p>
+                <p>CLI 里通常会有一套 slash command，也就是以 / 开头的斜杠命令。它们不是发给模型的普通 Prompt，而是用来控制工具本身的功能入口。</p>
+                <p>但 CLI 的优势也正是在这里。因为它没有复杂的前端界面和图形渲染，整体会更轻、更直接。尤其是在处理多任务、长时间跑代码、执行测试、读取项目文件时，CLI 往往不会像桌面端那样容易受到界面卡顿的影响。很多命令也支持自动补全，你只需要输入前几个字母，它就能帮你补全后面的内容。熟悉之后，这种方式反而非常快。</p>
+                <p>所以桌面端和 CLI 不是谁替代谁，而是面向不同任务。</p>
+                <p>如果你的任务是写邮件、整理材料、做内容、跨应用操作，桌面端会更舒服。如果你的任务是改代码、跑测试、维护项目上下文，CLI 往往更自然。一个偏向“人如何看和调度”，一个偏向“Agent 如何在工程现场执行”。</p>
+                <p>这个区别在 Codex 和 Claude Code 这一类工具上会越来越明显。早期很多 AI Coding 工具的 CLI 功能更强，因为它们本来就是给极客程序员和重度开发者准备的。但现在桌面端也在快速补齐能力，甚至开始拥有更多面向普通用户的自动化入口，比如浏览器操作、桌面操作、跨应用控制等。</p>
+                <p>这背后其实是厂商在做用户分层。</p>
+                <p>如果你是刚入门的小白，甚至还没有形成“每个项目都应该在固定文件夹里打开”的习惯，那你直接使用 Web 端或者桌面端里的 Chat 模块，反而更合适。你不需要关心当前工作目录在哪里，也不需要理解 git、shell、依赖环境这些东西，系统会帮你把会话和结果保存在默认位置。</p>
+                <p>但如果你已经比较熟悉代码开发，就应该知道，真正写项目时最好在本地创建一个专门的代码目录，然后在 CLI 或 IDE 里打开这个目录。因为 AI Coding 不是让模型凭空生成一段代码，而是让它进入你的项目现场，理解文件结构、执行命令、跑测试、根据反馈继续修改。</p>
+                <p>简单来说，可以先这样理解：</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>使用场景</th>
+                            <th>更适合的入口</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>日常问答、写作、内容整理</td>
+                            <td>ChatGPT / Claude Desktop / Codex 桌面端</td>
+                        </tr>
+                        <tr>
+                            <td>图形化管理 AI 编码任务</td>
+                            <td>Codex App / Claude Desktop Code 模块 / IDE 插件</td>
+                        </tr>
+                        <tr>
+                            <td>重度开发、终端工作流、项目级执行</td>
+                            <td>Codex CLI / Claude Code CLI</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2 class="text-primary dark:text-dark-text">02 AI Coding APP 不是聊天框，而是 Agent Harness工程</h2>
+                <figure class="article-figure">
+                    <img src="/images/blog/back-to-vibe-coding/02-agent-harness-project-site.png" alt="不是聊天框，而是进入项目现场" loading="lazy" decoding="async"/>
+                </figure>
+                <p>很多人用 Claude Code / Codex，还是 ChatGPT 的使用习惯：</p>
+                <blockquote>
+                    <p>“帮我写一下。”</p>
+                    <p>“再改一下。”</p>
+                    <p>“再修一下。”</p>
+                </blockquote>
+                <p>但真正的 AI Coding 工具不是聊天框，而是一个能读文件、改文件、跑命令、维护上下文的本地 Agent Harness。</p>
+                <p>这里有一个很重要的分界线：</p>
+                <blockquote><p>如果你只是把它当聊天框，你用到的是模型能力；如果你把它当 Harness，你用到的才是 AI 驱动开发能力。</p></blockquote>
+                <p>大模型现在对于上下文足够的任务处理得非常出色。但上下文能力只是基础，真正让 AI Coding APP 变得不一样的，是它开始拥有“进入项目现场”的能力。</p>
+                <p>如果你在 ChatGPT 里问：“这个 bug 怎么修？”它大概率会给你一段建议，或者生成一段代码。但在 AI Coding APP 里，它可以直接打开你的项目文件，找到相关代码，修改实现，执行测试，然后告诉你哪些测试通过了，哪些地方还需要继续处理。</p>
+                <p>这件事听起来只是“多了几个工具调用”，但实际体验差别非常大。因为软件开发从来不是单纯写一段代码。它是一整条链路：理解需求、定位文件、修改实现、跑测试、看日志、修复问题、确认结果。过去这些环节都需要人手动串起来，现在 Agent Harness 开始把这些动作接到同一个工作流里。</p>
+                <p>这条分界线很重要，因为它决定了你到底是在“和模型聊天”，还是在“让 Agent 参与开发流程”。</p>
+                <p>这也是为什么我越来越不建议新手一上来就只研究“Prompt 怎么写得更好”。Prompt 当然重要，但它只是入口。真正决定上限的，是你有没有让 AI 进入正确的工作环境，有没有给它足够清晰的上下文，有没有让它知道项目规则，有没有让它执行完之后进行验证。</p>
+                <p>换句话说，AI Coding APP 的重点不是“让 AI 多说一点”，而是“让 AI 真正参与一轮开发闭环”。</p>
+                <p>这时候，开发者的角色也会发生变化。你不再只是一个给模型下指令的人，而更像是在管理一个可以执行任务的 Agent：你要告诉它目标是什么，边界在哪里，哪些文件能动，哪些地方不能碰，做完之后怎么验证，失败了应该怎么记录。</p>
+
+                <h2 class="text-primary dark:text-dark-text">03 Prompt Engineering还有用，但没那么有用了</h2>
+                <figure class="article-figure">
+                    <img src="/images/blog/back-to-vibe-coding/03-prompt-to-loop-system.png" alt="Prompt 是零件，Loop 才是系统" loading="lazy" decoding="async"/>
+                </figure>
+                <p>讲到这里，就可以回到最近很火的那个说法：提示词工程是不是已经死了？</p>
+                <p>我觉得这个说法有传播性，但不够准确。</p>
+                <p>Prompt 没死，只是它不再是最核心的能力。</p>
+                <p>在24年更早一点的时候，大家使用 AI 的方式很简单：打开一个对话框，然后想办法把第一句话写清楚。你要告诉它背景是什么、目标是什么、输出格式是什么、语气是什么、限制条件是什么。那时候大家讨论最多的东西，就是 Prompt 怎么写得更好。</p>
+                <p>这个阶段当然有价值。因为模型如果连你的需求都没听懂，后面所有生成结果都会跑偏。</p>
+                <p>但当模型能力变得越来越强，能够在更长上下文里调用更多工具时，问题开始发生变化。真正耗时间的，往往已经不是第一句 Prompt，而是后面那一整串反复发生的动作：它写完之后你要检查，报错之后你要让它修，修完之后你要跑测试，测试失败之后你要继续补充上下文，最后还要记录这轮到底做了什么。</p>
+                <p>这时候，如果你还把全部精力放在“怎么写一句完美 Prompt”上，就很容易陷入一个误区：你以为自己在自动化开发，其实还是在手动推动每一轮对话。</p>
+                <p>Addy Osmani 在 Loop Engineering 视频里提到的核心变化，正好对应这个问题。未来更重要的，不是人一遍遍去 Prompt Agent，而是设计一个系统，让这个系统去驱动 Agent。也就是说，我们要关注的不只是“这一句话怎么说”，而是“这一整轮工作应该怎么转起来”。</p>
+                <p>Prompt 更像一次性指令。Loop 更像持续运转的系统。</p>
+                <p>Prompt 是你临时告诉 AI：这次你应该怎么做。Loop 是你提前设计好：每一轮应该从哪里启动，读取什么上下文，执行什么动作，用什么方式检查结果，失败了怎么重试，成功了记录到哪里，什么时候继续，什么时候停下来交还给人。</p>
+                <p>这两者的差别非常大。</p>
+                <p>如果你只写 Prompt，你每次都要重新解释一遍背景、规则和目标；但如果你开始设计 Loop，你就会把这些东西沉淀下来，让它们变成可复用的流程。比如项目规则写进 AGENTS.md，上下文沉淀到 docs/ai/context/，开发前先写 Spec，改完之后跑测试，失败结果写回记录里，下一轮再基于这些记录继续推进。</p>
+                <p>所以我更愿意把 Prompt 理解成 Loop 里的一个零件，而不是整个 AI Coding 的核心。</p>
+                <p>真正的变化不是“以后不用写 Prompt 了”，而是 Prompt 从前台退到了后台。以前我们追求的是一句话让 AI 做对，现在我们追求的是一套流程让 AI 持续做对。</p>
+                <p>这也是 AI 驱动开发开始变难的地方。它不是让你彻底不用思考，而是把你的思考从“怎么写一句话”挪到了更高一层：</p>
+                <ul class="list-disc">
+                    <li>这个任务适不适合交给 Agent？还是在对话窗口简单 chat 就能解决？</li>
+                    <li>它需要哪些上下文？上下文哪些能否保存复用？</li>
+                    <li>执行之后怎么验证？</li>
+                    <li>失败之后怎么恢复？失败怎么兜底？</li>
+                    <li>哪些结果应该被记住并持久化保存？</li>
+                    <li>什么情况需要人介入？</li>
+                </ul>
+                <p>这些问题，才是 Prompt 之后真正重要的东西。</p>
+
+                <h2 class="text-primary dark:text-dark-text">04 如何用长期记忆更高效地使用 Codex、Claude Code？</h2>
+                <figure class="article-figure">
+                    <img src="/images/blog/back-to-vibe-coding/04-rules-as-manual.png" alt="规则文件让上下文变成资产" loading="lazy" decoding="async"/>
+                </figure>
+                <p>讲到这里，就会进入一个很关键的问题：如果 AI Coding APP 不是普通聊天框，那我们到底应该怎么更高效地使用它？</p>
+                <p>我的理解是，第一步不是去写一个更长的 Prompt，而是先把那些长期重复出现的规则沉淀下来。</p>
+                <p>以 Codex 为例，当你安装并使用它之后，在你的全局目录下会有一个隐藏目录，比如 Windows 上通常是 <code>C:\Users\yui\.codex\</code>。这个目录里可以放一个全局的 AGENTS.md 文件。它不是某一次任务的临时提示词，而更像是你长期希望 Codex 遵守的个人工作习惯。</p>
+                <p>比如你希望它默认使用中文，希望它修改代码前先做设计和计划，希望它不要覆盖用户已有改动，希望它把上下文记录到固定目录里，这些都适合写进全局 AGENTS.md。</p>
+                <p>而当你进入一个具体项目时，这个项目本身也可以有自己的项目级 AGENTS.md。它负责描述当前项目的规则：项目怎么启动，测试命令是什么，哪些目录不能动，代码风格是什么，文档和上下文应该保存到哪里。</p>
+                <p>最后，才是你每次对话时输入的 User Prompt。它负责描述这一次具体要做什么，比如“修复这个 bug”“补一组测试”“把这段 OCR 文本整理成公众号文章”。</p>
+                <p>这三层不是简单地互相替代，而是叠在一起工作：</p>
+                <blockquote><p>User Prompt 负责这一次要做什么，项目级 AGENTS.md 负责这个项目里应该怎么做，全局 AGENTS.md 负责你长期希望 Codex 以什么方式做事。</p></blockquote>
+                <p>越具体、越靠近当前任务的指令，通常优先级越高。</p>
+                <p>Claude Code 里也有类似的思路，只是文件名和生态习惯不同。很多人会在项目里维护 CLAUDE.md，用来告诉 Claude Code 当前项目的开发规则、命令、边界和偏好。</p>
+                <p>但这里有一个坑：不要一开始就为了写规则而写规则。</p>
+                <p>如果你一上来就预设一个庞大、死板、面面俱到的规则文件，很容易把 AI 约束死。它可能变得不敢动，也可能在一堆抽象规则里抓不到重点，最后反而更容易跑偏。</p>
+                <p>更好的方式是先跑起来。</p>
+                <p>当你在真实使用中发现自己第二次、第三次重复提醒 AI：“测试脚本必须先执行某个前置命令”“前端组件统一使用类似 Apple 的磨砂玻璃 UI 风格”“所有设计文档都要落到 docs/ai/context/ 目录”，这时候就说明这条规则值得被沉淀下来。</p>
+                <p>直白来说：</p>
+                <blockquote><p>如果你长期反复使用一套流程，就应该把它写进规则文件里，而不是每次都重新在聊天框里解释一遍。</p></blockquote>
+                <p>比如我的全局配置里，会放一些长期稳定的偏好：</p>
+                <pre><code># 通用偏好
+
+- 默认使用中文；文档、说明、总结、计划、回复和代码注释都必须使用中文，除非用户明确要求英文
+- 代码注释写原因，不写过程
+- 表达简洁直接，不要多余总结
+
+## 代码风格
+
+- 函数式优先，组合优于继承，TS/JS 中避免 OOP
+- 新功能优先复用或重构现有代码，不堆砌
+- KISS、DRY，采用最简可行方案
+- 发现设计不合理：小问题直接重构，大问题原地加 TODO 并说明原因
+
+## 文档与上下文
+
+- 在进入任何实现前，必须先完成 design / plan 阶段
+- 所有改动、上下文、tradeoff、背景信息，都保存到项目的 `docs/ai/context/` 目录
+- 新增内容时只允许创建新文件，不要覆写、重命名或删除之前的历史文件</code></pre>
+                <p>而项目级配置会更具体。比如某个项目的 AGENTS.md 里，我会放这个项目已有的上下文索引：</p>
+                <pre><code>## 项目上下文索引
+
+- `docs/ai/context/20260607-134929-home-character-html-plan.md`：记录人物图片透明背景处理、新建白底居中 HTML 的设计、取舍和验证方式。
+- `docs/ai/context/20260607-140547-new-homepage-demo-plan.md`：记录将老主页文字和导航转换为图一风格新主页 demo 的设计、取舍和验证方式。
+- `docs/ai/context/20260607-172109-video-frame-loop-plan.md`：记录将 73 帧视频逐帧透明化，并在首页以 5 秒前进/倒序循环播放的设计、取舍和验证方式。</code></pre>
+                <p>这样做的好处是，AI 每次进入项目时，不会像一个完全陌生的新同事。它能先看到项目过去发生过什么、哪些方案已经做过、哪些取舍已经确定、接下来应该沿着什么方向继续。</p>
+                <p>所以很多人以为 AGENTS.md 或 CLAUDE.md 只是 Prompt，但在我看来，它更像 AI Coding APP 的“项目操作手册”。</p>
+                <p>它应该回答的是这些问题：</p>
+                <ul class="list-disc">
+                    <li>项目怎么启动？</li>
+                    <li>哪些目录不能动？</li>
+                    <li>代码风格是什么？</li>
+                    <li>实现前要不要写 plan？</li>
+                    <li>修改后要跑哪些测试？</li>
+                    <li>上下文要保存到哪里？</li>
+                    <li>什么情况必须问用户？</li>
+                    <li>什么情况可以直接执行？</li>
+                </ul>
+                <p>这也是我现在越来越确定的一点：</p>
+                <blockquote><p>真正高级的 Prompt，不应该反复写在聊天框里，而应该沉淀成规则文件。</p></blockquote>
+                <p>Prompt 解决的是这一次怎么做，规则文件解决的是以后每一次都应该怎么做。</p>
+                <p>当你开始把这些规则沉淀下来，AI Coding 才会从“每次重新沟通”变成“持续积累工作流”。这也是从 Prompt 走向 Loop 的第一步。</p>
+
+                <h2 class="text-primary dark:text-dark-text">05 Skill：把规则进一步拆成可复用能力</h2>
+                <figure class="article-figure">
+                    <img src="/images/blog/back-to-vibe-coding/05-skill-automation-machine.png" alt="Skill 是可复用动作，Automation 让它启动" loading="lazy" decoding="async"/>
+                </figure>
+                <p>如果说 AGENTS.md / CLAUDE.md 更像项目规则，那么 Skill 更像一套可复用的工作流模块。</p>
+                <p>项目规则解决的是“这个项目里应该怎么做”。Skill 解决的是“遇到某一类任务时，应该按什么流程做”。</p>
+                <p>比如写文章可以有一个 Skill，做代码 Review 可以有一个 Skill，做 Spec 开发可以有一个 Skill，做 OCR 整理可以有一个 Skill，做 PR 巡检也可以有一个 Skill。</p>
+                <p>这两者不是互相替代的关系，而是可以嵌套使用。</p>
+                <p>举个例子，我可以在全局 AGENTS.md 里要求 Codex 每次新对话开始时，先读取并使用 using-superpowers 这个 Skill。这样我就不需要每次开发前都手动提醒它：“你先别急着写代码，先做设计和计划。”规则文件会自动告诉它：进入实现之前，必须先完成 design / plan 阶段。</p>
+                <p>这就是规则文件和 Skill 配合起来之后的效果。</p>
+                <p>这里还有一个很重要的点：</p>
+                <blockquote><p>Skill 应该服务你的工作流，而不是反过来让你迁就 Skill。</p></blockquote>
+                <p>比如 using-superpowers 这类 Skill，默认可能会把生成的设计文档、计划文档放到它自己的目录里。但我的项目习惯是把所有 AI 上下文都保存到 docs/ai/context/。所以我会在项目级 AGENTS.md 里明确要求：所有设计、取舍、背景信息和结果文档，都必须落到我指定的 docs/ai/context/ 目录下。</p>
+                <p>原因很简单：这是我的项目上下文系统。</p>
+                <p>我不希望上下文散落在各个工具自己的目录里，也不希望以后回看一个项目时，还要到处翻 Skill 的内部文件夹。真正有价值的上下文，应该回到项目本身，成为项目资产的一部分。</p>
+                <p>这也是我为什么会把 Skill 的输出重新约束回项目目录。</p>
+                <p>更进一步，Skill 不只可以用于单次任务，还可以和自动化任务结合起来，变成一个长期运行的小助手。</p>
+                <p>我最近就做过一个这样的工作流：每隔 12 小时，Codex 会自动检查我 GitHub 账号 cnYui 下所有 open PR 的最新反馈。如果有新的 review comment、maintainer comment、CI 失败或者 requested changes，它会按风险分级处理。</p>
+                <p>这个任务大概会做几件事：</p>
+                <ul class="list-disc">
+                    <li>拉取我当前所有 open PR。</li>
+                    <li>检查 review comments、issue comments、CI/check runs、merge 状态。</li>
+                    <li>只处理我上次回复之后的新反馈，避免重复评论。</li>
+                    <li>如果是事实性问题、CI 权限、CLA、外部服务阻塞这类不需要改代码的问题，就直接用简短、基于证据的方式回复。</li>
+                    <li>如果反馈要求改代码、补测试、修真实失败的 CI，就自动检出对应 PR 分支，在独立目录里修改、测试、提交、推送，再回到 PR 里说明改了什么、跑了什么验证。</li>
+                    <li>如果遇到需要用户账号操作、签署协议、付费授权、维护者权限或者产品方向决策的问题，就不上手乱改，只上报 blocker。</li>
+                </ul>
+                <p>这样一来，它就不是一个“帮我看一下 PR”的临时 Prompt，而是一个每 12 小时自动运行的 PR 巡检 Loop。</p>
+                <p>更有意思的是，这个 Loop 还可以继续扩展。比如你可以把它接到 Gmail 上：一旦 Gmail 里出现 GitHub 发来的 PR 反馈邮件，就触发对应任务，读取邮件内容，再进入 PR 检查、修改、提交和回复的流程。</p>
+                <p>这时候你会发现，所谓 AI Harness 开发，不只是 Agent 自己调用工具的那个小循环，而是一个“用户 + AI + 工具 + 规则 + 记忆”的大循环。</p>
+                <p>在这个大循环里：</p>
+                <ul class="list-disc">
+                    <li>用户通过全局规则、项目文档、Skill 和自动化任务，组合出一套自己的工作流。</li>
+                    <li>每个工作流内部，又可以嵌套很多个 Agent Loop，让 Agent 去读文件、改代码、跑测试、查 PR、写回复。</li>
+                    <li>Agent 能调用哪些工具、怎么调用、什么时候停下来，都需要用户提前在规则和文档里定义清楚。</li>
+                </ul>
+                <p>所以真正难的不是“让 AI 执行一个任务”。</p>
+                <p>真正难的是你要站在更高一层，设计这个系统怎么转起来。</p>
+                <p>这也是我为什么说，Prompt 只是最外层的入口。</p>
+                <blockquote>
+                    <p>Prompt 是一句话。</p>
+                    <p>AGENTS.md / CLAUDE.md 是一份规则。</p>
+                    <p>Skill 是一套可复用动作。</p>
+                    <p>Automation 是让这套动作定时或按事件启动。</p>
+                    <p>Loop 则是把这些东西串起来，让它持续运转。</p>
+                </blockquote>
+                <p>当你熟悉掌握了这点之后，AI Coding 就不再只是“小白会用工具”的阶段，而是进入“进阶用户设计系统”的阶段。</p>
+                <p>你不再只是问 AI：“帮我做一下这个。”</p>
+                <p>你开始设计的是：以后每次遇到这种事情，AI 应该如何自动发现、自动处理、自动验证、自动记录，以及在什么情况下必须停下来交还给人。</p>
+            </div>
+
+            <div class="flex flex-wrap gap-2 mt-12 pt-8 border-t border-border-subtle dark:border-dark-border">
+                <span class="text-sm text-text-muted dark:text-dark-text-muted mr-2" data-i18n="tags">标签:</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">AI Coding</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Vibe Coding</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Codex</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Claude Code</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Loop Engineering</span>
+            </div>
+
+            <div class="flex items-center justify-between mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
+                <span class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="shareArticle">分享文章:</span>
+                <div class="flex gap-4">
+                    <button id="shareBtn" class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text" title="复制链接">
+                        <span class="material-symbols-outlined text-lg">share</span>
+                    </button>
+                </div>
+            </div>
+        </article>
+    </main>
+
+    <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
+        <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex flex-col gap-1 text-center md:text-left">
+                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui的作品集</h2>
+                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 技术博客.</p>
+            </div>
+            <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
+                <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
+                <span class="cursor-default">15951875192</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('shareBtn').addEventListener('click', async () => {
+            const url = window.location.origin + window.location.pathname;
+            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
+            const copiedText = lang === 'ja' ? 'リンクをコピーしました' : lang === 'en' ? 'Link copied' : '复制成功';
+            const failedText = lang === 'ja' ? 'コピーに失敗しました' : lang === 'en' ? 'Copy failed' : '复制失败';
+            try {
+                await navigator.clipboard.writeText(url);
+                showToast(copiedText);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                showToast(failedText);
+            }
+        });
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 dark:bg-white/90 text-white dark:text-black px-6 py-3 rounded-full text-sm font-medium shadow-lg transition-all duration-300 opacity-0 translate-y-2 z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            });
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
