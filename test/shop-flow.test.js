@@ -4205,6 +4205,22 @@ test('用户购买加量包后长期余额进入 Account 状态并且续费不�
     }, { now: () => new Date('2026-06-16T11:00:00+08:00') });
 });
 
+test('未开通套餐时不能提交加量包订单', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const cookie = await registerUserAndGetCookie(baseUrl, '13800138905');
+
+        const result = await jsonFetch(`${baseUrl}/api/account/addon-orders`, {
+            method: 'POST',
+            headers: { cookie },
+            body: JSON.stringify({ amount: 5, paymentMethod: 'alipay', paymentNote: 'no subscription' })
+        });
+
+        assert.equal(result.response.status, 409);
+        assert.equal(result.body.code, 'SUBSCRIPTION_REQUIRED_FOR_ADDON');
+        assert.match(result.body.message, /先开通套餐/);
+    }, { now: () => new Date('2026-06-16T11:30:00+08:00') });
+});
+
 test('API key 状态和 usage 扣费按订阅池美元额度执行', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const order = await createRedeemedOrder(baseUrl, '13800138903', 'sk-subscription-mvp-38903');

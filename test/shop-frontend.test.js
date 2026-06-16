@@ -579,6 +579,8 @@ test('Account 页面包含订阅池购买、额度条和美元流水容器', () 
     assert.match(html, /id="subscriptionPlanSelect"/);
     assert.match(html, /id="addonOrderForm"/);
     assert.match(html, /id="addonAmountSelect"/);
+    assert.match(html, /id="addonMembershipHint"/);
+    assert.match(html, /id="addonSubmitButton"/);
     assert.match(html, /id="accountSubscriptionOrders"/);
     assert.match(html, /id="accountAddonOrders"/);
     assert.match(html, /id="accountBillingUsageCards"/);
@@ -641,6 +643,14 @@ test('Account 前端渲染周消费柱状图并提供上一周下一周切换', 
     assert.match(accountChartScript, /renderStackedChargeBars/);
     assert.doesNotMatch(accountChartScript, /account-revenue-bar/);
     assert.match(script, /accountWeeklySpendingChart\.innerHTML = renderAccountWeeklySpendingChart/);
+});
+
+test('Account 加量包表单要求先开通套餐', () => {
+    const script = readShopFrontendSource();
+
+    assert.match(script, /function hasActiveSubscription/);
+    assert.match(script, /addonSubmitButton\.disabled = !canBuyAddon/);
+    assert.match(script, /请先开通套餐，再购买加量包。/);
 });
 
 test('Account 用量卡片不展示无效 token 总览和内部价格版本名', () => {

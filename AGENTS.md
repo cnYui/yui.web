@@ -7,8 +7,10 @@
 - Admin 页面新增订阅订单审核、加量包订单审核、用户额度面板和美元消耗日志，至少展示手机号、套餐档位、每日额度、今日已用 / 剩余、加量包余额。
 - 新美元账本表为 `subscription_plans`、`account_subscriptions`、`subscription_orders`、`account_addon_balances`、`account_addon_ledger_entries`、`api_usd_charge_records`。
 - API key 新放行条件为：已兑换托管 key + 有效订阅 + 今日套餐剩余额度或加量包余额大于 0；无有效订阅时加量包保留但不放行。
+- 加量包只能在账号已有有效订阅套餐时提交订单；无套餐时后端返回 `SUBSCRIPTION_REQUIRED_FOR_ADDON`，前端禁用提交按钮并提示先开通套餐。
 - usage 美元扣费必须按 usage 发生时间判断订阅有效性：`started_at <= requested_at < expires_at`；不要回退成按当前时间判断历史 usage。
 - 实施记录见 `docs/ai/context/20260616-195021-subscription-mvp-implementation_CN.md`。
+- 加量包依附套餐规则记录见 `docs/ai/context/20260616-200650-addon-requires-active-subscription-plan_CN.md`。
 
 ## 2026-06-16 订阅池长期加量包与页面设计
 

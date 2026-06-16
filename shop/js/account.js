@@ -254,6 +254,24 @@ function fillSubscriptionControls(state = {}) {
     }
 }
 
+function hasActiveSubscription(state = {}) {
+    const subscription = state.subscription || {};
+    return Boolean(subscription.planId && subscription.expiresAt);
+}
+
+function renderAddonMembershipGuard(state = {}) {
+    const canBuyAddon = hasActiveSubscription(state);
+    const addonMembershipHint = document.getElementById('addonMembershipHint');
+    const addonSubmitButton = document.getElementById('addonSubmitButton');
+    if (addonMembershipHint) {
+        addonMembershipHint.textContent = canBuyAddon
+            ? '当前套餐已开通，可以购买加量包。'
+            : '请先开通套餐，再购买加量包。';
+    }
+    if (addonSubmitButton) addonSubmitButton.disabled = !canBuyAddon;
+    return canBuyAddon;
+}
+
 function renderSubscriptionOrders(orders = []) {
     if (!orders.length) return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无订单。</p>';
     return `
@@ -520,6 +538,7 @@ async function initAccountPage() {
     const addonPaymentMethod = document.getElementById('addonPaymentMethod');
     const addonPaymentNote = document.getElementById('addonPaymentNote');
     const addonOrderMessage = document.getElementById('addonOrderMessage');
+    let canSubmitAddonOrder = false;
     const accountSubscriptionOrders = document.getElementById('accountSubscriptionOrders');
     const accountAddonOrders = document.getElementById('accountAddonOrders');
     const accountCharges = document.getElementById('accountCharges');
@@ -576,6 +595,7 @@ async function initAccountPage() {
             requestJson('/api/account/addon-ledger')
         ]);
         fillSubscriptionControls(stateData);
+        canSubmitAddonOrder = renderAddonMembershipGuard(stateData);
         if (quotaCards) quotaCards.innerHTML = renderQuotaCards(stateData);
         if (quotaBar) quotaBar.innerHTML = renderQuotaBar(stateData);
         if (quotaHint) {
@@ -630,6 +650,10 @@ async function initAccountPage() {
     if (addonOrderForm && addonAmountSelect && addonPaymentMethod && addonOrderMessage) {
         addonOrderForm.addEventListener('submit', async (event) => {
             event.preventDefault();
+            if (!canSubmitAddonOrder) {
+                addonOrderMessage.textContent = '请先开通套餐，再购买加量包。';
+                return;
+            }
             if (!addonAmountSelect.value) {
                 addonOrderMessage.textContent = '请选择加量包。';
                 addonAmountSelect.focus();

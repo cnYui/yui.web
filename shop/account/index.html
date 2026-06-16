@@ -81,6 +81,7 @@
                     </section>
                     <section class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-5">
                         <h3 class="font-display text-2xl text-primary dark:text-dark-text">购买加量包</h3>
+                        <p id="addonMembershipHint" class="mt-3 min-h-5 text-sm text-text-muted dark:text-dark-text-muted">请先开通套餐，再购买加量包。</p>
                         <form id="addonOrderForm" class="mt-5 grid gap-3">
                             <select id="addonAmountSelect" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" required></select>
                             <select id="addonPaymentMethod" class="h-11 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary">
@@ -88,7 +89,7 @@
                                 <option value="wechat">微信</option>
                             </select>
                             <textarea id="addonPaymentNote" class="min-h-20 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" placeholder="备注可填写微信号"></textarea>
-                            <button class="btn-primary" type="submit">提交加量包订单</button>
+                            <button id="addonSubmitButton" class="btn-primary disabled:cursor-not-allowed disabled:opacity-50" type="submit">提交加量包订单</button>
                         </form>
                         <p id="addonOrderMessage" class="mt-3 min-h-5 text-sm text-text-muted dark:text-dark-text-muted"></p>
                     </section>

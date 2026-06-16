@@ -2606,6 +2606,14 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             throw error;
         }
         ensureUser.run(phone, nowIso());
+        const checkedAt = nowIso(appNow());
+        const subscription = getActiveSubscriptionWithPlanByPhone.get(phone, checkedAt, checkedAt);
+        if (!subscription) {
+            const error = new Error('请先开通套餐，再购买加量包。');
+            error.status = 409;
+            error.code = 'SUBSCRIPTION_REQUIRED_FOR_ADDON';
+            throw error;
+        }
         ensureAddonBalance(phone);
         const order = {
             id: createId('ADDON'),
