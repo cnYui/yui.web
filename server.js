@@ -1214,8 +1214,8 @@ function createShopApp(options = {}) {
         const addonBalanceUsdMicros = Number(ensureAddonBalance(phone)?.balance_usd_micros || 0);
         const remainingUsdMicros = dailyRemainingUsdMicros + addonBalanceUsdMicros;
         return {
-            active: remainingUsdMicros > 0,
-            code: remainingUsdMicros > 0 ? 'active' : 'daily_quota_exhausted',
+            active: true,
+            code: 'active',
             quotaDate,
             dailyQuotaUsdMicros,
             dailyUsedUsdMicros,
@@ -1228,6 +1228,12 @@ function createShopApp(options = {}) {
                 expiresAt: ''
             }
         };
+    }
+
+    function subscriptionQuotaStatusForPhone(phone, date = appNow()) {
+        return isAdminAccountPhone(phone)
+            ? adminSubscriptionMonitorQuotaStatus(phone, date)
+            : accountSubscriptionQuotaStatus(phone, date);
     }
 
     function buildAccountSubscriptionState(phone) {
@@ -3031,9 +3037,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         if (!getUsdChargeByUsageEventId.get(event.requestId)) {
             const usageDate = new Date(event.requestedAt || now);
             const quotaDate = chinaDateKey(usageDate);
-            const quota = isAdminAccountPhone(owner.phone)
-                ? adminSubscriptionMonitorQuotaStatus(owner.phone, usageDate)
-                : accountSubscriptionQuotaStatus(owner.phone, usageDate);
+            const quota = subscriptionQuotaStatusForPhone(owner.phone, usageDate);
             if (quota.subscription) {
                 const split = splitUsdChargeByQuota({
                     chargeUsdMicros: usdPricing.chargeUsdMicros,
@@ -4564,7 +4568,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             });
         }
 
-        const quotaStatus = accountSubscriptionQuotaStatus(order.phone);
+        const quotaStatus = subscriptionQuotaStatusForPhone(order.phone);
         if (!quotaStatus.subscription) {
             return res.json({
                 managed: true,

@@ -4512,6 +4512,66 @@ WHERE usage_event_id = ?
     });
 });
 
+test('管理员超过 59 元套餐每日美元额度后仍保持可用', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+        const order = await createRedeemedOrder(baseUrl, '15951875192', 'sk-admin-managed-unlimited');
+        const apiKeyHash = hashApiKeyForTest(order.apiKey);
+
+        await usageEventFetch(baseUrl, {
+            request_id: 'req-admin-over-daily-quota',
+            api_key_hash: apiKeyHash,
+            api_key_preview: order.apiKeyPreview,
+            provider: 'codex',
+            model: 'gpt-5.5',
+            success: true,
+            failed: false,
+            input_tokens: 0,
+            cache_hit_input_tokens: 0,
+            cache_miss_input_tokens: 0,
+            output_tokens: 2000000,
+            total_tokens: 2000000,
+            requested_at: '2026-06-17T10:10:00+08:00'
+        });
+
+        const record = db.prepare(`
+SELECT phone, charge_usd_micros, daily_quota_deducted_usd_micros, overrun_usd_micros
+FROM api_usd_charge_records
+WHERE usage_event_id = ?
+`).get('req-admin-over-daily-quota');
+        assert.deepEqual(record, {
+            phone: '15951875192',
+            charge_usd_micros: 60000000,
+            daily_quota_deducted_usd_micros: 49000000,
+            overrun_usd_micros: 11000000
+        });
+
+        const users = await jsonFetch(`${baseUrl}/api/admin/subscription-users`, {
+            headers: { 'x-admin-token': 'test-token' }
+        });
+        const adminItem = users.body.items.find((item) => item.phone === '15951875192');
+        assert.ok(adminItem);
+        assert.equal(adminItem.active, true);
+        assert.equal(adminItem.status, 'active');
+        assert.equal(adminItem.dailyUsedUsdMicros, 49000000);
+        assert.equal(adminItem.dailyRemainingUsdMicros, 0);
+        assert.equal(adminItem.remainingUsdMicros, 0);
+
+        const status = await jsonFetch(`${baseUrl}/api/internal/api-keys/status`, {
+            method: 'POST',
+            headers: { 'x-internal-token': 'internal-test-token' },
+            body: JSON.stringify({ apiKeyHash })
+        });
+        assert.equal(status.response.status, 200);
+        assert.equal(status.body.active, true);
+        assert.equal(status.body.status, 'active');
+        assert.equal(status.body.quota.dailyRemainingUsdMicros, 0);
+    }, {
+        usageEventHmacSecret: 'usage-hmac-secret',
+        now: () => new Date('2026-06-17T10:00:00+08:00')
+    });
+});
+
 test('无效过期时间的账号 session 会被拒绝', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const token = 'usr_invalid_expiry';
