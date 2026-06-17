@@ -4452,6 +4452,66 @@ test('管理员账号进入用户额度监控并固定使用 59 元套餐额度'
     }, { now: () => new Date('2026-06-17T10:00:00+08:00') });
 });
 
+test('管理员 local usage key 消耗固定 59 元套餐的每日美元额度', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+        const apiKeyHash = hashApiKeyForTest('sk-admin-local-subscription-quota');
+
+        const profile = await jsonFetch(`${baseUrl}/api/admin/usage-key-profiles`, {
+            method: 'POST',
+            headers: { 'x-admin-token': 'test-token' },
+            body: JSON.stringify({
+                apiKeyHash,
+                apiKeyPreview: 'sk-a...uota',
+                group: 'local',
+                phone: '15951875192'
+            })
+        });
+        assert.equal(profile.response.status, 201);
+
+        await usageEventFetch(baseUrl, {
+            request_id: 'req-admin-local-usd-quota',
+            api_key_hash: apiKeyHash,
+            api_key_preview: 'sk-a...uota',
+            provider: 'codex',
+            model: 'gpt-5.5',
+            success: true,
+            failed: false,
+            input_tokens: 0,
+            cache_hit_input_tokens: 0,
+            cache_miss_input_tokens: 0,
+            output_tokens: 100000,
+            total_tokens: 100000,
+            requested_at: '2026-06-17T10:05:00+08:00'
+        });
+
+        const record = db.prepare(`
+SELECT phone, usage_event_id, charge_usd_micros, daily_quota_deducted_usd_micros, addon_deducted_usd_micros, quota_date
+FROM api_usd_charge_records
+WHERE usage_event_id = ?
+`).get('req-admin-local-usd-quota');
+        assert.deepEqual(record, {
+            phone: '15951875192',
+            usage_event_id: 'req-admin-local-usd-quota',
+            charge_usd_micros: 3000000,
+            daily_quota_deducted_usd_micros: 3000000,
+            addon_deducted_usd_micros: 0,
+            quota_date: '2026-06-17'
+        });
+
+        const users = await jsonFetch(`${baseUrl}/api/admin/subscription-users`, {
+            headers: { 'x-admin-token': 'test-token' }
+        });
+        const adminItem = users.body.items.find((item) => item.phone === '15951875192');
+        assert.ok(adminItem);
+        assert.equal(adminItem.dailyUsedUsdMicros, 3000000);
+        assert.equal(adminItem.dailyRemainingUsdMicros, 46000000);
+    }, {
+        usageEventHmacSecret: 'usage-hmac-secret',
+        now: () => new Date('2026-06-17T10:00:00+08:00')
+    });
+});
+
 test('无效过期时间的账号 session 会被拒绝', async () => {
     await withServer(async ({ baseUrl, db }) => {
         const token = 'usr_invalid_expiry';

@@ -3031,7 +3031,9 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         if (!getUsdChargeByUsageEventId.get(event.requestId)) {
             const usageDate = new Date(event.requestedAt || now);
             const quotaDate = chinaDateKey(usageDate);
-            const quota = accountSubscriptionQuotaStatus(owner.phone, usageDate);
+            const quota = isAdminAccountPhone(owner.phone)
+                ? adminSubscriptionMonitorQuotaStatus(owner.phone, usageDate)
+                : accountSubscriptionQuotaStatus(owner.phone, usageDate);
             if (quota.subscription) {
                 const split = splitUsdChargeByQuota({
                     chargeUsdMicros: usdPricing.chargeUsdMicros,
