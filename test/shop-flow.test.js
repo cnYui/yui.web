@@ -4459,10 +4459,11 @@ ORDER BY created_at ASC, rowid ASC
             headers: { 'x-admin-token': 'test-token' }
         });
         assert.equal(users.response.status, 200);
-        assert.equal(users.body.items[0].phone, '13800138903');
-        assert.equal(users.body.items[0].planId, 'sub_29_daily_19_usd');
-        assert.equal(users.body.items[0].dailyRemainingUsdMicros, 0);
-        assert.equal(users.body.items[0].addonBalanceUsdMicros, 3000000);
+        const userItem = users.body.items.find((item) => item.phone === '13800138903');
+        assert.ok(userItem);
+        assert.equal(userItem.planId, 'sub_29_daily_19_usd');
+        assert.equal(userItem.dailyRemainingUsdMicros, 0);
+        assert.equal(userItem.addonBalanceUsdMicros, 3000000);
 
         const logs = await jsonFetch(`${baseUrl}/api/admin/usd-charges`, {
             headers: { 'x-admin-token': 'test-token' }
@@ -4515,6 +4516,30 @@ test('订阅开通前发生的 usage 不消耗订阅池美元额度', async () =
         usageEventHmacSecret: 'usage-hmac-secret',
         now: () => new Date('2026-06-16T10:00:00+08:00')
     });
+});
+
+test('管理员账号进入用户额度监控并固定使用 59 元套餐额度', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+
+        const users = await jsonFetch(`${baseUrl}/api/admin/subscription-users`, {
+            headers: { 'x-admin-token': 'test-token' }
+        });
+
+        assert.equal(users.response.status, 200);
+        const adminItem = users.body.items.find((item) => item.phone === '15951875192');
+        assert.ok(adminItem);
+        assert.equal(adminItem.planId, 'sub_59_daily_49_usd');
+        assert.equal(adminItem.planName, '59 元订阅池');
+        assert.equal(adminItem.active, true);
+        assert.equal(adminItem.status, 'active');
+        assert.equal(adminItem.dailyQuotaUsdMicros, 49000000);
+        assert.equal(adminItem.dailyUsedUsdMicros, 0);
+        assert.equal(adminItem.dailyRemainingUsdMicros, 49000000);
+        assert.equal(adminItem.remainingUsdMicros, 49000000);
+        assert.equal(users.body.summary.userCount, 1);
+        assert.equal(users.body.summary.activeUserCount, 1);
+    }, { now: () => new Date('2026-06-17T10:00:00+08:00') });
 });
 
 test('无效过期时间的账号 session 会被拒绝', async () => {

@@ -59,6 +59,7 @@ const rateLimitBuckets = new Map();
 const authPhoneFailureBuckets = new Map();
 const chinaOffsetMs = 8 * 60 * 60 * 1000;
 const defaultAdminAccountPhone = '15951875192';
+const adminMonitorSubscriptionPlanId = 'sub_59_daily_49_usd';
 const defaultCreditLimitCents = 1000;
 const supportedPaymentMethods = new Set(['alipay', 'wechat']);
 
@@ -1201,6 +1202,31 @@ function createShopApp(options = {}) {
             addonBalanceUsdMicros,
             remainingUsdMicros,
             subscription: publicAccountSubscription(subscription)
+        };
+    }
+
+    function adminSubscriptionMonitorQuotaStatus(phone, date = appNow()) {
+        const quotaDate = chinaDateKey(date);
+        const plan = subscriptionPlanById(adminMonitorSubscriptionPlanId);
+        const dailyQuotaUsdMicros = Number(plan?.dailyQuotaUsdMicros || 0);
+        const dailyUsedUsdMicros = Number(sumDailyQuotaDeductedByPhoneAndDate.get(phone, quotaDate)?.amount || 0);
+        const dailyRemainingUsdMicros = Math.max(0, dailyQuotaUsdMicros - dailyUsedUsdMicros);
+        const addonBalanceUsdMicros = Number(ensureAddonBalance(phone)?.balance_usd_micros || 0);
+        const remainingUsdMicros = dailyRemainingUsdMicros + addonBalanceUsdMicros;
+        return {
+            active: remainingUsdMicros > 0,
+            code: remainingUsdMicros > 0 ? 'active' : 'daily_quota_exhausted',
+            quotaDate,
+            dailyQuotaUsdMicros,
+            dailyUsedUsdMicros,
+            dailyRemainingUsdMicros,
+            addonBalanceUsdMicros,
+            remainingUsdMicros,
+            subscription: {
+                planId: plan?.id || adminMonitorSubscriptionPlanId,
+                planName: plan?.name || '59 元订阅池',
+                expiresAt: ''
+            }
         };
     }
 
@@ -3674,9 +3700,15 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     function buildAdminSubscriptionUsers(filters = {}) {
         const q = String(filters.q || '').trim().toLowerCase();
         const limit = Math.min(Math.max(Number(filters.limit || 100), 1), 500);
-        const items = listUsersForAdminBalances.all(adminAccountPhone)
+        const usersByPhone = new Map(listUsersForAdminBalances.all(adminAccountPhone).map((user) => [user.phone, user]));
+        if (adminAccountPhone) {
+            usersByPhone.set(adminAccountPhone, { phone: adminAccountPhone });
+        }
+        const items = Array.from(usersByPhone.values())
             .map((user) => {
-                const quota = accountSubscriptionQuotaStatus(user.phone);
+                const quota = isAdminAccountPhone(user.phone)
+                    ? adminSubscriptionMonitorQuotaStatus(user.phone)
+                    : accountSubscriptionQuotaStatus(user.phone);
                 const subscription = quota.subscription || null;
                 return {
                     phone: user.phone,
