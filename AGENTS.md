@@ -17,6 +17,17 @@
 - 禁止重复套餐覆盖记录见 `docs/ai/context/20260616-202029-subscription-order-no-duplicate-active-plan_CN.md`。
 - 退款 MVP 设计与实施记录见 `docs/ai/context/20260616-203809-subscription-refund-mvp-design-plan_CN.md` 和 `docs/ai/context/20260616-205344-subscription-refund-mvp-implementation_CN.md`。
 
+## 2026-06-17 订阅池老用户真实库迁移
+
+- 已新增一次性脚本 `scripts/shop-migrate-subscription-legacy-users.js`，默认 dry-run，`--apply` 前备份数据库。
+- 白名单老用户固定为：`15776812883`、`17371571728`、`19814722044`、`13813756694`、`18014503779`、`15062376174`、`15995436627`、`18367290091`、`13052071067`、`13584052801`。
+- 真实库 `/Users/wujianxiang/CodeSpace/yui.web/data/shop.sqlite` 已执行迁移：上述 10 个手机号均为 `sub_29_daily_19_usd`，有效期 `2026-06-17T00:00:00+08:00` 到 `2026-07-17T00:00:00+08:00`。
+- 迁移创建 10 条 `account_subscriptions` active 记录和 10 条 `LEGACY-SUB-*-20260617` approved 订阅订单。
+- 其他用户没有创建 active 订阅，上线后仍是无套餐状态。
+- 旧人民币余额、旧人民币扣费记录和旧 usage 不迁入美元账本；`api_usd_charge_records` 迁移后仍为 0，旧 usage 只保留 token 统计。
+- 真实库备份为 `/Users/wujianxiang/CodeSpace/yui.web/data/backups/shop-before-subscription-legacy-migration-20260617-092557.sqlite`。
+- 设计与执行记录见 `docs/ai/context/20260617-092302-subscription-legacy-users-migration-design-plan_CN.md` 和 `docs/ai/context/20260617-092557-subscription-legacy-users-migration-implementation_CN.md`。
+
 ## 2026-06-16 Account 模型总览官方美元价格修正
 
 - 当前订阅池分支中，`/shop/account/` 模型总览展示官方美元价格，不再展示旧人民币半价表。
