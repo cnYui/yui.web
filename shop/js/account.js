@@ -7,6 +7,7 @@
         formatNanos,
         formatNumber,
         formatPrice,
+        formatUsdMicros,
         initCollapsibleSections,
         requestJson
     } = window.YuiShopCore;
@@ -45,6 +46,7 @@ function ledgerEntryText(type) {
     const map = {
         topup_approved: '充值入账',
         api_charge: 'API 扣费',
+        addon_purchase: '加量包入账',
         admin_adjustment: '管理员调整',
         refund: '退款'
     };
@@ -191,11 +193,227 @@ function renderBalanceCards(balance = {}) {
     `).join('');
 }
 
+function subscriptionOrderStatusText(status) {
+    const map = {
+        pending: '待确认',
+        approved: '已确认',
+        rejected: '已拒绝'
+    };
+    return map[status] || status || '-';
+}
+
+function renderQuotaCards(state = {}) {
+    const subscription = state.subscription || {};
+    const quota = state.quota || {};
+    const cards = [
+        ['当前套餐', subscription.planName || '未开通', subscription.expiresAt ? `到期 ${formatDate(subscription.expiresAt)}` : '等待购买套餐'],
+        ['今日套餐额度', formatUsdMicros(quota.dailyQuotaUsdMicros), `剩余 ${formatUsdMicros(quota.dailyRemainingUsdMicros)}`],
+        ['加量包余额', formatUsdMicros(quota.addonBalanceUsdMicros), '长期保留'],
+        ['当前可用', formatUsdMicros(quota.remainingUsdMicros), quota.active ? 'API key 可用' : '额度不可用']
+    ];
+    return cards.map(([label, value, hint]) => `
+        <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
+            <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(label)}</p>
+            <p class="mt-2 text-2xl font-display text-primary dark:text-dark-text">${escapeHtml(value)}</p>
+            <p class="mt-1 text-xs text-text-muted dark:text-dark-text-muted">${escapeHtml(hint)}</p>
+        </article>
+    `).join('');
+}
+
+function renderQuotaBar(state = {}) {
+    const quota = state.quota || {};
+    const total = Math.max(0, Number(quota.dailyQuotaUsdMicros || 0) + Number(quota.addonBalanceUsdMicros || 0));
+    const remaining = Math.max(0, Number(quota.remainingUsdMicros || 0));
+    const used = Math.max(0, total - remaining);
+    const usedPercent = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+    return `
+        <div class="h-5 w-full overflow-hidden rounded bg-background-soft dark:bg-dark-surface border border-border-subtle dark:border-dark-border" aria-label="今日额度">
+            <div class="h-full bg-primary dark:bg-dark-text" style="width:${100 - usedPercent}%"></div>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-text-muted dark:text-dark-text-muted">
+            <span>已用 ${escapeHtml(formatUsdMicros(used))}</span>
+            <span>剩余 ${escapeHtml(formatUsdMicros(remaining))}</span>
+        </div>
+    `;
+}
+
+function fillSubscriptionControls(state = {}) {
+    const planSelect = document.getElementById('subscriptionPlanSelect');
+    const addonSelect = document.getElementById('addonAmountSelect');
+    if (planSelect) {
+        const plans = Array.isArray(state.plans) ? state.plans : [];
+        planSelect.innerHTML = '<option value="">请选择套餐</option>' + plans.map((plan) => `
+            <option value="${escapeHtml(plan.id)}">${escapeHtml(`${formatCents(plan.monthlyPriceCents)} / 30 天，每日 ${formatUsdMicros(plan.dailyQuotaUsdMicros)}`)}</option>
+        `).join('');
+    }
+    if (addonSelect) {
+        const packages = Array.isArray(state.addonPackages) ? state.addonPackages : [];
+        addonSelect.innerHTML = '<option value="">请选择加量包</option>' + packages.map((item) => `
+            <option value="${escapeHtml(String(item.amountCents / 100))}">${escapeHtml(`${formatCents(item.amountCents)} 增加 ${formatUsdMicros(item.quotaUsdMicros)}`)}</option>
+        `).join('');
+    }
+}
+
+function hasActiveSubscription(state = {}) {
+    const subscription = state.subscription || {};
+    return Boolean(subscription.planId && subscription.expiresAt);
+}
+
+function calculateSubscriptionRefundEstimate(subscription = {}) {
+    const periodDays = Math.max(1, Number(subscription.periodDays || 30));
+    const priceCents = Math.max(0, Number(subscription.monthlyPriceCents || 0));
+    const expiresAt = new Date(subscription.expiresAt || '');
+    const now = new Date();
+    const remainingMs = Number.isFinite(expiresAt.getTime()) ? Math.max(0, expiresAt.getTime() - now.getTime()) : 0;
+    const remainingDays = Math.min(periodDays, Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000))));
+    return {
+        remainingDays,
+        refundAmountCents: Math.floor((priceCents * remainingDays) / periodDays)
+    };
+}
+
+function hasPendingRefundRequest(refundRequests = []) {
+    return refundRequests.some((request) => request.status === 'pending');
+}
+
+function renderSubscriptionMembershipGuard(state = {}) {
+    const canBuySubscription = !hasActiveSubscription(state);
+    const subscriptionMembershipHint = document.getElementById('subscriptionMembershipHint');
+    const subscriptionSubmitButton = document.getElementById('subscriptionSubmitButton');
+    if (subscriptionMembershipHint) {
+        subscriptionMembershipHint.textContent = canBuySubscription
+            ? '请选择一个套餐提交订单。'
+            : '您当前已经有套餐了。';
+    }
+    if (subscriptionSubmitButton) subscriptionSubmitButton.disabled = !canBuySubscription;
+    return canBuySubscription;
+}
+
+function renderAddonMembershipGuard(state = {}) {
+    const canBuyAddon = hasActiveSubscription(state);
+    const addonMembershipHint = document.getElementById('addonMembershipHint');
+    const addonSubmitButton = document.getElementById('addonSubmitButton');
+    if (addonMembershipHint) {
+        addonMembershipHint.textContent = canBuyAddon
+            ? '当前套餐已开通，可以购买加量包。'
+            : '请先开通套餐，再购买加量包。';
+    }
+    if (addonSubmitButton) addonSubmitButton.disabled = !canBuyAddon;
+    return canBuyAddon;
+}
+
+function renderSubscriptionOrders(orders = []) {
+    if (!orders.length) return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无订单。</p>';
+    return `
+        <div class="space-y-3">
+            ${orders.map((order) => `
+                <article class="rounded-md border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="font-medium text-primary dark:text-dark-text">${escapeHtml(order.planName || (order.orderType === 'addon' ? '加量包' : order.planId))}</p>
+                            <p class="mt-1 text-sm text-text-muted dark:text-dark-text-muted">${escapeHtml(formatCents(order.amountCents))} · ${escapeHtml(formatDate(order.createdAt))}</p>
+                        </div>
+                        <span class="rounded-full border border-border-subtle dark:border-dark-border px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted">${escapeHtml(subscriptionOrderStatusText(order.status))}</span>
+                    </div>
+                    ${order.quotaUsdMicros ? `<p class="mt-2 text-sm text-text-muted dark:text-dark-text-muted">额度 ${escapeHtml(formatUsdMicros(order.quotaUsdMicros))}</p>` : ''}
+                </article>
+            `).join('')}
+        </div>
+    `;
+}
+
+function renderSubscriptionRefundRequests(refundRequests = []) {
+    if (!refundRequests.length) return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无退款申请。</p>';
+    return `
+        <div class="space-y-3">
+            ${refundRequests.map((request) => `
+                <article class="rounded-md border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="font-medium text-primary dark:text-dark-text">${escapeHtml(request.planName || request.planId || '套餐退款')}</p>
+                            <p class="mt-1 text-sm text-text-muted dark:text-dark-text-muted">${escapeHtml(formatCents(request.refundAmountCents))} · 剩余 ${escapeHtml(String(request.remainingDays || 0))} 天</p>
+                            <p class="mt-1 text-xs text-text-muted dark:text-dark-text-muted">申请 ${escapeHtml(formatDate(request.createdAt))}</p>
+                        </div>
+                        <span class="rounded-full border border-border-subtle dark:border-dark-border px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted">${escapeHtml(subscriptionOrderStatusText(request.status))}</span>
+                    </div>
+                </article>
+            `).join('')}
+        </div>
+    `;
+}
+
+function renderSubscriptionRefundPanel(state = {}, refundRequests = []) {
+    const estimateRoot = document.getElementById('subscriptionRefundEstimate');
+    const button = document.getElementById('subscriptionRefundButton');
+    const listRoot = document.getElementById('accountRefundRequests');
+    const subscription = state.subscription || {};
+    const active = hasActiveSubscription(state);
+    const hasPending = hasPendingRefundRequest(refundRequests);
+    if (estimateRoot) {
+        if (!active) {
+            estimateRoot.textContent = '开通套餐后才可申请退款。';
+        } else {
+            const estimate = calculateSubscriptionRefundEstimate(subscription);
+            estimateRoot.textContent = hasPending
+                ? `已有退款申请待审核，预计退款 ${formatCents(estimate.refundAmountCents)}。`
+                : `预计退款 ${formatCents(estimate.refundAmountCents)}，按剩余 ${estimate.remainingDays} 天计算。`;
+        }
+    }
+    if (button) button.disabled = !active || hasPending;
+    if (listRoot) listRoot.innerHTML = renderSubscriptionRefundRequests(refundRequests);
+    return active && !hasPending;
+}
+
+function renderUsdCharges(charges = []) {
+    if (!charges.length) return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无美元扣费记录。</p>';
+    return `
+        <table class="min-w-full text-sm">
+            <thead class="text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                <tr><th class="py-2 pr-3">时间</th><th class="py-2 pr-3">模型</th><th class="py-2 pr-3">费用</th><th class="py-2 pr-3">扣每日</th><th class="py-2 pr-3">扣加量包</th><th class="py-2">状态</th></tr>
+            </thead>
+            <tbody>
+                ${charges.map((charge) => `
+                    <tr class="border-t border-border-subtle dark:border-dark-border">
+                        <td class="py-2 pr-3">${escapeHtml(formatDate(charge.createdAt))}</td>
+                        <td class="py-2 pr-3">${escapeHtml(charge.model || '-')}</td>
+                        <td class="py-2 pr-3">${escapeHtml(formatUsdMicros(charge.chargeUsdMicros))}</td>
+                        <td class="py-2 pr-3">${escapeHtml(formatUsdMicros(charge.dailyQuotaDeductedUsdMicros))}</td>
+                        <td class="py-2 pr-3">${escapeHtml(formatUsdMicros(charge.addonDeductedUsdMicros))}</td>
+                        <td class="py-2">${escapeHtml(chargeStatusText(charge.status))}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderAddonLedger(entries = []) {
+    if (!entries.length) return '<p class="text-sm text-text-muted dark:text-dark-text-muted">暂无加量包流水。</p>';
+    return `
+        <table class="min-w-full text-sm">
+            <thead class="text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                <tr><th class="py-2 pr-3">时间</th><th class="py-2 pr-3">类型</th><th class="py-2 pr-3">金额</th><th class="py-2 pr-3">余额</th><th class="py-2">备注</th></tr>
+            </thead>
+            <tbody>
+                ${entries.map((entry) => `
+                    <tr class="border-t border-border-subtle dark:border-dark-border">
+                        <td class="py-2 pr-3">${escapeHtml(formatDate(entry.createdAt))}</td>
+                        <td class="py-2 pr-3">${escapeHtml(ledgerEntryText(entry.entryType))}</td>
+                        <td class="py-2 pr-3">${escapeHtml(formatUsdMicros(entry.amountUsdMicros))}</td>
+                        <td class="py-2 pr-3">${escapeHtml(formatUsdMicros(entry.balanceAfterUsdMicros))}</td>
+                        <td class="py-2">${escapeHtml(entry.memo || '-')}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
 function formatModelPrice(value) {
     const amount = Number(value || 0);
-    if (!Number.isFinite(amount)) return '¥0.00';
+    if (!Number.isFinite(amount)) return '$0.00';
     const cents = amount * 100;
-    return `¥${Number.isInteger(cents) ? amount.toFixed(2) : amount.toFixed(3)}`;
+    return `$${Number.isInteger(cents) ? amount.toFixed(2) : amount.toFixed(3)}`;
 }
 
 function renderAccountModelOverview(data = {}) {
@@ -219,9 +437,9 @@ function renderAccountModelOverview(data = {}) {
                     <tr class="border-t border-border-subtle dark:border-dark-border">
                         <td class="py-3 pr-4 font-mono text-primary dark:text-dark-text">${escapeHtml(model.id || '-')}</td>
                         <td class="py-3 pr-4">${escapeHtml(model.available ? '可用' : '价格表')}</td>
-                        <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.cacheHitInputCnyPerMillion))}</td>
-                        <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.cacheMissInputCnyPerMillion))}</td>
-                        <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.outputCnyPerMillion))}</td>
+                        <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.cacheHitInputUsdPerMillion))}</td>
+                        <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.cacheMissInputUsdPerMillion))}</td>
+                        <td class="py-3 pr-4 whitespace-nowrap">${escapeHtml(formatModelPrice(model.outputUsdPerMillion))}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -378,15 +596,27 @@ async function initAccountPage() {
     const usageFreshness = document.getElementById('usageFreshness');
     const usageMessage = document.getElementById('accountUsageMessage');
     const modelOverviewRoot = document.getElementById('accountModelOverview');
-    const balanceCards = document.getElementById('accountBalanceCards');
+    const quotaCards = document.getElementById('accountQuotaCards');
+    const quotaBar = document.getElementById('accountQuotaBar');
+    const quotaHint = document.getElementById('accountQuotaHint');
     const billingMessage = document.getElementById('accountBillingMessage');
-    const topupForm = document.getElementById('topupForm');
-    const topupAmount = document.getElementById('topupAmount');
-    const topupPaymentMethod = document.getElementById('topupPaymentMethod');
-    const topupPaymentTime = document.getElementById('topupPaymentTime');
-    const topupPaymentNote = document.getElementById('topupPaymentNote');
-    const topupMessage = document.getElementById('topupMessage');
-    const accountTopups = document.getElementById('accountTopups');
+    const subscriptionOrderForm = document.getElementById('subscriptionOrderForm');
+    const subscriptionPlanSelect = document.getElementById('subscriptionPlanSelect');
+    const subscriptionPaymentMethod = document.getElementById('subscriptionPaymentMethod');
+    const subscriptionPaymentNote = document.getElementById('subscriptionPaymentNote');
+    const subscriptionOrderMessage = document.getElementById('subscriptionOrderMessage');
+    const addonOrderForm = document.getElementById('addonOrderForm');
+    const addonAmountSelect = document.getElementById('addonAmountSelect');
+    const addonPaymentMethod = document.getElementById('addonPaymentMethod');
+    const addonPaymentNote = document.getElementById('addonPaymentNote');
+    const addonOrderMessage = document.getElementById('addonOrderMessage');
+    const subscriptionRefundButton = document.getElementById('subscriptionRefundButton');
+    const subscriptionRefundMessage = document.getElementById('subscriptionRefundMessage');
+    let canSubmitSubscriptionOrder = false;
+    let canSubmitAddonOrder = false;
+    let canSubmitRefundRequest = false;
+    const accountSubscriptionOrders = document.getElementById('accountSubscriptionOrders');
+    const accountAddonOrders = document.getElementById('accountAddonOrders');
     const accountCharges = document.getElementById('accountCharges');
     const accountLedger = document.getElementById('accountLedger');
     const alipayQrImage = document.getElementById('alipayQrImage');
@@ -433,19 +663,31 @@ async function initAccountPage() {
 
     async function refreshBilling() {
         if (billingMessage) billingMessage.textContent = '正在读取账务信息...';
-        const [balanceData, topupData, chargeData, ledgerData] = await Promise.all([
-            requestJson('/api/account/balance'),
-            requestJson('/api/account/topups'),
-            requestJson('/api/account/api-charges'),
-            requestJson('/api/account/ledger')
+        const [stateData, subscriptionOrdersData, addonOrdersData, refundData, chargeData, ledgerData] = await Promise.all([
+            requestJson('/api/account/subscription-state'),
+            requestJson('/api/account/subscription-orders'),
+            requestJson('/api/account/addon-orders'),
+            requestJson('/api/account/subscription-refund-requests'),
+            requestJson('/api/account/usd-charges'),
+            requestJson('/api/account/addon-ledger')
         ]);
-        if (balanceCards) balanceCards.innerHTML = renderBalanceCards(balanceData.balance || {});
-        if (accountTopups) accountTopups.innerHTML = renderTopups(topupData.topups || []);
-        if (accountCharges) accountCharges.innerHTML = renderCharges(chargeData.charges || []);
-        if (accountLedger) accountLedger.innerHTML = renderLedger(ledgerData.entries || []);
-        if (alipayQrImage) alipayQrImage.src = balanceData.payment?.alipayQrUrl || '';
-        if (wechatQrImage) wechatQrImage.src = balanceData.payment?.wechatQrUrl || '';
-        if (paymentReference) paymentReference.textContent = balanceData.payment?.paymentReference || '-';
+        fillSubscriptionControls(stateData);
+        canSubmitSubscriptionOrder = renderSubscriptionMembershipGuard(stateData);
+        canSubmitAddonOrder = renderAddonMembershipGuard(stateData);
+        canSubmitRefundRequest = renderSubscriptionRefundPanel(stateData, refundData.refundRequests || []);
+        if (quotaCards) quotaCards.innerHTML = renderQuotaCards(stateData);
+        if (quotaBar) quotaBar.innerHTML = renderQuotaBar(stateData);
+        if (quotaHint) {
+            const quota = stateData.quota || {};
+            quotaHint.textContent = quota.code === 'active' ? `刷新日期 ${quota.quotaDate}` : '需要套餐或额度';
+        }
+        if (accountSubscriptionOrders) accountSubscriptionOrders.innerHTML = renderSubscriptionOrders(subscriptionOrdersData.orders || []);
+        if (accountAddonOrders) accountAddonOrders.innerHTML = renderSubscriptionOrders(addonOrdersData.orders || []);
+        if (accountCharges) accountCharges.innerHTML = renderUsdCharges(chargeData.charges || []);
+        if (accountLedger) accountLedger.innerHTML = renderAddonLedger(ledgerData.entries || []);
+        if (alipayQrImage) alipayQrImage.src = stateData.payment?.alipayQrUrl || '';
+        if (wechatQrImage) wechatQrImage.src = stateData.payment?.wechatQrUrl || '';
+        if (paymentReference) paymentReference.textContent = stateData.payment?.paymentReference || '-';
         if (billingMessage) billingMessage.textContent = '';
     }
 
@@ -457,25 +699,84 @@ async function initAccountPage() {
         if (billingMessage) billingMessage.textContent = error.message;
     }
 
-    if (topupForm && topupAmount && topupPaymentMethod && topupMessage) {
-        topupForm.addEventListener('submit', async (event) => {
+    if (subscriptionOrderForm && subscriptionPlanSelect && subscriptionPaymentMethod && subscriptionOrderMessage) {
+        subscriptionOrderForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            topupMessage.textContent = '正在提交充值申请...';
+            if (!canSubmitSubscriptionOrder) {
+                subscriptionOrderMessage.textContent = '您当前已经有套餐了。';
+                return;
+            }
+            if (!subscriptionPlanSelect.value) {
+                subscriptionOrderMessage.textContent = '请选择套餐。';
+                subscriptionPlanSelect.focus();
+                return;
+            }
+            subscriptionOrderMessage.textContent = '正在提交套餐订单...';
             try {
-                await requestJson('/api/account/topups', {
+                await requestJson('/api/account/subscription-orders', {
                     method: 'POST',
                     body: JSON.stringify({
-                        amount: topupAmount.value,
-                        paymentMethod: topupPaymentMethod.value,
-                        paymentTime: topupPaymentTime?.value || '',
-                        paymentNote: topupPaymentNote?.value || ''
+                        planId: subscriptionPlanSelect.value,
+                        paymentMethod: subscriptionPaymentMethod.value,
+                        paymentNote: subscriptionPaymentNote?.value || ''
                     })
                 });
-                topupForm.reset();
-                topupMessage.textContent = '充值申请已提交，管理员确认后会入账。';
+                subscriptionOrderForm.reset();
+                subscriptionOrderMessage.textContent = '套餐订单已提交，管理员确认后生效。';
                 await refreshBilling();
             } catch (error) {
-                topupMessage.textContent = error.message;
+                subscriptionOrderMessage.textContent = error.message;
+            }
+        });
+    }
+
+    if (addonOrderForm && addonAmountSelect && addonPaymentMethod && addonOrderMessage) {
+        addonOrderForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (!canSubmitAddonOrder) {
+                addonOrderMessage.textContent = '请先开通套餐，再购买加量包。';
+                return;
+            }
+            if (!addonAmountSelect.value) {
+                addonOrderMessage.textContent = '请选择加量包。';
+                addonAmountSelect.focus();
+                return;
+            }
+            addonOrderMessage.textContent = '正在提交加量包订单...';
+            try {
+                await requestJson('/api/account/addon-orders', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        amount: addonAmountSelect.value,
+                        paymentMethod: addonPaymentMethod.value,
+                        paymentNote: addonPaymentNote?.value || ''
+                    })
+                });
+                addonOrderForm.reset();
+                addonOrderMessage.textContent = '加量包订单已提交，管理员确认后入账。';
+                await refreshBilling();
+            } catch (error) {
+                addonOrderMessage.textContent = error.message;
+            }
+        });
+    }
+
+    if (subscriptionRefundButton && subscriptionRefundMessage) {
+        subscriptionRefundButton.addEventListener('click', async () => {
+            if (!canSubmitRefundRequest) {
+                subscriptionRefundMessage.textContent = '当前不能提交退款申请。';
+                return;
+            }
+            subscriptionRefundMessage.textContent = '正在提交退款申请...';
+            try {
+                await requestJson('/api/account/subscription-refund-requests', {
+                    method: 'POST',
+                    body: JSON.stringify({})
+                });
+                subscriptionRefundMessage.textContent = '退款申请已提交，等待管理员审核。';
+                await refreshBilling();
+            } catch (error) {
+                subscriptionRefundMessage.textContent = error.message;
             }
         });
     }
@@ -566,11 +867,18 @@ async function initAccountLinks() {
         bindCopy,
         renderBillingUsageCards,
         renderBalanceCards,
+        renderQuotaCards,
+        renderQuotaBar,
         formatModelPrice,
         renderAccountModelOverview,
         renderTopups,
+        renderSubscriptionOrders,
+        renderSubscriptionRefundPanel,
+        renderSubscriptionRefundRequests,
         renderCharges,
+        renderUsdCharges,
         renderLedger,
+        renderAddonLedger,
         initRedeemPage,
         normalizeInviteCode,
         initKeyPage,

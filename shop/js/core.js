@@ -41,6 +41,10 @@
         return `¥${Math.abs(amount) >= 1 ? amount.toFixed(2) : amount.toFixed(6)}`;
     }
 
+    function formatUsdMicros(usdMicros) {
+        return `$${(Number(usdMicros || 0) / 1000000).toFixed(2)}`;
+    }
+
     function formatNumber(value) {
         return Number(value || 0).toLocaleString('zh-CN');
     }
@@ -133,6 +137,7 @@
         formatNanos,
         formatNumber,
         formatPrice,
+        formatUsdMicros,
         isPhone,
         isStrongPassword,
         initCollapsibleSections,

@@ -7,6 +7,7 @@
         formatDate,
         formatNanos,
         formatNumber,
+        formatUsdMicros,
         isPhone,
         initCollapsibleSections,
         requestJson
@@ -105,6 +106,158 @@ function renderAdminBalanceTable(items = []) {
                         <td class="px-4 py-3">${escapeHtml(item.pendingTopupNanos === undefined ? formatCents(item.pendingTopupCents) : formatNanos(item.pendingTopupNanos))}</td>
                         <td class="px-4 py-3">${escapeHtml(`${formatNumber(item.managedApiKeyCount || 0)} 个（已用 ${formatNumber(item.usedApiKeyCount || 0)}）`)}</td>
                         <td class="px-4 py-3">${escapeHtml(formatDate(item.updatedAt))}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function subscriptionOrderStatusText(status) {
+    const map = {
+        pending: '待确认',
+        approved: '已确认',
+        rejected: '已拒绝'
+    };
+    return map[status] || status || '-';
+}
+
+function renderAdminSubscriptionOrders(orders = [], orderType = 'subscription') {
+    if (!orders.length) {
+        return '<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">暂无订单。</div>';
+    }
+    return `
+        <table class="min-w-full divide-y divide-border-subtle dark:divide-dark-border text-sm">
+            <thead class="bg-background-soft dark:bg-dark-surface text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                <tr><th class="px-4 py-3">用户</th><th class="px-4 py-3">内容</th><th class="px-4 py-3">金额</th><th class="px-4 py-3">额度</th><th class="px-4 py-3">状态</th><th class="px-4 py-3">提交</th><th class="px-4 py-3">操作</th></tr>
+            </thead>
+            <tbody class="divide-y divide-border-subtle dark:divide-dark-border bg-white dark:bg-dark-card">
+                ${orders.map((order) => `
+                    <tr data-subscription-order-id="${escapeHtml(order.id)}" data-subscription-order-type="${escapeHtml(orderType)}">
+                        <td class="px-4 py-3">${escapeHtml(order.phone || '-')}</td>
+                        <td class="px-4 py-3">${escapeHtml(order.planName || (orderType === 'addon' ? '加量包' : order.planId || '-'))}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatCents(order.amountCents))}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatUsdMicros(order.quotaUsdMicros))}</td>
+                        <td class="px-4 py-3">${escapeHtml(subscriptionOrderStatusText(order.status))}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatDate(order.createdAt))}</td>
+                        <td class="px-4 py-3">
+                            ${order.status === 'pending' ? `
+                                <div class="flex flex-col gap-2 min-w-36">
+                                    <input class="h-9 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" data-admin-note placeholder="管理员备注"/>
+                                    <div class="flex gap-2">
+                                        <button class="btn-primary px-3 py-2 text-xs" type="button" data-approve-subscription-order>确认</button>
+                                        <button class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text px-3 py-2 text-xs" type="button" data-reject-subscription-order>拒绝</button>
+                                    </div>
+                                </div>
+                            ` : '-'}
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderAdminRefundRequests(refundRequests = []) {
+    if (!refundRequests.length) {
+        return '<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">暂无退款申请。</div>';
+    }
+    return `
+        <table class="min-w-full divide-y divide-border-subtle dark:divide-dark-border text-sm">
+            <thead class="bg-background-soft dark:bg-dark-surface text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                <tr><th class="px-4 py-3">用户</th><th class="px-4 py-3">套餐</th><th class="px-4 py-3">套餐金额</th><th class="px-4 py-3">开始 / 到期</th><th class="px-4 py-3">剩余</th><th class="px-4 py-3">退款</th><th class="px-4 py-3">申请</th><th class="px-4 py-3">状态</th><th class="px-4 py-3">操作</th></tr>
+            </thead>
+            <tbody class="divide-y divide-border-subtle dark:divide-dark-border bg-white dark:bg-dark-card">
+                ${refundRequests.map((request) => `
+                    <tr data-refund-request-id="${escapeHtml(request.id)}">
+                        <td class="px-4 py-3">${escapeHtml(request.phone || '-')}</td>
+                        <td class="px-4 py-3">${escapeHtml(request.planName || request.planId || '-')}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatCents(request.planAmountCents))}</td>
+                        <td class="px-4 py-3">${escapeHtml(`${formatDate(request.startedAt)} / ${formatDate(request.expiresAt)}`)}</td>
+                        <td class="px-4 py-3">${escapeHtml(`${request.remainingDays || 0} 天`)}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatCents(request.refundAmountCents))}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatDate(request.createdAt))}</td>
+                        <td class="px-4 py-3">${escapeHtml(subscriptionOrderStatusText(request.status))}</td>
+                        <td class="px-4 py-3">
+                            ${request.status === 'pending' ? `
+                                <div class="flex flex-col gap-2 min-w-36">
+                                    <input class="h-9 rounded-md border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg text-primary dark:text-dark-text focus:border-primary focus:ring-primary" data-admin-note placeholder="管理员备注"/>
+                                    <div class="flex gap-2">
+                                        <button class="btn-primary px-3 py-2 text-xs" type="button" data-approve-refund-request>批准</button>
+                                        <button class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text px-3 py-2 text-xs" type="button" data-reject-refund-request>拒绝</button>
+                                    </div>
+                                </div>
+                            ` : '-'}
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderAdminSubscriptionUserSummary(summary = {}) {
+    const cards = [
+        ['用户数', formatNumber(summary.userCount || 0), 'Shop 账号'],
+        ['有效订阅', formatNumber(summary.activeUserCount || 0), '当前可用'],
+        ['额度用尽', formatNumber(summary.exhaustedUserCount || 0), '今日无可用额度'],
+        ['加量包余额', formatUsdMicros(summary.addonBalanceUsdMicros), '长期余额合计']
+    ];
+    return cards.map(([label, value, hint]) => `
+        <article class="rounded-lg border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card p-4">
+            <p class="text-xs uppercase tracking-[0.18em] text-text-muted dark:text-dark-text-muted">${escapeHtml(label)}</p>
+            <p class="mt-2 text-2xl font-display text-primary dark:text-dark-text">${escapeHtml(value)}</p>
+            <p class="mt-1 text-xs text-text-muted dark:text-dark-text-muted">${escapeHtml(hint)}</p>
+        </article>
+    `).join('');
+}
+
+function renderAdminSubscriptionUsers(items = []) {
+    if (!items.length) {
+        return '<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">暂无用户额度记录。</div>';
+    }
+    return `
+        <table class="min-w-full divide-y divide-border-subtle dark:divide-dark-border text-sm">
+            <thead class="bg-background-soft dark:bg-dark-surface text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                <tr><th class="px-4 py-3">用户</th><th class="px-4 py-3">套餐</th><th class="px-4 py-3">到期</th><th class="px-4 py-3">今日额度</th><th class="px-4 py-3">今日已用</th><th class="px-4 py-3">今日剩余</th><th class="px-4 py-3">加量包</th><th class="px-4 py-3">可用</th></tr>
+            </thead>
+            <tbody class="divide-y divide-border-subtle dark:divide-dark-border bg-white dark:bg-dark-card">
+                ${items.map((item) => `
+                    <tr>
+                        <td class="px-4 py-3">${escapeHtml(item.phone || '-')}</td>
+                        <td class="px-4 py-3">${escapeHtml(item.planName || '未开通')}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatDate(item.expiresAt))}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatUsdMicros(item.dailyQuotaUsdMicros))}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatUsdMicros(item.dailyUsedUsdMicros))}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatUsdMicros(item.dailyRemainingUsdMicros))}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatUsdMicros(item.addonBalanceUsdMicros))}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatUsdMicros(item.remainingUsdMicros))}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderAdminUsdCharges(charges = []) {
+    if (!charges.length) {
+        return '<div class="p-5 text-sm text-text-muted dark:text-dark-text-muted">暂无美元消耗日志。</div>';
+    }
+    return `
+        <table class="min-w-full divide-y divide-border-subtle dark:divide-dark-border text-sm">
+            <thead class="bg-background-soft dark:bg-dark-surface text-left text-xs uppercase tracking-[0.16em] text-text-muted dark:text-dark-text-muted">
+                <tr><th class="px-4 py-3">时间</th><th class="px-4 py-3">用户</th><th class="px-4 py-3">模型</th><th class="px-4 py-3">费用</th><th class="px-4 py-3">扣每日</th><th class="px-4 py-3">扣加量包</th><th class="px-4 py-3">版本</th></tr>
+            </thead>
+            <tbody class="divide-y divide-border-subtle dark:divide-dark-border bg-white dark:bg-dark-card">
+                ${charges.map((charge) => `
+                    <tr>
+                        <td class="px-4 py-3">${escapeHtml(formatDate(charge.createdAt))}</td>
+                        <td class="px-4 py-3">${escapeHtml(charge.phone || '-')}</td>
+                        <td class="px-4 py-3">${escapeHtml(charge.model || '-')}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatUsdMicros(charge.chargeUsdMicros))}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatUsdMicros(charge.dailyQuotaDeductedUsdMicros))}</td>
+                        <td class="px-4 py-3">${escapeHtml(formatUsdMicros(charge.addonDeductedUsdMicros))}</td>
+                        <td class="px-4 py-3">${escapeHtml(charge.officialPriceVersion || '-')}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -427,6 +580,150 @@ function initAdminAccountBalancesPage() {
     return fetchAccountBalances;
 }
 
+function initAdminSubscriptionOrdersPage(options = {}) {
+    const subscriptionStatusFilter = document.getElementById('adminSubscriptionOrderStatusFilter');
+    const addonStatusFilter = document.getElementById('adminAddonOrderStatusFilter');
+    const subscriptionTable = document.getElementById('adminSubscriptionOrderTable');
+    const addonTable = document.getElementById('adminAddonOrderTable');
+    const message = document.getElementById('adminSubscriptionOrderMessage');
+    if (!subscriptionStatusFilter || !addonStatusFilter || !subscriptionTable || !addonTable || !message) return null;
+
+    async function fetchOrders() {
+        message.textContent = '正在刷新订单...';
+        try {
+            const [subscriptionData, addonData] = await Promise.all([
+                requestJson(`/api/admin/subscription-orders?status=${encodeURIComponent(subscriptionStatusFilter.value)}`),
+                requestJson(`/api/admin/addon-orders?status=${encodeURIComponent(addonStatusFilter.value)}`)
+            ]);
+            subscriptionTable.innerHTML = renderAdminSubscriptionOrders(subscriptionData.orders || [], 'subscription');
+            addonTable.innerHTML = renderAdminSubscriptionOrders(addonData.orders || [], 'addon');
+            message.textContent = `订阅 ${(subscriptionData.orders || []).length} 条，加量包 ${(addonData.orders || []).length} 条。`;
+        } catch (error) {
+            message.textContent = error.message;
+        }
+    }
+
+    async function handleOrderClick(event) {
+        const approveButton = event.target.closest('[data-approve-subscription-order]');
+        const rejectButton = event.target.closest('[data-reject-subscription-order]');
+        if (!approveButton && !rejectButton) return;
+        const row = event.target.closest('[data-subscription-order-id]');
+        const id = row?.getAttribute('data-subscription-order-id');
+        const orderType = row?.getAttribute('data-subscription-order-type') === 'addon' ? 'addon' : 'subscription';
+        if (!id) return;
+        const adminNote = row.querySelector('[data-admin-note]')?.value || '';
+        const action = approveButton ? 'approve' : 'reject';
+        const basePath = orderType === 'addon' ? '/api/admin/addon-orders' : '/api/admin/subscription-orders';
+        message.textContent = approveButton ? '正在确认订单...' : '正在拒绝订单...';
+        try {
+            await requestJson(`${basePath}/${encodeURIComponent(id)}/${action}`, {
+                method: 'POST',
+                body: JSON.stringify({ adminNote })
+            });
+            await fetchOrders();
+            await options.onChanged?.();
+        } catch (error) {
+            message.textContent = error.message;
+        }
+    }
+
+    subscriptionTable.addEventListener('click', handleOrderClick);
+    addonTable.addEventListener('click', handleOrderClick);
+    subscriptionStatusFilter.addEventListener('change', fetchOrders);
+    addonStatusFilter.addEventListener('change', fetchOrders);
+    fetchOrders();
+    return fetchOrders;
+}
+
+function initAdminRefundRequestsPage(options = {}) {
+    const statusFilter = document.getElementById('adminRefundStatusFilter');
+    const tableRoot = document.getElementById('adminRefundRequestTable');
+    const message = document.getElementById('adminRefundRequestMessage');
+    if (!statusFilter || !tableRoot || !message) return null;
+
+    async function fetchRefundRequests() {
+        message.textContent = '正在刷新退款申请...';
+        try {
+            const data = await requestJson(`/api/admin/subscription-refund-requests?status=${encodeURIComponent(statusFilter.value)}`);
+            tableRoot.innerHTML = renderAdminRefundRequests(data.refundRequests || []);
+            message.textContent = `退款申请 ${(data.refundRequests || []).length} 条。`;
+        } catch (error) {
+            message.textContent = error.message;
+        }
+    }
+
+    tableRoot.addEventListener('click', async (event) => {
+        const approveButton = event.target.closest('[data-approve-refund-request]');
+        const rejectButton = event.target.closest('[data-reject-refund-request]');
+        if (!approveButton && !rejectButton) return;
+        const row = event.target.closest('[data-refund-request-id]');
+        const id = row?.getAttribute('data-refund-request-id');
+        if (!id) return;
+        const adminNote = row.querySelector('[data-admin-note]')?.value || '';
+        const action = approveButton ? 'approve' : 'reject';
+        message.textContent = approveButton ? '正在批准退款...' : '正在拒绝退款...';
+        try {
+            await requestJson(`/api/admin/subscription-refund-requests/${encodeURIComponent(id)}/${action}`, {
+                method: 'POST',
+                body: JSON.stringify({ adminNote })
+            });
+            await fetchRefundRequests();
+            await options.onChanged?.();
+        } catch (error) {
+            message.textContent = error.message;
+        }
+    });
+
+    statusFilter.addEventListener('change', fetchRefundRequests);
+    fetchRefundRequests();
+    return fetchRefundRequests;
+}
+
+function initAdminSubscriptionUsersPage() {
+    const searchInput = document.getElementById('adminSubscriptionUserSearchInput');
+    const summaryRoot = document.getElementById('adminSubscriptionUserSummary');
+    const tableRoot = document.getElementById('adminSubscriptionUserTable');
+    const message = document.getElementById('adminSubscriptionUserMessage');
+    if (!summaryRoot || !tableRoot || !message) return null;
+
+    async function fetchUsers() {
+        const params = new URLSearchParams({ q: searchInput?.value || '' });
+        message.textContent = '正在刷新用户额度...';
+        try {
+            const data = await requestJson(`/api/admin/subscription-users?${params.toString()}`);
+            summaryRoot.innerHTML = renderAdminSubscriptionUserSummary(data.summary || {});
+            tableRoot.innerHTML = renderAdminSubscriptionUsers(data.items || []);
+            message.textContent = `共 ${(data.items || []).length} 个账号。`;
+        } catch (error) {
+            message.textContent = error.message;
+        }
+    }
+
+    searchInput?.addEventListener('input', fetchUsers);
+    fetchUsers();
+    return fetchUsers;
+}
+
+function initAdminUsdChargesPage() {
+    const tableRoot = document.getElementById('adminUsdChargeTable');
+    const message = document.getElementById('adminUsdChargeMessage');
+    if (!tableRoot || !message) return null;
+
+    async function fetchCharges() {
+        message.textContent = '正在刷新消耗日志...';
+        try {
+            const data = await requestJson('/api/admin/usd-charges');
+            tableRoot.innerHTML = renderAdminUsdCharges(data.charges || []);
+            message.textContent = `共 ${(data.charges || []).length} 条。`;
+        } catch (error) {
+            message.textContent = error.message;
+        }
+    }
+
+    fetchCharges();
+    return fetchCharges;
+}
+
 function initAdminTopupPage(options = {}) {
     const statusFilter = document.getElementById('adminTopupStatusFilter');
     const tableRoot = document.getElementById('adminTopupTable');
@@ -560,6 +857,24 @@ function initAdminPage() {
     const refreshAdminInvites = initAdminInvitePage();
     initAdminUsagePage();
     initAdminPasswordResetPage();
+    const refreshSubscriptionUsers = initAdminSubscriptionUsersPage();
+    const refreshUsdCharges = initAdminUsdChargesPage();
+    const refreshSubscriptionOrders = initAdminSubscriptionOrdersPage({
+        onChanged: async () => {
+            await Promise.all([
+                refreshSubscriptionUsers?.(),
+                refreshUsdCharges?.()
+            ].filter(Boolean));
+        }
+    });
+    const refreshRefundRequests = initAdminRefundRequestsPage({
+        onChanged: async () => {
+            await Promise.all([
+                refreshSubscriptionUsers?.(),
+                refreshUsdCharges?.()
+            ].filter(Boolean));
+        }
+    });
     const refreshAdminBalances = initAdminAccountBalancesPage();
     const refreshAdminTopups = initAdminTopupPage({ onBalanceChanged: refreshAdminBalances });
     const businessRefreshButton = document.getElementById('adminBusinessRefreshButton');
@@ -568,6 +883,10 @@ function initAdminPage() {
         try {
             await Promise.all([
                 refreshAdminInvites?.(),
+                refreshSubscriptionOrders?.(),
+                refreshRefundRequests?.(),
+                refreshSubscriptionUsers?.(),
+                refreshUsdCharges?.(),
                 refreshAdminTopups?.(),
                 refreshAdminBalances?.()
             ].filter(Boolean));
@@ -598,6 +917,11 @@ function initAdminPage() {
         renderAdminBalanceSummary,
         renderAdminTopups,
         renderAdminBalanceTable,
+        renderAdminSubscriptionOrders,
+        renderAdminRefundRequests,
+        renderAdminSubscriptionUserSummary,
+        renderAdminSubscriptionUsers,
+        renderAdminUsdCharges,
         renderInviteConsoleSummary,
         renderAdminInviteTable,
         renderAdminApiKeyPoolTable,
@@ -610,6 +934,10 @@ function initAdminPage() {
         initCollapsibleSections,
         initAdminPasswordResetPage,
         initAdminAccountBalancesPage,
+        initAdminSubscriptionOrdersPage,
+        initAdminRefundRequestsPage,
+        initAdminSubscriptionUsersPage,
+        initAdminUsdChargesPage,
         initAdminTopupPage,
         initAdminInvitePage,
         initAdminPage

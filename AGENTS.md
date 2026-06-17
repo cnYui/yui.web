@@ -1,5 +1,70 @@
 # AI 协作记忆
 
+## 2026-06-16 订阅池 MVP 实施
+
+- 订阅池 MVP 已在分支 `codex/subscription-pool-pricing-design` 实施，仍保持“不自动分配 API key，用户找管理员领取邀请码后登录态兑换”的流程。
+- Account 页面主流程为：选择 29 / 39 / 59 元套餐下拉框提交订单，管理员审批后展示当前套餐、今日额度、加量包余额和黑色额度条；加量包单独下单审批，余额长期保留。
+- Admin 页面新增订阅订单审核、加量包订单审核、用户额度面板和美元消耗日志，至少展示手机号、套餐档位、每日额度、今日已用 / 剩余、加量包余额。
+- 新美元账本表为 `subscription_plans`、`account_subscriptions`、`subscription_orders`、`account_addon_balances`、`account_addon_ledger_entries`、`api_usd_charge_records`。
+- API key 新放行条件为：已兑换托管 key + 有效订阅 + 今日套餐剩余额度或加量包余额大于 0；无有效订阅时加量包保留但不放行。
+- 有效套餐期间不能重复购买或审批新的套餐订单，避免 29 元订单覆盖 59 元订单；重复提交或审批返回 `ACTIVE_SUBSCRIPTION_EXISTS`。
+- 加量包只能在账号已有有效订阅套餐时提交订单；无套餐时后端返回 `SUBSCRIPTION_REQUIRED_FOR_ADDON`，前端禁用提交按钮并提示先开通套餐。
+- 退款申请只针对当前有效套餐，金额使用人民币 cents 按剩余会员天数计算；不按当天已使用额度计算，也不触碰加量包余额。
+- 管理员批准退款后，对应 `account_subscriptions` 立即变为 `cancelled`，API key 因无有效订阅立即不可用；管理员拒绝后套餐保持有效。
+- usage 美元扣费必须按 usage 发生时间判断订阅有效性：`started_at <= requested_at < expires_at`；不要回退成按当前时间判断历史 usage。
+- 实施记录见 `docs/ai/context/20260616-195021-subscription-mvp-implementation_CN.md`。
+- 加量包依附套餐规则记录见 `docs/ai/context/20260616-200650-addon-requires-active-subscription-plan_CN.md`。
+- 禁止重复套餐覆盖记录见 `docs/ai/context/20260616-202029-subscription-order-no-duplicate-active-plan_CN.md`。
+- 退款 MVP 设计与实施记录见 `docs/ai/context/20260616-203809-subscription-refund-mvp-design-plan_CN.md` 和 `docs/ai/context/20260616-205344-subscription-refund-mvp-implementation_CN.md`。
+
+## 2026-06-17 订阅池老用户真实库迁移
+
+- 已新增一次性脚本 `scripts/shop-migrate-subscription-legacy-users.js`，默认 dry-run，`--apply` 前备份数据库。
+- 白名单老用户固定为：`15776812883`、`17371571728`、`19814722044`、`13813756694`、`18014503779`、`15062376174`、`15995436627`、`18367290091`、`13052071067`、`13584052801`。
+- 真实库 `/Users/wujianxiang/CodeSpace/yui.web/data/shop.sqlite` 已执行迁移：上述 10 个手机号均为 `sub_29_daily_19_usd`，有效期 `2026-06-17T00:00:00+08:00` 到 `2026-07-17T00:00:00+08:00`。
+- 迁移创建 10 条 `account_subscriptions` active 记录和 10 条 `LEGACY-SUB-*-20260617` approved 订阅订单。
+- 其他用户没有创建 active 订阅，上线后仍是无套餐状态。
+- 旧人民币余额、旧人民币扣费记录和旧 usage 不迁入美元账本；`api_usd_charge_records` 迁移后仍为 0，旧 usage 只保留 token 统计。
+- 真实库备份为 `/Users/wujianxiang/CodeSpace/yui.web/data/backups/shop-before-subscription-legacy-migration-20260617-092557.sqlite`。
+- 设计与执行记录见 `docs/ai/context/20260617-092302-subscription-legacy-users-migration-design-plan_CN.md` 和 `docs/ai/context/20260617-092557-subscription-legacy-users-migration-implementation_CN.md`。
+
+## 2026-06-16 Account 模型总览官方美元价格修正
+
+- 当前订阅池分支中，`/shop/account/` 模型总览展示官方美元价格，不再展示旧人民币半价表。
+- 后端 `/api/account/model-overview` 使用 `lib/shop-subscription-billing.js` 的 `officialUsdPrices`，字段为 `cacheHitInputUsdPerMillion`、`cacheMissInputUsdPerMillion`、`outputUsdPerMillion`。
+- 展示价格固定为：`gpt-5.4` 缓存命中输入 `$0.25`、未命中输入 `$2.50`、输出 `$15.00`；`gpt-5.5` 缓存命中输入 `$0.50`、未命中输入 `$5.00`、输出 `$30.00`。
+- 这次只修 Account 模型价格展示，不重算历史人民币 `api_charge_records`，也不改变旧 `lib/shop-pricing.js` 价格版本回放。
+- 旧 2026-06-13 / 2026-06-14 的人民币模型总览展示记忆只代表订阅池切换前的历史行为；后续不要恢复 `¥0.125`、`¥7.50` 或 `¥15.00` 的 Account 模型展示。
+- 设计与计划见 `docs/ai/context/20260616-210931-account-model-overview-official-usd-price-fix_CN.md`。
+
+## 2026-06-16 Account 额度、用量与模型价格布局
+
+- `/shop/account/` 订阅池区域的阅读顺序固定为：当前套餐额度卡片、今日可用额度进度条、Token 用量、模型价格、购买套餐 / 加量包。
+- Token 用量必须贴近今日可用额度进度条，方便用户把额度条变化和 token 消耗对应起来；不要再放到使用说明之后。
+- 模型价格是购买前决策信息，必须放在购买套餐表单上方；不要放到订单、退款或流水区域之后。
+- 设计与计划见 `docs/ai/context/20260616-212252-account-quota-usage-model-layout-design-plan_CN.md`。
+
+## 2026-06-16 订阅池长期加量包与页面设计
+
+- 加量包不再是当日额度；未用完的加量包美元额度长期保留，续费和换套餐后也继续保留。
+- usage 扣费优先级固定为：先扣东八区当天套餐额度，套餐额度用完后才扣长期加量包余额；每日额度仍按东八区 0 点刷新且不累计。
+- 加量包是订阅附属备用额度，不是新的按量余额；无有效订阅时加量包余额保留但不放行 API，续费后继续可用。
+- 加量包余额必须使用独立 USD micros 账本，不能写入 `account_balances.balance_nanos`，不能按 `quota_date` 绑定某一天。
+- OpenAI 官方价格页存在 short / long context 价格，但本项目第一版只实现用户确认的一套 `openai-standard-short-usd-20260616` 项目计价，不在用户侧暴露上下文计费模式；后续如上游账单偏离，再新增价格版本。
+- Account 页面目标主视图改为订阅池：当前套餐、今日额度、加量包余额、购买套餐、购买加量包、API key、模型价格、美元扣费流水。
+- Admin 页面目标主视图改为订单与额度运营：订阅 / 加量包订单审核、用户额度面板、美元用量监控、人民币订单收入、扣费来源拆分。
+- 详细设计见 `docs/ai/context/20260616-191817-subscription-account-admin-addon-retention-design_CN.md`；实施计划修正见 `docs/ai/context/20260616-191817-subscription-addon-retention-plan-update_CN.md`。
+
+## 2026-06-16 订阅池官方 GPT 计价设计
+
+- 已在独立 worktree 分支 `codex/subscription-pool-pricing-design` 设计订阅池方案，不影响当前 main 上的按量计费分支。
+- 当前订阅池口径：29 元 / 月每日 19 美元额度，39 元 / 月每日 29 美元额度，59 元 / 月每日 49 美元额度。
+- 项目只使用 `gpt-5.4` 和 `gpt-5.5`；官方价格按 OpenAI API Pricing 的 2026-06-16 快照记录。
+- 计价规则只采用用户截图和 OpenAI 官方价格页中的单一表：`gpt-5.4` 输入 / 缓存命中输入 / 输出分别为 2.50 / 0.25 / 15 美元每百万 token，`gpt-5.5` 分别为 5 / 0.5 / 30 美元每百万 token；实现中不要引入长短上下文、Batch、Flex 或 Priority 分支。
+- 新规则必须使用独立美元额度账本，不能复用 `account_balances.balance_nanos`，不能污染现有人民币余额和历史 `api_charge_records`。
+- 用户已确认采用方案 B，整个计费系统在该分支目标运行态改为美元计费和扣费，东八区 0 点刷新，当天未用完额度不累计，三个套餐都能使用 `gpt-5.4` 和 `gpt-5.5`。
+- 设计文档见 `docs/ai/context/20260616-182045-subscription-pool-official-gpt-pricing-design_CN.md`；实施计划见 `docs/ai/context/20260616-182903-subscription-pool-usd-billing-implementation-plan_CN.md`。
+
 ## 2026-06-11 DeepSeek 真实扣费
 
 - Shop 真实扣费以 yui.web 内部固定人民币价格为准，不信任 usage event 的 `price_amount_micros`。

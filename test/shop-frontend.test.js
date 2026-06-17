@@ -436,6 +436,9 @@ test('Admin 页面把业务办理合并成一个栏目', () => {
     assert.match(html, /id="passwordResetCodeForm"/);
     assert.match(html, /id="adminTopupStatusFilter"/);
     assert.match(html, /id="adminTopupTable"/);
+    assert.match(html, /id="adminRefundStatusFilter"/);
+    assert.match(html, /id="adminRefundRequestTable"/);
+    assert.match(html, /id="adminRefundRequestMessage"/);
     assert.match(html, /id="adminInviteConsoleSummary"/);
     assert.match(html, /id="adminAccountBalancesPanel"/);
     assert.match(html, /id="adminBalanceSearchInput"/);
@@ -446,10 +449,12 @@ test('Admin 页面把业务办理合并成一个栏目', () => {
     assert.match(html, /id="adminInviteTable"/);
     assert.match(html, /id="adminApiKeyPoolTable"/);
     const topupIndex = html.indexOf('id="adminTopupTable"');
+    const refundIndex = html.indexOf('id="adminRefundRequestTable"');
     const balanceIndex = html.indexOf('id="adminAccountBalancesPanel"');
     const inviteIndex = html.indexOf('id="adminInviteTable"');
-    assert.ok(topupIndex > -1 && balanceIndex > -1 && inviteIndex > -1);
+    assert.ok(topupIndex > -1 && refundIndex > -1 && balanceIndex > -1 && inviteIndex > -1);
     assert.ok(topupIndex < balanceIndex);
+    assert.ok(refundIndex < balanceIndex);
     assert.ok(balanceIndex < inviteIndex);
     assert.doesNotMatch(html, /id="adminInviteSection"/);
     assert.doesNotMatch(html, /id="adminPasswordResetSection"/);
@@ -569,24 +574,41 @@ test('Admin 前端读取 usage 自动导入状态接口', () => {
     assert.match(script, /api\/admin\/usage-import-status/);
 });
 
-test('Account 页面包含预充值余额、充值申请和扣费流水容器', () => {
+test('Account 页面包含订阅池购买、额度条和美元流水容器', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
 
     assert.match(html, /id="accountModelOverview"/);
-    assert.match(html, /id="accountBalanceCards"/);
+    assert.match(html, /id="accountQuotaCards"/);
+    assert.match(html, /id="accountQuotaBar"/);
+    assert.match(html, /id="subscriptionOrderForm"/);
+    assert.match(html, /id="subscriptionPlanSelect"/);
+    assert.match(html, /id="subscriptionMembershipHint"/);
+    assert.match(html, /id="subscriptionSubmitButton"/);
+    assert.match(html, /id="addonOrderForm"/);
+    assert.match(html, /id="addonAmountSelect"/);
+    assert.match(html, /id="addonMembershipHint"/);
+    assert.match(html, /id="addonSubmitButton"/);
+    assert.match(html, /id="accountSubscriptionOrders"/);
+    assert.match(html, /id="accountAddonOrders"/);
+    assert.match(html, /id="subscriptionRefundPanel"/);
+    assert.match(html, /id="subscriptionRefundEstimate"/);
+    assert.match(html, /id="subscriptionRefundButton"/);
+    assert.match(html, /id="subscriptionRefundMessage"/);
+    assert.match(html, /id="accountRefundRequests"/);
     assert.match(html, /id="accountBillingUsageCards"/);
     assert.doesNotMatch(html, /id="accountTokenBreakdown"/);
     assert.doesNotMatch(html, /id="accountUsageCards"/);
     assert.doesNotMatch(html, /id="paymentReference"/);
     assert.doesNotMatch(html, /付款备注：/);
-    assert.match(html, /id="topupPaymentNote"[^>]+placeholder="备注可填写微信号"/);
+    assert.match(html, /id="subscriptionPaymentNote"[^>]+placeholder="备注可填写微信号"/);
+    assert.match(html, /id="addonPaymentNote"[^>]+placeholder="备注可填写微信号"/);
     assert.doesNotMatch(html, /id="accountHourlyChart"/);
     assert.doesNotMatch(html, /id="accountDailyChart"/);
     assert.doesNotMatch(html, /最近 24 小时/);
     assert.doesNotMatch(html, /本月每日/);
-    assert.match(html, /id="topupForm"/);
-    assert.match(html, /id="topupAmount"/);
-    assert.match(html, /id="accountTopups"/);
+    assert.doesNotMatch(html, /id="topupForm"/);
+    assert.doesNotMatch(html, /id="topupAmount"/);
+    assert.doesNotMatch(html, /id="accountTopups"/);
     assert.match(html, /id="accountWeeklySpendingChart"/);
     assert.match(html, /id="accountCharges"/);
     assert.match(html, /id="accountLedger"/);
@@ -609,10 +631,16 @@ test('Account 页面包含预充值余额、充值申请和扣费流水容器', 
     assert.equal((html.match(/data-collapsible-content/g) || []).length, 5);
     assert.match(html, /id="accountGuideSection"[\s\S]*?data-collapsible-default="closed"/);
 
+    const quotaCardsIndex = html.indexOf('id="accountQuotaCards"');
+    const quotaBarIndex = html.indexOf('id="accountQuotaBar"');
+    const usageSectionIndex = html.indexOf('id="accountUsageSection"');
     const modelOverviewIndex = html.indexOf('id="accountModelOverview"');
-    const balanceCardsIndex = html.indexOf('id="accountBalanceCards"');
-    assert.ok(modelOverviewIndex >= 0);
-    assert.ok(balanceCardsIndex > modelOverviewIndex);
+    const subscriptionOrderFormIndex = html.indexOf('id="subscriptionOrderForm"');
+    assert.ok(quotaCardsIndex >= 0);
+    assert.ok(quotaBarIndex > quotaCardsIndex);
+    assert.ok(usageSectionIndex > quotaBarIndex);
+    assert.ok(modelOverviewIndex > usageSectionIndex);
+    assert.ok(subscriptionOrderFormIndex > modelOverviewIndex);
 });
 
 test('Account 前端渲染周消费柱状图并提供上一周下一周切换', () => {
@@ -635,6 +663,44 @@ test('Account 前端渲染周消费柱状图并提供上一周下一周切换', 
     assert.match(script, /accountWeeklySpendingChart\.innerHTML = renderAccountWeeklySpendingChart/);
 });
 
+test('Account 加量包表单要求先开通套餐', () => {
+    const script = readShopFrontendSource();
+
+    assert.match(script, /function hasActiveSubscription/);
+    assert.match(script, /addonSubmitButton\.disabled = !canBuyAddon/);
+    assert.match(script, /请先开通套餐，再购买加量包。/);
+});
+
+test('Account 套餐表单已有套餐时不能重复提交', () => {
+    const script = readShopFrontendSource();
+
+    assert.match(script, /function renderSubscriptionMembershipGuard/);
+    assert.match(script, /subscriptionSubmitButton\.disabled = !canBuySubscription/);
+    assert.match(script, /您当前已经有套餐了。/);
+});
+
+test('Account 前端包含退款申请逻辑', () => {
+    const script = readShopFrontendSource();
+
+    assert.match(script, /function renderSubscriptionRefundPanel/);
+    assert.match(script, /api\/account\/subscription-refund-requests/);
+    assert.match(script, /subscriptionRefundButton/);
+    assert.match(script, /正在提交退款申请/);
+});
+
+test('Admin 前端包含退款审核逻辑', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'shop/admin/index.html'), 'utf8');
+    const script = readShopFrontendSource();
+
+    assert.match(html, /退款审核/);
+    assert.match(html, /id="adminRefundStatusFilter"/);
+    assert.match(html, /id="adminRefundRequestTable"/);
+    assert.match(script, /function renderAdminRefundRequests/);
+    assert.match(script, /api\/admin\/subscription-refund-requests/);
+    assert.match(script, /data-approve-refund-request/);
+    assert.match(script, /data-reject-refund-request/);
+});
+
 test('Account 用量卡片不展示无效 token 总览和内部价格版本名', () => {
     const script = readShopFrontendSource();
 
@@ -653,10 +719,10 @@ test('Account 页把余额和 API key 前置，并默认收起说明和流水', 
     const historyIndex = accountHtml.indexOf('id="accountBillingHistorySection"');
 
     assert.ok(billingIndex >= 0);
-    assert.ok(keysIndex > billingIndex);
+    assert.ok(usageIndex > billingIndex);
+    assert.ok(keysIndex > usageIndex);
     assert.ok(guideIndex > keysIndex);
-    assert.ok(usageIndex > guideIndex);
-    assert.ok(historyIndex > usageIndex);
+    assert.ok(historyIndex > guideIndex);
 
     assert.match(accountHtml, /id="accountBillingSection"[^>]*data-collapsible-default="open"/);
     assert.match(accountHtml, /id="accountKeysSection"[^>]*data-collapsible-default="open"/);

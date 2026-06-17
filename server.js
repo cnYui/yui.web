@@ -17,6 +17,14 @@ const {
     deriveInputTokenBreakdown,
     priceUsageTokens
 } = require('./lib/shop-pricing');
+const {
+    addonPackageByAmountCents,
+    addonPackages,
+    priceOfficialUsageUsd,
+    splitUsdChargeByQuota,
+    subscriptionPlanById,
+    subscriptionPlans
+} = require('./lib/shop-subscription-billing');
 const { buildBillingSummary, buildWeeklySpending } = require('./lib/shop-billing-summary');
 const {
     modelPriceOverview,
@@ -615,7 +623,160 @@ CREATE TABLE IF NOT EXISTS api_charge_records (
 
 CREATE INDEX IF NOT EXISTS idx_api_charge_records_phone_created
 ON api_charge_records(phone, created_at);
+
+CREATE TABLE IF NOT EXISTS subscription_plans (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  monthly_price_cents INTEGER NOT NULL,
+  daily_quota_usd_micros INTEGER NOT NULL,
+  period_days INTEGER NOT NULL DEFAULT 30,
+  status TEXT NOT NULL CHECK (status IN ('active', 'archived')),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS account_subscriptions (
+  id TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  plan_id TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('active', 'expired', 'cancelled')),
+  started_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (phone) REFERENCES users(phone),
+  FOREIGN KEY (plan_id) REFERENCES subscription_plans(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_account_subscriptions_one_active
+ON account_subscriptions(phone)
+WHERE status = 'active';
+
+CREATE TABLE IF NOT EXISTS subscription_orders (
+  id TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  order_type TEXT NOT NULL CHECK (order_type IN ('subscription', 'addon')),
+  plan_id TEXT,
+  amount_cents INTEGER NOT NULL,
+  quota_usd_micros INTEGER NOT NULL,
+  payment_method TEXT NOT NULL CHECK (payment_method IN ('alipay', 'wechat')),
+  payment_note TEXT,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')),
+  created_at TEXT NOT NULL,
+  confirmed_at TEXT,
+  confirmed_by_phone TEXT,
+  admin_note TEXT,
+  FOREIGN KEY (phone) REFERENCES users(phone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscription_orders_phone_created
+ON subscription_orders(phone, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_subscription_orders_type_status_created
+ON subscription_orders(order_type, status, created_at);
+
+CREATE TABLE IF NOT EXISTS subscription_refund_requests (
+  id TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  subscription_id TEXT NOT NULL,
+  plan_id TEXT NOT NULL,
+  plan_amount_cents INTEGER NOT NULL,
+  period_days INTEGER NOT NULL,
+  remaining_days INTEGER NOT NULL,
+  refund_amount_cents INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')),
+  created_at TEXT NOT NULL,
+  confirmed_at TEXT,
+  confirmed_by_phone TEXT,
+  admin_note TEXT,
+  FOREIGN KEY (phone) REFERENCES users(phone),
+  FOREIGN KEY (subscription_id) REFERENCES account_subscriptions(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subscription_refund_one_pending
+ON subscription_refund_requests(subscription_id)
+WHERE status = 'pending';
+
+CREATE INDEX IF NOT EXISTS idx_subscription_refund_phone_created
+ON subscription_refund_requests(phone, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_subscription_refund_status_created
+ON subscription_refund_requests(status, created_at);
+
+CREATE TABLE IF NOT EXISTS account_addon_balances (
+  phone TEXT PRIMARY KEY,
+  balance_usd_micros INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (phone) REFERENCES users(phone)
+);
+
+CREATE TABLE IF NOT EXISTS account_addon_ledger_entries (
+  id TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  entry_type TEXT NOT NULL CHECK (entry_type IN ('addon_purchase', 'api_charge', 'admin_adjustment', 'refund')),
+  amount_usd_micros INTEGER NOT NULL,
+  balance_after_usd_micros INTEGER NOT NULL,
+  related_id TEXT,
+  memo TEXT,
+  created_at TEXT NOT NULL,
+  created_by_phone TEXT,
+  FOREIGN KEY (phone) REFERENCES users(phone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_account_addon_ledger_phone_created
+ON account_addon_ledger_entries(phone, created_at);
+
+CREATE TABLE IF NOT EXISTS api_usd_charge_records (
+  id TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  usage_event_id TEXT NOT NULL UNIQUE,
+  api_key_hash TEXT NOT NULL,
+  model TEXT,
+  input_tokens INTEGER NOT NULL DEFAULT 0,
+  output_tokens INTEGER NOT NULL DEFAULT 0,
+  cache_hit_input_tokens INTEGER NOT NULL DEFAULT 0,
+  cache_miss_input_tokens INTEGER NOT NULL DEFAULT 0,
+  reasoning_tokens INTEGER NOT NULL DEFAULT 0,
+  total_tokens INTEGER NOT NULL DEFAULT 0,
+  official_price_version TEXT NOT NULL,
+  charge_usd_micros INTEGER NOT NULL,
+  daily_quota_before_usd_micros INTEGER NOT NULL DEFAULT 0,
+  daily_quota_deducted_usd_micros INTEGER NOT NULL DEFAULT 0,
+  daily_quota_after_usd_micros INTEGER NOT NULL DEFAULT 0,
+  addon_balance_before_usd_micros INTEGER NOT NULL DEFAULT 0,
+  addon_deducted_usd_micros INTEGER NOT NULL DEFAULT 0,
+  addon_balance_after_usd_micros INTEGER NOT NULL DEFAULT 0,
+  overrun_usd_micros INTEGER NOT NULL DEFAULT 0,
+  quota_date TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('charged', 'failed_no_charge', 'unpriced_no_charge', 'adjusted')),
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (phone) REFERENCES users(phone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_usd_charge_records_phone_date_created
+ON api_usd_charge_records(phone, quota_date, created_at);
 `);
+    const seedSubscriptionPlan = db.prepare(`
+INSERT INTO subscription_plans (
+  id, name, monthly_price_cents, daily_quota_usd_micros, period_days, status, created_at, updated_at
+)
+VALUES (
+  @id, @name, @monthlyPriceCents, @dailyQuotaUsdMicros, @periodDays, 'active', @now, @now
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  monthly_price_cents = excluded.monthly_price_cents,
+  daily_quota_usd_micros = excluded.daily_quota_usd_micros,
+  period_days = excluded.period_days,
+  status = 'active',
+  updated_at = excluded.updated_at
+`);
+    for (const plan of subscriptionPlans) {
+        seedSubscriptionPlan.run({
+            ...plan,
+            now: nowIso()
+        });
+    }
     const usageEventColumns = db.prepare('PRAGMA table_info(usage_events)').all().map((column) => column.name);
     if (!usageEventColumns.includes('cache_hit_input_tokens')) {
         db.exec(`ALTER TABLE usage_events ADD COLUMN cache_hit_input_tokens INTEGER NOT NULL DEFAULT 0;`);
@@ -888,6 +1049,183 @@ function createShopApp(options = {}) {
         ensureUser.run(phone, nowIso());
         ensureAccountBalanceRow.run(phone, creditLimitCents, creditLimitNanos, nowIso());
         return getAccountBalanceRow.get(phone);
+    }
+
+    function ensureAddonBalance(phone) {
+        ensureUser.run(phone, nowIso());
+        ensureAddonBalanceRow.run(phone, nowIso());
+        return getAddonBalanceRow.get(phone);
+    }
+
+    function publicSubscriptionPlan(row) {
+        return {
+            id: row.id,
+            name: row.name,
+            monthlyPriceCents: row.monthly_price_cents ?? row.monthlyPriceCents,
+            dailyQuotaUsdMicros: row.daily_quota_usd_micros ?? row.dailyQuotaUsdMicros,
+            periodDays: row.period_days ?? row.periodDays,
+            status: row.status || 'active'
+        };
+    }
+
+    function publicSubscriptionOrder(row) {
+        const plan = row.plan_id ? getSubscriptionPlanById.get(row.plan_id) : null;
+        return {
+            id: row.id,
+            phone: row.phone,
+            orderType: row.order_type,
+            planId: row.plan_id || '',
+            planName: plan?.name || '',
+            amountCents: row.amount_cents,
+            quotaUsdMicros: row.quota_usd_micros,
+            paymentMethod: row.payment_method,
+            paymentNote: row.payment_note || '',
+            status: row.status,
+            createdAt: row.created_at,
+            confirmedAt: row.confirmed_at || '',
+            confirmedByPhone: row.confirmed_by_phone || '',
+            adminNote: row.admin_note || ''
+        };
+    }
+
+    function publicSubscriptionRefundRequest(row) {
+        if (!row) return null;
+        const plan = row.plan_id ? getSubscriptionPlanById.get(row.plan_id) : null;
+        return {
+            id: row.id,
+            phone: row.phone,
+            subscriptionId: row.subscription_id,
+            planId: row.plan_id,
+            planName: row.plan_name || plan?.name || '',
+            planAmountCents: row.plan_amount_cents,
+            periodDays: row.period_days,
+            remainingDays: row.remaining_days,
+            refundAmountCents: row.refund_amount_cents,
+            status: row.status,
+            startedAt: row.started_at || '',
+            expiresAt: row.expires_at || '',
+            createdAt: row.created_at,
+            confirmedAt: row.confirmed_at || '',
+            confirmedByPhone: row.confirmed_by_phone || '',
+            adminNote: row.admin_note || ''
+        };
+    }
+
+    function publicAccountSubscription(row) {
+        if (!row) return null;
+        return {
+            id: row.id,
+            phone: row.phone,
+            planId: row.plan_id,
+            planName: row.plan_name,
+            monthlyPriceCents: row.monthly_price_cents,
+            dailyQuotaUsdMicros: row.daily_quota_usd_micros,
+            periodDays: row.period_days,
+            status: row.status,
+            startedAt: row.started_at,
+            expiresAt: row.expires_at
+        };
+    }
+
+    function publicAddonLedgerEntry(row) {
+        return {
+            id: row.id,
+            phone: row.phone,
+            entryType: row.entry_type,
+            amountUsdMicros: row.amount_usd_micros,
+            balanceAfterUsdMicros: row.balance_after_usd_micros,
+            relatedId: row.related_id || '',
+            memo: row.memo || '',
+            createdAt: row.created_at,
+            createdByPhone: row.created_by_phone || ''
+        };
+    }
+
+    function publicUsdChargeRecord(row) {
+        return {
+            id: row.id,
+            phone: row.phone,
+            usageEventId: row.usage_event_id,
+            apiKeyHash: row.api_key_hash,
+            model: row.model || 'unknown',
+            inputTokens: row.input_tokens,
+            outputTokens: row.output_tokens,
+            cacheHitInputTokens: row.cache_hit_input_tokens,
+            cacheMissInputTokens: row.cache_miss_input_tokens,
+            reasoningTokens: row.reasoning_tokens,
+            totalTokens: row.total_tokens,
+            officialPriceVersion: row.official_price_version,
+            chargeUsdMicros: row.charge_usd_micros,
+            dailyQuotaBeforeUsdMicros: row.daily_quota_before_usd_micros,
+            dailyQuotaDeductedUsdMicros: row.daily_quota_deducted_usd_micros,
+            dailyQuotaAfterUsdMicros: row.daily_quota_after_usd_micros,
+            addonBalanceBeforeUsdMicros: row.addon_balance_before_usd_micros,
+            addonDeductedUsdMicros: row.addon_deducted_usd_micros,
+            addonBalanceAfterUsdMicros: row.addon_balance_after_usd_micros,
+            overrunUsdMicros: row.overrun_usd_micros,
+            quotaDate: row.quota_date,
+            status: row.status,
+            createdAt: row.created_at
+        };
+    }
+
+    function accountSubscriptionQuotaStatus(phone, date = appNow()) {
+        const quotaDate = chinaDateKey(date);
+        const addonBalance = ensureAddonBalance(phone);
+        const checkedAt = nowIso(date);
+        const subscription = getActiveSubscriptionWithPlanByPhone.get(phone, checkedAt, checkedAt);
+        const addonBalanceUsdMicros = Number(addonBalance?.balance_usd_micros || 0);
+        if (!subscription) {
+            return {
+                active: false,
+                code: 'subscription_required',
+                quotaDate,
+                dailyQuotaUsdMicros: 0,
+                dailyUsedUsdMicros: 0,
+                dailyRemainingUsdMicros: 0,
+                addonBalanceUsdMicros,
+                remainingUsdMicros: 0
+            };
+        }
+        const dailyQuotaUsdMicros = Number(subscription.daily_quota_usd_micros || 0);
+        const dailyUsedUsdMicros = Number(sumDailyQuotaDeductedByPhoneAndDate.get(phone, quotaDate)?.amount || 0);
+        const dailyRemainingUsdMicros = Math.max(0, dailyQuotaUsdMicros - dailyUsedUsdMicros);
+        const remainingUsdMicros = dailyRemainingUsdMicros + addonBalanceUsdMicros;
+        return {
+            active: remainingUsdMicros > 0,
+            code: remainingUsdMicros > 0 ? 'active' : 'daily_quota_exhausted',
+            quotaDate,
+            dailyQuotaUsdMicros,
+            dailyUsedUsdMicros,
+            dailyRemainingUsdMicros,
+            addonBalanceUsdMicros,
+            remainingUsdMicros,
+            subscription: publicAccountSubscription(subscription)
+        };
+    }
+
+    function buildAccountSubscriptionState(phone) {
+        const quota = accountSubscriptionQuotaStatus(phone);
+        const subscription = quota.subscription || null;
+        return {
+            plans: listSubscriptionPlans.all().map(publicSubscriptionPlan),
+            addonPackages: addonPackages.map((item) => ({
+                amountCents: item.amountCents,
+                quotaUsdMicros: item.quotaUsdMicros
+            })),
+            subscription,
+            quota: {
+                quotaDate: quota.quotaDate,
+                dailyQuotaUsdMicros: quota.dailyQuotaUsdMicros,
+                dailyUsedUsdMicros: quota.dailyUsedUsdMicros,
+                dailyRemainingUsdMicros: quota.dailyRemainingUsdMicros,
+                addonBalanceUsdMicros: quota.addonBalanceUsdMicros,
+                remainingUsdMicros: quota.remainingUsdMicros,
+                active: quota.active,
+                code: quota.code
+            },
+            payment: accountPaymentConfig(phone)
+        };
     }
 
     function publicAccountBalance(row) {
@@ -1452,6 +1790,304 @@ SELECT phone, balance_cents, balance_nanos, pending_topup_cents, pending_topup_n
        credit_limit_cents, credit_limit_nanos, updated_at
 FROM account_balances
 WHERE phone = ?
+`);
+
+    const getSubscriptionPlanById = db.prepare(`
+SELECT id, name, monthly_price_cents, daily_quota_usd_micros, period_days, status, created_at, updated_at
+FROM subscription_plans
+WHERE id = ? AND status = 'active'
+`);
+
+    const listSubscriptionPlans = db.prepare(`
+SELECT id, name, monthly_price_cents, daily_quota_usd_micros, period_days, status, created_at, updated_at
+FROM subscription_plans
+WHERE status = 'active'
+ORDER BY monthly_price_cents ASC
+`);
+
+    const insertSubscriptionOrder = db.prepare(`
+INSERT INTO subscription_orders (
+  id, phone, order_type, plan_id, amount_cents, quota_usd_micros, payment_method,
+  payment_note, status, created_at
+)
+VALUES (
+  @id, @phone, @orderType, @planId, @amountCents, @quotaUsdMicros, @paymentMethod,
+  @paymentNote, 'pending', @createdAt
+)
+`);
+
+    const getSubscriptionOrderById = db.prepare(`
+SELECT id, phone, order_type, plan_id, amount_cents, quota_usd_micros, payment_method,
+       payment_note, status, created_at, confirmed_at, confirmed_by_phone, admin_note
+FROM subscription_orders
+WHERE id = ?
+`);
+
+    const listSubscriptionOrdersByPhoneAndType = db.prepare(`
+SELECT id, phone, order_type, plan_id, amount_cents, quota_usd_micros, payment_method,
+       payment_note, status, created_at, confirmed_at, confirmed_by_phone, admin_note
+FROM subscription_orders
+WHERE phone = ? AND order_type = ?
+ORDER BY created_at DESC
+LIMIT ?
+`);
+
+    const listSubscriptionOrdersForAdmin = db.prepare(`
+SELECT id, phone, order_type, plan_id, amount_cents, quota_usd_micros, payment_method,
+       payment_note, status, created_at, confirmed_at, confirmed_by_phone, admin_note
+FROM subscription_orders
+WHERE order_type = ? AND (? = 'all' OR status = ?)
+ORDER BY created_at DESC
+LIMIT ?
+`);
+
+    const approveSubscriptionOrderById = db.prepare(`
+UPDATE subscription_orders
+SET status = 'approved',
+    confirmed_at = ?,
+    confirmed_by_phone = ?,
+    admin_note = ?
+WHERE id = ? AND status = 'pending'
+`);
+
+    const rejectSubscriptionOrderById = db.prepare(`
+UPDATE subscription_orders
+SET status = 'rejected',
+    confirmed_at = ?,
+    confirmed_by_phone = ?,
+    admin_note = ?
+WHERE id = ? AND status = 'pending'
+`);
+
+    const getActiveSubscriptionWithPlanByPhone = db.prepare(`
+SELECT s.id, s.phone, s.plan_id, s.status, s.started_at, s.expires_at, s.created_at, s.updated_at,
+       p.name AS plan_name, p.monthly_price_cents, p.daily_quota_usd_micros, p.period_days
+FROM account_subscriptions s
+JOIN subscription_plans p ON p.id = s.plan_id
+WHERE s.phone = ?
+  AND s.status = 'active'
+  AND datetime(s.started_at) <= datetime(?)
+  AND datetime(s.expires_at) > datetime(?)
+ORDER BY s.expires_at DESC
+LIMIT 1
+`);
+
+    const getAnyActiveSubscriptionByPhone = db.prepare(`
+SELECT id, phone, plan_id, status, started_at, expires_at, created_at, updated_at
+FROM account_subscriptions
+WHERE phone = ? AND status = 'active'
+ORDER BY expires_at DESC
+LIMIT 1
+`);
+
+    const insertAccountSubscription = db.prepare(`
+INSERT INTO account_subscriptions (
+  id, phone, plan_id, status, started_at, expires_at, created_at, updated_at
+)
+VALUES (
+  @id, @phone, @planId, 'active', @startedAt, @expiresAt, @createdAt, @updatedAt
+)
+`);
+
+    const updateAccountSubscriptionPlan = db.prepare(`
+UPDATE account_subscriptions
+SET plan_id = @planId,
+    expires_at = @expiresAt,
+    updated_at = @updatedAt
+WHERE id = @id
+`);
+
+    const getAccountSubscriptionWithPlanById = db.prepare(`
+SELECT s.id, s.phone, s.plan_id, s.status, s.started_at, s.expires_at, s.created_at, s.updated_at,
+       p.name AS plan_name, p.monthly_price_cents, p.daily_quota_usd_micros, p.period_days
+FROM account_subscriptions s
+JOIN subscription_plans p ON p.id = s.plan_id
+WHERE s.id = ?
+`);
+
+    const cancelAccountSubscriptionById = db.prepare(`
+UPDATE account_subscriptions
+SET status = 'cancelled',
+    updated_at = ?
+WHERE id = ? AND status = 'active'
+`);
+
+    const insertSubscriptionRefundRequest = db.prepare(`
+INSERT INTO subscription_refund_requests (
+  id, phone, subscription_id, plan_id, plan_amount_cents, period_days,
+  remaining_days, refund_amount_cents, status, created_at
+)
+VALUES (
+  @id, @phone, @subscriptionId, @planId, @planAmountCents, @periodDays,
+  @remainingDays, @refundAmountCents, 'pending', @createdAt
+)
+`);
+
+    const getSubscriptionRefundRequestById = db.prepare(`
+SELECT r.id, r.phone, r.subscription_id, r.plan_id, r.plan_amount_cents, r.period_days,
+       r.remaining_days, r.refund_amount_cents, r.status, r.created_at,
+       r.confirmed_at, r.confirmed_by_phone, r.admin_note,
+       s.started_at, s.expires_at, p.name AS plan_name
+FROM subscription_refund_requests r
+LEFT JOIN account_subscriptions s ON s.id = r.subscription_id
+LEFT JOIN subscription_plans p ON p.id = r.plan_id
+WHERE r.id = ?
+`);
+
+    const getPendingSubscriptionRefundBySubscriptionId = db.prepare(`
+SELECT r.id, r.phone, r.subscription_id, r.plan_id, r.plan_amount_cents, r.period_days,
+       r.remaining_days, r.refund_amount_cents, r.status, r.created_at,
+       r.confirmed_at, r.confirmed_by_phone, r.admin_note,
+       s.started_at, s.expires_at, p.name AS plan_name
+FROM subscription_refund_requests r
+LEFT JOIN account_subscriptions s ON s.id = r.subscription_id
+LEFT JOIN subscription_plans p ON p.id = r.plan_id
+WHERE r.subscription_id = ? AND r.status = 'pending'
+LIMIT 1
+`);
+
+    const listSubscriptionRefundRequestsByPhone = db.prepare(`
+SELECT r.id, r.phone, r.subscription_id, r.plan_id, r.plan_amount_cents, r.period_days,
+       r.remaining_days, r.refund_amount_cents, r.status, r.created_at,
+       r.confirmed_at, r.confirmed_by_phone, r.admin_note,
+       s.started_at, s.expires_at, p.name AS plan_name
+FROM subscription_refund_requests r
+LEFT JOIN account_subscriptions s ON s.id = r.subscription_id
+LEFT JOIN subscription_plans p ON p.id = r.plan_id
+WHERE r.phone = ?
+ORDER BY r.created_at DESC, r.rowid DESC
+LIMIT ?
+`);
+
+    const listSubscriptionRefundRequestsForAdmin = db.prepare(`
+SELECT r.id, r.phone, r.subscription_id, r.plan_id, r.plan_amount_cents, r.period_days,
+       r.remaining_days, r.refund_amount_cents, r.status, r.created_at,
+       r.confirmed_at, r.confirmed_by_phone, r.admin_note,
+       s.started_at, s.expires_at, p.name AS plan_name
+FROM subscription_refund_requests r
+LEFT JOIN account_subscriptions s ON s.id = r.subscription_id
+LEFT JOIN subscription_plans p ON p.id = r.plan_id
+WHERE (? = 'all' OR r.status = ?)
+ORDER BY r.created_at DESC, r.rowid DESC
+LIMIT ?
+`);
+
+    const approveSubscriptionRefundById = db.prepare(`
+UPDATE subscription_refund_requests
+SET status = 'approved',
+    confirmed_at = ?,
+    confirmed_by_phone = ?,
+    admin_note = ?
+WHERE id = ? AND status = 'pending'
+`);
+
+    const rejectSubscriptionRefundById = db.prepare(`
+UPDATE subscription_refund_requests
+SET status = 'rejected',
+    confirmed_at = ?,
+    confirmed_by_phone = ?,
+    admin_note = ?
+WHERE id = ? AND status = 'pending'
+`);
+
+    const ensureAddonBalanceRow = db.prepare(`
+INSERT INTO account_addon_balances (phone, balance_usd_micros, updated_at)
+VALUES (?, 0, ?)
+ON CONFLICT(phone) DO NOTHING
+`);
+
+    const getAddonBalanceRow = db.prepare(`
+SELECT phone, balance_usd_micros, updated_at
+FROM account_addon_balances
+WHERE phone = ?
+`);
+
+    const updateAddonBalance = db.prepare(`
+UPDATE account_addon_balances
+SET balance_usd_micros = ?,
+    updated_at = ?
+WHERE phone = ?
+`);
+
+    const insertAddonLedgerEntry = db.prepare(`
+INSERT INTO account_addon_ledger_entries (
+  id, phone, entry_type, amount_usd_micros, balance_after_usd_micros,
+  related_id, memo, created_at, created_by_phone
+)
+VALUES (
+  @id, @phone, @entryType, @amountUsdMicros, @balanceAfterUsdMicros,
+  @relatedId, @memo, @createdAt, @createdByPhone
+)
+`);
+
+    const listAddonLedgerByPhone = db.prepare(`
+SELECT id, phone, entry_type, amount_usd_micros, balance_after_usd_micros,
+       related_id, memo, created_at, created_by_phone
+FROM account_addon_ledger_entries
+WHERE phone = ?
+ORDER BY created_at DESC, rowid DESC
+LIMIT ?
+`);
+
+    const sumDailyQuotaDeductedByPhoneAndDate = db.prepare(`
+SELECT COALESCE(SUM(daily_quota_deducted_usd_micros), 0) AS amount
+FROM api_usd_charge_records
+WHERE phone = ? AND quota_date = ? AND status = 'charged'
+`);
+
+    const getUsdChargeByUsageEventId = db.prepare(`
+SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+       cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+       official_price_version, charge_usd_micros, daily_quota_before_usd_micros,
+       daily_quota_deducted_usd_micros, daily_quota_after_usd_micros,
+       addon_balance_before_usd_micros, addon_deducted_usd_micros,
+       addon_balance_after_usd_micros, overrun_usd_micros, quota_date, status, created_at
+FROM api_usd_charge_records
+WHERE usage_event_id = ?
+`);
+
+    const insertUsdChargeRecord = db.prepare(`
+INSERT INTO api_usd_charge_records (
+  id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+  cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+  official_price_version, charge_usd_micros, daily_quota_before_usd_micros,
+  daily_quota_deducted_usd_micros, daily_quota_after_usd_micros,
+  addon_balance_before_usd_micros, addon_deducted_usd_micros,
+  addon_balance_after_usd_micros, overrun_usd_micros, quota_date, status, created_at
+)
+VALUES (
+  @id, @phone, @usageEventId, @apiKeyHash, @model, @inputTokens, @outputTokens,
+  @cacheHitInputTokens, @cacheMissInputTokens, @reasoningTokens, @totalTokens,
+  @officialPriceVersion, @chargeUsdMicros, @dailyQuotaBeforeUsdMicros,
+  @dailyQuotaDeductedUsdMicros, @dailyQuotaAfterUsdMicros,
+  @addonBalanceBeforeUsdMicros, @addonDeductedUsdMicros,
+  @addonBalanceAfterUsdMicros, @overrunUsdMicros, @quotaDate, @status, @createdAt
+)
+`);
+
+    const listUsdChargesByPhone = db.prepare(`
+SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+       cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+       official_price_version, charge_usd_micros, daily_quota_before_usd_micros,
+       daily_quota_deducted_usd_micros, daily_quota_after_usd_micros,
+       addon_balance_before_usd_micros, addon_deducted_usd_micros,
+       addon_balance_after_usd_micros, overrun_usd_micros, quota_date, status, created_at
+FROM api_usd_charge_records
+WHERE phone = ?
+ORDER BY created_at DESC, rowid DESC
+LIMIT ?
+`);
+
+    const listUsdChargesForAdmin = db.prepare(`
+SELECT id, phone, usage_event_id, api_key_hash, model, input_tokens, output_tokens,
+       cache_hit_input_tokens, cache_miss_input_tokens, reasoning_tokens, total_tokens,
+       official_price_version, charge_usd_micros, daily_quota_before_usd_micros,
+       daily_quota_deducted_usd_micros, daily_quota_after_usd_micros,
+       addon_balance_before_usd_micros, addon_deducted_usd_micros,
+       addon_balance_after_usd_micros, overrun_usd_micros, quota_date, status, created_at
+FROM api_usd_charge_records
+ORDER BY created_at DESC, rowid DESC
+LIMIT ?
 `);
 
     const listUsersForAdminBalances = db.prepare(`
@@ -2080,6 +2716,303 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         };
     });
 
+    function createSubscriptionOrder({ phone, planId, paymentMethod, paymentNote }) {
+        const plan = subscriptionPlanById(planId) || getSubscriptionPlanById.get(planId);
+        if (!plan) {
+            const error = new Error('请选择有效套餐。');
+            error.status = 400;
+            error.code = 'INVALID_SUBSCRIPTION_PLAN';
+            throw error;
+        }
+        ensureUser.run(phone, nowIso());
+        const checkedAt = nowIso(appNow());
+        const subscription = getActiveSubscriptionWithPlanByPhone.get(phone, checkedAt, checkedAt);
+        if (subscription) {
+            const error = new Error('您当前已经有套餐了。');
+            error.status = 409;
+            error.code = 'ACTIVE_SUBSCRIPTION_EXISTS';
+            throw error;
+        }
+        const order = {
+            id: createId('SUB'),
+            phone,
+            orderType: 'subscription',
+            planId: plan.id,
+            amountCents: plan.monthlyPriceCents ?? plan.monthly_price_cents,
+            quotaUsdMicros: plan.dailyQuotaUsdMicros ?? plan.daily_quota_usd_micros,
+            paymentMethod: normalizePaymentMethod(paymentMethod),
+            paymentNote: String(paymentNote || '').trim().slice(0, 500),
+            createdAt: nowIso()
+        };
+        insertSubscriptionOrder.run(order);
+        return getSubscriptionOrderById.get(order.id);
+    }
+
+    function createAddonOrder({ phone, amount, paymentMethod, paymentNote }) {
+        const amountCents = parsePositiveCnyToCents(amount);
+        const addon = addonPackageByAmountCents(amountCents);
+        if (!addon) {
+            const error = new Error('请选择有效加量包。');
+            error.status = 400;
+            error.code = 'INVALID_ADDON_PACKAGE';
+            throw error;
+        }
+        ensureUser.run(phone, nowIso());
+        const checkedAt = nowIso(appNow());
+        const subscription = getActiveSubscriptionWithPlanByPhone.get(phone, checkedAt, checkedAt);
+        if (!subscription) {
+            const error = new Error('请先开通套餐，再购买加量包。');
+            error.status = 409;
+            error.code = 'SUBSCRIPTION_REQUIRED_FOR_ADDON';
+            throw error;
+        }
+        ensureAddonBalance(phone);
+        const order = {
+            id: createId('ADDON'),
+            phone,
+            orderType: 'addon',
+            planId: '',
+            amountCents: addon.amountCents,
+            quotaUsdMicros: addon.quotaUsdMicros,
+            paymentMethod: normalizePaymentMethod(paymentMethod),
+            paymentNote: String(paymentNote || '').trim().slice(0, 500),
+            createdAt: nowIso()
+        };
+        insertSubscriptionOrder.run(order);
+        return getSubscriptionOrderById.get(order.id);
+    }
+
+    function calculateSubscriptionRefundSnapshot(subscription, date = appNow()) {
+        const periodDays = Math.max(1, Number(subscription.period_days || 30));
+        const planAmountCents = Math.max(0, Number(subscription.monthly_price_cents || 0));
+        const expiresAt = new Date(subscription.expires_at);
+        const now = new Date(date);
+        const remainingMs = Number.isFinite(expiresAt.getTime()) && Number.isFinite(now.getTime())
+            ? Math.max(0, expiresAt.getTime() - now.getTime())
+            : 0;
+        const remainingDays = Math.min(periodDays, Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000))));
+        return {
+            planAmountCents,
+            periodDays,
+            remainingDays,
+            refundAmountCents: Math.floor((planAmountCents * remainingDays) / periodDays)
+        };
+    }
+
+    function createSubscriptionRefundRequest({ phone }) {
+        const checkedAt = nowIso(appNow());
+        const subscription = getActiveSubscriptionWithPlanByPhone.get(phone, checkedAt, checkedAt);
+        if (!subscription) {
+            const error = new Error('当前没有可退款的有效套餐。');
+            error.status = 409;
+            error.code = 'ACTIVE_SUBSCRIPTION_REQUIRED_FOR_REFUND';
+            throw error;
+        }
+        const pending = getPendingSubscriptionRefundBySubscriptionId.get(subscription.id);
+        if (pending) {
+            const error = new Error('您已有待审核退款申请。');
+            error.status = 409;
+            error.code = 'REFUND_REQUEST_PENDING';
+            throw error;
+        }
+        const snapshot = calculateSubscriptionRefundSnapshot(subscription, appNow());
+        const request = {
+            id: createId('REFUND'),
+            phone,
+            subscriptionId: subscription.id,
+            planId: subscription.plan_id,
+            planAmountCents: snapshot.planAmountCents,
+            periodDays: snapshot.periodDays,
+            remainingDays: snapshot.remainingDays,
+            refundAmountCents: snapshot.refundAmountCents,
+            createdAt: nowIso(appNow())
+        };
+        try {
+            insertSubscriptionRefundRequest.run(request);
+        } catch (error) {
+            if (String(error?.message || '').includes('UNIQUE')) {
+                const conflict = new Error('您已有待审核退款申请。');
+                conflict.status = 409;
+                conflict.code = 'REFUND_REQUEST_PENDING';
+                throw conflict;
+            }
+            throw error;
+        }
+        return getSubscriptionRefundRequestById.get(request.id);
+    }
+
+    const approveSubscriptionOrder = db.transaction(({ id, adminNote, adminPhone }) => {
+        const row = getSubscriptionOrderById.get(id);
+        if (!row || row.order_type !== 'subscription' || row.status !== 'pending') {
+            const error = new Error('订阅订单不是待确认状态。');
+            error.status = 409;
+            error.code = 'SUBSCRIPTION_ORDER_NOT_PENDING';
+            throw error;
+        }
+        const plan = getSubscriptionPlanById.get(row.plan_id);
+        if (!plan) {
+            const error = new Error('套餐不存在。');
+            error.status = 400;
+            error.code = 'SUBSCRIPTION_PLAN_NOT_FOUND';
+            throw error;
+        }
+        const now = appNow();
+        const nowText = nowIso(now);
+        const activeSubscription = getActiveSubscriptionWithPlanByPhone.get(row.phone, nowText, nowText);
+        if (activeSubscription) {
+            const error = new Error('您当前已经有套餐了。');
+            error.status = 409;
+            error.code = 'ACTIVE_SUBSCRIPTION_EXISTS';
+            throw error;
+        }
+        const current = getAnyActiveSubscriptionByPhone.get(row.phone);
+        const currentExpires = current ? new Date(current.expires_at) : null;
+        const base = currentExpires && currentExpires > now ? currentExpires : now;
+        const expiresAt = nowIso(addDays(base, Number(plan.period_days || 30)));
+        const result = approveSubscriptionOrderById.run(nowText, adminPhone, adminNote, id);
+        if (result.changes !== 1) {
+            const error = new Error('订阅订单确认失败。');
+            error.status = 409;
+            error.code = 'SUBSCRIPTION_ORDER_NOT_PENDING';
+            throw error;
+        }
+        if (current) {
+            updateAccountSubscriptionPlan.run({
+                id: current.id,
+                planId: plan.id,
+                expiresAt,
+                updatedAt: nowText
+            });
+        } else {
+            insertAccountSubscription.run({
+                id: createId('SUBSCRIPTION'),
+                phone: row.phone,
+                planId: plan.id,
+                startedAt: nowText,
+                expiresAt,
+                createdAt: nowText,
+                updatedAt: nowText
+            });
+        }
+        return {
+            order: getSubscriptionOrderById.get(id),
+            subscription: getActiveSubscriptionWithPlanByPhone.get(row.phone, nowText, nowText)
+        };
+    });
+
+    const approveAddonOrder = db.transaction(({ id, adminNote, adminPhone }) => {
+        const row = getSubscriptionOrderById.get(id);
+        if (!row || row.order_type !== 'addon' || row.status !== 'pending') {
+            const error = new Error('加量包订单不是待确认状态。');
+            error.status = 409;
+            error.code = 'ADDON_ORDER_NOT_PENDING';
+            throw error;
+        }
+        const now = nowIso(appNow());
+        const balance = ensureAddonBalance(row.phone);
+        const nextBalanceUsdMicros = Number(balance.balance_usd_micros || 0) + Number(row.quota_usd_micros || 0);
+        const result = approveSubscriptionOrderById.run(now, adminPhone, adminNote, id);
+        if (result.changes !== 1) {
+            const error = new Error('加量包订单确认失败。');
+            error.status = 409;
+            error.code = 'ADDON_ORDER_NOT_PENDING';
+            throw error;
+        }
+        updateAddonBalance.run(nextBalanceUsdMicros, now, row.phone);
+        insertAddonLedgerEntry.run({
+            id: createId('ADDLEDGER'),
+            phone: row.phone,
+            entryType: 'addon_purchase',
+            amountUsdMicros: row.quota_usd_micros,
+            balanceAfterUsdMicros: nextBalanceUsdMicros,
+            relatedId: id,
+            memo: adminNote,
+            createdAt: now,
+            createdByPhone: adminPhone
+        });
+        return {
+            order: getSubscriptionOrderById.get(id),
+            addonBalance: getAddonBalanceRow.get(row.phone)
+        };
+    });
+
+    const approveSubscriptionRefundRequest = db.transaction(({ id, adminNote, adminPhone }) => {
+        const row = getSubscriptionRefundRequestById.get(id);
+        if (!row || row.status !== 'pending') {
+            const error = new Error('退款申请不是待确认状态。');
+            error.status = 409;
+            error.code = 'REFUND_REQUEST_NOT_PENDING';
+            throw error;
+        }
+        const subscription = getAccountSubscriptionWithPlanById.get(row.subscription_id);
+        if (!subscription || subscription.status !== 'active') {
+            const error = new Error('当前套餐已经不可退款。');
+            error.status = 409;
+            error.code = 'SUBSCRIPTION_NOT_ACTIVE_FOR_REFUND';
+            throw error;
+        }
+        const now = nowIso(appNow());
+        const cancelResult = cancelAccountSubscriptionById.run(now, row.subscription_id);
+        if (cancelResult.changes !== 1) {
+            const error = new Error('套餐取消失败。');
+            error.status = 409;
+            error.code = 'SUBSCRIPTION_CANCEL_FAILED';
+            throw error;
+        }
+        const approveResult = approveSubscriptionRefundById.run(now, adminPhone, adminNote, id);
+        if (approveResult.changes !== 1) {
+            const error = new Error('退款申请确认失败。');
+            error.status = 409;
+            error.code = 'REFUND_REQUEST_NOT_PENDING';
+            throw error;
+        }
+        return {
+            refundRequest: getSubscriptionRefundRequestById.get(id),
+            subscription: getAccountSubscriptionWithPlanById.get(row.subscription_id)
+        };
+    });
+
+    const rejectSubscriptionRefundRequest = db.transaction(({ id, adminNote, adminPhone }) => {
+        const row = getSubscriptionRefundRequestById.get(id);
+        if (!row || row.status !== 'pending') {
+            const error = new Error('退款申请不是待确认状态。');
+            error.status = 409;
+            error.code = 'REFUND_REQUEST_NOT_PENDING';
+            throw error;
+        }
+        const now = nowIso(appNow());
+        const result = rejectSubscriptionRefundById.run(now, adminPhone, adminNote, id);
+        if (result.changes !== 1) {
+            const error = new Error('退款申请拒绝失败。');
+            error.status = 409;
+            error.code = 'REFUND_REQUEST_NOT_PENDING';
+            throw error;
+        }
+        return {
+            refundRequest: getSubscriptionRefundRequestById.get(id),
+            subscription: getAccountSubscriptionWithPlanById.get(row.subscription_id)
+        };
+    });
+
+    const rejectSubscriptionOrder = db.transaction(({ id, orderType, adminNote, adminPhone }) => {
+        const row = getSubscriptionOrderById.get(id);
+        if (!row || row.order_type !== orderType || row.status !== 'pending') {
+            const error = new Error('订单不是待确认状态。');
+            error.status = 409;
+            error.code = 'SUBSCRIPTION_ORDER_NOT_PENDING';
+            throw error;
+        }
+        const now = nowIso(appNow());
+        const result = rejectSubscriptionOrderById.run(now, adminPhone, adminNote, id);
+        if (result.changes !== 1) {
+            const error = new Error('订单拒绝失败。');
+            error.status = 409;
+            error.code = 'SUBSCRIPTION_ORDER_NOT_PENDING';
+            throw error;
+        }
+        return getSubscriptionOrderById.get(id);
+    });
+
     function chargeNanosFromUsageEvent(event) {
         return priceUsageTokens(event);
     }
@@ -2105,6 +3038,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
         const balanceRow = ensureAccountBalance(owner.phone);
         const pricing = chargeNanosFromUsageEvent(event);
+        const usdPricing = priceOfficialUsageUsd(event);
         const balanceBeforeNanos = Number(balanceRow.balance_nanos || 0);
         const balanceAfterNanos = balanceBeforeNanos - pricing.chargeNanos;
         const balanceBeforeCents = nanosToBalanceCents(balanceBeforeNanos);
@@ -2148,8 +3082,53 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
                 relatedId: event.requestId,
                 memo: `${event.model || 'unknown'} API 调用扣费`,
                 createdAt: now,
-                createdByPhone: ''
+            createdByPhone: ''
             });
+        }
+        if (!getUsdChargeByUsageEventId.get(event.requestId)) {
+            const usageDate = new Date(event.requestedAt || now);
+            const quotaDate = chinaDateKey(usageDate);
+            const quota = accountSubscriptionQuotaStatus(owner.phone, usageDate);
+            if (quota.subscription) {
+                const split = splitUsdChargeByQuota({
+                    chargeUsdMicros: usdPricing.chargeUsdMicros,
+                    dailyRemainingUsdMicros: quota.dailyRemainingUsdMicros,
+                    addonBalanceUsdMicros: quota.addonBalanceUsdMicros
+                });
+                insertUsdChargeRecord.run({
+                    id: createId('USDCHARGE'),
+                    phone: owner.phone,
+                    usageEventId: event.requestId,
+                    apiKeyHash: event.apiKeyHash,
+                    model: event.model,
+                    inputTokens: event.inputTokens,
+                    outputTokens: event.outputTokens,
+                    cacheHitInputTokens: event.cacheHitInputTokens,
+                    cacheMissInputTokens: event.cacheMissInputTokens,
+                    reasoningTokens: event.reasoningTokens,
+                    totalTokens: event.totalTokens,
+                    officialPriceVersion: usdPricing.officialPriceVersion,
+                    chargeUsdMicros: usdPricing.chargeUsdMicros,
+                    ...split,
+                    quotaDate,
+                    status: usdPricing.status,
+                    createdAt: now
+                });
+                if (split.addonDeductedUsdMicros > 0) {
+                    updateAddonBalance.run(split.addonBalanceAfterUsdMicros, now, owner.phone);
+                    insertAddonLedgerEntry.run({
+                        id: createId('ADDLEDGER'),
+                        phone: owner.phone,
+                        entryType: 'api_charge',
+                        amountUsdMicros: -split.addonDeductedUsdMicros,
+                        balanceAfterUsdMicros: split.addonBalanceAfterUsdMicros,
+                        relatedId: event.requestId,
+                        memo: `${event.model || 'unknown'} API 调用消耗加量包`,
+                        createdAt: now,
+                        createdByPhone: ''
+                    });
+                }
+            }
         }
         appendChargeAuditLog({
             source: 'realtime',
@@ -2692,6 +3671,48 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         };
     }
 
+    function buildAdminSubscriptionUsers(filters = {}) {
+        const q = String(filters.q || '').trim().toLowerCase();
+        const limit = Math.min(Math.max(Number(filters.limit || 100), 1), 500);
+        const items = listUsersForAdminBalances.all(adminAccountPhone)
+            .map((user) => {
+                const quota = accountSubscriptionQuotaStatus(user.phone);
+                const subscription = quota.subscription || null;
+                return {
+                    phone: user.phone,
+                    planId: subscription?.planId || '',
+                    planName: subscription?.planName || '',
+                    expiresAt: subscription?.expiresAt || '',
+                    active: quota.active,
+                    status: quota.code,
+                    quotaDate: quota.quotaDate,
+                    dailyQuotaUsdMicros: quota.dailyQuotaUsdMicros,
+                    dailyUsedUsdMicros: quota.dailyUsedUsdMicros,
+                    dailyRemainingUsdMicros: quota.dailyRemainingUsdMicros,
+                    addonBalanceUsdMicros: quota.addonBalanceUsdMicros,
+                    remainingUsdMicros: quota.remainingUsdMicros
+                };
+            })
+            .filter((item) => {
+                if (!q) return true;
+                return [item.phone, item.planId, item.planName, item.status].some((value) => String(value || '').toLowerCase().includes(q));
+            })
+            .sort((left, right) => {
+                if (right.remainingUsdMicros !== left.remainingUsdMicros) return right.remainingUsdMicros - left.remainingUsdMicros;
+                return left.phone.localeCompare(right.phone);
+            })
+            .slice(0, limit);
+        return {
+            summary: {
+                userCount: items.length,
+                activeUserCount: items.filter((item) => item.active).length,
+                exhaustedUserCount: items.filter((item) => item.status === 'daily_quota_exhausted').length,
+                addonBalanceUsdMicros: items.reduce((sum, item) => sum + Number(item.addonBalanceUsdMicros || 0), 0)
+            },
+            items
+        };
+    }
+
     function buildAdminAccountBalances(filters = {}) {
         for (const user of listUsersForAdminBalances.all(adminAccountPhone)) {
             ensureAccountBalance(user.phone);
@@ -3062,6 +4083,86 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         });
     });
 
+    app.get('/api/account/subscription-state', limitQueryApi, requireAccount, (req, res) => {
+        return res.json(buildAccountSubscriptionState(req.account.phone));
+    });
+
+    app.post('/api/account/subscription-orders', limitQueryApi, requireSameOrigin, requireAccount, requireAccountCsrf, (req, res) => {
+        try {
+            const order = createSubscriptionOrder({
+                phone: req.account.phone,
+                planId: String(req.body.planId || req.body.plan_id || '').trim(),
+                paymentMethod: req.body.paymentMethod || req.body.payment_method,
+                paymentNote: req.body.paymentNote || req.body.payment_note
+            });
+            return res.status(201).json({ order: publicSubscriptionOrder(order) });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'SUBSCRIPTION_ORDER_FAILED',
+                message: error.message || '订阅订单提交失败。'
+            });
+        }
+    });
+
+    app.get('/api/account/subscription-orders', limitQueryApi, requireAccount, (req, res) => {
+        const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 100);
+        const orders = listSubscriptionOrdersByPhoneAndType.all(req.account.phone, 'subscription', limit).map(publicSubscriptionOrder);
+        return res.json({ orders });
+    });
+
+    app.post('/api/account/addon-orders', limitQueryApi, requireSameOrigin, requireAccount, requireAccountCsrf, (req, res) => {
+        try {
+            const order = createAddonOrder({
+                phone: req.account.phone,
+                amount: req.body.amount,
+                paymentMethod: req.body.paymentMethod || req.body.payment_method,
+                paymentNote: req.body.paymentNote || req.body.payment_note
+            });
+            return res.status(201).json({ order: publicSubscriptionOrder(order) });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'ADDON_ORDER_FAILED',
+                message: error.message || '加量包订单提交失败。'
+            });
+        }
+    });
+
+    app.get('/api/account/addon-orders', limitQueryApi, requireAccount, (req, res) => {
+        const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 100);
+        const orders = listSubscriptionOrdersByPhoneAndType.all(req.account.phone, 'addon', limit).map(publicSubscriptionOrder);
+        return res.json({ orders });
+    });
+
+    app.get('/api/account/usd-charges', limitQueryApi, requireAccount, (req, res) => {
+        const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
+        const charges = listUsdChargesByPhone.all(req.account.phone, limit).map(publicUsdChargeRecord);
+        return res.json({ charges });
+    });
+
+    app.get('/api/account/addon-ledger', limitQueryApi, requireAccount, (req, res) => {
+        const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
+        const entries = listAddonLedgerByPhone.all(req.account.phone, limit).map(publicAddonLedgerEntry);
+        return res.json({ entries });
+    });
+
+    app.post('/api/account/subscription-refund-requests', limitQueryApi, requireSameOrigin, requireAccount, requireAccountCsrf, (req, res) => {
+        try {
+            const refundRequest = createSubscriptionRefundRequest({ phone: req.account.phone });
+            return res.status(201).json({ refundRequest: publicSubscriptionRefundRequest(refundRequest) });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'SUBSCRIPTION_REFUND_REQUEST_FAILED',
+                message: error.message || '退款申请提交失败。'
+            });
+        }
+    });
+
+    app.get('/api/account/subscription-refund-requests', limitQueryApi, requireAccount, (req, res) => {
+        const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 100);
+        const refundRequests = listSubscriptionRefundRequestsByPhone.all(req.account.phone, limit).map(publicSubscriptionRefundRequest);
+        return res.json({ refundRequests });
+    });
+
     app.post('/api/account/topups', limitQueryApi, requireSameOrigin, requireAccount, requireAccountCsrf, (req, res) => {
         try {
             const topup = createTopupRequest({ phone: req.account.phone, body: req.body });
@@ -3177,6 +4278,108 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return res.json(buildAdminAccountBalances(req.query));
     });
 
+    app.get('/api/admin/subscription-users', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        return res.json(buildAdminSubscriptionUsers(req.query));
+    });
+
+    app.get('/api/admin/subscription-orders', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        const status = String(req.query.status || 'pending').trim();
+        const normalizedStatus = ['pending', 'approved', 'rejected', 'all'].includes(status) ? status : 'pending';
+        const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
+        const orders = listSubscriptionOrdersForAdmin.all('subscription', normalizedStatus, normalizedStatus, limit).map(publicSubscriptionOrder);
+        return res.json({ orders });
+    });
+
+    app.post('/api/admin/subscription-orders/:id/approve', limitAdminApi, requireSameOrigin, requireAdminUsageAccess, requireAccountCsrf, (req, res) => {
+        try {
+            const result = approveSubscriptionOrder({
+                id: req.params.id,
+                adminNote: String(req.body.adminNote || req.body.admin_note || '').trim().slice(0, 500),
+                adminPhone: req.account?.phone || defaultAdminAccountPhone
+            });
+            return res.json({
+                order: publicSubscriptionOrder(result.order),
+                subscription: publicAccountSubscription(result.subscription)
+            });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'SUBSCRIPTION_ORDER_APPROVE_FAILED',
+                message: error.message || '订阅订单确认失败。'
+            });
+        }
+    });
+
+    app.post('/api/admin/subscription-orders/:id/reject', limitAdminApi, requireSameOrigin, requireAdminUsageAccess, requireAccountCsrf, (req, res) => {
+        try {
+            const order = rejectSubscriptionOrder({
+                id: req.params.id,
+                orderType: 'subscription',
+                adminNote: String(req.body.adminNote || req.body.admin_note || '').trim().slice(0, 500),
+                adminPhone: req.account?.phone || defaultAdminAccountPhone
+            });
+            return res.json({ order: publicSubscriptionOrder(order) });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'SUBSCRIPTION_ORDER_REJECT_FAILED',
+                message: error.message || '订阅订单拒绝失败。'
+            });
+        }
+    });
+
+    app.get('/api/admin/addon-orders', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        const status = String(req.query.status || 'pending').trim();
+        const normalizedStatus = ['pending', 'approved', 'rejected', 'all'].includes(status) ? status : 'pending';
+        const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
+        const orders = listSubscriptionOrdersForAdmin.all('addon', normalizedStatus, normalizedStatus, limit).map(publicSubscriptionOrder);
+        return res.json({ orders });
+    });
+
+    app.post('/api/admin/addon-orders/:id/approve', limitAdminApi, requireSameOrigin, requireAdminUsageAccess, requireAccountCsrf, (req, res) => {
+        try {
+            const result = approveAddonOrder({
+                id: req.params.id,
+                adminNote: String(req.body.adminNote || req.body.admin_note || '').trim().slice(0, 500),
+                adminPhone: req.account?.phone || defaultAdminAccountPhone
+            });
+            return res.json({
+                order: publicSubscriptionOrder(result.order),
+                addonBalance: {
+                    phone: result.addonBalance.phone,
+                    balanceUsdMicros: result.addonBalance.balance_usd_micros,
+                    updatedAt: result.addonBalance.updated_at
+                }
+            });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'ADDON_ORDER_APPROVE_FAILED',
+                message: error.message || '加量包订单确认失败。'
+            });
+        }
+    });
+
+    app.post('/api/admin/addon-orders/:id/reject', limitAdminApi, requireSameOrigin, requireAdminUsageAccess, requireAccountCsrf, (req, res) => {
+        try {
+            const order = rejectSubscriptionOrder({
+                id: req.params.id,
+                orderType: 'addon',
+                adminNote: String(req.body.adminNote || req.body.admin_note || '').trim().slice(0, 500),
+                adminPhone: req.account?.phone || defaultAdminAccountPhone
+            });
+            return res.json({ order: publicSubscriptionOrder(order) });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'ADDON_ORDER_REJECT_FAILED',
+                message: error.message || '加量包订单拒绝失败。'
+            });
+        }
+    });
+
+    app.get('/api/admin/usd-charges', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        const limit = Math.min(Math.max(Number(req.query.limit || 100), 1), 500);
+        const charges = listUsdChargesForAdmin.all(limit).map(publicUsdChargeRecord);
+        return res.json({ charges });
+    });
+
     app.post('/api/admin/session-invites', limitAdminApi, requireSameOrigin, requireAdminAccount, requireAccountCsrf, (req, res) => {
         const count = Math.min(Math.max(Number(req.body.count || 1), 1), 50);
         const invites = createInvites(count);
@@ -3205,6 +4408,53 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             return res.status(error.status || 500).json({
                 code: error.code || 'API_KEY_IMPORT_FAILED',
                 message: error.message || 'API key 导入失败。'
+            });
+        }
+    });
+
+    app.get('/api/admin/subscription-refund-requests', limitAdminApi, requireAdminUsageAccess, (req, res) => {
+        const status = String(req.query.status || 'pending').trim();
+        const normalizedStatus = ['pending', 'approved', 'rejected', 'all'].includes(status) ? status : 'pending';
+        const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
+        const refundRequests = listSubscriptionRefundRequestsForAdmin.all(normalizedStatus, normalizedStatus, limit)
+            .map(publicSubscriptionRefundRequest);
+        return res.json({ refundRequests });
+    });
+
+    app.post('/api/admin/subscription-refund-requests/:id/approve', limitAdminApi, requireSameOrigin, requireAdminUsageAccess, requireAccountCsrf, (req, res) => {
+        try {
+            const result = approveSubscriptionRefundRequest({
+                id: req.params.id,
+                adminNote: String(req.body.adminNote || req.body.admin_note || '').trim().slice(0, 500),
+                adminPhone: req.account?.phone || defaultAdminAccountPhone
+            });
+            return res.json({
+                refundRequest: publicSubscriptionRefundRequest(result.refundRequest),
+                subscription: publicAccountSubscription(result.subscription)
+            });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'SUBSCRIPTION_REFUND_APPROVE_FAILED',
+                message: error.message || '退款申请确认失败。'
+            });
+        }
+    });
+
+    app.post('/api/admin/subscription-refund-requests/:id/reject', limitAdminApi, requireSameOrigin, requireAdminUsageAccess, requireAccountCsrf, (req, res) => {
+        try {
+            const result = rejectSubscriptionRefundRequest({
+                id: req.params.id,
+                adminNote: String(req.body.adminNote || req.body.admin_note || '').trim().slice(0, 500),
+                adminPhone: req.account?.phone || defaultAdminAccountPhone
+            });
+            return res.json({
+                refundRequest: publicSubscriptionRefundRequest(result.refundRequest),
+                subscription: publicAccountSubscription(result.subscription)
+            });
+        } catch (error) {
+            return res.status(error.status || 500).json({
+                code: error.code || 'SUBSCRIPTION_REFUND_REJECT_FAILED',
+                message: error.message || '退款申请拒绝失败。'
             });
         }
     });
@@ -3391,14 +4641,24 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             });
         }
 
-        const billingStatus = billingBlockedStatus(order.phone);
-        if (billingStatus.blocked) {
+        const quotaStatus = accountSubscriptionQuotaStatus(order.phone);
+        if (!quotaStatus.subscription) {
             return res.json({
                 managed: true,
                 active: false,
-                status: 'insufficient_balance',
+                status: 'subscription_required',
                 expiresAt: order.expiresAt,
-                billing: billingStatus.billing
+                quota: quotaStatus
+            });
+        }
+        if (!quotaStatus.active) {
+            return res.json({
+                managed: true,
+                active: false,
+                status: quotaStatus.code,
+                expiresAt: order.expiresAt,
+                subscription: quotaStatus.subscription,
+                quota: quotaStatus
             });
         }
 
@@ -3407,7 +4667,8 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             active: true,
             status: 'active',
             expiresAt: order.expiresAt,
-            billing: billingStatus.billing
+            subscription: quotaStatus.subscription,
+            quota: quotaStatus
         });
     }
 
