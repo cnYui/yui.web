@@ -832,6 +832,26 @@ ON CONFLICT(id) DO UPDATE SET
     return db;
 }
 
+function escapeHtmlAttribute(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('"', '&quot;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+}
+
+function normalizePublicHttpUrl(value, fallback) {
+    const raw = String(value || '').trim();
+    if (!raw) return fallback;
+    try {
+        const url = new URL(raw);
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') return fallback;
+        return url.toString().replace(/\/+$/, '');
+    } catch {
+        return fallback;
+    }
+}
+
 function createShopApp(options = {}) {
     rateLimitBuckets.clear();
     authPhoneFailureBuckets.clear();
@@ -877,6 +897,13 @@ function createShopApp(options = {}) {
     const modelListFetch = options.modelListFetch || globalThis.fetch;
     const cliproxyConfigPath = String(options.cliproxyConfigPath ?? process.env.CLIPROXY_CONFIG_PATH ?? '').trim();
     const cliproxyConfigBackupDir = String(options.cliproxyConfigBackupDir ?? process.env.CLIPROXY_CONFIG_BACKUP_DIR ?? '').trim();
+    const legacyKeyIssuanceDisabled = String(
+        options.legacyKeyIssuanceDisabled ?? process.env.SHOP_LEGACY_KEY_ISSUANCE_DISABLED ?? ''
+    ).trim().toLowerCase() === 'true';
+    const sub2apiPublicUrl = normalizePublicHttpUrl(
+        options.sub2apiPublicUrl ?? process.env.SUB2API_PUBLIC_URL,
+        'http://localhost:18080'
+    );
     if (apiKeyEncryptionSecret) {
         assertStrongSecret('SHOP_API_KEY_ENCRYPTION_SECRET', apiKeyEncryptionSecret, { production });
     }
@@ -1477,6 +1504,14 @@ function createShopApp(options = {}) {
 
     function adminHeaderOnlyRequest(req) {
         return Boolean(req.header('x-admin-token')) && !getAccountSessionToken(req);
+    }
+
+    function rejectLegacyKeyIssuanceWhenDisabled(req, res, next) {
+        if (!legacyKeyIssuanceDisabled) return next();
+        return res.status(410).json({
+            code: 'SHOP_LEGACY_KEY_ISSUANCE_DISABLED',
+            message: '旧 Shop API key 发放已停止，请使用 Sub2API 用户中心。'
+        });
     }
 
     function originFromURL(value) {
@@ -3236,6 +3271,12 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     }
 
     const shopPublicPagePaths = new Set([
+        '/shop',
+        '/shop/',
+        '/shop/index.html',
+        '/shop/guide',
+        '/shop/guide/',
+        '/shop/guide/index.html',
         '/shop/login',
         '/shop/login/',
         '/shop/login/index.html',
@@ -3269,6 +3310,15 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             return res.redirect(302, '/shop/login/');
         }
         return res.redirect(302, '/shop/account/');
+    }
+
+    function renderShopHomePage(req, res) {
+        const htmlPath = path.join(rootDir, 'shop/index.html');
+        const html = fs.readFileSync(htmlPath, 'utf8').replace(
+            /href="[^"]*"([^>]*\sdata-sub2api-link)/,
+            `href="${escapeHtmlAttribute(sub2apiPublicUrl)}"$1`
+        );
+        res.type('html').send(html);
     }
 
     function requireShopHtmlPage(req, res, next) {
@@ -4144,7 +4194,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return res.json(await accountModelOverview(req.account.phone));
     });
 
-    app.post('/api/account/invites/redeem', limitRedeemApi, requireAccount, requireSameOrigin, requireAccountCsrf, (req, res) => {
+    app.post('/api/account/invites/redeem', limitRedeemApi, requireAccount, rejectLegacyKeyIssuanceWhenDisabled, requireSameOrigin, requireAccountCsrf, (req, res) => {
         const code = String(req.body.code || '').trim().toUpperCase();
         if (!code) {
             return res.status(400).json({ code: 'INVALID_INVITE_CODE', message: '请输入邀请码。' });
@@ -4163,13 +4213,13 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
-    app.post('/api/admin/invites', limitAdminApi, requireAdminToken, (req, res) => {
+    app.post('/api/admin/invites', limitAdminApi, requireAdminToken, rejectLegacyKeyIssuanceWhenDisabled, (req, res) => {
         const count = Math.min(Math.max(Number(req.body.count || 1), 1), 50);
         const invites = createInvites(count);
         return res.status(201).json({ invites });
     });
 
-    app.post('/api/admin/api-keys', limitAdminApi, requireAdminToken, (req, res) => {
+    app.post('/api/admin/api-keys', limitAdminApi, requireAdminToken, rejectLegacyKeyIssuanceWhenDisabled, (req, res) => {
         const apiKeys = Array.isArray(req.body.apiKeys)
             ? req.body.apiKeys.map((apiKey) => String(apiKey || '').trim()).filter(Boolean)
             : [];
@@ -4301,13 +4351,13 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return res.json({ charges });
     });
 
-    app.post('/api/admin/session-invites', limitAdminApi, requireSameOrigin, requireAdminAccount, requireAccountCsrf, (req, res) => {
+    app.post('/api/admin/session-invites', limitAdminApi, requireSameOrigin, requireAdminAccount, rejectLegacyKeyIssuanceWhenDisabled, requireAccountCsrf, (req, res) => {
         const count = Math.min(Math.max(Number(req.body.count || 1), 1), 50);
         const invites = createInvites(count);
         return res.status(201).json({ invites });
     });
 
-    app.post('/api/admin/session-api-keys', limitAdminApi, requireSameOrigin, requireAdminAccount, requireAccountCsrf, (req, res) => {
+    app.post('/api/admin/session-api-keys', limitAdminApi, requireSameOrigin, requireAdminAccount, rejectLegacyKeyIssuanceWhenDisabled, requireAccountCsrf, (req, res) => {
         const textKeys = String(req.body.apiKeysText || req.body.api_keys_text || '')
             .split(/\r?\n/)
             .map((apiKey) => apiKey.trim())
@@ -4478,7 +4528,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
-    app.post('/api/invites/redeem', limitRedeemApi, (req, res) => {
+    app.post('/api/invites/redeem', limitRedeemApi, rejectLegacyKeyIssuanceWhenDisabled, (req, res) => {
         const phone = String(req.body.phone || '').trim();
         const code = String(req.body.code || '').trim().toUpperCase();
         if (!isPhone(phone)) {
@@ -4635,7 +4685,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
-    app.get(['/shop', '/shop/', '/shop/index.html'], redirectAccountHomePage);
+    app.get(['/shop', '/shop/', '/shop/index.html'], renderShopHomePage);
     app.get(['/shop/query', '/shop/query/', '/shop/query/index.html'], redirectQueryPage);
     app.get(['/shop/login', '/shop/login/', '/shop/login/index.html'], (req, res, next) => next());
     app.get(['/shop/register', '/shop/register/', '/shop/register/index.html'], (req, res, next) => next());
