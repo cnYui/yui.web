@@ -75,31 +75,30 @@
         <section class="max-w-[1200px] mx-auto px-6 md:px-12 py-16 md:py-24">
             <div class="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-16 items-start">
                 <div class="pt-4">
-                    <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Codex usage billing</p>
-                    <h1 class="mt-5 font-display text-5xl md:text-7xl leading-[1.05] text-primary dark:text-dark-text">Codex<br/><span class="italic text-text-muted dark:text-dark-text-muted">按量计费</span></h1>
-                    <p class="mt-6 max-w-xl text-lg font-light leading-relaxed text-text-muted dark:text-dark-text-muted">私下开通后，我会发给你一个邀请码。登录后输入邀请码即可兑换 API key；每次请求都会按实际 token 记录用量，登录后可以查看自己的用量和账单。</p>
-                    <div class="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-[640px]">
-                        <a class="btn-primary h-14 px-4 text-center justify-center whitespace-nowrap" href="/shop/login/">登录账户</a>
-                        <a class="btn-secondary h-14 px-4 text-center justify-center whitespace-nowrap dark:bg-dark-card dark:border-dark-border dark:text-dark-text" href="/shop/redeem/">兑换 API key</a>
-                        <a class="btn-secondary h-14 px-4 text-center justify-center whitespace-nowrap border-gray-200 bg-gray-100 text-primary hover:bg-gray-200 dark:border-dark-border dark:bg-dark-card dark:text-dark-text dark:hover:bg-dark-border" href="/shop/guide/">使用方法</a>
+                    <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Sub2API gateway</p>
+                    <h1 class="mt-5 font-display text-5xl md:text-7xl leading-[1.05] text-primary dark:text-dark-text">Codex<br/><span class="italic text-text-muted dark:text-dark-text-muted">统一入口</span></h1>
+                    <p class="mt-6 max-w-xl text-lg font-light leading-relaxed text-text-muted dark:text-dark-text-muted">新的 API key、套餐、余额和用量记录都在 Sub2API 中管理。这里保留使用说明和入口说明，正式调用请使用 Sub2API 分配给你的 Base URL 和 API key。</p>
+                    <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-[520px]">
+                        <a class="btn-primary h-14 px-4 text-center justify-center whitespace-nowrap" href="/shop/guide/">查看使用方法</a>
+                        <a class="btn-secondary h-14 px-4 text-center justify-center whitespace-nowrap dark:bg-dark-card dark:border-dark-border dark:text-dark-text" href="http://localhost:18080" data-sub2api-link>打开 Sub2API</a>
                     </div>
                 </div>
                 <div class="grid gap-4">
                     <div class="border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card p-5">
                         <div class="flex items-start gap-4">
-                            <span class="material-symbols-outlined text-3xl text-primary dark:text-dark-text">payments</span>
+                            <span class="material-symbols-outlined text-3xl text-primary dark:text-dark-text">key</span>
                             <div>
-                                <h2 class="font-display text-2xl text-primary dark:text-dark-text">私下开通</h2>
-                                <p class="mt-2 text-sm leading-relaxed text-text-muted dark:text-dark-text-muted">确认开通后，我会生成一个邀请码并发给你。</p>
+                                <h2 class="font-display text-2xl text-primary dark:text-dark-text">Sub2API 发 Key</h2>
+                                <p class="mt-2 text-sm leading-relaxed text-text-muted dark:text-dark-text-muted">朋友使用 Sub2API 中生成的 API key，不再直接使用 CLIProxyAPI key。</p>
                             </div>
                         </div>
                     </div>
                     <div class="border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card p-5">
                         <div class="flex items-start gap-4">
-                            <span class="material-symbols-outlined text-3xl text-primary dark:text-dark-text">password</span>
+                            <span class="material-symbols-outlined text-3xl text-primary dark:text-dark-text">route</span>
                             <div>
-                                <h2 class="font-display text-2xl text-primary dark:text-dark-text">兑换 API key</h2>
-                                <p class="mt-2 text-sm leading-relaxed text-text-muted dark:text-dark-text-muted">登录账户后输入邀请码，领取用于请求的 API key。</p>
+                                <h2 class="font-display text-2xl text-primary dark:text-dark-text">本地账号池</h2>
+                                <p class="mt-2 text-sm leading-relaxed text-text-muted dark:text-dark-text-muted">Sub2API 会把请求转发到本机 CLIProxyAPI，再由 CLIProxyAPI 使用本地账号池处理。</p>
                             </div>
                         </div>
                     </div>
@@ -107,8 +106,8 @@
                         <div class="flex items-start gap-4">
                             <span class="material-symbols-outlined text-3xl text-primary dark:text-dark-text">monitoring</span>
                             <div>
-                                <h2 class="font-display text-2xl text-primary dark:text-dark-text">按量记录</h2>
-                                <p class="mt-2 text-sm leading-relaxed text-text-muted dark:text-dark-text-muted">请求用量会按 token 汇总，登录后查看自己的使用记录。</p>
+                                <h2 class="font-display text-2xl text-primary dark:text-dark-text">用量归 Sub2API</h2>
+                                <p class="mt-2 text-sm leading-relaxed text-text-muted dark:text-dark-text-muted">新入口的余额、订阅和用量记录以 Sub2API 为准。</p>
                             </div>
                         </div>
                     </div>

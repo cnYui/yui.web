@@ -295,37 +295,43 @@ test('兑换页前端调用登录态兑换接口', () => {
     assert.doesNotMatch(script, /api\/invites\/redeem',\s*\{/);
 });
 
-test('商店首页提供使用方法入口，公开说明页只使用占位 API key', () => {
+test('商店首页提供 Sub2API 入口，公开说明页只使用 Sub2API 用户 key', () => {
     const home = fs.readFileSync(path.join(__dirname, '..', 'shop/index.html'), 'utf8');
     const guide = fs.readFileSync(path.join(__dirname, '..', 'shop/guide/index.html'), 'utf8');
 
-    assert.match(home, /href="\/shop\/guide\/"[^>]*>使用方法<\/a>/);
-    assert.match(home, /bg-gray-100/);
-    assert.match(guide, /Codex 配置使用方法/);
-    assert.match(guide, /https:\/\/api\.aaccx\.pw\/v1/);
+    assert.match(home, /Sub2API gateway/);
+    assert.match(home, /href="\/shop\/guide\/"[^>]*>查看使用方法<\/a>/);
+    assert.match(home, /data-sub2api-link/);
+    assert.doesNotMatch(home, /href="\/shop\/redeem\/"/);
+    assert.match(guide, /Sub2API 配置使用方法/);
+    assert.match(guide, /OPENAI_BASE_URL/);
     assert.match(guide, /OPENAI_API_KEY/);
     assert.match(guide, /Authorization: Bearer/);
-    assert.match(guide, /不要使用 x-api-key/);
-    assert.match(guide, /sk-xx/);
+    assert.match(guide, /不要使用 CLIProxyAPI 的内部 key/);
+    assert.match(guide, /Sub2API 分配给你的 API key/);
     assert.doesNotMatch(guide, /data-ui-ready','true/);
     assert.doesNotMatch(guide, /sk-dummy/);
     assert.doesNotMatch(guide, /环境变量文件/);
     assert.doesNotMatch(guide, /sk-[a-f0-9]{32}/);
 });
 
-test('Shop 首页按量计费文案和按钮布局不再暴露手机号查询入口', () => {
+test('Shop 首页退为 Sub2API 展示和跳转入口', () => {
     const home = fs.readFileSync(path.join(__dirname, '..', 'shop/index.html'), 'utf8');
 
-    assert.match(home, /Codex[\s\S]*按量计费/);
-    assert.match(home, /按实际 token 记录/);
-    assert.match(home, /登录账户/);
-    assert.match(home, /兑换 API key/);
-    assert.match(home, /使用方法/);
-    assert.match(home, /私下开通/);
-    assert.match(home, /按量记录/);
+    assert.match(home, /Codex[\s\S]*统一入口/);
+    assert.match(home, /新的 API key、套餐、余额和用量记录都在 Sub2API 中管理/);
+    assert.match(home, /Sub2API 发 Key/);
+    assert.match(home, /本地账号池/);
+    assert.match(home, /用量归 Sub2API/);
+    assert.match(home, /打开 Sub2API/);
     assert.doesNotMatch(home, /href="\/shop\/query\/"/);
+    assert.doesNotMatch(home, /href="\/shop\/login\/"/);
+    assert.doesNotMatch(home, /href="\/shop\/redeem\/"/);
     assert.doesNotMatch(home, /手机号查询/);
     assert.doesNotMatch(home, /手机号和邀请码/);
+    assert.doesNotMatch(home, /登录账户/);
+    assert.doesNotMatch(home, /兑换 API key/);
+    assert.doesNotMatch(home, /私下开通/);
     assert.doesNotMatch(home, /每月 30 元人民币/);
     assert.doesNotMatch(home, /额度兑换/);
     assert.doesNotMatch(home, /31 天有效/);
@@ -860,7 +866,7 @@ test('Auth 外壳样式由 Tailwind 输入文件统一维护，登录页使用�
     assert.equal(png[25], 6);
 });
 
-test('Shop 首页顶部不显示账号入口且正文只保留固定登录入口', () => {
+test('Shop 首页顶部不显示账号入口且正文只保留 Sub2API 入口', () => {
     const home = fs.readFileSync(path.join(__dirname, '..', 'shop/index.html'), 'utf8');
     const login = fs.readFileSync(path.join(__dirname, '..', 'shop/login/index.html'), 'utf8');
     const register = fs.readFileSync(path.join(__dirname, '..', 'shop/register/index.html'), 'utf8');
@@ -869,10 +875,10 @@ test('Shop 首页顶部不显示账号入口且正文只保留固定登录入口
     const header = home.match(/<header[\s\S]*?<\/header>/)?.[0] || '';
     const accountLinkCount = (home.match(/data-account-link/g) || []).length;
 
-    assert.match(home, /href="\/shop\/login\/"/);
     assert.equal(accountLinkCount, 0);
     assert.doesNotMatch(header, /data-account-link/);
-    assert.match(home, /<main[\s\S]*href="\/shop\/login\/"[\s\S]*>登录账户<\/a>/);
+    assert.match(home, /<main[\s\S]*data-sub2api-link[\s\S]*>打开 Sub2API<\/a>/);
+    assert.doesNotMatch(home, /href="\/shop\/login\/"/);
     assert.doesNotMatch(home, /管理控制台/);
     assert.match(login, /id="loginForm"/);
     assert.match(login, /id="loginForm"/);

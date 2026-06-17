@@ -2826,6 +2826,70 @@ test('旧邀请码和 API key 管理接口仍只接受后端管理员 token', as
     });
 });
 
+test('Sub2API migration disables legacy invite and API key issuance endpoints', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+        const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
+        });
+        assert.equal(adminLogin.response.status, 200);
+        const adminCookie = adminLogin.response.headers.get('set-cookie') || '';
+        const accountCookie = await registerUserAndGetCookie(baseUrl, '13800138777');
+
+        const cases = [
+            {
+                name: 'account invite redeem',
+                path: '/api/account/invites/redeem',
+                headers: { cookie: accountCookie },
+                body: { code: 'YUI-111111-222222' }
+            },
+            {
+                name: 'token invite create',
+                path: '/api/admin/invites',
+                headers: { 'x-admin-token': 'test-token' },
+                body: { count: 1 }
+            },
+            {
+                name: 'token api key import',
+                path: '/api/admin/api-keys',
+                headers: { 'x-admin-token': 'test-token' },
+                body: { apiKeys: ['sk-disabled-token-import'] }
+            },
+            {
+                name: 'session invite create',
+                path: '/api/admin/session-invites',
+                headers: { cookie: adminCookie },
+                body: { count: 1 }
+            },
+            {
+                name: 'session api key import',
+                path: '/api/admin/session-api-keys',
+                headers: { cookie: adminCookie },
+                body: { apiKeysText: 'sk-disabled-session-import' }
+            },
+            {
+                name: 'legacy public invite redeem',
+                path: '/api/invites/redeem',
+                headers: {},
+                body: { phone: '13800138778', code: 'YUI-111111-222222' }
+            }
+        ];
+
+        for (const item of cases) {
+            const result = await jsonFetch(`${baseUrl}${item.path}`, {
+                method: 'POST',
+                headers: item.headers,
+                body: JSON.stringify(item.body)
+            });
+            assert.equal(result.response.status, 410, item.name);
+            assert.equal(result.body.code, 'SHOP_LEGACY_KEY_ISSUANCE_DISABLED', item.name);
+        }
+    }, {
+        legacyKeyIssuanceDisabled: true
+    });
+});
+
 test('管理员 session 可访问 invite console、生成邀请码和导入 API key 池', async () => {
     await withServer(async ({ baseUrl, db }) => {
         seedAdminUserForTest(db);
@@ -3035,13 +3099,11 @@ test('登录后的订单查询接口只返回当前 session 手机号的数据',
     });
 });
 
-test('Shop 页面除登录、注册和重置密码外未登录都会跳转登录页', async () => {
+test('Shop 入口和指南公开可访问，账户相关页面未登录仍跳转登录页', async () => {
     await withServer(async ({ baseUrl }) => {
         const protectedPaths = [
-            '/shop/',
             '/shop/redeem/',
             '/shop/query/',
-            '/shop/guide/',
             '/shop/key/',
             '/shop/order/',
             '/shop/pay/',
@@ -3068,10 +3130,28 @@ test('Shop 页面除登录、注册和重置密码外未登录都会跳转登录
         const resetPassword = await fetch(`${baseUrl}/shop/reset-password/`, { redirect: 'manual' });
         assert.equal(resetPassword.status, 200);
         assert.match(await resetPassword.text(), /id="passwordResetForm"/);
+
+        const home = await fetch(`${baseUrl}/shop/`, { redirect: 'manual' });
+        assert.equal(home.status, 200);
+        assert.match(await home.text(), /Sub2API gateway/);
+
+        const guide = await fetch(`${baseUrl}/shop/guide/`, { redirect: 'manual' });
+        assert.equal(guide.status, 200);
+        assert.match(await guide.text(), /Sub2API 配置使用方法/);
     });
 });
 
-test('已登录普通用户访问 Shop 首页和查询页会进入 Account', async () => {
+test('Shop 首页使用配置的 Sub2API 公网入口链接', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const response = await fetch(`${baseUrl}/shop/`, { redirect: 'manual' });
+        assert.equal(response.status, 200);
+        assert.match(await response.text(), /href="https:\/\/sub2api\.example\.com"/);
+    }, {
+        sub2apiPublicUrl: 'https://sub2api.example.com/'
+    });
+});
+
+test('已登录普通用户访问 Shop 首页保持入口页，查询页进入 Account', async () => {
     await withServer(async ({ baseUrl }) => {
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138693');
 
@@ -3079,8 +3159,8 @@ test('已登录普通用户访问 Shop 首页和查询页会进入 Account', asy
             redirect: 'manual',
             headers: { cookie }
         });
-        assert.equal(home.status, 302);
-        assert.equal(home.headers.get('location'), '/shop/account/');
+        assert.equal(home.status, 200);
+        assert.match(await home.text(), /Sub2API gateway/);
 
         const query = await fetch(`${baseUrl}/shop/query/`, {
             redirect: 'manual',
