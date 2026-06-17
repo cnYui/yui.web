@@ -1492,104 +1492,14 @@ test('管理员拒绝充值不会改变余额', async () => {
     });
 });
 
-test('管理员余额接口展示所有 Shop 用户余额并过滤管理员账号', async () => {
+test('管理员余额接口不再暴露', async () => {
     await withServer(async ({ baseUrl, db }) => {
         seedAdminUserForTest(db);
 
-        await createRedeemedOrder(baseUrl, '13800138821', 'sk-admin-balance-owned');
-        const userCookie = await registerUserAndGetCookie(baseUrl, '13800138821');
-        await submitAndApproveTopup(baseUrl, userCookie, '3');
-
-        const debtCookie = await registerUserAndGetCookie(baseUrl, '13800138822');
-        const pendingTopup = await jsonFetch(`${baseUrl}/api/account/topups`, {
-            method: 'POST',
-            headers: { cookie: debtCookie },
-            body: JSON.stringify({ amount: '2', paymentMethod: 'wechat' })
-        });
-        assert.equal(pendingTopup.response.status, 201);
-        db.prepare(`
-UPDATE account_balances
-SET balance_cents = ?, balance_nanos = ?, updated_at = ?
-WHERE phone = ?
-`).run(-15, -150000000, '2026-06-12T12:00:00+08:00', '13800138822');
-
-        db.prepare(`
-INSERT INTO usage_key_profiles (api_key_hash, api_key_preview, group_name, phone, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?)
-`).run(
-            hashApiKeyForTest('sk-local-not-shop'),
-            keyPreviewForTest('sk-local-not-shop'),
-            'local',
-            '13900000001',
-            '2026-06-12T12:00:00+08:00',
-            '2026-06-12T12:00:00+08:00'
-        );
-
-        const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
-        });
-        assert.equal(adminLogin.response.status, 200);
-        const adminCookie = cookieHeaderFromSetCookie(adminLogin.response.headers.get('set-cookie') || '');
-
-        const result = await jsonFetch(`${baseUrl}/api/admin/account-balances`, {
-            headers: { cookie: adminCookie }
-        });
-        assert.equal(result.response.status, 200);
-        assert.equal(result.body.summary.userCount, 2);
-        assert.equal(result.body.summary.totalBalanceNanos, 2850000000);
-        assert.equal(result.body.summary.totalBalanceAmount, 2.85);
-        assert.equal(result.body.summary.debtUserCount, 1);
-        assert.equal(result.body.summary.debtNanos, 150000000);
-        assert.equal(result.body.summary.pendingTopupNanos, 2000000000);
-        assert.deepEqual(result.body.items.map((item) => item.phone), ['13800138822', '13800138821']);
-
-        const debtItem = result.body.items.find((item) => item.phone === '13800138822');
-        assert.equal(debtItem.status, 'debt');
-        assert.equal(debtItem.balanceNanos, -150000000);
-        assert.equal(debtItem.debtNanos, 150000000);
-        assert.equal(debtItem.pendingTopupNanos, 2000000000);
-        assert.equal(debtItem.managedApiKeyCount, 0);
-
-        const activeItem = result.body.items.find((item) => item.phone === '13800138821');
-        assert.equal(activeItem.status, 'available');
-        assert.equal(activeItem.balanceNanos, 3000000000);
-        assert.equal(activeItem.managedApiKeyCount, 1);
-        assert.equal(activeItem.usedApiKeyCount, 1);
-        assert.equal(activeItem.unusedApiKeyCount, 0);
-        assert.equal(activeItem.disabledApiKeyCount, 0);
-        assert.ok(!result.body.items.some((item) => item.phone === '15951875192'));
-        assert.ok(!result.body.items.some((item) => item.phone === '13900000001'));
-
-        const filtered = await jsonFetch(`${baseUrl}/api/admin/account-balances?status=debt&q=822`, {
-            headers: { cookie: adminCookie }
-        });
-        assert.equal(filtered.response.status, 200);
-        assert.deepEqual(filtered.body.items.map((item) => item.phone), ['13800138822']);
-        assert.equal(filtered.body.summary.userCount, 2);
-    });
-});
-
-test('管理员余额接口要求管理员登录或管理员 token', async () => {
-    await withServer(async ({ baseUrl, db }) => {
-        seedAdminUserForTest(db);
-        const userCookie = await registerUserAndGetCookie(baseUrl, '13800138823');
-
-        const missingAuth = await jsonFetch(`${baseUrl}/api/admin/account-balances`);
-        assert.equal(missingAuth.response.status, 401);
-        assert.equal(missingAuth.body.code, 'UNAUTHORIZED');
-
-        const normalUser = await jsonFetch(`${baseUrl}/api/admin/account-balances`, {
-            headers: { cookie: userCookie }
-        });
-        assert.equal(normalUser.response.status, 403);
-        assert.equal(normalUser.body.code, 'ADMIN_ACCOUNT_REQUIRED');
-
-        const tokenResult = await jsonFetch(`${baseUrl}/api/admin/account-balances`, {
+        const result = await fetch(`${baseUrl}/api/admin/account-balances`, {
             headers: { 'x-admin-token': 'test-token' }
         });
-        assert.equal(tokenResult.response.status, 200);
-        assert.deepEqual(tokenResult.body.items.map((item) => item.phone), ['13800138823']);
+        assert.equal(result.status, 404);
     });
 });
 

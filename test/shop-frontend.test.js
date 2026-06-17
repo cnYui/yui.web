@@ -76,7 +76,7 @@ test('前端图表模块复用同一个堆叠柱渲染入口', () => {
     assert.match(html, /输出 token/);
 });
 
-test('Admin 余额和充值表渲染复用账户状态文案函数', () => {
+test('Admin 充值表继续渲染充值审核状态文案', () => {
     const sandbox = {
         window: {},
         document: {
@@ -98,18 +98,6 @@ test('Admin 余额和充值表渲染复用账户状态文案函数', () => {
         vm.runInNewContext(readScript(file), sandbox, { filename: file });
     }
 
-    const balanceHtml = sandbox.window.YuiShopAdmin.renderAdminBalanceTable([
-        {
-            phone: '13800138000',
-            status: 'debt',
-            balanceNanos: -120000000,
-            debtNanos: 120000000,
-            pendingTopupNanos: 0,
-            managedApiKeyCount: 1,
-            usedApiKeyCount: 1,
-            updatedAt: '2026-06-13T09:00:00.000Z'
-        }
-    ]);
     const topupHtml = sandbox.window.YuiShopAdmin.renderAdminTopups([
         {
             id: 'topup-test',
@@ -122,7 +110,6 @@ test('Admin 余额和充值表渲染复用账户状态文案函数', () => {
         }
     ]);
 
-    assert.match(balanceHtml, /欠费/);
     assert.match(topupHtml, /待确认/);
 });
 
@@ -440,22 +427,21 @@ test('Admin 页面把业务办理合并成一个栏目', () => {
     assert.match(html, /id="adminRefundRequestTable"/);
     assert.match(html, /id="adminRefundRequestMessage"/);
     assert.match(html, /id="adminInviteConsoleSummary"/);
-    assert.match(html, /id="adminAccountBalancesPanel"/);
-    assert.match(html, /id="adminBalanceSearchInput"/);
-    assert.match(html, /id="adminBalanceStatusFilter"/);
-    assert.match(html, /id="adminBalanceSummary"/);
-    assert.match(html, /id="adminBalanceTable"/);
-    assert.match(html, /id="adminBalanceMessage"/);
+    assert.doesNotMatch(html, /id="adminAccountBalancesPanel"/);
+    assert.doesNotMatch(html, /id="adminBalanceSearchInput"/);
+    assert.doesNotMatch(html, /id="adminBalanceStatusFilter"/);
+    assert.doesNotMatch(html, /id="adminBalanceSummary"/);
+    assert.doesNotMatch(html, /id="adminBalanceTable"/);
+    assert.doesNotMatch(html, /id="adminBalanceMessage"/);
+    assert.doesNotMatch(html, /用户余额/);
     assert.match(html, /id="adminInviteTable"/);
     assert.match(html, /id="adminApiKeyPoolTable"/);
     const topupIndex = html.indexOf('id="adminTopupTable"');
     const refundIndex = html.indexOf('id="adminRefundRequestTable"');
-    const balanceIndex = html.indexOf('id="adminAccountBalancesPanel"');
     const inviteIndex = html.indexOf('id="adminInviteTable"');
-    assert.ok(topupIndex > -1 && refundIndex > -1 && balanceIndex > -1 && inviteIndex > -1);
-    assert.ok(topupIndex < balanceIndex);
-    assert.ok(refundIndex < balanceIndex);
-    assert.ok(balanceIndex < inviteIndex);
+    assert.ok(topupIndex > -1 && refundIndex > -1 && inviteIndex > -1);
+    assert.ok(topupIndex < inviteIndex);
+    assert.ok(refundIndex < inviteIndex);
     assert.doesNotMatch(html, /id="adminInviteSection"/);
     assert.doesNotMatch(html, /id="adminPasswordResetSection"/);
     assert.doesNotMatch(html, /id="adminTopupSection"/);
@@ -470,15 +456,14 @@ test('Admin 前端兑换码管理不使用 x-admin-token', () => {
     assert.match(script, /function initAdminInvitePage/);
     assert.match(script, /adminBusinessRefreshButton/);
     assert.match(script, /refreshAdminBusiness/);
-    assert.match(script, /function renderAdminBalanceSummary/);
-    assert.match(script, /function renderAdminBalanceTable/);
-    assert.match(script, /function initAdminAccountBalancesPage/);
-    assert.match(script, /api\/admin\/account-balances/);
-    assert.match(script, /refreshAdminBalances/);
-    assert.match(script, /onBalanceChanged/);
-    assert.match(script, /用户余额/);
-    assert.match(script, /欠费用户/);
-    assert.match(script, /待确认充值/);
+    assert.doesNotMatch(script, /function renderAdminBalanceSummary/);
+    assert.doesNotMatch(script, /function renderAdminBalanceTable/);
+    assert.doesNotMatch(script, /function initAdminAccountBalancesPage/);
+    assert.doesNotMatch(script, /api\/admin\/account-balances/);
+    assert.doesNotMatch(script, /refreshAdminBalances/);
+    assert.doesNotMatch(script, /onBalanceChanged/);
+    assert.doesNotMatch(script, /用户余额/);
+    assert.doesNotMatch(script, /欠费用户/);
     assert.doesNotMatch(script, /x-admin-token/);
 });
 
