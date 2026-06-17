@@ -8,7 +8,7 @@ const shopModuleScripts = [
     '/shop/js/core.js',
     '/shop/js/charts.js',
     '/shop/js/auth.js',
-    '/shop/js/account.js?v=20260616-account-credit-limit-display',
+    '/shop/js/account.js?v=20260617-subscription-rollout',
     '/shop/js/admin.js',
     '/shop/js/legacy-redirects.js'
 ];
@@ -577,6 +577,7 @@ test('Admin 前端读取 usage 自动导入状态接口', () => {
 test('Account 页面包含订阅池购买、额度条和美元流水容器', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
 
+    assert.match(html, /\/shop\/shop\.js\?v=20260617-subscription-rollout/);
     assert.match(html, /id="accountModelOverview"/);
     assert.match(html, /id="accountQuotaCards"/);
     assert.match(html, /id="accountQuotaBar"/);
@@ -641,6 +642,13 @@ test('Account 页面包含订阅池购买、额度条和美元流水容器', () 
     assert.ok(usageSectionIndex > quotaBarIndex);
     assert.ok(modelOverviewIndex > usageSectionIndex);
     assert.ok(subscriptionOrderFormIndex > modelOverviewIndex);
+});
+
+test('Shop 入口脚本使用订阅池上线后的 Account 模块缓存版本', () => {
+    const script = fs.readFileSync(path.join(__dirname, '..', 'shop/shop.js'), 'utf8');
+
+    assert.match(script, /\/shop\/js\/account\.js\?v=20260617-subscription-rollout/);
+    assert.doesNotMatch(script, /20260616-account-credit-limit-display/);
 });
 
 test('Account 前端渲染周消费柱状图并提供上一周下一周切换', () => {
