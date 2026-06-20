@@ -8,6 +8,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const { createShopApp } = require('../server');
+const { encryptApiKeyEnvelope } = require('../lib/shop-api-key-crypto');
 const { priceUsageTokens } = require('../lib/shop-pricing');
 
 const nanosPerYuan = 1000000000;
@@ -21,6 +22,7 @@ const shopFrontendScriptFiles = [
     'shop/js/legacy-redirects.js',
     'shop/shop.js'
 ];
+const testDbByBaseUrl = new Map();
 
 function readShopFrontendScript(file) {
     return fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
@@ -52,6 +54,139 @@ function hashApiKeyForTest(apiKey) {
 
 function keyPreviewForTest(apiKey) {
     return `${apiKey.slice(0, 12)}...${apiKey.slice(-6)}`;
+}
+
+function apiKeyStorageForTest(apiKey, secret = '') {
+    const apiKeyHash = hashApiKeyForTest(apiKey);
+    if (!secret) {
+        return {
+            apiKey,
+            apiKeyHash,
+            apiKeyCiphertext: null,
+            apiKeyNonce: null
+        };
+    }
+    const envelope = encryptApiKeyEnvelope(apiKey, secret);
+    return {
+        apiKey: `enc_${apiKeyHash}`,
+        apiKeyHash,
+        apiKeyCiphertext: envelope.api_key_ciphertext,
+        apiKeyNonce: envelope.api_key_nonce
+    };
+}
+
+function seedHistoricalRedeemedOrderForTest(db, {
+    phone,
+    apiKey,
+    inviteCode,
+    orderId,
+    resultToken,
+    redeemedAt = '2026-06-01T12:00:00+08:00',
+    expiresAt = '2099-01-01T00:00:00+08:00',
+    productName = 'Codex 按量计费',
+    amount = 30,
+    encryptionSecret = ''
+}) {
+    const storage = apiKeyStorageForTest(apiKey, encryptionSecret);
+    const apiKeyPreview = keyPreviewForTest(apiKey);
+    const hashPrefix = storage.apiKeyHash.slice(0, 16).toUpperCase();
+    const resolvedInviteCode = inviteCode || `YUI-${hashPrefix.slice(0, 6)}-${hashPrefix.slice(6, 12)}`;
+    const resolvedOrderId = orderId || `ORDER-${hashPrefix}`;
+    const resolvedResultToken = resultToken || `rst_${storage.apiKeyHash.slice(0, 43)}`;
+
+    db.prepare(`
+INSERT INTO users (phone, created_at)
+VALUES (?, ?)
+ON CONFLICT(phone) DO NOTHING
+`).run(phone, redeemedAt);
+    db.prepare(`
+INSERT INTO account_balances (
+  phone, balance_cents, balance_nanos, pending_topup_cents, pending_topup_nanos,
+  credit_limit_cents, credit_limit_nanos, updated_at
+) VALUES (?, 0, 0, 0, 0, 1000, 10000000000, ?)
+ON CONFLICT(phone) DO NOTHING
+`).run(phone, redeemedAt);
+    db.prepare(`
+INSERT INTO invite_codes (code, status, created_at, redeemed_at, redeemed_by_phone, order_id)
+VALUES (?, 'redeemed', ?, ?, ?, ?)
+`).run(resolvedInviteCode, redeemedAt, redeemedAt, phone, resolvedOrderId);
+    db.prepare(`
+INSERT INTO api_keys (
+  api_key, api_key_preview, api_key_hash, api_key_ciphertext, api_key_nonce,
+  status, created_at, used_at, order_id
+) VALUES (?, ?, ?, ?, ?, 'used', ?, ?, ?)
+`).run(
+        storage.apiKey,
+        apiKeyPreview,
+        storage.apiKeyHash,
+        storage.apiKeyCiphertext,
+        storage.apiKeyNonce,
+        redeemedAt,
+        redeemedAt,
+        resolvedOrderId
+    );
+    db.prepare(`
+INSERT INTO orders (
+  id, phone, invite_code, api_key, api_key_ciphertext, api_key_nonce,
+  api_key_preview, product_name, amount, redeemed_at, expires_at, result_token
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`).run(
+        resolvedOrderId,
+        phone,
+        resolvedInviteCode,
+        storage.apiKey,
+        storage.apiKeyCiphertext,
+        storage.apiKeyNonce,
+        apiKeyPreview,
+        productName,
+        amount,
+        redeemedAt,
+        expiresAt,
+        resolvedResultToken
+    );
+
+    return {
+        id: resolvedOrderId,
+        phone,
+        inviteCode: resolvedInviteCode,
+        apiKey,
+        apiKeyPreview,
+        productName,
+        amount,
+        redeemedAt,
+        expiresAt,
+        resultToken: resolvedResultToken
+    };
+}
+
+function seedUnusedApiKeyForTest(db, apiKey, {
+    createdAt = '2026-06-01T12:00:00+08:00',
+    encryptionSecret = ''
+} = {}) {
+    const storage = apiKeyStorageForTest(apiKey, encryptionSecret);
+    db.prepare(`
+INSERT INTO api_keys (
+  api_key, api_key_preview, api_key_hash, api_key_ciphertext, api_key_nonce,
+  status, created_at, used_at, order_id
+) VALUES (?, ?, ?, ?, ?, 'unused', ?, NULL, NULL)
+`).run(
+        storage.apiKey,
+        keyPreviewForTest(apiKey),
+        storage.apiKeyHash,
+        storage.apiKeyCiphertext,
+        storage.apiKeyNonce,
+        createdAt
+    );
+    return {
+        apiKey,
+        apiKeyPreview: keyPreviewForTest(apiKey),
+        apiKeyHash: storage.apiKeyHash
+    };
+}
+
+function assertLegacyIssuanceDisabled(result) {
+    assert.equal(result.response.status, 410);
+    assert.equal(result.body.code, 'SHOP_LEGACY_KEY_ISSUANCE_DISABLED');
 }
 
 function tableColumns(db, tableName) {
@@ -140,22 +275,9 @@ async function usageEventFetch(baseUrl, event, options = {}) {
 }
 
 async function createRedeemedOrder(baseUrl, phone, apiKey = 'sk-balance-gated') {
-    await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-        method: 'POST',
-        headers: { 'x-admin-token': 'test-token' },
-        body: JSON.stringify({ apiKeys: [apiKey] })
-    });
-    const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-        method: 'POST',
-        headers: { 'x-admin-token': 'test-token' },
-        body: JSON.stringify({ count: 1 })
-    });
-    const redeemResult = await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-        method: 'POST',
-        body: JSON.stringify({ phone, code: inviteResult.body.invites[0].code })
-    });
-    assert.equal(redeemResult.response.status, 201);
-    return redeemResult.body.order;
+    const db = testDbByBaseUrl.get(baseUrl);
+    assert.ok(db, 'test database is registered for this server');
+    return seedHistoricalRedeemedOrderForTest(db, { phone, apiKey });
 }
 
 async function submitAndApproveTopup(baseUrl, cookie, amount, adminToken = 'test-token') {
@@ -248,6 +370,7 @@ async function withServer(run, appOptions = {}) {
         shopChargeAuditLogDir: path.join(tempDir, 'charge-audit'),
         cliproxyConfigPath: '',
         cliproxyConfigBackupDir: '',
+        legacyKeyIssuanceDisabled: true,
         usageAutoImportEnabled: false,
         usageAutoImportStartTimer: false,
         ...appOptions
@@ -257,10 +380,12 @@ async function withServer(run, appOptions = {}) {
         next.once('error', reject);
     });
     const baseUrl = `http://127.0.0.1:${server.address().port}`;
+    testDbByBaseUrl.set(baseUrl, db);
 
     try {
         await run({ baseUrl, db, dbPath, usageImporter });
     } finally {
+        testDbByBaseUrl.delete(baseUrl);
         usageImporter?.stop?.();
         await new Promise((resolve, reject) => {
             server.close((error) => error ? reject(error) : resolve());
@@ -991,57 +1116,33 @@ test('Reveal API key 响应不再声称服务端 60 秒过期', async () => {
     });
 });
 
-test('用户用手机号和邀请码兑换后，从未使用 API key 池分配一个 key 并写入 SQLite 订单', async () => {
+test('旧公开兑换接口退役后不再分配 API key 或写入 SQLite 订单', async () => {
     await withServer(async ({ baseUrl, db, dbPath }) => {
         const seedKeys = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
             method: 'POST',
             headers: { 'x-admin-token': 'test-token' },
             body: JSON.stringify({ apiKeys: ['sk-test-a', 'sk-test-b'] })
         });
-        assert.equal(seedKeys.response.status, 201);
+        assertLegacyIssuanceDisabled(seedKeys);
 
         const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
             method: 'POST',
             headers: { 'x-admin-token': 'test-token' },
             body: JSON.stringify({ count: 1 })
         });
-        assert.equal(inviteResult.response.status, 201);
-        const invite = inviteResult.body.invites[0];
-        assert.match(invite.code, /^YUI-[A-F0-9]{6}-[A-F0-9]{6}$/);
-        assert.equal(invite.apiKey, undefined);
+        assertLegacyIssuanceDisabled(inviteResult);
 
         const redeemResult = await jsonFetch(`${baseUrl}/api/invites/redeem`, {
             method: 'POST',
-            body: JSON.stringify({ phone: '13800138000', code: invite.code })
+            body: JSON.stringify({ phone: '13800138000', code: 'YUI-111111-222222' })
         });
-        assert.equal(redeemResult.response.status, 201);
-        assert.match(redeemResult.response.headers.get('set-cookie') || '', /yui_shop_result_token=/);
-        assert.equal(redeemResult.body.order.phone, '13800138000');
-        assert.equal(redeemResult.body.order.apiKey, 'sk-test-a');
-        assert.equal(redeemResult.body.order.status, 'active');
+        assertLegacyIssuanceDisabled(redeemResult);
 
         assert.ok(fs.existsSync(dbPath));
-        assert.deepEqual(
-            db.prepare('SELECT phone FROM users WHERE phone = ?').get('13800138000'),
-            { phone: '13800138000' }
-        );
-        assert.deepEqual(
-            db.prepare('SELECT status, redeemed_by_phone FROM invite_codes WHERE code = ?').get(invite.code),
-            { status: 'redeemed', redeemed_by_phone: '13800138000' }
-        );
-        assert.deepEqual(
-            db.prepare('SELECT api_key, status FROM api_keys WHERE api_key = ?').get('sk-test-a'),
-            { api_key: 'sk-test-a', status: 'used' }
-        );
-        const dbOrder = db.prepare('SELECT phone, invite_code, api_key, expires_at, result_token FROM orders WHERE phone = ?').get('13800138000');
-        assert.equal(dbOrder.phone, '13800138000');
-        assert.equal(dbOrder.invite_code, invite.code);
-        assert.equal(dbOrder.api_key, 'sk-test-a');
-        assert.match(dbOrder.result_token, /^rst_[A-Za-z0-9_-]{43}$/);
-        assert.equal(
-            Math.round((new Date(dbOrder.expires_at) - new Date(redeemResult.body.order.redeemedAt)) / 86400000),
-            31
-        );
+        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM users WHERE phone = ?').get('13800138000').count, 0);
+        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM invite_codes').get().count, 0);
+        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM api_keys').get().count, 0);
+        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM orders').get().count, 0);
 
         const publicQuery = await jsonFetch(`${baseUrl}/api/orders?phone=13800138000`);
         assert.equal(publicQuery.response.status, 401);
@@ -1049,37 +1150,22 @@ test('用户用手机号和邀请码兑换后，从未使用 API key 池分配�
     });
 });
 
-test('登录态邀请码兑换只绑定当前 session 手机号，忽略请求体手机号', async () => {
+test('旧登录态邀请码兑换接口退役后不再绑定当前 session 手机号', async () => {
     await withServer(async ({ baseUrl, db }) => {
-        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-session-redeem'] })
-        });
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 1 })
-        });
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138111');
 
         const redeemResult = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
             method: 'POST',
             headers: { cookie },
-            body: JSON.stringify({ phone: '13800138999', code: inviteResult.body.invites[0].code })
+            body: JSON.stringify({ phone: '13800138999', code: 'YUI-111111-222222' })
         });
 
-        assert.equal(redeemResult.response.status, 201);
-        assert.equal(redeemResult.body.order.phone, '13800138111');
-        assert.equal(redeemResult.body.order.apiKey, 'sk-session-redeem');
-        assert.deepEqual(
-            db.prepare('SELECT phone, invite_code FROM orders WHERE api_key = ?').get('sk-session-redeem'),
-            { phone: '13800138111', invite_code: inviteResult.body.invites[0].code }
-        );
+        assertLegacyIssuanceDisabled(redeemResult);
+        assert.equal(db.prepare('SELECT COUNT(*) AS count FROM orders').get().count, 0);
     });
 });
 
-test('登录态邀请码兑换成功后同步 API key 到 CLIProxyAPI 入口配置', async () => {
+test('旧登录态邀请码兑换退役后不会同步 API key 到 CLIProxyAPI 入口配置', async () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cliproxy-redeem-sync-'));
     try {
         const configPath = path.join(tempDir, 'config.yaml');
@@ -1092,27 +1178,17 @@ test('登录态邀请码兑换成功后同步 API key 到 CLIProxyAPI 入口配�
         ].join('\n'));
 
         await withServer(async ({ baseUrl }) => {
-            await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-                method: 'POST',
-                headers: { 'x-admin-token': 'test-token' },
-                body: JSON.stringify({ apiKeys: ['sk-session-sync'] })
-            });
-            const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-                method: 'POST',
-                headers: { 'x-admin-token': 'test-token' },
-                body: JSON.stringify({ count: 1 })
-            });
             const cookie = await registerUserAndGetCookie(baseUrl, '13800138113');
 
             const redeemResult = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
                 method: 'POST',
                 headers: { cookie },
-                body: JSON.stringify({ code: inviteResult.body.invites[0].code })
+                body: JSON.stringify({ code: 'YUI-111111-222222' })
             });
 
-            assert.equal(redeemResult.response.status, 201);
-            assert.match(fs.readFileSync(configPath, 'utf8'), /  - "sk-session-sync"/);
-            assert.equal(fs.readdirSync(path.join(tempDir, 'backups')).length, 1);
+            assertLegacyIssuanceDisabled(redeemResult);
+            assert.doesNotMatch(fs.readFileSync(configPath, 'utf8'), /sk-session-sync/);
+            assert.equal(fs.existsSync(path.join(tempDir, 'backups')), false);
         }, {
             cliproxyConfigPath: configPath,
             cliproxyConfigBackupDir: path.join(tempDir, 'backups')
@@ -1122,43 +1198,25 @@ test('登录态邀请码兑换成功后同步 API key 到 CLIProxyAPI 入口配�
     }
 });
 
-test('CLIProxyAPI 入口配置同步失败时兑换事务回滚', async () => {
+test('旧兑换退役优先返回 410，不触发 CLIProxyAPI 同步失败事务', async () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cliproxy-redeem-sync-fail-'));
     try {
         const configPath = path.join(tempDir, 'config.yaml');
         fs.writeFileSync(configPath, 'host: "127.0.0.1"\n');
 
         await withServer(async ({ baseUrl, db }) => {
-            await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-                method: 'POST',
-                headers: { 'x-admin-token': 'test-token' },
-                body: JSON.stringify({ apiKeys: ['sk-session-sync-fail'] })
-            });
-            const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-                method: 'POST',
-                headers: { 'x-admin-token': 'test-token' },
-                body: JSON.stringify({ count: 1 })
-            });
-            const invite = inviteResult.body.invites[0];
             const cookie = await registerUserAndGetCookie(baseUrl, '13800138114');
 
             const redeemResult = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
                 method: 'POST',
                 headers: { cookie },
-                body: JSON.stringify({ code: invite.code })
+                body: JSON.stringify({ code: 'YUI-111111-222222' })
             });
 
-            assert.equal(redeemResult.response.status, 500);
-            assert.equal(redeemResult.body.code, 'CLIPROXY_SYNC_FAILED');
-            assert.deepEqual(
-                db.prepare('SELECT status, redeemed_by_phone FROM invite_codes WHERE code = ?').get(invite.code),
-                { status: 'unused', redeemed_by_phone: null }
-            );
-            assert.deepEqual(
-                db.prepare('SELECT status, order_id FROM api_keys WHERE api_key = ?').get('sk-session-sync-fail'),
-                { status: 'unused', order_id: null }
-            );
-            assert.equal(db.prepare('SELECT COUNT(*) AS count FROM orders WHERE api_key = ?').get('sk-session-sync-fail').count, 0);
+            assertLegacyIssuanceDisabled(redeemResult);
+            assert.equal(db.prepare('SELECT COUNT(*) AS count FROM invite_codes').get().count, 0);
+            assert.equal(db.prepare('SELECT COUNT(*) AS count FROM api_keys').get().count, 0);
+            assert.equal(db.prepare('SELECT COUNT(*) AS count FROM orders').get().count, 0);
         }, {
             cliproxyConfigPath: configPath,
             cliproxyConfigBackupDir: path.join(tempDir, 'backups')
@@ -1184,20 +1242,13 @@ test('登录态邀请码兑换要求账号 session、同源和 CSRF', async () =
             skipCsrfForTest: true,
             body: JSON.stringify({ code: 'YUI-NOPE-NOPE' })
         });
-        assert.equal(missingCsrf.response.status, 403);
-        assert.equal(missingCsrf.body.code, 'CSRF_TOKEN_REQUIRED');
+        assertLegacyIssuanceDisabled(missingCsrf);
     });
 });
 
 test('Shop 数据库包含 API key hash 和 usage_events 账本表', async () => {
-    await withServer(async ({ baseUrl, db }) => {
-        const seedKeys = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-hash-schema'] })
-        });
-        assert.equal(seedKeys.response.status, 201);
-
+    await withServer(async ({ db }) => {
+        seedUnusedApiKeyForTest(db, 'sk-hash-schema');
         const apiKeyColumns = db.prepare('PRAGMA table_info(api_keys)').all().map((column) => column.name);
         assert.ok(apiKeyColumns.includes('api_key_hash'));
 
@@ -1211,12 +1262,11 @@ test('Shop 数据库包含 API key hash 和 usage_events 账本表', async () =>
 
 test('配置 API key 加密 secret 后，新导入 key 写入密文且 reveal 可解密', async () => {
     await withServer(async ({ baseUrl, db }) => {
-        const imported = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-encrypted-runtime'] })
+        const historicalOrder = seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138231',
+            apiKey: 'sk-encrypted-runtime',
+            encryptionSecret: '0123456789abcdef0123456789abcdef'
         });
-        assert.equal(imported.response.status, 201);
 
         const stored = db.prepare('SELECT api_key, api_key_ciphertext, api_key_nonce, api_key_hash FROM api_keys WHERE api_key_hash = ?').get(hashApiKeyForTest('sk-encrypted-runtime'));
         assert.equal(stored.api_key_hash, hashApiKeyForTest('sk-encrypted-runtime'));
@@ -1224,26 +1274,14 @@ test('配置 API key 加密 secret 后，新导入 key 写入密文且 reveal �
         assert.ok(stored.api_key_ciphertext);
         assert.ok(stored.api_key_nonce);
 
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 1 })
-        });
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138231');
-        const redeemed = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
-            method: 'POST',
-            headers: { cookie },
-            body: JSON.stringify({ code: inviteResult.body.invites[0].code })
-        });
-        assert.equal(redeemed.response.status, 201);
-        assert.equal(redeemed.body.order.apiKey, 'sk-encrypted-runtime');
 
-        const order = db.prepare('SELECT api_key, api_key_ciphertext, api_key_nonce FROM orders WHERE id = ?').get(redeemed.body.order.id);
+        const order = db.prepare('SELECT api_key, api_key_ciphertext, api_key_nonce FROM orders WHERE id = ?').get(historicalOrder.id);
         assert.notEqual(order.api_key, 'sk-encrypted-runtime');
         assert.ok(order.api_key_ciphertext);
         assert.ok(order.api_key_nonce);
 
-        const revealed = await jsonFetch(`${baseUrl}/api/account/orders/${redeemed.body.order.id}/reveal-api-key`, {
+        const revealed = await jsonFetch(`${baseUrl}/api/account/orders/${historicalOrder.id}/reveal-api-key`, {
             method: 'POST',
             headers: { cookie },
             body: JSON.stringify({})
@@ -2082,20 +2120,10 @@ test('内部 usage event 接口校验 token、HMAC、timestamp 并幂等写入',
 });
 
 test('管理员 usage summary 返回 Shop 和未托管 key 的聚合用量', async () => {
-    await withServer(async ({ baseUrl }) => {
-        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-summary-shop'] })
-        });
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 1 })
-        });
-        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138500', code: inviteResult.body.invites[0].code })
+    await withServer(async ({ baseUrl, db }) => {
+        seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138500',
+            apiKey: 'sk-summary-shop'
         });
 
         const requestedAt = new Date().toISOString();
@@ -2705,27 +2733,17 @@ test('usage 自动导入可手动触发一次并保持幂等状态', async () =>
     }
 });
 
-test('新兑换订单的兑换时间和到期时间使用中国东八区格式存储', async () => {
-    await withServer(async ({ baseUrl, db }) => {
-        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-china-time'] })
-        });
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 1 })
+test('历史兑换订单的兑换时间和到期时间使用中国东八区格式存储', async () => {
+    await withServer(async ({ db }) => {
+        const order = seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138400',
+            apiKey: 'sk-china-time',
+            redeemedAt: '2026-06-01T12:00:00+08:00',
+            expiresAt: '2026-07-02T12:00:00+08:00'
         });
 
-        const redeemResult = await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138400', code: inviteResult.body.invites[0].code })
-        });
-
-        assert.equal(redeemResult.response.status, 201);
-        assert.match(redeemResult.body.order.redeemedAt, /\+08:00$/);
-        assert.match(redeemResult.body.order.expiresAt, /\+08:00$/);
+        assert.match(order.redeemedAt, /\+08:00$/);
+        assert.match(order.expiresAt, /\+08:00$/);
 
         const dbOrder = db.prepare('SELECT redeemed_at, expires_at FROM orders WHERE phone = ?').get('13800138400');
         assert.match(dbOrder.redeemed_at, /\+08:00$/);
@@ -2738,26 +2756,15 @@ test('新兑换订单的兑换时间和到期时间使用中国东八区格式�
 });
 
 test('API key 结果页需要账户登录才能访问', async () => {
-    await withServer(async ({ baseUrl }) => {
+    await withServer(async ({ baseUrl, db }) => {
         const blocked = await fetch(`${baseUrl}/shop/key/`, { redirect: 'manual' });
         assert.equal(blocked.status, 302);
         assert.equal(blocked.headers.get('location'), '/shop/login/');
 
-        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-page-token'] })
+        seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138004',
+            apiKey: 'sk-page-token'
         });
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 1 })
-        });
-        const redeemResult = await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138004', code: inviteResult.body.invites[0].code })
-        });
-        assert.match(redeemResult.response.headers.get('set-cookie') || '', /yui_shop_result_token=/);
 
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138004');
 
@@ -2791,7 +2798,7 @@ test('管理员 token 只能通过请求头提交，不能放在 URL 查询参�
     });
 });
 
-test('旧邀请码和 API key 管理接口仍只接受后端管理员 token', async () => {
+test('旧邀请码和 API key 管理接口保留鉴权边界且写路径返回 410', async () => {
     await withServer(async ({ baseUrl, db }) => {
         seedAdminUserForTest(db);
         const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
@@ -2814,7 +2821,7 @@ test('旧邀请码和 API key 管理接口仍只接受后端管理员 token', as
             headers: { 'x-admin-token': 'test-token' },
             body: JSON.stringify({ count: 1 })
         });
-        assert.equal(tokenInvite.response.status, 201);
+        assertLegacyIssuanceDisabled(tokenInvite);
 
         const sessionApiKeyImport = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
             method: 'POST',
@@ -2826,7 +2833,71 @@ test('旧邀请码和 API key 管理接口仍只接受后端管理员 token', as
     });
 });
 
-test('管理员 session 可访问 invite console、生成邀请码和导入 API key 池', async () => {
+test('Sub2API migration disables legacy invite and API key issuance endpoints', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedAdminUserForTest(db);
+        const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '15951875192', password: 'Abcdefg1' })
+        });
+        assert.equal(adminLogin.response.status, 200);
+        const adminCookie = adminLogin.response.headers.get('set-cookie') || '';
+        const accountCookie = await registerUserAndGetCookie(baseUrl, '13800138777');
+
+        const cases = [
+            {
+                name: 'account invite redeem',
+                path: '/api/account/invites/redeem',
+                headers: { cookie: accountCookie },
+                body: { code: 'YUI-111111-222222' }
+            },
+            {
+                name: 'token invite create',
+                path: '/api/admin/invites',
+                headers: { 'x-admin-token': 'test-token' },
+                body: { count: 1 }
+            },
+            {
+                name: 'token api key import',
+                path: '/api/admin/api-keys',
+                headers: { 'x-admin-token': 'test-token' },
+                body: { apiKeys: ['sk-disabled-token-import'] }
+            },
+            {
+                name: 'session invite create',
+                path: '/api/admin/session-invites',
+                headers: { cookie: adminCookie },
+                body: { count: 1 }
+            },
+            {
+                name: 'session api key import',
+                path: '/api/admin/session-api-keys',
+                headers: { cookie: adminCookie },
+                body: { apiKeysText: 'sk-disabled-session-import' }
+            },
+            {
+                name: 'legacy public invite redeem',
+                path: '/api/invites/redeem',
+                headers: {},
+                body: { phone: '13800138778', code: 'YUI-111111-222222' }
+            }
+        ];
+
+        for (const item of cases) {
+            const result = await jsonFetch(`${baseUrl}${item.path}`, {
+                method: 'POST',
+                headers: item.headers,
+                body: JSON.stringify(item.body)
+            });
+            assert.equal(result.response.status, 410, item.name);
+            assert.equal(result.body.code, 'SHOP_LEGACY_KEY_ISSUANCE_DISABLED', item.name);
+        }
+    }, {
+        legacyKeyIssuanceDisabled: true
+    });
+});
+
+test('管理员 session 可访问 invite console，但旧生成和导入写路径已退役', async () => {
     await withServer(async ({ baseUrl, db }) => {
         seedAdminUserForTest(db);
         const adminLogin = await jsonFetch(`${baseUrl}/api/auth/login`, {
@@ -2841,27 +2912,22 @@ test('管理员 session 可访问 invite console、生成邀请码和导入 API 
             headers: { cookie: adminCookie },
             body: JSON.stringify({ count: 2 })
         });
-        assert.equal(createdInvites.response.status, 201);
-        assert.equal(createdInvites.body.invites.length, 2);
+        assertLegacyIssuanceDisabled(createdInvites);
 
         const importedKeys = await jsonFetch(`${baseUrl}/api/admin/session-api-keys`, {
             method: 'POST',
             headers: { cookie: adminCookie },
             body: JSON.stringify({ apiKeysText: 'sk-admin-session-a\nsk-admin-session-b' })
         });
-        assert.equal(importedKeys.response.status, 201);
-        assert.deepEqual(importedKeys.body.apiKeys.map((item) => item.apiKeyPreview), [
-            keyPreviewForTest('sk-admin-session-a'),
-            keyPreviewForTest('sk-admin-session-b')
-        ]);
+        assertLegacyIssuanceDisabled(importedKeys);
         assert.doesNotMatch(JSON.stringify(importedKeys.body), /sk-admin-session-a/);
 
         const consoleResult = await jsonFetch(`${baseUrl}/api/admin/invite-console`, {
             headers: { cookie: adminCookie }
         });
         assert.equal(consoleResult.response.status, 200);
-        assert.equal(consoleResult.body.summary.unusedInvites, 2);
-        assert.equal(consoleResult.body.summary.unusedApiKeys, 2);
+        assert.equal(consoleResult.body.summary.unusedInvites, 0);
+        assert.equal(consoleResult.body.summary.unusedApiKeys, 0);
     });
 });
 
@@ -2903,23 +2969,13 @@ test('API 响应使用 no-store 且频繁账户查询会触发限流', async () 
 
 test('当前订单接口只返回 result token 绑定的订单', async () => {
     await withServer(async ({ baseUrl, db }) => {
-        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-token-a', 'sk-token-b'] })
+        seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138101',
+            apiKey: 'sk-token-a'
         });
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 2 })
-        });
-        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138101', code: inviteResult.body.invites[0].code })
-        });
-        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138102', code: inviteResult.body.invites[1].code })
+        seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138102',
+            apiKey: 'sk-token-b'
         });
 
         const firstToken = db.prepare('SELECT result_token FROM orders WHERE phone = ?').get('13800138101').result_token;
@@ -2996,30 +3052,19 @@ test('手机号包含字母或位数不对时，兑换接口会拒绝', async ()
             method: 'POST',
             body: JSON.stringify({ phone: '13800138abc', code: 'YUI-ABCDEF-123456' })
         });
-        assert.equal(invalidRedeem.response.status, 400);
-        assert.equal(invalidRedeem.body.code, 'INVALID_PHONE');
+        assertLegacyIssuanceDisabled(invalidRedeem);
     });
 });
 
 test('登录后的订单查询接口只返回当前 session 手机号的数据', async () => {
-    await withServer(async ({ baseUrl }) => {
-        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-account-aaa-own', 'sk-account-zzz-other'] })
+    await withServer(async ({ baseUrl, db }) => {
+        seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138691',
+            apiKey: 'sk-account-aaa-own'
         });
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 2 })
-        });
-        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138691', code: inviteResult.body.invites[0].code })
-        });
-        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138692', code: inviteResult.body.invites[1].code })
+        seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138692',
+            apiKey: 'sk-account-zzz-other'
         });
 
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138691');
@@ -3035,13 +3080,11 @@ test('登录后的订单查询接口只返回当前 session 手机号的数据',
     });
 });
 
-test('Shop 页面除登录、注册和重置密码外未登录都会跳转登录页', async () => {
+test('Shop 入口和指南公开可访问，账户相关页面未登录仍跳转登录页', async () => {
     await withServer(async ({ baseUrl }) => {
         const protectedPaths = [
-            '/shop/',
             '/shop/redeem/',
             '/shop/query/',
-            '/shop/guide/',
             '/shop/key/',
             '/shop/order/',
             '/shop/pay/',
@@ -3068,10 +3111,28 @@ test('Shop 页面除登录、注册和重置密码外未登录都会跳转登录
         const resetPassword = await fetch(`${baseUrl}/shop/reset-password/`, { redirect: 'manual' });
         assert.equal(resetPassword.status, 200);
         assert.match(await resetPassword.text(), /id="passwordResetForm"/);
+
+        const home = await fetch(`${baseUrl}/shop/`, { redirect: 'manual' });
+        assert.equal(home.status, 200);
+        assert.match(await home.text(), /天才程序员中转站入口/);
+
+        const guide = await fetch(`${baseUrl}/shop/guide/`, { redirect: 'manual' });
+        assert.equal(guide.status, 200);
+        assert.match(await guide.text(), /Sub2API 配置使用方法/);
     });
 });
 
-test('已登录普通用户访问 Shop 首页和查询页会进入 Account', async () => {
+test('Shop 首页使用配置的 Sub2API 公网入口链接', async () => {
+    await withServer(async ({ baseUrl }) => {
+        const response = await fetch(`${baseUrl}/shop/`, { redirect: 'manual' });
+        assert.equal(response.status, 200);
+        assert.match(await response.text(), /href="https:\/\/sub2api\.example\.com"/);
+    }, {
+        sub2apiPublicUrl: 'https://sub2api.example.com/'
+    });
+});
+
+test('已登录普通用户访问 Shop 首页保持入口页，查询页进入 Account', async () => {
     await withServer(async ({ baseUrl }) => {
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138693');
 
@@ -3079,8 +3140,8 @@ test('已登录普通用户访问 Shop 首页和查询页会进入 Account', asy
             redirect: 'manual',
             headers: { cookie }
         });
-        assert.equal(home.status, 302);
-        assert.equal(home.headers.get('location'), '/shop/account/');
+        assert.equal(home.status, 200);
+        assert.match(await home.text(), /天才程序员中转站入口/);
 
         const query = await fetch(`${baseUrl}/shop/query/`, {
             redirect: 'manual',
@@ -3092,24 +3153,14 @@ test('已登录普通用户访问 Shop 首页和查询页会进入 Account', asy
 });
 
 test('Account usage summary 只聚合当前登录手机号关联的 token 用量', async () => {
-    await withServer(async ({ baseUrl }) => {
-        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-usage-aaa-own', 'sk-usage-zzz-other'] })
+    await withServer(async ({ baseUrl, db }) => {
+        seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138694',
+            apiKey: 'sk-usage-aaa-own'
         });
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 2 })
-        });
-        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138694', code: inviteResult.body.invites[0].code })
-        });
-        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138695', code: inviteResult.body.invites[1].code })
+        seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138695',
+            apiKey: 'sk-usage-zzz-other'
         });
 
         const requestedAt = new Date().toISOString();
@@ -3184,7 +3235,7 @@ test('Account usage summary 只聚合当前登录手机号关联的 token 用量
 
 test('Account 模型总览接口使用托管 API key 探测模型并按官方美元价格返回', async () => {
     let capturedModelRequest = null;
-    await withServer(async ({ baseUrl }) => {
+    await withServer(async ({ baseUrl, db }) => {
         const unauthorized = await fetch(`${baseUrl}/api/account/model-overview`);
         assert.equal(unauthorized.status, 401);
         assert.deepEqual(await unauthorized.json(), {
@@ -3192,24 +3243,11 @@ test('Account 模型总览接口使用托管 API key 探测模型并按官方美
             message: '请先登录。'
         });
 
+        seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138696',
+            apiKey: 'sk-model-overview-test'
+        });
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138696');
-        const apiKeyResult = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-model-overview-test'] })
-        });
-        assert.equal(apiKeyResult.response.status, 201);
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 1 })
-        });
-        const redeemResult = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
-            method: 'POST',
-            headers: { cookie },
-            body: JSON.stringify({ code: inviteResult.body.invites[0].code })
-        });
-        assert.equal(redeemResult.response.status, 201);
 
         const result = await fetch(`${baseUrl}/api/account/model-overview`, {
             headers: { cookie }
@@ -3260,31 +3298,18 @@ test('Account 模型总览接口使用托管 API key 探测模型并按官方美
 
 test('Account 模型总览接口会跳过不可用托管 API key 继续探测同账号其他 key', async () => {
     const requestedAuthorizations = [];
-    await withServer(async ({ baseUrl }) => {
+    await withServer(async ({ baseUrl, db }) => {
+        seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138697',
+            apiKey: 'sk-model-overview-good',
+            redeemedAt: '2026-06-01T12:00:00+08:00'
+        });
+        seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138697',
+            apiKey: 'sk-model-overview-bad',
+            redeemedAt: '2026-06-02T12:00:00+08:00'
+        });
         const cookie = await registerUserAndGetCookie(baseUrl, '13800138697');
-        const apiKeyResult = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-model-overview-good', 'sk-model-overview-bad'] })
-        });
-        assert.equal(apiKeyResult.response.status, 201);
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 2 })
-        });
-        const goodRedeem = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
-            method: 'POST',
-            headers: { cookie },
-            body: JSON.stringify({ code: inviteResult.body.invites[0].code })
-        });
-        assert.equal(goodRedeem.response.status, 201);
-        const badRedeem = await jsonFetch(`${baseUrl}/api/account/invites/redeem`, {
-            method: 'POST',
-            headers: { cookie },
-            body: JSON.stringify({ code: inviteResult.body.invites[1].code })
-        });
-        assert.equal(badRedeem.response.status, 201);
 
         const result = await fetch(`${baseUrl}/api/account/model-overview`, {
             headers: { cookie }
@@ -3315,19 +3340,13 @@ test('Account 模型总览接口会跳过不可用托管 API key 继续探测同
     });
 });
 
-test('邀请码使用 SQLite 主键精确匹配，大小写归一后只能兑换一次', async () => {
+test('邀请码保留 SQLite 主键约束，旧兑换接口统一退役', async () => {
     await withServer(async ({ baseUrl, db }) => {
-        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-once'] })
-        });
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 1 })
-        });
-        const invite = inviteResult.body.invites[0];
+        const invite = { code: 'YUI-ABCDEF-123456' };
+        db.prepare(`
+INSERT INTO invite_codes (code, status, created_at)
+VALUES (?, 'unused', ?)
+`).run(invite.code, '2026-06-01T12:00:00+08:00');
         const indexList = db.prepare('PRAGMA index_list(invite_codes)').all();
         assert.ok(indexList.some((item) => item.origin === 'pk' || item.origin === 'u'));
 
@@ -3335,32 +3354,13 @@ test('邀请码使用 SQLite 主键精确匹配，大小写归一后只能兑换
             method: 'POST',
             body: JSON.stringify({ phone: '13800138001', code: invite.code.toLowerCase() })
         });
-        assert.equal(lowerCaseRedeem.response.status, 201);
+        assertLegacyIssuanceDisabled(lowerCaseRedeem);
 
         const secondRedeem = await jsonFetch(`${baseUrl}/api/invites/redeem`, {
             method: 'POST',
             body: JSON.stringify({ phone: '13800138002', code: invite.code })
         });
-        assert.equal(secondRedeem.response.status, 409);
-        assert.equal(secondRedeem.body.code, 'INVITE_USED');
-    });
-});
-
-test('没有未使用 API key 时，邀请码不能被兑换且不会被标记为已使用', async () => {
-    await withServer(async ({ baseUrl, db }) => {
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 1 })
-        });
-        const invite = inviteResult.body.invites[0];
-
-        const redeemResult = await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138003', code: invite.code })
-        });
-        assert.equal(redeemResult.response.status, 409);
-        assert.equal(redeemResult.body.code, 'NO_AVAILABLE_API_KEY');
+        assertLegacyIssuanceDisabled(secondRedeem);
         assert.deepEqual(
             db.prepare('SELECT status, redeemed_by_phone FROM invite_codes WHERE code = ?').get(invite.code),
             { status: 'unused', redeemed_by_phone: null }
@@ -3368,22 +3368,41 @@ test('没有未使用 API key 时，邀请码不能被兑换且不会被标记�
     });
 });
 
-test('API key 具有唯一性，重复导入会被拒绝', async () => {
+test('旧兑换接口退役后不会因无可用 API key 改写邀请码状态', async () => {
+    await withServer(async ({ baseUrl, db }) => {
+        const invite = { code: 'YUI-NOKEYS-000001' };
+        db.prepare(`
+INSERT INTO invite_codes (code, status, created_at)
+VALUES (?, 'unused', ?)
+`).run(invite.code, '2026-06-01T12:00:00+08:00');
+
+        const redeemResult = await jsonFetch(`${baseUrl}/api/invites/redeem`, {
+            method: 'POST',
+            body: JSON.stringify({ phone: '13800138003', code: invite.code })
+        });
+        assertLegacyIssuanceDisabled(redeemResult);
+        assert.deepEqual(
+            db.prepare('SELECT status, redeemed_by_phone FROM invite_codes WHERE code = ?').get(invite.code),
+            { status: 'unused', redeemed_by_phone: null }
+        );
+    });
+});
+
+test('旧 API key 导入接口退役后不会写入重复 key', async () => {
     await withServer(async ({ baseUrl }) => {
         const first = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
             method: 'POST',
             headers: { 'x-admin-token': 'test-token' },
             body: JSON.stringify({ apiKeys: ['sk-duplicate'] })
         });
-        assert.equal(first.response.status, 201);
+        assertLegacyIssuanceDisabled(first);
 
         const second = await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
             method: 'POST',
             headers: { 'x-admin-token': 'test-token' },
             body: JSON.stringify({ apiKeys: ['sk-duplicate'] })
         });
-        assert.equal(second.response.status, 409);
-        assert.equal(second.body.code, 'API_KEY_EXISTS');
+        assertLegacyIssuanceDisabled(second);
     });
 });
 
@@ -3419,26 +3438,12 @@ test('内部 API key 状态接口必须使用请求头 token', async () => {
 
 test('内部 API key 状态接口返回未托管、未兑换、有效和过期状态', async () => {
     await withServer(async ({ baseUrl, db }) => {
-        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-active-status', 'sk-unused-status'] })
+        seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138300',
+            apiKey: 'sk-active-status',
+            expiresAt: '2000-01-01T00:00:00.000Z'
         });
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 1 })
-        });
-        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138300', code: inviteResult.body.invites[0].code })
-        });
-
-        db.prepare(`
-UPDATE orders
-SET expires_at = ?
-WHERE api_key = ?
-`).run('2000-01-01T00:00:00.000Z', 'sk-active-status');
+        seedUnusedApiKeyForTest(db, 'sk-unused-status');
 
         const notFound = await jsonFetch(`${baseUrl}/api/internal/api-keys/status?apiKey=sk-not-imported`, {
             headers: { 'x-internal-token': 'internal-test-token' }
@@ -3492,10 +3497,8 @@ test('内部 API key 状态接口支持 POST api_key_hash 且不需要 raw key',
 
 test('内部 API key 状态查询使用 hash 查找，不依赖明文列', async () => {
     await withServer(async ({ baseUrl, db }) => {
-        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-status-encrypted'] })
+        seedUnusedApiKeyForTest(db, 'sk-status-encrypted', {
+            encryptionSecret: '0123456789abcdef0123456789abcdef'
         });
         db.prepare('UPDATE api_keys SET api_key = ? WHERE api_key_hash = ?').run('', hashApiKeyForTest('sk-status-encrypted'));
 
@@ -3584,23 +3587,13 @@ test('用户注册校验手机号、密码规则和确认密码', async () => {
 
 test('历史兑换手机号可以补密码注册并通过 account session 只查看自己的订单', async () => {
     await withServer(async ({ baseUrl, db }) => {
-        await jsonFetch(`${baseUrl}/api/admin/api-keys`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ apiKeys: ['sk-account-a', 'sk-account-b'] })
+        seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138601',
+            apiKey: 'sk-account-a'
         });
-        const inviteResult = await jsonFetch(`${baseUrl}/api/admin/invites`, {
-            method: 'POST',
-            headers: { 'x-admin-token': 'test-token' },
-            body: JSON.stringify({ count: 2 })
-        });
-        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138601', code: inviteResult.body.invites[0].code })
-        });
-        await jsonFetch(`${baseUrl}/api/invites/redeem`, {
-            method: 'POST',
-            body: JSON.stringify({ phone: '13800138602', code: inviteResult.body.invites[1].code })
+        seedHistoricalRedeemedOrderForTest(db, {
+            phone: '13800138602',
+            apiKey: 'sk-account-b'
         });
 
         const register = await jsonFetch(`${baseUrl}/api/auth/register`, {

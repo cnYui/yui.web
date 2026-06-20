@@ -22,112 +22,51 @@
     </header>
     <main class="flex-1 max-w-[960px] mx-auto px-6 md:px-12 py-14 md:py-20 w-full">
         <section class="mb-8">
-            <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Usage</p>
-            <h1 class="mt-4 font-display text-4xl md:text-6xl">Codex 配置使用方法</h1>
-            <p class="mt-5 text-text-muted dark:text-dark-text-muted leading-relaxed">兑换完成后，把下面的 `sk-xx` 替换成你获得的 API key，再把整段文字发给另一个 AI，让它帮你修改 Codex 配置文件。公网请求必须使用 Authorization Bearer 认证。</p>
+            <p class="text-xs uppercase tracking-[0.28em] text-text-muted dark:text-dark-text-muted">Sub2API</p>
+            <h1 class="mt-4 font-display text-4xl md:text-6xl">Sub2API 配置使用方法</h1>
+            <p class="mt-5 text-text-muted dark:text-dark-text-muted leading-relaxed">朋友只使用 Sub2API 用户 key 和 Sub2API Base URL。不要使用 CLIProxyAPI 的内部 key；CLIProxyAPI 只保留在内网给 Sub2API 作为上游。</p>
         </section>
         <section class="border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card p-5 md:p-6">
             <pre class="max-h-[680px] overflow-auto whitespace-pre-wrap rounded-md border border-border-subtle dark:border-dark-border bg-background-soft dark:bg-dark-surface p-4 text-sm leading-7 text-primary dark:text-dark-text"><code>把下面这段文字发给另外一个 AI，让它根据文字内容去修改 Codex 配置目录里的 config.toml 和 auth.json。改好之后重启 Codex 就能使用。
 
-用这个 API key：sk-xx
+export OPENAI_BASE_URL="https://你的-sub2api-域名/v1"
+export OPENAI_API_KEY="Sub2API 分配给你的 API key"
 
-# Codex CLI 使用公网 API 配置说明（中文）
+# Codex CLI 使用 Sub2API 配置说明
 
-本文档用于把本地 Codex CLI 改为使用公网 API。请严格按下面的鉴权方式配置：请求必须通过 HTTP Header `Authorization: Bearer &lt;API Key&gt;` 发送。不要把 API key 放到 URL、query 参数、x-api-key 或其他 header 里。
+请求统一发到 Sub2API，不要直接访问 CLIProxyAPI。认证方式只使用 HTTP Header：
 
-## 目标配置
+Authorization: Bearer $OPENAI_API_KEY
 
-- Base URL：https://api.aaccx.pw/v1
-- API Key：sk-xx
-- 认证方式：Authorization: Bearer sk-xx
-
-## 适用场景
-
-适用于 Windows / Linux / macOS 环境下，Codex CLI 使用 ~/.codex/config.toml 与 ~/.codex/auth.json 作为本地配置文件的情况。
-
-## 修改步骤
-
-### 1. 定位 Codex 配置目录
-
-Windows 通常在：
-
-C:\Users\&lt;你的用户名&gt;\.codex
-
-Linux / macOS 通常在：
-
-~/.codex
-
-对应文件为：
-
-- ~/.codex/config.toml
-- ~/.codex/auth.json
-
-### 2. 修改 config.toml
-
-打开 config.toml，确保（或新增）以下片段，其中 base_url 改为公网地址。model 可以保留用户原来的可用模型；下面只是示例：
+## config.toml
 
 ```toml
-model_provider = "cliproxyapi"
+model_provider = "sub2api"
 model = "gpt-5.4"
 model_reasoning_effort = "medium"
 
-[model_providers.cliproxyapi]
-name = "cliproxyapi"
-base_url = "https://api.aaccx.pw/v1"
+[model_providers.sub2api]
+name = "sub2api"
+base_url = "https://你的-sub2api-域名/v1"
 wire_api = "responses"
 ```
 
-如果文件里原来是：
-
-base_url = "http://127.0.0.1:8317/v1"
-
-请替换为：
-
-base_url = "https://api.aaccx.pw/v1"
-
-### 3. 修改 auth.json
-
-打开 auth.json，将 OPENAI_API_KEY 设置为拿到的 API key。Codex CLI 会读取这个值，并在请求时组装成 `Authorization: Bearer sk-xx`：
+## auth.json
 
 ```json
 {
-  "OPENAI_API_KEY": "sk-xx"
+  "OPENAI_API_KEY": "Sub2API 分配给你的 API key"
 }
 ```
 
-### 4. Windows 验证方式
-
-可用 PowerShell 快速验证：
-
-```powershell
-$base='https://api.aaccx.pw/v1'
-$key='sk-xx'
-$headers=@{ Authorization = "Bearer $key" }
-Invoke-RestMethod -Method Get -Uri "$base/models" -Headers $headers -TimeoutSec 30
-```
-
-成功时会返回模型列表（data 数组）。
-
-如果这里返回 401 Invalid API key，优先检查：
-
-- auth.json 里是否仍然是 sk-xx、占位 key 或旧 key。
-- API key 前后是否多了空格、换行或中文标点。
-- 请求头是否是 Authorization: Bearer sk-xx。
-- 不要使用 x-api-key，不要把 key 放在 URL 后面。
-
-### 5. Linux / macOS 验证方式
+## 验证
 
 ```bash
-curl -sS https://api.aaccx.pw/v1/models \
-  -H "Authorization: Bearer sk-xx"
+curl -sS "$OPENAI_BASE_URL/models" \
+  -H "Authorization: Bearer $OPENAI_API_KEY"
 ```
 
-## 注意事项
-
-- 该 API Key 属于敏感信息，建议只在受控范围内使用。
-- 不要将含真实密钥的 auth.json 上传到公开仓库。
-- 如果未来更换 URL 或 Key，只需按本文档替换同一位置字段即可。
-- 修改完成后必须重启 Codex 或重新打开终端，让配置重新加载。</code></pre>
+不要使用 CLIProxyAPI 的内部 key；朋友只使用 Sub2API 用户 key。不要把 API key 放到 URL、query 参数、x-api-key 或其他 header 里。</code></pre>
         </section>
     </main>
 </body>
