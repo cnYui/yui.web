@@ -902,7 +902,7 @@ function createShopApp(options = {}) {
     ).trim().toLowerCase() === 'true';
     const sub2apiPublicUrl = normalizePublicHttpUrl(
         options.sub2apiPublicUrl ?? process.env.SUB2API_PUBLIC_URL,
-        'http://localhost:18080'
+        'https://aaccx.pw/dashboard'
     );
     if (apiKeyEncryptionSecret) {
         assertStrongSecret('SHOP_API_KEY_ENCRYPTION_SECRET', apiKeyEncryptionSecret, { production });
@@ -1323,7 +1323,7 @@ function createShopApp(options = {}) {
 
     function billingBlockedStatus(phone) {
         const billing = billingStatusForPhone(phone);
-        if (billing.balanceNanos > 0) {
+        if (billing.balanceNanos >= 0) {
             return { blocked: false, billing };
         }
         return { blocked: true, billing };
