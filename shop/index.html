@@ -1,85 +1,71 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Shop - Yui's Portfolio</title>
-    <script>
-        (function() {
-            const html = document.documentElement;
-            html.setAttribute('data-ui-ready', 'false');
-            try {
-                const theme = localStorage.getItem('yui-portfolio-theme');
-                const lang = localStorage.getItem('yui-portfolio-lang');
-                const langMap = { zh: 'zh-CN', en: 'en', ja: 'ja' };
-                const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
-                html.classList.toggle('dark', resolvedTheme === 'dark');
-                html.style.colorScheme = resolvedTheme;
-                html.style.backgroundColor = resolvedTheme === 'dark' ? '#0f0f0f' : '#ffffff';
-                html.lang = langMap[lang] || 'en';
-            } catch (error) {
-                html.style.colorScheme = 'light';
-                html.style.backgroundColor = '#ffffff';
-                html.lang = 'en';
-            }
-        })();
-    </script>
     <style>
-        html { background-color: #ffffff; }
-        html.dark { background-color: #0f0f0f; }
-        html[data-ui-ready="false"] body { opacity: 0; }
-        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
-    </style>
-    <link href="/styles/site.css" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com" rel="preconnect"/>
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <script src="/js/theme.js"></script>
-    <script src="/js/lang.js?v=20260419-2"></script>
-    <script src="/js/mobile-menu.js"></script>
-</head>
-<body class="bg-white dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col antialiased transition-colors duration-300">
-    <header class="sticky top-0 z-50 w-full border-b border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
-        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
-            <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
-            <div class="flex items-center gap-10">
-                <nav class="hidden md:flex items-center gap-8">
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">Music</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
-                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/shop/">Shop</a>
-                </nav>
-                <div class="flex gap-2">
-                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="ZH/EN/JA"><span class="text-xs font-bold">EN</span></button>
-                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme"><span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span></button>
-                    <button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card transition-colors" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu"><span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span></button>
-                </div>
-            </div>
-        </div>
-        <nav id="mobileMenu" class="hidden md:hidden border-t border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
-            <div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/music/">Music</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/anime/">Anime</a>
-                <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 w-fit" href="/shop/">Shop</a>
-            </div>
-        </nav>
-    </header>
+        html,
+        body {
+            margin: 0;
+            min-height: 100%;
+            background: #050505;
+        }
 
-    <main class="flex-1">
-        <section class="max-w-[900px] mx-auto px-6 md:px-12 py-16 md:py-28">
-            <div class="pt-4">
-                <h1 class="font-display text-5xl md:text-7xl leading-[1.05] text-primary dark:text-dark-text">天才程序员中转站入口</h1>
-                <div class="mt-10 max-w-[260px]">
-                    <a class="btn-primary h-14 px-4 text-center justify-center whitespace-nowrap" href="/dashboard" data-sub2api-link>进入 Sub2API</a>
-                </div>
-            </div>
-        </section>
+        body {
+            width: 100%;
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow: hidden;
+        }
+
+        .shop-entry-page {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow: hidden;
+            background: #050505;
+        }
+
+        .shop-entry-image {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .shop-entry-hotspot {
+            position: absolute;
+            top: 51%;
+            left: 50%;
+            display: block;
+            width: clamp(190px, 21vw, 560px);
+            height: clamp(160px, 17vw, 430px);
+            transform: translate(-50%, -50%);
+            border-radius: 999px;
+            color: transparent;
+            cursor: pointer;
+            font-size: 0;
+            outline-offset: 8px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .shop-entry-hotspot:focus-visible {
+            outline: 2px solid rgba(255, 255, 255, 0.86);
+        }
+    </style>
+</head>
+<body>
+    <main class="shop-entry-page" aria-label="Shop">
+        <img class="shop-entry-image" src="/images/shop/code-transit-entry.webp" alt=""/>
+        <a class="shop-entry-hotspot" href="/dashboard" data-sub2api-link aria-label="进入 Sub2API"></a>
     </main>
 </body>
 </html>

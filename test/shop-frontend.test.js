@@ -295,15 +295,19 @@ test('兑换页前端调用登录态兑换接口', () => {
     assert.doesNotMatch(script, /api\/invites\/redeem',\s*\{/);
 });
 
-test('商店首页只保留 Sub2API 控制台入口，公开说明页只使用 Sub2API 用户 key', () => {
+test('商店首页只保留图片热区入口，公开说明页只使用 Sub2API 用户 key', () => {
     const home = fs.readFileSync(path.join(__dirname, '..', 'shop/index.html'), 'utf8');
     const guide = fs.readFileSync(path.join(__dirname, '..', 'shop/guide/index.html'), 'utf8');
 
-    assert.match(home, /天才程序员中转站入口/);
+    assert.match(home, /src="\/images\/shop\/code-transit-entry\.webp"/);
+    assert.match(home, /aria-label="进入 Sub2API"/);
+    assert.match(home, /href="\/dashboard"[^>]*data-sub2api-link/);
+    assert.equal((home.match(/data-sub2api-link/g) || []).length, 1);
+    assert.doesNotMatch(home, /天才程序员中转站入口/);
+    assert.doesNotMatch(home, />\s*进入 Sub2API\s*<\/a>/);
     assert.doesNotMatch(home, /Sub2API gateway/);
     assert.doesNotMatch(home, /href="\/shop\/guide\/"/);
     assert.doesNotMatch(home, /查看使用方法/);
-    assert.match(home, /href="\/dashboard"[^>]*data-sub2api-link[^>]*>进入 Sub2API<\/a>/);
     assert.doesNotMatch(home, /href="\/shop\/redeem\/"/);
     assert.match(guide, /Sub2API 配置使用方法/);
     assert.match(guide, /OPENAI_BASE_URL/);
@@ -317,14 +321,16 @@ test('商店首页只保留 Sub2API 控制台入口，公开说明页只使用 S
     assert.doesNotMatch(guide, /sk-[a-f0-9]{32}/);
 });
 
-test('Shop 首页退为中转站文案和 Sub2API 跳转入口', () => {
+test('Shop 首页退为背景图和 Sub2API 透明跳转热区', () => {
     const home = fs.readFileSync(path.join(__dirname, '..', 'shop/index.html'), 'utf8');
 
-    assert.match(home, /天才程序员中转站入口/);
+    assert.match(home, /class="shop-entry-hotspot"/);
+    assert.match(home, /data-sub2api-link/);
+    assert.doesNotMatch(home, /天才程序员中转站入口/);
     assert.doesNotMatch(home, /Codex[\s\S]*统一入口/);
     assert.doesNotMatch(home, /Sub2API 是当前 Codex API 的统一入口/);
     assert.doesNotMatch(home, /API key、套餐、额度和用量都以 Sub2API 为准/);
-    assert.match(home, /进入 Sub2API/);
+    assert.doesNotMatch(home, />\s*进入 Sub2API\s*<\/a>/);
     assert.doesNotMatch(home, /Sub2API 发 Key/);
     assert.doesNotMatch(home, /本地账号池/);
     assert.doesNotMatch(home, /用量归 Sub2API/);
@@ -883,7 +889,8 @@ test('Shop 首页顶部不显示账号入口且正文只保留一个 Sub2API 入
     assert.equal(accountLinkCount, 0);
     assert.equal((home.match(/data-sub2api-link/g) || []).length, 1);
     assert.doesNotMatch(header, /data-account-link/);
-    assert.match(home, /<main[\s\S]*data-sub2api-link[\s\S]*>进入 Sub2API<\/a>/);
+    assert.match(home, /<main[\s\S]*src="\/images\/shop\/code-transit-entry\.webp"[\s\S]*data-sub2api-link/);
+    assert.doesNotMatch(home, />\s*进入 Sub2API\s*<\/a>/);
     assert.doesNotMatch(home, /href="\/shop\/login\/"/);
     assert.doesNotMatch(home, /管理控制台/);
     assert.match(login, /id="loginForm"/);
