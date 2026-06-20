@@ -40,3 +40,28 @@
 
 - `codex/subscription-pool-pricing-design` 已合并到 `main`，合并前订阅池 worktree `npm test` 为 193/193 通过，`git diff --check` 无输出。
 - 合并上线计划记录见 `docs/ai/context/20260617-093450-subscription-merge-main-restart-plan_CN.md`。
+
+## 2026-06-17 删除指定 Shop 用户
+
+- 真实库 `data/shop.sqlite` 已删除 12 个手机号账户：`13128220027`、`13260836689`、`13800147777`、`13854390398`、`13954400811`、`13973747031`、`13813166007`、`13974071717`、`18602596069`、`19301367925`、`15279148391`、`13851890418`。
+- 同步删除对应会话、余额、充值、账本、订单、邀请码、API key、usage 与扣费记录；目标订单为 `ORDER650350328777`、`ORDER407573319301`、`ORDER367217111004`。
+- 删除前备份为 `data/backups/shop-before-delete-12-users-with-keys-20260617-100015.sqlite`；实施记录见 `docs/ai/context/20260617-100218-delete-users-with-keys-implementation_CN.md`。
+
+## 2026-06-18 Shop 首页极简入口
+
+- Shop 首页只作为 Sub2API 的简短介绍和控制台/购买入口，不再承载使用方法说明。
+- 首页唯一主按钮为 `/dashboard` 的 Sub2API 入口；不要恢复 `/shop/guide/` 的首页按钮或三张说明卡。
+- 设计计划见 `docs/ai/context/20260618-174848-shop-home-sub2api-minimal-entry-design-plan_CN.md`。
+
+## 2026-06-18 shop-flow 旧发 Key 退役测试
+
+- `shop-flow` 测试已按旧业务退役语义调整：旧邀请码生成、旧 API Key 导入、旧兑换发 Key 写路径应返回 `410 SHOP_LEGACY_KEY_ISSUANCE_DISABLED`。
+- 历史订单、历史 API Key、加密 reveal、用户隔离和 usage 聚合等只读能力测试，使用 seed 历史数据造数，不再调用旧写接口。
+- 后续不要恢复旧发 Key 成功断言；新购买和 Key 发放事实源应放在 Sub2API 侧覆盖。
+- 实施记录见 `docs/ai/context/20260618-194554-shop-flow-legacy-retirement-test-fix_CN.md`。
+
+## 2026-06-19 Shop 首页中转站文案
+
+- Shop 首页 hero 只展示 `天才程序员中转站入口`，不再展示 `Sub2API gateway`、`Codex 统一入口` 和旧说明段落。
+- 首页按钮仍保留为 `/dashboard` 的 `进入 Sub2API` 入口，避免影响既有控制台跳转。
+- 实施记录见 `docs/ai/context/20260619-093448-shop-home-genius-programmer-entry_CN.md`。
