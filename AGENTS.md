@@ -65,3 +65,9 @@
 - Shop 首页 hero 只展示 `天才程序员中转站入口`，不再展示 `Sub2API gateway`、`Codex 统一入口` 和旧说明段落。
 - 首页按钮仍保留为 `/dashboard` 的 `进入 Sub2API` 入口，避免影响既有控制台跳转。
 - 实施记录见 `docs/ai/context/20260619-093448-shop-home-genius-programmer-entry_CN.md`。
+
+## 2026-06-20 Shop 首页图片热区入口
+
+- Shop 首页改为单张背景图入口，页面不再显示旧标题、导航和可见按钮文案。
+- 中心“点击进入”使用透明链接热区，仍由 `data-sub2api-link` 注入 Sub2API 公网入口。
+- 设计计划见 `docs/ai/context/20260620-204649-shop-home-image-hotspot-design-plan_CN.md`。
