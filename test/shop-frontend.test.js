@@ -257,6 +257,38 @@ test('Shop HTML 只直接加载入口脚本，不重复硬编码前端模块', (
     }
 });
 
+test('站内移动端菜单按钮必须绑定可展开导航', () => {
+    const ignoredDirs = new Set(['.git', '.worktrees', 'node_modules', 'data']);
+    const listHtmlFiles = (dir) => fs.readdirSync(dir, { withFileTypes: true })
+        .flatMap((entry) => {
+            if (ignoredDirs.has(entry.name)) return [];
+            const fullPath = path.join(dir, entry.name);
+            if (entry.isDirectory()) return listHtmlFiles(fullPath);
+            return entry.isFile() && entry.name.endsWith('.html') ? [fullPath] : [];
+        });
+
+    const projectRoot = path.join(__dirname, '..');
+    const violations = listHtmlFiles(projectRoot)
+        .map((filePath) => ({
+            relativePath: path.relative(projectRoot, filePath),
+            html: fs.readFileSync(filePath, 'utf8')
+        }))
+        .filter(({ html }) => /<button[^>]*md:hidden[\s\S]*?material-symbols-outlined[\s\S]*?>\s*menu\s*<\/span>/m.test(html))
+        .flatMap(({ relativePath, html }) => {
+            const missing = [];
+            if (!/<script[^>]+src="\/js\/mobile-menu\.js"/.test(html)) {
+                missing.push('缺少 /js/mobile-menu.js');
+            }
+            if (!/id="mobileMenuToggle"/.test(html)) missing.push('缺少 #mobileMenuToggle');
+            if (!/aria-controls="mobileMenu"/.test(html)) missing.push('缺少 aria-controls="mobileMenu"');
+            if (!/aria-expanded="false"/.test(html)) missing.push('缺少 aria-expanded="false"');
+            if (!/<nav[^>]+id="mobileMenu"/.test(html)) missing.push('缺少 #mobileMenu 导航');
+            return missing.map((message) => `${relativePath}: ${message}`);
+        });
+
+    assert.deepEqual(violations, []);
+});
+
 test('Account 页提供登录态邀请码兑换表单且不再引导到独立手机号兑换页', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'shop/account/index.html'), 'utf8');
 
