@@ -71,3 +71,10 @@
 - Shop 首页改为单张背景图入口，页面不再显示旧标题、导航和可见按钮文案。
 - 中心“点击进入”使用透明链接热区，仍由 `data-sub2api-link` 注入 Sub2API 公网入口。
 - 设计计划见 `docs/ai/context/20260620-204649-shop-home-image-hotspot-design-plan_CN.md`。
+
+## 2026-06-21 公网 502 运维修复
+
+- `aaccx.pw` 的 Cloudflare Tunnel 入口链路是 `cloudflared -> nginx :8080 -> yui.web :4173`。
+- 502 根因是 `com.wjx.aaccx.yui-web` LaunchAgent 仍运行旧的 `python -m http.server 8318`，而 nginx 已代理到 `127.0.0.1:4173`。
+- 修复方式是让该 LaunchAgent 直接运行 `/opt/homebrew/bin/node /Users/wujianxiang/CodeSpace/yui.web/server.js`，并设置 `PORT=4173`。
+- 生产模式下 `ADMIN_TOKEN` 必须为至少 32 字符的强随机值；本次已轮换 `.env` 中旧 9 位弱 token，避免公网服务绕过强密钥校验。

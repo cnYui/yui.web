@@ -37,6 +37,7 @@
 <script src="/js/theme.js"></script>
 <script src="/js/lang.js?v=20260419-2"></script>
 <script src="/js/blog-data.js"></script>
+<script src="/js/mobile-menu.js"></script>
 </head>
 <body class="bg-background-light dark:bg-dark-bg font-sans text-text-main dark:text-dark-text antialiased overflow-x-hidden selection:bg-secondary selection:text-primary transition-colors duration-300">
 <div class="relative flex flex-col min-h-screen w-full">
@@ -270,42 +271,12 @@ function renderHomeLatestPosts(lang) {
     }).join('');
 }
 
-function initMobileMenu() {
-    const toggle = document.getElementById('mobileMenuToggle');
-    const menu = document.getElementById('mobileMenu');
-    if (!toggle || !menu) return;
-
-    const icon = toggle.querySelector('.material-symbols-outlined');
-
-    function setMenuOpen(isOpen) {
-        menu.classList.toggle('hidden', !isOpen);
-        toggle.setAttribute('aria-expanded', String(isOpen));
-        toggle.setAttribute('aria-label', isOpen ? 'Close navigation menu' : 'Open navigation menu');
-        if (icon) icon.textContent = isOpen ? 'close' : 'menu';
-    }
-
-    toggle.addEventListener('click', () => {
-        setMenuOpen(toggle.getAttribute('aria-expanded') !== 'true');
-    });
-
-    menu.querySelectorAll('a').forEach((link) => {
-        link.addEventListener('click', () => setMenuOpen(false));
-    });
-
-    window.addEventListener('resize', () => {
-        if (window.matchMedia('(min-width: 768px)').matches) {
-            setMenuOpen(false);
-        }
-    });
-}
-
 window.addEventListener('languageChanged', (event) => {
     if (event.detail.page === 'index') {
         applyHomeLocalizedContent(event.detail.lang);
     }
 });
 
-initMobileMenu();
 applyHomeLocalizedContent(window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh');
 </script>
 </body></html>
