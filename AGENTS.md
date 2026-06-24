@@ -78,3 +78,11 @@
 - 502 根因是 `com.wjx.aaccx.yui-web` LaunchAgent 仍运行旧的 `python -m http.server 8318`，而 nginx 已代理到 `127.0.0.1:4173`。
 - 修复方式是让该 LaunchAgent 直接运行 `/opt/homebrew/bin/node /Users/wujianxiang/CodeSpace/yui.web/server.js`，并设置 `PORT=4173`。
 - 生产模式下 `ADMIN_TOKEN` 必须为至少 32 字符的强随机值；本次已轮换 `.env` 中旧 9 位弱 token，避免公网服务绕过强密钥校验。
+
+## 2026-06-24 Sub2API 主链路与旧 Shop 退役
+
+- 当前公网主链路为 `Cloudflare Tunnel -> nginx 127.0.0.1:8080 -> Sub2API 127.0.0.1:18080 -> CLIProxyAPI 127.0.0.1:8317`。
+- `https://api.aaccx.pw/v1/*` 和控制台前端都经过 Sub2API；控制台前端资源由 Go embed 编进 Sub2API 后端二进制。
+- yui.web 的 `/shop` 只保留为 Sub2API 跳转入口，不再维护旧登录、注册、账户、管理后台、计费支付和旧发 Key 页面。
+- yui.web 旧浏览器 API 前缀 `/api/auth`、`/api/account`、`/api/admin`、`/api/invites`、`/api/orders` 统一返回 `410 SHOP_LEGACY_API_RETIRED`。
+- 后续不要再围绕 yui.web 旧 Shop 控制台做性能优化；无调用方代码应删除或返回明确退役响应。
