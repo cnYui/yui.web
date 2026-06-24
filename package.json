@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build:css": "tailwindcss -c tailwind.config.js -i ./styles/tailwind.css -o ./styles/site.css --minify",
+    "check:assets": "node scripts/check-static-assets.js",
     "start": "node server.js",
     "test": "node --test test/*.test.js lib/*.test.js"
   },
