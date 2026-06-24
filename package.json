@@ -3,12 +3,14 @@
   "private": true,
   "scripts": {
     "build:css": "tailwindcss -c tailwind.config.js -i ./styles/tailwind.css -o ./styles/site.css --minify",
+    "build:public": "node scripts/build-public-dist.js",
     "check:assets": "node scripts/check-static-assets.js",
     "start": "node server.js",
     "test": "node --test test/*.test.js lib/*.test.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.10.0",
+    "compression": "^1.8.1",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "redis": "^6.0.0"

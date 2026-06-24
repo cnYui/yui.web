@@ -86,6 +86,7 @@ coverage/
 # Nuxt.js build / generate output
 .nuxt
 dist
+public-dist/
 
 # Storybook build outputs
 .out

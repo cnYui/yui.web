@@ -2,9 +2,15 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const Database = require('better-sqlite3');
+const compression = require('compression');
 const express = require('express');
 require('dotenv').config();
 
+const {
+    cacheControlForStaticPath,
+    isAllowedPublicStaticPath,
+    isRetiredShopPath
+} = require('./lib/static-public-policy');
 const { createRateLimitStore } = require('./lib/rate-limit-store');
 const {
     encryptApiKeyEnvelope,
@@ -1611,19 +1617,11 @@ function createShopApp(options = {}) {
     }
 
     function blockSensitiveStaticPaths(req, res, next) {
-        const requestPath = decodeURIComponent(req.path || '/');
-        const normalizedPath = path.posix.normalize(requestPath);
-        const blockedPrefixes = [
-            '/data',
-            '/.env',
-            '/.git',
-            '/node_modules',
-            '/pids',
-            '/tmp',
-            '/temp',
-            '/docs/ai'
-        ];
-        if (blockedPrefixes.some((prefix) => normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`))) {
+        if (req.path.startsWith('/api/')) return next();
+        if (isRetiredShopPath(req.path)) {
+            return next();
+        }
+        if (!isAllowedPublicStaticPath(req.path)) {
             return res.status(404).sendFile(path.join(rootDir, '404.html'));
         }
         return next();
@@ -3929,6 +3927,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         return next(error);
     });
     app.use(setSecurityHeaders);
+    app.use(compression());
 
     app.post('/api/auth/register', limitAuthApi, (req, res) => {
         const phone = String(req.body.phone || '').trim();
@@ -4703,7 +4702,14 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     app.get(/^\/shop(?:\/.*)?$/, requireShopHtmlPage, (req, res, next) => next());
 
     app.use(blockSensitiveStaticPaths);
-    app.use(express.static(rootDir, { extensions: ['html'], dotfiles: 'ignore' }));
+    app.use(express.static(rootDir, {
+        extensions: ['html'],
+        dotfiles: 'ignore',
+        setHeaders(res, filePath) {
+            const requestPath = `/${path.relative(rootDir, filePath).split(path.sep).join('/')}`;
+            res.setHeader('Cache-Control', cacheControlForStaticPath(requestPath));
+        }
+    }));
 
     app.use((req, res) => {
         if (req.method === 'GET' && !req.path.includes('.') && !req.path.endsWith('/')) {
