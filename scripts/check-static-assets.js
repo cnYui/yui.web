@@ -17,6 +17,10 @@ const ignoredDirectories = new Set([
     'test',
     'tmp'
 ]);
+const ignoredRootFiles = new Set([
+    'server.js',
+    'tailwind.config.js'
+]);
 const checkedAssetExtensions = new Set([
     '.css',
     '.gif',
@@ -40,6 +44,7 @@ function listFiles(dir) {
             if (ignoredDirectories.has(entry.name)) return [];
             return listFiles(fullPath);
         }
+        if (dir === rootDir && ignoredRootFiles.has(entry.name)) return [];
         return scanExtensions.has(path.extname(entry.name)) ? [relative] : [];
     });
 }
