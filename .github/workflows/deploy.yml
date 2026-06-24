@@ -49,10 +49,13 @@ jobs:
     - name: Setup Pages
       uses: actions/configure-pages@v4
 
+    - name: Build public artifact
+      run: npm run build:public
+
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: '.'
+        path: 'public-dist'
 
     - name: Deploy to GitHub Pages
       id: deployment
