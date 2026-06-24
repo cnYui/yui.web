@@ -3929,6 +3929,21 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     app.use(setSecurityHeaders);
     app.use(compression());
 
+    function retiredShopApi(req, res) {
+        return res.status(410).json({
+            code: 'SHOP_LEGACY_API_RETIRED',
+            message: 'yui.web 旧 Shop 计费接口已退役，请使用 Sub2API 控制台。'
+        });
+    }
+
+    app.use([
+        '/api/auth',
+        '/api/account',
+        '/api/admin',
+        '/api/invites',
+        '/api/orders'
+    ], retiredShopApi);
+
     app.post('/api/auth/register', limitAuthApi, (req, res) => {
         const phone = String(req.body.phone || '').trim();
         const password = String(req.body.password || '');
@@ -4691,15 +4706,7 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     });
 
     app.get(['/shop', '/shop/', '/shop/index.html'], renderShopHomePage);
-    app.get(['/shop/query', '/shop/query/', '/shop/query/index.html'], redirectQueryPage);
-    app.get(['/shop/login', '/shop/login/', '/shop/login/index.html'], (req, res, next) => next());
-    app.get(['/shop/register', '/shop/register/', '/shop/register/index.html'], (req, res, next) => next());
-    app.get(['/shop/admin', '/shop/admin/', '/shop/admin/index.html'], requireAdminPage, (req, res, next) => next());
-    app.get(['/shop/redeem', '/shop/redeem/', '/shop/redeem/index.html'], requireAccountPage, (req, res, next) => {
-        clearResultCookies(res);
-        return next();
-    });
-    app.get(/^\/shop(?:\/.*)?$/, requireShopHtmlPage, (req, res, next) => next());
+    app.get(/^\/shop\/.+$/, (req, res) => res.redirect(302, sub2apiPublicUrl));
 
     app.use(blockSensitiveStaticPaths);
     app.use(express.static(rootDir, {
