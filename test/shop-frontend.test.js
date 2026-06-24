@@ -331,7 +331,7 @@ test('商店首页只保留图片热区入口，公开说明页只使用 Sub2API
     const home = fs.readFileSync(path.join(__dirname, '..', 'shop/index.html'), 'utf8');
     const guide = fs.readFileSync(path.join(__dirname, '..', 'shop/guide/index.html'), 'utf8');
 
-    assert.match(home, /src="\/images\/shop\/code-transit-entry\.webp"/);
+    assert.match(home, /src="\/images\/optimized\/shop\/code-transit-entry\.webp"/);
     assert.match(home, /aria-label="进入 Sub2API"/);
     assert.match(home, /href="\/dashboard"[^>]*data-sub2api-link/);
     assert.equal((home.match(/data-sub2api-link/g) || []).length, 1);
@@ -921,7 +921,7 @@ test('Shop 首页顶部不显示账号入口且正文只保留一个 Sub2API 入
     assert.equal(accountLinkCount, 0);
     assert.equal((home.match(/data-sub2api-link/g) || []).length, 1);
     assert.doesNotMatch(header, /data-account-link/);
-    assert.match(home, /<main[\s\S]*src="\/images\/shop\/code-transit-entry\.webp"[\s\S]*data-sub2api-link/);
+    assert.match(home, /<main[\s\S]*src="\/images\/optimized\/shop\/code-transit-entry\.webp"[\s\S]*data-sub2api-link/);
     assert.doesNotMatch(home, />\s*进入 Sub2API\s*<\/a>/);
     assert.doesNotMatch(home, /href="\/shop\/login\/"/);
     assert.doesNotMatch(home, /管理控制台/);

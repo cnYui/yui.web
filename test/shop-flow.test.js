@@ -3115,7 +3115,7 @@ test('Shop 入口和指南公开可访问，账户相关页面未登录仍跳转
         const home = await fetch(`${baseUrl}/shop/`, { redirect: 'manual' });
         assert.equal(home.status, 200);
         const homeHtml = await home.text();
-        assert.match(homeHtml, /src="\/images\/shop\/code-transit-entry\.webp"/);
+        assert.match(homeHtml, /src="\/images\/optimized\/shop\/code-transit-entry\.webp"/);
         assert.match(homeHtml, /data-sub2api-link/);
         assert.doesNotMatch(homeHtml, /天才程序员中转站入口/);
 
@@ -3145,7 +3145,7 @@ test('已登录普通用户访问 Shop 首页保持入口页，查询页进入 A
         });
         assert.equal(home.status, 200);
         const homeHtml = await home.text();
-        assert.match(homeHtml, /src="\/images\/shop\/code-transit-entry\.webp"/);
+        assert.match(homeHtml, /src="\/images\/optimized\/shop\/code-transit-entry\.webp"/);
         assert.match(homeHtml, /data-sub2api-link/);
         assert.doesNotMatch(homeHtml, /天才程序员中转站入口/);
 

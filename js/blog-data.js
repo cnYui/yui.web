@@ -3,7 +3,7 @@
         {
             id: 12,
             publishedAt: '2026-06-16',
-            image: '/images/blog/back-to-vibe-coding/00-cover-prompt-to-loop.png',
+            image: '/images/optimized/blog/back-to-vibe-coding/00-cover-prompt-to-loop.webp',
             category: 'AI',
             author: 'Yui',
             link: '/blog/back-to-vibe-coding-ai-driven-dev-before',
@@ -69,7 +69,7 @@
         {
             id: 10,
             publishedAt: '2026-06-04',
-            image: '/images/blog/speakmore-note-cover-guizang.png',
+            image: '/images/optimized/blog/speakmore-note-cover-guizang.webp',
             category: 'AI',
             author: 'Yui',
             link: '/blog/speakmore-cloud-input',
