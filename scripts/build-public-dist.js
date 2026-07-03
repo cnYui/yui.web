@@ -11,6 +11,7 @@ const entries = [
     'index.html',
     'anime',
     'blog',
+    'files',
     'images/ai-video-comic.jpg',
     'images/blog',
     'images/hackathon',

@@ -29,11 +29,12 @@ const checkedAssetExtensions = new Set([
     '.jpg',
     '.js',
     '.json',
+    '.pdf',
     '.png',
     '.svg',
     '.webp'
 ]);
-const assetPattern = /\b(?:src|href|poster)=["']([^"']+)["']|url\(["']?([^"')]+)["']?\)|["'](\/[^"']+\.(?:css|gif|html|jpe?g|js|json|png|svg|webp)(?:[?#][^"']*)?)["']/g;
+const assetPattern = /\b(?:src|href|poster)=["']([^"']+)["']|url\(["']?([^"')]+)["']?\)|["'](\/[^"']+\.(?:css|gif|html|jpe?g|js|json|pdf|png|svg|webp)(?:[?#][^"']*)?)["']/g;
 const ignoredPrefixes = ['http://', 'https://', 'mailto:', 'tel:', 'data:', '#', 'javascript:'];
 
 function listFiles(dir) {

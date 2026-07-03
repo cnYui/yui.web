@@ -26,6 +26,7 @@ test('Shop 源码只保留 Sub2API 跳转入口', () => {
     const home = readFile('shop/index.html');
     assert.match(home, /src="\/images\/optimized\/shop\/code-transit-entry\.webp"/);
     assert.match(home, /data-sub2api-link/);
+    assert.match(home, /href="\/home"[^>]*data-sub2api-link/);
     assert.match(home, /aria-label="进入 Sub2API"/);
     assert.doesNotMatch(home, /\/shop\/login/);
     assert.doesNotMatch(home, /\/shop\/account/);
@@ -73,4 +74,23 @@ test('公共顶部导航支持 Shop 的中英日翻译', () => {
     assert.match(script, /shop:\s*'ショップ'/);
     assert.match(script, /href\.includes\('\/shop'\)[\s\S]*data\.nav\.shop/);
     assert.match(script, /path === '\/shop' \|\| path\.startsWith\('\/shop\/'\)[\s\S]*return null/);
+});
+
+test('Resume 页面展示公开履历并提供原始 PDF 下载', () => {
+    const resume = readFile('resume/index.html');
+
+    assert.match(resume, /href="\/files\/WU_JIANXIANG_resume\.pdf"/);
+    assert.match(resume, /download="WU_JIANXIANG_resume\.pdf"/);
+    assert.match(resume, /xiaobianfuai@gmail\.com/);
+    assert.match(resume, /University of Fukui/);
+    assert.match(resume, /Shandong Jiaotong University/);
+    assert.match(resume, /JLPT N2/);
+    assert.match(resume, /TOEIC 850/);
+    assert.match(resume, /TOEFL iBT 84/);
+    assert.match(resume, /Multimodal RAG/);
+    assert.match(resume, /Rokid AR AI/);
+    assert.doesNotMatch(resume, /福井県福井市文京3丁目9番1号/);
+    assert.doesNotMatch(resume, /牧島ハウス109/);
+    assert.doesNotMatch(resume, /9457-8304/);
+    assert.doesNotMatch(resume, /15951875192/);
 });

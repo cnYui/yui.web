@@ -59,6 +59,27 @@ test('Shop 首页只保留 Sub2API 跳转入口', async () => {
     });
 });
 
+test('Shop 首页默认跳转到 Sub2API /home', async () => {
+    const previousPublicUrl = process.env.SUB2API_PUBLIC_URL;
+    delete process.env.SUB2API_PUBLIC_URL;
+
+    try {
+        await withServer(async ({ baseUrl }) => {
+            const response = await fetch(`${baseUrl}/shop/`, { redirect: 'manual' });
+            const html = await readText(response);
+
+            assert.equal(response.status, 200);
+            assert.match(html, /href="https:\/\/aaccx\.pw\/home"[^>]*data-sub2api-link/);
+        }, { sub2apiPublicUrl: undefined });
+    } finally {
+        if (previousPublicUrl === undefined) {
+            delete process.env.SUB2API_PUBLIC_URL;
+        } else {
+            process.env.SUB2API_PUBLIC_URL = previousPublicUrl;
+        }
+    }
+});
+
 test('旧 Shop 页面路径跳转到 Sub2API 控制台', async () => {
     await withServer(async ({ baseUrl }) => {
         for (const pathname of [

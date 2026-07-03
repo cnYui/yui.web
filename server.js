@@ -776,7 +776,7 @@ function createShopApp(options = {}) {
     ).trim().toLowerCase() === 'true';
     const sub2apiPublicUrl = normalizePublicHttpUrl(
         options.sub2apiPublicUrl ?? process.env.SUB2API_PUBLIC_URL,
-        'https://aaccx.pw/dashboard'
+        'https://aaccx.pw/home'
     );
     if (apiKeyEncryptionSecret) {
         assertStrongSecret('SHOP_API_KEY_ENCRYPTION_SECRET', apiKeyEncryptionSecret, { production });

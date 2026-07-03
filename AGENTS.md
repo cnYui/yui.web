@@ -86,3 +86,20 @@
 - yui.web 的 `/shop` 只保留为 Sub2API 跳转入口，不再维护旧登录、注册、账户、管理后台、计费支付和旧发 Key 页面。
 - yui.web 旧浏览器 API 前缀 `/api/auth`、`/api/account`、`/api/admin`、`/api/invites`、`/api/orders` 统一返回 `410 SHOP_LEGACY_API_RETIRED`。
 - 后续不要再围绕 yui.web 旧 Shop 控制台做性能优化；无调用方代码应删除或返回明确退役响应。
+
+## 2026-06-25 Shop 入口跳转目标
+
+- `/shop` 中心透明热区入口跳转到 Sub2API `/home`，静态回退链接为 `/home`，服务端默认公网注入为 `https://aaccx.pw/home`。
+- 本机 `.env` 的 `SUB2API_PUBLIC_URL` 已同步为 `https://aaccx.pw/home`；若其他生产环境显式设置该变量，也需要保持为 `/home` 目标，否则会覆盖代码默认值。
+
+## 2026-07-03 Anime 页面真实标题
+
+- `/anime/` 的 31 个卡片标题已从 `Anime Collection N` 占位符替换为视觉识别并确认的真实动漫名称。
+- 语言切换不再把卡片标题覆盖为 `番剧收藏 N` 或 `アニメコレクション N`；当前三种语言统一展示同一套真实名称。
+- 覆盖测试为 `test/anime-title.test.js`，同时同步生成了 `public-dist/anime/index.html`。
+
+## 2026-07-03 Resume 公开页隐私规则
+
+- `/resume/` 页面依据原始履历 PDF 整理为公开版网页，只展示邮箱、学历、经历、资格、能力摘要和奖项。
+- PDF 中的现住所和手机号不直接展示在网页中；原始 PDF 只通过下载按钮提供。
+- Resume PDF 站内下载路径为 `/files/WU_JIANXIANG_resume.pdf`，发布构建需要包含 `files/` 目录。
