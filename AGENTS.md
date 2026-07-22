@@ -92,6 +92,11 @@
 - `/shop` 中心透明热区入口跳转到 Sub2API `/home`，静态回退链接为 `/home`，服务端默认公网注入为 `https://aaccx.pw/home`。
 - 本机 `.env` 的 `SUB2API_PUBLIC_URL` 已同步为 `https://aaccx.pw/home`；若其他生产环境显式设置该变量，也需要保持为 `/home` 目标，否则会覆盖代码默认值。
 
+## 2026-07-09 Shop 入口改跳登录页
+
+- `/shop` 中心透明热区入口已改为跳转 Sub2API `/login`，静态回退链接为 `/login`，服务端默认公网注入为 `https://aaccx.pw/login`。
+- 本机 `.env` 的 `SUB2API_PUBLIC_URL` 已同步为 `https://aaccx.pw/login`；若其他生产环境显式设置该变量，也需要同步改为登录页目标，否则会覆盖代码默认值。
+
 ## 2026-07-03 Anime 页面真实标题
 
 - `/anime/` 的 31 个卡片标题已从 `Anime Collection N` 占位符替换为视觉识别并确认的真实动漫名称。

@@ -26,7 +26,7 @@ test('Shop 源码只保留 Sub2API 跳转入口', () => {
     const home = readFile('shop/index.html');
     assert.match(home, /src="\/images\/optimized\/shop\/code-transit-entry\.webp"/);
     assert.match(home, /data-sub2api-link/);
-    assert.match(home, /href="\/home"[^>]*data-sub2api-link/);
+    assert.match(home, /href="\/login"[^>]*data-sub2api-link/);
     assert.match(home, /aria-label="进入 Sub2API"/);
     assert.doesNotMatch(home, /\/shop\/login/);
     assert.doesNotMatch(home, /\/shop\/account/);
@@ -93,4 +93,36 @@ test('Resume 页面展示公开履历并提供原始 PDF 下载', () => {
     assert.doesNotMatch(resume, /牧島ハウス109/);
     assert.doesNotMatch(resume, /9457-8304/);
     assert.doesNotMatch(resume, /15951875192/);
+});
+
+test('Resume 页面所有 data-i18n key 都有中英日翻译', () => {
+    const resume = readFile('resume/index.html');
+    const script = readFile('js/lang.js');
+    const resumeTranslations = script.match(/resume:\s*\{([\s\S]*?)\n\s*\},\n\s*\/\/ Anime page specific/);
+
+    assert.ok(resumeTranslations, '缺少 resume 翻译表');
+    assert.match(resume, /data-i18n="resumeFooterTitle"/);
+    assert.match(resume, /data-i18n="resumeFooterCopyright"/);
+
+    const resumeBlock = resumeTranslations[1];
+    const keys = [...new Set([...resume.matchAll(/data-i18n="([^"]+)"/g)].map((match) => match[1]))];
+    const langBlocks = {
+        zh: resumeBlock.match(/zh:\s*\{([\s\S]*?)\n\s*\},\n\s*en:/)?.[1] || '',
+        en: resumeBlock.match(/en:\s*\{([\s\S]*?)\n\s*\},\n\s*ja:/)?.[1] || '',
+        ja: resumeBlock.match(/ja:\s*\{([\s\S]*?)\n\s*\}/)?.[1] || ''
+    };
+
+    for (const [lang, block] of Object.entries(langBlocks)) {
+        assert.notEqual(block, '', `缺少 ${lang} resume 翻译块`);
+        for (const key of keys) {
+            assert.match(block, new RegExp(`${key}:\\s*'`), `${lang} missing resume key: ${key}`);
+        }
+    }
+});
+
+test('Resume 页面语言脚本使用当前翻译版本避免旧缓存', () => {
+    const resume = readFile('resume/index.html');
+
+    assert.match(resume, /src="\/js\/lang\.js\?v=20260703-resume-i18n"/);
+    assert.doesNotMatch(resume, /src="\/js\/lang\.js\?v=20260419-2"/);
 });

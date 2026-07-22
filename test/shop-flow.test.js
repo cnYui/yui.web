@@ -59,7 +59,7 @@ test('Shop 首页只保留 Sub2API 跳转入口', async () => {
     });
 });
 
-test('Shop 首页默认跳转到 Sub2API /home', async () => {
+test('Shop 首页默认跳转到 Sub2API /login', async () => {
     const previousPublicUrl = process.env.SUB2API_PUBLIC_URL;
     delete process.env.SUB2API_PUBLIC_URL;
 
@@ -69,7 +69,7 @@ test('Shop 首页默认跳转到 Sub2API /home', async () => {
             const html = await readText(response);
 
             assert.equal(response.status, 200);
-            assert.match(html, /href="https:\/\/aaccx\.pw\/home"[^>]*data-sub2api-link/);
+            assert.match(html, /href="https:\/\/aaccx\.pw\/login"[^>]*data-sub2api-link/);
         }, { sub2apiPublicUrl: undefined });
     } finally {
         if (previousPublicUrl === undefined) {
