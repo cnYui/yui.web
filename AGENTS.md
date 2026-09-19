@@ -108,3 +108,11 @@
 - `/resume/` 页面依据原始履历 PDF 整理为公开版网页，只展示邮箱、学历、经历、资格、能力摘要和奖项。
 - PDF 中的现住所和手机号不直接展示在网页中；原始 PDF 只通过下载按钮提供。
 - Resume PDF 站内下载路径为 `/files/WU_JIANXIANG_resume.pdf`，发布构建需要包含 `files/` 目录。
+
+## 2026-09-19 页面脚本外置（CSP）
+
+- `server.js` 对所有页面发送 `script-src 'self'`，页面里不能写内联 `<script>`、`on*` 事件属性或 `javascript:` 链接；页面逻辑放在 `js/` 顶层文件（Tailwind 只扫描 `./js/*.js`），在原位置用同步 `<script src>` 引用。
+- `<head>` 首屏预初始化统一使用 `<script src="/js/ui-init.js"></script>`，必须是 `<head>` 里第一个同步脚本；回退语言为中文的页面加 `data-default-lang="zh-CN"`。
+- `test/page-csp.test.js` 会在 server.js 下枚举所有公开页面校验上述规则。
+- `.js` 响应缓存 7 天，修改已上线的页面脚本（例如文章翻译）时在引用处更新 `?v=` 版本号。
+- 实施记录见 `docs/ai/context/20260919-192123-csp-inline-scripts-externalize-implementation_CN.md`。

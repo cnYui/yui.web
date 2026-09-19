@@ -5,26 +5,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Back to Vibe Coding：AI驱动开发之前，你需要知道的几件事（上） - Tech Blog</title>
     <meta name="description" content="从桌面端、CLI、Agent Harness、Prompt Engineering、AGENTS.md、Skill 和 Automation，重新理解 AI 驱动开发之前真正需要建立的工作流。"/>
-    <script>
-        (function() {
-            const html = document.documentElement;
-            html.setAttribute('data-ui-ready', 'false');
-            try {
-                const theme = localStorage.getItem('yui-portfolio-theme');
-                const lang = localStorage.getItem('yui-portfolio-lang');
-                const langMap = { zh: 'zh-CN', en: 'en', ja: 'ja' };
-                const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
-                html.classList.toggle('dark', resolvedTheme === 'dark');
-                html.style.colorScheme = resolvedTheme;
-                html.style.backgroundColor = resolvedTheme === 'dark' ? '#0f0f0f' : '#ffffff';
-                html.lang = langMap[lang] || 'zh-CN';
-            } catch (error) {
-                html.style.colorScheme = 'light';
-                html.style.backgroundColor = '#ffffff';
-                html.lang = 'zh-CN';
-            }
-        })();
-    </script>
+    <script src="/js/ui-init.js" data-default-lang="zh-CN"></script>
     <style>
         html { background-color: #ffffff; }
         html.dark { background-color: #0f0f0f; }
@@ -402,34 +383,6 @@
         </div>
     </footer>
 
-    <script>
-        document.getElementById('shareBtn').addEventListener('click', async () => {
-            const url = window.location.origin + window.location.pathname;
-            const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
-            const copiedText = lang === 'ja' ? 'リンクをコピーしました' : lang === 'en' ? 'Link copied' : '复制成功';
-            const failedText = lang === 'ja' ? 'コピーに失敗しました' : lang === 'en' ? 'Copy failed' : '复制失败';
-            try {
-                await navigator.clipboard.writeText(url);
-                showToast(copiedText);
-            } catch (err) {
-                console.error('Failed to copy: ', err);
-                showToast(failedText);
-            }
-        });
-
-        function showToast(message) {
-            const toast = document.createElement('div');
-            toast.className = 'fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 dark:bg-white/90 text-white dark:text-black px-6 py-3 rounded-full text-sm font-medium shadow-lg transition-all duration-300 opacity-0 translate-y-2 z-50';
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            requestAnimationFrame(() => {
-                toast.classList.remove('opacity-0', 'translate-y-2');
-            });
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-                setTimeout(() => toast.remove(), 300);
-            }, 2000);
-        }
-    </script>
+    <script src="/js/blog-back-to-vibe-coding-ai-driven-dev-before.js"></script>
 </body>
 </html>

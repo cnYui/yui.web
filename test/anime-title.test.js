@@ -41,14 +41,17 @@ const expectedAnimeTitles = [
 
 test('Anime 页面使用真实动漫名称替代占位标题', () => {
     const html = fs.readFileSync(path.join(rootDir, 'anime/index.html'), 'utf8');
+    const script = fs.readFileSync(path.join(rootDir, 'js/anime.js'), 'utf8');
+    const source = `${html}\n${script}`;
 
+    assert.match(html, /<script src="\/js\/anime\.js"><\/script>/);
     for (const title of expectedAnimeTitles) {
-        assert.match(html, new RegExp(escapeRegExp(`title: '${title}'`)));
+        assert.match(script, new RegExp(escapeRegExp(`title: '${title}'`)));
     }
 
-    assert.doesNotMatch(html, /title: 'Anime Collection \d+'/);
-    assert.doesNotMatch(html, /番剧收藏 \$\{index\}/);
-    assert.doesNotMatch(html, /アニメコレクション \$\{index\}/);
+    assert.doesNotMatch(source, /title: 'Anime Collection \d+'/);
+    assert.doesNotMatch(source, /番剧收藏 \$\{index\}/);
+    assert.doesNotMatch(source, /アニメコレクション \$\{index\}/);
 });
 
 function escapeRegExp(value) {
