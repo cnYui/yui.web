@@ -123,6 +123,7 @@ test('Resume 页面所有 data-i18n key 都有中英日翻译', () => {
 test('Resume 页面语言脚本使用当前翻译版本避免旧缓存', () => {
     const resume = readFile('resume/index.html');
 
-    assert.match(resume, /src="\/js\/lang\.js\?v=20260703-resume-i18n"/);
+    assert.match(resume, /src="\/js\/lang\.js\?v=20260919-1"/);
     assert.doesNotMatch(resume, /src="\/js\/lang\.js\?v=20260419-2"/);
+    assert.doesNotMatch(resume, /src="\/js\/lang\.js\?v=20260703-resume-i18n"/);
 });

@@ -108,3 +108,24 @@
 - `/resume/` 页面依据原始履历 PDF 整理为公开版网页，只展示邮箱、学历、经历、资格、能力摘要和奖项。
 - PDF 中的现住所和手机号不直接展示在网页中；原始 PDF 只通过下载按钮提供。
 - Resume PDF 站内下载路径为 `/files/WU_JIANXIANG_resume.pdf`，发布构建需要包含 `files/` 目录。
+
+## 2026-09-19 页面脚本外置（CSP）
+
+- `server.js` 对所有页面发送 `script-src 'self'`，页面里不能写内联 `<script>`、`on*` 事件属性或 `javascript:` 链接；页面逻辑放在 `js/` 顶层文件（Tailwind 只扫描 `./js/*.js`），在原位置用同步 `<script src>` 引用。
+- `<head>` 首屏预初始化统一使用 `<script src="/js/ui-init.js"></script>`，必须是 `<head>` 里第一个同步脚本；回退语言为中文的页面加 `data-default-lang="zh-CN"`。
+- `test/page-csp.test.js` 会在 server.js 下枚举所有公开页面校验上述规则。
+- `.js` 响应缓存 7 天，修改已上线的页面脚本（例如文章翻译）时在引用处更新 `?v=` 版本号。
+- 实施记录见 `docs/ai/context/20260919-192123-csp-inline-scripts-externalize-implementation_CN.md`。
+
+## 2026-09-19 aaccx.pw 根目录恢复 yui.web
+
+- Mac 上 `/Users/wujianxiang/CodeSpace/yui.web` 于 2026-09-08 被整体删除（废纸篓已清空），旧 node 进程空转导致全站 404；已从本地仓库重新部署到原路径（不是 git 仓库，更新方式为覆盖拷贝），LaunchAgent `com.wjx.aaccx.yui-web` 仍以 `PORT=4173` 运行。`.env` 重新生成了强随机密钥，`data/shop.sqlite` 为新建空库，旧 Shop 数据随目录一起删除。
+- 当前公网链路：Cloudflare Tunnel（LaunchAgent `com.sub2api.cloudflared`，配置 `~/.cloudflared/config.yml`）按路径分流：yui.web 路径 -> `127.0.0.1:4173`；`/SKILL.md` -> nginx `127.0.0.1:8081`（`/opt/homebrew/etc/nginx/servers/yui-web-extras.conf`）；其余路径及 `api.aaccx.pw` -> Sub2API Docker（OrbStack，`~/sub2api`）`127.0.0.1:8080`。
+- 交给 yui.web 的路径：`/`、`/index.html`、`/404.html`、`/CNAME`、`/custom.geo.json`、带扩展名的 `/images/*`，以及 `files|styles|js|blog|music|anime|travel|projects|resume|skill|shop` 目录。`/images/generations`、`/images/edits` 是 Sub2API 接口，不能交给 yui.web。
+- 新增公开目录时必须同步修改 tunnel ingress，否则会落到 Sub2API 的 SPA 兜底页。改 ingress 需要重启 cloudflared：先用新配置另起临时连接器（`--metrics 127.0.0.1:20242`），就绪后 `kill -TERM` 主连接器让 launchd 以新配置拉起，最后再停临时连接器，这样不会中断 Sub2API。改动前的原配置备份为 `~/.cloudflared/config.yml.bak-20260919-193006`。
+- Homebrew nginx `*:8080` 上的旧配置（`aaccx-root.conf`、`cliproxy.conf`，上游 18084）已不在公网链路中：`127.0.0.1:8080` 被 OrbStack 的端口转发优先占用。
+
+## 2026-09-19 动漫、音乐页面暂时下线
+
+- `/anime/`、`/music/` 以及 `images/animate`、`images/music_pic`、`images/optimized/{animate,music_pic}` 在 `lib/static-public-policy.js` 中屏蔽（返回 404），所有公开页面的导航入口已去掉，`public-dist` 也不再打包；源码保留，恢复时需同时还原白名单、导航链接和 `scripts/build-public-dist.js`。
+- 新增照片统一去除 EXIF（含 GPS）：旅行照片的压缩原图（≤2000px）放 `images/travel/`，页面引用 `images/optimized/travel/*.webp`（1200px、质量 78）；黑客松照片直接使用 WebP。
