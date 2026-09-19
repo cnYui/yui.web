@@ -28,19 +28,23 @@ function listFiles(dir) {
     });
 }
 
-test('public-dist 只打包当前页面实际使用的图片目录', () => {
+function localScripts(htmlPath, html) {
+    return [...html.matchAll(/<script\b[^>]*?\ssrc\s*=\s*["']([^"']+)["']/gi)]
+        .map(([, src]) => src)
+        .filter((src) => !/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(src))
+        .map((src) => {
+            const cleanSrc = src.split(/[?#]/)[0];
+            const target = cleanSrc.startsWith('/')
+                ? path.join(outDir, cleanSrc)
+                : path.resolve(path.dirname(htmlPath), cleanSrc);
+            return { src, target };
+        });
+}
+
+test('public-dist 只打包压缩后的图片，不含 images/ 下的源图目录', () => {
     buildPublicDist();
 
-    assert.equal(fs.existsSync(path.join(outDir, 'images', 'optimized')), true);
-    assert.equal(fs.existsSync(path.join(outDir, 'images', 'blog')), true);
-    assert.equal(fs.existsSync(path.join(outDir, 'images', 'hackathon')), true);
-    assert.equal(fs.existsSync(path.join(outDir, 'images', 'profile')), true);
-    assert.equal(fs.existsSync(path.join(outDir, 'images', 'ai-video-comic.jpg')), true);
-
-    assert.equal(fs.existsSync(path.join(outDir, 'images', 'animate')), false);
-    assert.equal(fs.existsSync(path.join(outDir, 'images', 'music_pic')), false);
-    assert.equal(fs.existsSync(path.join(outDir, 'images', 'shop')), false);
-    assert.equal(fs.existsSync(path.join(outDir, 'images', 'travel')), false);
+    assert.deepEqual(fs.readdirSync(path.join(outDir, 'images')), ['optimized']);
 });
 
 test('public-dist 包含页面引用的全部站内脚本', () => {
@@ -49,17 +53,33 @@ test('public-dist 包含页面引用的全部站内脚本', () => {
     const missing = [];
     for (const htmlPath of listFiles(outDir).filter((filePath) => filePath.endsWith('.html'))) {
         const html = fs.readFileSync(htmlPath, 'utf8');
-        for (const [, src] of html.matchAll(/<script\b[^>]*?\ssrc\s*=\s*["']([^"']+)["']/gi)) {
-            if (/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(src)) continue;
-            const cleanSrc = src.split(/[?#]/)[0];
-            const target = cleanSrc.startsWith('/')
-                ? path.join(outDir, cleanSrc)
-                : path.resolve(path.dirname(htmlPath), cleanSrc);
+        for (const { src, target } of localScripts(htmlPath, html)) {
             if (!fs.existsSync(target)) missing.push(`${path.relative(outDir, htmlPath)} -> ${src}`);
         }
     }
 
     assert.deepEqual(missing, []);
+});
+
+test('页面及其脚本引用的图片都是 images/optimized 下的压缩图', () => {
+    buildPublicDist();
+
+    const problems = [];
+    for (const htmlPath of listFiles(outDir).filter((filePath) => filePath.endsWith('.html'))) {
+        const html = fs.readFileSync(htmlPath, 'utf8');
+        const sources = [{ file: htmlPath, text: html }, ...localScripts(htmlPath, html)
+            .filter(({ target }) => fs.existsSync(target))
+            .map(({ target }) => ({ file: target, text: fs.readFileSync(target, 'utf8') }))];
+        for (const { file, text } of sources) {
+            for (const [image] of text.matchAll(/\/images\/[^"'`()]+?\.(?:png|jpe?g|webp|gif|svg|avif)(?=["'`)?#])/gi)) {
+                const where = `${path.relative(outDir, htmlPath)} (${path.relative(outDir, file)}) -> ${image}`;
+                if (!image.startsWith('/images/optimized/')) problems.push(`${where} 不是压缩图`);
+                else if (!fs.existsSync(path.join(outDir, image))) problems.push(`${where} 缺失`);
+            }
+        }
+    }
+
+    assert.deepEqual(problems, []);
 });
 
 test('public-dist 不包含暂时下线的动漫、音乐页面及其图片', () => {

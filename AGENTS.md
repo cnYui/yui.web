@@ -136,3 +136,10 @@
 - 文件：`styles/clue-wall.css`（墙面按 1440 × 900、浮层按 1400 × 860 排版后整体缩放，窄屏 < 900px 时浮层改为单列滚动）、`js/clue-wall.js`（交互与合成环境音）、`js/clue-data.js`（时间线、文章、照片、奖项、关键词）。首页不再使用 Tailwind、`ui-init.js`、`lang.js` 与主题切换，`js/home.js` 已删除。
 - 图片统一引用 `images/optimized/clue-wall/*.webp`，用 `node scripts/build-optimized-images.js clue-wall` 从站内原图生成（脚本现在保留 ICC、去掉 EXIF）；行踪图源图 `images/clue-wall/travel-map.png` 是设计稿 `travel-map.html`（d3 + Natural Earth）的 2x 渲染，改路线要在设计稿里改完再重新渲染。
 - 设计稿之外的补充：左上角站内导航（项目 / 博客 / 旅行 / 履历 / 商店）、每份档案右上角的完整页面入口（关于我指向 `https://aaccx.pw/SKILL.md`），履历奖项补上 2026 大阪 Rokid Mini Hackathon 同率第 2 位。
+
+## 2026-09-19 全站图片压缩
+
+- 页面 HTML 与页面脚本只引用 `images/optimized/` 下的 WebP；`images/hackathon`、`images/blog`、`images/profile`、`images/travel`、`images/clue-wall` 等目录只放源图，不进 `public-dist`（`test/build-public-dist.test.js` 会逐页校验图片引用）。
+- 派生规格集中在 `scripts/build-optimized-images.js`：旅行 1000px / q72（旅行页头图单独 1600px / q70）、项目 1000px / q76、博客 1400px / q76（`ai-native-hackathon` 1200px）、头像与首页肖像 q80。新增或替换图片后用 `node scripts/build-optimized-images.js <过滤词>` 重建对应任务。
+- Cloudflare 会按 `max-age=604800` 缓存图片：同名图片重新压缩后要改引用处的版本号，旅行照片统一由 `js/travel.js` 的 `travelImageVersion` 控制。
+- 首页行踪图源图改为 256 色 PNG（1.4 MB → 390 KB，PSNR 47 dB）；图片总量约 26.7 MB → 12.8 MB，项目页 6.6 MB → 1.8 MB。

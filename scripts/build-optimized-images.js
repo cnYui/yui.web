@@ -7,7 +7,7 @@ const { spawnSync } = require('node:child_process');
 
 const rootDir = path.resolve(__dirname, '..');
 
-// 首页线索墙：源图沿用站内原图（行踪图源图来自 Claude Design 的 travel-map.html 2x 渲染），
+// 首页线索墙：源图沿用站内原图（行踪图源图是 Claude Design 的 travel-map.html 2x 渲染后转成 256 色 PNG），
 // 输出使用 ASCII 文件名，缩略图够首页墙面与档案浮层在 2x 屏上使用即可。
 const clueWallImages = [
     ['images/clue-wall/travel-map.png', 'travel-map.webp', '2600x2600>', '85'],
@@ -33,12 +33,19 @@ const clueWallImages = [
     ['images/travel/大巴途中.jpg', 'bus.webp'],
 ].map(([from, name, resize = '640x640>', quality]) => ({ from, to: `images/optimized/clue-wall/${name}`, resize, quality }));
 
+// 页面只引用这里生成的 WebP；images/ 下其余目录是源图，不进 public-dist。
 const jobs = [
     { from: 'images/music_pic', to: 'images/optimized/music_pic', resize: '800x800>' },
     { from: 'images/animate', to: 'images/optimized/animate', resize: '760x760>' },
-    { from: 'images/travel', to: 'images/optimized/travel', resize: '1200x1200>' },
+    { from: 'images/travel', to: 'images/optimized/travel', resize: '1000x1000>', quality: '72' },
+    { from: 'images/travel/东京夜景.jpg', to: 'images/optimized/travel-hero-tokyo-night.webp', resize: '1600x1600>', quality: '70' },
+    { from: 'images/hackathon', to: 'images/optimized/hackathon', resize: '1000x1000>', quality: '76' },
+    { from: 'images/ai-video-comic.jpg', to: 'images/optimized/ai-video-comic.webp', resize: '1000x1000>', quality: '76' },
+    { from: 'images/blog', to: 'images/optimized/blog', resize: '1400x1400>', quality: '76' },
+    { from: 'images/blog/ai-native-hackathon', to: 'images/optimized/blog/ai-native-hackathon', resize: '1200x1200>', quality: '76' },
     { from: 'images/blog/back-to-vibe-coding', to: 'images/optimized/blog/back-to-vibe-coding', resize: '1400x1400>' },
-    { from: 'images/blog/speakmore-note-cover-guizang.png', to: 'images/optimized/blog/speakmore-note-cover-guizang.webp', resize: '1600x1600>' },
+    { from: 'images/profile/portrait-compressed.jpg', to: 'images/optimized/profile/portrait-compressed.webp', resize: '1000x1000>', quality: '80' },
+    { from: 'images/profile/avatar-small.jpg', to: 'images/optimized/profile/avatar-small.webp', resize: '200x200>', quality: '80' },
     { from: 'images/shop/code-transit-entry.webp', to: 'images/optimized/shop/code-transit-entry.webp', resize: '1800x1800>' },
     ...clueWallImages,
 ];

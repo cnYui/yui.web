@@ -11,6 +11,6 @@ test('Blog 页面不依赖 CSP 会阻止的内联脚本渲染文章', () => {
     const inlineScripts = scriptTags.filter(([, attributes]) => !/\bsrc\s*=/.test(attributes));
 
     assert.equal(inlineScripts.length, 0);
-    assert.match(html, /src="\/js\/blog-data\.js"/);
-    assert.match(html, /src="\/js\/blog-index\.js"/);
+    assert.match(html, /src="\/js\/blog-data\.js(?:\?v=[^"]+)?"/);
+    assert.match(html, /src="\/js\/blog-index\.js(?:\?v=[^"]+)?"/);
 });

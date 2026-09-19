@@ -11,11 +11,8 @@ const entries = [
     'index.html',
     'blog',
     'files',
-    'images/ai-video-comic.jpg',
-    'images/blog',
-    'images/hackathon',
+    // 页面只引用 images/optimized 下的压缩图，其余 images/ 目录是源图，不打包。
     'images/optimized',
-    'images/profile',
     'js',
     'projects',
     'resume',

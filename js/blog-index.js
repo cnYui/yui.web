@@ -37,7 +37,7 @@
                     <div class="flex items-center justify-between mt-auto pt-2">
                         <div class="flex items-center gap-2">
                             <div class="w-6 h-6 rounded-full overflow-hidden shrink-0">
-                                <img src="/images/profile/avatar-small.jpg" alt="${item.author}" class="w-full h-full object-cover" loading="lazy" decoding="async"/>
+                                <img src="/images/optimized/profile/avatar-small.webp" alt="${item.author}" class="w-full h-full object-cover" loading="lazy" decoding="async"/>
                             </div>
                             <span class="text-sm text-text-muted dark:text-dark-text-muted">${item.author}</span>
                         </div>

@@ -108,6 +108,9 @@ const travelData = [
     { image: '/images/optimized/travel/all things are connected.webp', title: 'All Connected', city: 'Others', desc: 'Philosophical moment' },
 ];
 
+// 照片重新压缩后更新版本号，避开浏览器与 Cloudflare 对同名旧图的 7 天缓存。
+const travelImageVersion = '20260919-2';
+
 // Randomize aspect ratios for masonry effect
 const aspectRatios = ['aspect-[3/4]', 'aspect-[4/5]', 'aspect-square', 'aspect-[4/3]'];
 
@@ -228,7 +231,7 @@ function createCard(item, index) {
     return `
                 <div class="masonry-item gallery-item">
                     <div class="group relative ${aspect} overflow-hidden rounded-lg cursor-pointer bg-gray-100 dark:bg-dark-card">
-                        <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="${item.image}" alt="${title}" loading="lazy" decoding="async"/>
+                        <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="${item.image}?v=${travelImageVersion}" alt="${title}" loading="lazy" decoding="async"/>
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <div class="absolute bottom-0 left-0 right-0 p-5 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
                             <p class="text-white/60 text-xs uppercase tracking-widest mb-1">${(cityLabels[currentLang()] && cityLabels[currentLang()][item.city]) || item.city}</p>
