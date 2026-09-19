@@ -129,3 +129,10 @@
 
 - `/anime/`、`/music/` 以及 `images/animate`、`images/music_pic`、`images/optimized/{animate,music_pic}` 在 `lib/static-public-policy.js` 中屏蔽（返回 404），所有公开页面的导航入口已去掉，`public-dist` 也不再打包；源码保留，恢复时需同时还原白名单、导航链接和 `scripts/build-public-dist.js`。
 - 新增照片统一去除 EXIF（含 GPS）：旅行照片的压缩原图（≤2000px）放 `images/travel/`，页面引用 `images/optimized/travel/*.webp`（1200px、质量 78）；黑客松照片直接使用 WebP。
+
+## 2026-09-19 首页改为侦探线索墙
+
+- 首页 `index.html` 按 Claude Design 项目「侦探线索墙个人主页」的 `Clue Wall Study.dc.html` 实现为 3D 侦探书房：拖动环视，点击便签从原位放大为档案浮层（关于我 / 项目 / 博客 / 履历 / 照片）；打开档案会写入 `#about`、`#projects`、`#blog`、`#resume`、`#photos`，可直接分享，返回键或 ESC 关闭。
+- 文件：`styles/clue-wall.css`（墙面按 1440 × 900、浮层按 1400 × 860 排版后整体缩放，窄屏 < 900px 时浮层改为单列滚动）、`js/clue-wall.js`（交互与合成环境音）、`js/clue-data.js`（时间线、文章、照片、奖项、关键词）。首页不再使用 Tailwind、`ui-init.js`、`lang.js` 与主题切换，`js/home.js` 已删除。
+- 图片统一引用 `images/optimized/clue-wall/*.webp`，用 `node scripts/build-optimized-images.js clue-wall` 从站内原图生成（脚本现在保留 ICC、去掉 EXIF）；行踪图源图 `images/clue-wall/travel-map.png` 是设计稿 `travel-map.html`（d3 + Natural Earth）的 2x 渲染，改路线要在设计稿里改完再重新渲染。
+- 设计稿之外的补充：左上角站内导航（项目 / 博客 / 旅行 / 履历 / 商店）、每份档案右上角的完整页面入口（关于我指向 `https://aaccx.pw/SKILL.md`），履历奖项补上 2026 大阪 Rokid Mini Hackathon 同率第 2 位。
