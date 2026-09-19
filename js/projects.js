@@ -1,4 +1,8 @@
 const projectData = [
+    // Sep 2026
+    { date: 'Sep 2026', city: 'Osaka', images: ['/images/hackathon/osaka-rokid-mini-hackathon-2026.webp'], title: 'Osaka Rokid Mini Hackathon', category: 'Award', desc: 'Won runner-up (tied for 2nd place) at the Rokid mini hackathon in Osaka with the project "DoubleTraining".', link: '', badge: '🥈 2nd Place' },
+    // Jul 2026
+    { date: 'Jul 2026', city: 'Kyoto', images: ['/images/hackathon/ivs2026-kyoto-badge.webp', '/images/hackathon/ivs2026-kyoto-waytoagi.webp', '/images/hackathon/ivs2026-kyoto-dinner.webp'], title: 'IVS2026 Kyoto', category: 'Meetup', desc: 'Attended the IVS2026 startup conference in Kyoto with an Academia pass, visited startup booths such as WaytoAGI and joined a dinner meetup.', link: '', badge: '' },
     // Mar 2026
     { date: 'Mar 2026', city: 'Nanjing', images: ['/images/hackathon/nanjing-campus-hackathon-finalist-2026.jpg'], title: 'Nanjing University Hackathon Finalist', category: 'Hackathon', desc: 'Reached the finals at the Nanjing University stop of the 2026 AI Hackathon Tour.', link: '', badge: '🏅 Finalist' },
     // Feb 2026
@@ -48,9 +52,9 @@ const projectCategoryLabels = {
     ja: { Award: '受賞', Hackathon: 'ハッカソン', Meetup: 'ミートアップ', Project: 'プロジェクト', 'AI Video/Comic': 'AI動画/漫画' }
 };
 const cityLabels = {
-    zh: { Nanjing: '南京', Shanghai: '上海', Online: '线上', Chongqing: '重庆', Wuxi: '无锡', Anhui: '安徽', Hangzhou: '杭州', Suzhou: '苏州' },
-    en: { Nanjing: 'Nanjing', Shanghai: 'Shanghai', Online: 'Online', Chongqing: 'Chongqing', Wuxi: 'Wuxi', Anhui: 'Anhui', Hangzhou: 'Hangzhou', Suzhou: 'Suzhou' },
-    ja: { Nanjing: '南京', Shanghai: '上海', Online: 'オンライン', Chongqing: '重慶', Wuxi: '無錫', Anhui: '安徽', Hangzhou: '杭州', Suzhou: '蘇州' }
+    zh: { Nanjing: '南京', Shanghai: '上海', Online: '线上', Chongqing: '重庆', Wuxi: '无锡', Anhui: '安徽', Hangzhou: '杭州', Suzhou: '苏州', Osaka: '大阪', Kyoto: '京都' },
+    en: { Nanjing: 'Nanjing', Shanghai: 'Shanghai', Online: 'Online', Chongqing: 'Chongqing', Wuxi: 'Wuxi', Anhui: 'Anhui', Hangzhou: 'Hangzhou', Suzhou: 'Suzhou', Osaka: 'Osaka', Kyoto: 'Kyoto' },
+    ja: { Nanjing: '南京', Shanghai: '上海', Online: 'オンライン', Chongqing: '重慶', Wuxi: '無錫', Anhui: '安徽', Hangzhou: '杭州', Suzhou: '蘇州', Osaka: '大阪', Kyoto: '京都' }
 };
 const monthLabels = {
     zh: { Jan: '1月', Feb: '2月', Mar: '3月', Jun: '6月', Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' },
@@ -63,6 +67,8 @@ const badgeLabels = {
     ja: { '🥇 Gold Award': '🥇 金賞', '🥇 1st Place': '🥇 1位', '🥉 3rd Place': '🥉 3位', '🏆 Winner': '🏆 受賞', '🥈 2nd Place': '🥈 2位', '🏅 Finalist': '🏅 決勝進出', '👀 First Hackathon': '👀 初めてのハッカソン' }
 };
 const projectJaContent = {
+    'Osaka Rokid Mini Hackathon': ['大阪 Rokid ミニハッカソン', '大阪で開催された Rokid ミニハッカソンで、「DoubleTraining」が同率第2位（準優勝）を獲得しました。'],
+    'IVS2026 Kyoto': ['IVS2026 京都', '京都で開催されたスタートアップカンファレンス IVS2026 に Academia 枠で参加し、WaytoAGI などのブースを回り、夜の交流会にも参加しました。'],
     'Tangquan Hackathon': ['湯泉ハッカソン', '南京の湯泉ハッカソンに参加し、温泉地でコードを書く独特の空気を体験しました。'],
     'Nanjing University Hackathon Finalist': ['南京高校ハッカソン 決勝進出', '2026年 AI Hackathon Tour 南京大学站で決勝進出を果たしました。'],
     'Global Hackathon': ['グローバルハッカソン', 'グローバルハッカソンで金賞を獲得し、アイデアを形にしました。'],

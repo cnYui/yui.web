@@ -1,4 +1,16 @@
 const travelData = [
+    // Fukui · Eiheiji (Sep 18, 2026)
+    { image: '/images/optimized/travel/eiheiji-gate-2026.webp', title: 'Eiheiji Temple', city: 'Fukui', desc: 'Sep 18, 2026 · Head temple of Soto Zen, said to have been visited by both Steve Jobs and Tim Cook' },
+    { image: '/images/optimized/travel/eiheiji-bridge-2026.webp', title: 'Eiheiji Grounds', city: 'Fukui', desc: 'A wooden bridge and quiet halls in the temple precinct' },
+    { image: '/images/optimized/travel/eiheiji-approach-2026.webp', title: 'Road to Eiheiji', city: 'Fukui', desc: 'The temple town along the approach to Eiheiji' },
+    // Okinawa (Aug 15, 2026 · one week)
+    { image: '/images/optimized/travel/okinawa-beach-2026.webp', title: 'Okinawa Beach', city: 'Okinawa', desc: 'Aug 15, 2026 · A week-long trip to Okinawa' },
+    { image: '/images/optimized/travel/okinawa-night-2026.webp', title: 'Okinawa Night Lights', city: 'Okinawa', desc: 'Palm trees and festive lights at night' },
+    { image: '/images/optimized/travel/okinawa-yonabaru-tsunahiki-2026.webp', title: 'Yonabaru Great Tug-of-War', city: 'Okinawa', desc: 'A local festival carrying on over 450 years of tradition' },
+    // Nara (Jun 30, 2026)
+    { image: '/images/optimized/travel/nara-deer-2026.webp', title: 'Nara Deer', city: 'Nara', desc: 'Jun 30, 2026 · A curious deer up close' },
+    { image: '/images/optimized/travel/nara-kasuga-lanterns-2026.webp', title: 'Kasuga Taisha Lanterns', city: 'Nara', desc: 'Hanging lanterns along the vermilion corridors' },
+    { image: '/images/optimized/travel/nara-park-2026.webp', title: 'Nara Park', city: 'Nara', desc: 'Deer grazing beneath a giant tree' },
     // Tokyo
     { image: '/images/optimized/travel/晴空塔.webp', title: 'Tokyo Skytree', city: 'Tokyo', desc: 'The iconic 634m broadcasting tower' },
     { image: '/images/optimized/travel/晴空塔底.webp', title: 'Skytree Base', city: 'Tokyo', desc: 'View from the base of Skytree' },
@@ -107,11 +119,20 @@ const gallery = document.getElementById('gallery');
 const loadMoreContainer = document.getElementById('loadMoreContainer');
 const filterButtons = document.querySelectorAll('.filter-btn');
 const cityLabels = {
-    zh: { Tokyo: '东京', Kyoto: '京都', Osaka: '大阪', Nagoya: '名古屋', Hiroshima: '广岛', Yokohama: '横滨', Hangzhou: '杭州', Nanjing: '南京', Beijing: '北京', Food: '美食', Others: '其他' },
-    en: { Tokyo: 'Tokyo', Kyoto: 'Kyoto', Osaka: 'Osaka', Nagoya: 'Nagoya', Hiroshima: 'Hiroshima', Yokohama: 'Yokohama', Hangzhou: 'Hangzhou', Nanjing: 'Nanjing', Beijing: 'Beijing', Food: 'Food', Others: 'Others' },
-    ja: { Tokyo: '東京', Kyoto: '京都', Osaka: '大阪', Nagoya: '名古屋', Hiroshima: '広島', Yokohama: '横浜', Hangzhou: '杭州', Nanjing: '南京', Beijing: '北京', Food: 'グルメ', Others: 'その他' }
+    zh: { Tokyo: '东京', Kyoto: '京都', Osaka: '大阪', Nagoya: '名古屋', Hiroshima: '广岛', Yokohama: '横滨', Nara: '奈良', Okinawa: '冲绳', Fukui: '福井', Hangzhou: '杭州', Nanjing: '南京', Beijing: '北京', Food: '美食', Others: '其他' },
+    en: { Tokyo: 'Tokyo', Kyoto: 'Kyoto', Osaka: 'Osaka', Nagoya: 'Nagoya', Hiroshima: 'Hiroshima', Yokohama: 'Yokohama', Nara: 'Nara', Okinawa: 'Okinawa', Fukui: 'Fukui', Hangzhou: 'Hangzhou', Nanjing: 'Nanjing', Beijing: 'Beijing', Food: 'Food', Others: 'Others' },
+    ja: { Tokyo: '東京', Kyoto: '京都', Osaka: '大阪', Nagoya: '名古屋', Hiroshima: '広島', Yokohama: '横浜', Nara: '奈良', Okinawa: '沖縄', Fukui: '福井', Hangzhou: '杭州', Nanjing: '南京', Beijing: '北京', Food: 'グルメ', Others: 'その他' }
 };
 const travelJaContent = {
+    'Eiheiji Temple': ['永平寺', '2026年9月18日・曹洞宗の大本山。スティーブ・ジョブズやティム・クックも訪れたと言われる'],
+    'Eiheiji Grounds': ['永平寺の境内', '木の橋と静かな堂宇が並ぶ境内'],
+    'Road to Eiheiji': ['永平寺への参道', '永平寺へ続く門前町の通り'],
+    'Okinawa Beach': ['沖縄の海', '2026年8月15日から1週間の沖縄旅行'],
+    'Okinawa Night Lights': ['沖縄の夜', 'ヤシの木とイルミネーションが彩る夜の街'],
+    'Yonabaru Great Tug-of-War': ['与那原大綱曳', '450年以上の伝統を受け継ぐ地域の祭り'],
+    'Nara Deer': ['奈良の鹿', '2026年6月30日・すぐ近くまで来てくれた鹿'],
+    'Kasuga Taisha Lanterns': ['春日大社の釣灯籠', '朱塗りの回廊に並ぶ釣灯籠'],
+    'Nara Park': ['奈良公園', '大きな木の下で草を食む鹿たち'],
     'Tokyo Skytree': ['東京スカイツリー', '高さ634mの東京を象徴する電波塔'],
     'Skytree Base': ['スカイツリーの足元', 'スカイツリーの真下から見上げた景色'],
     'Kaminarimon Gate': ['雷門', '浅草寺の有名な雷門'],

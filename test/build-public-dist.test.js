@@ -61,3 +61,13 @@ test('public-dist 包含页面引用的全部站内脚本', () => {
 
     assert.deepEqual(missing, []);
 });
+
+test('public-dist 不包含暂时下线的动漫、音乐页面及其图片', () => {
+    buildPublicDist();
+
+    assert.equal(fs.existsSync(path.join(outDir, 'anime')), false);
+    assert.equal(fs.existsSync(path.join(outDir, 'music')), false);
+    assert.equal(fs.existsSync(path.join(outDir, 'images', 'optimized', 'animate')), false);
+    assert.equal(fs.existsSync(path.join(outDir, 'images', 'optimized', 'music_pic')), false);
+    assert.equal(fs.existsSync(path.join(outDir, 'images', 'optimized', 'travel')), true);
+});

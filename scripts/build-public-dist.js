@@ -9,7 +9,6 @@ const entries = [
     'CNAME',
     'custom.geo.json',
     'index.html',
-    'anime',
     'blog',
     'files',
     'images/ai-video-comic.jpg',
@@ -18,7 +17,6 @@ const entries = [
     'images/optimized',
     'images/profile',
     'js',
-    'music',
     'projects',
     'resume',
     'shop/index.html',
@@ -26,8 +24,14 @@ const entries = [
     'styles',
     'travel',
 ];
+// 动漫、音乐页面暂时下线，其派生图片也不进入公开产物。
+const excludedPaths = new Set([
+    'images/optimized/animate',
+    'images/optimized/music_pic',
+].map((entry) => path.join(rootDir, entry)));
 
 function copyRecursive(from, to) {
+    if (excludedPaths.has(from)) return;
     const stat = fs.statSync(from);
     if (stat.isDirectory()) {
         fs.mkdirSync(to, { recursive: true });
