@@ -163,8 +163,9 @@ test('公开页面引用的站内脚本都能通过静态白名单访问', async
 
 test('首屏预初始化脚本在 <head> 中最先同步执行，且页面会加载 lang.js 恢复显示', () => {
     const pagesWithInit = pages.filter(({ html }) => scriptTags(html).some((script) => script.src === '/js/ui-init.js'));
-    // 动漫、音乐页面暂时下线后，公开页面中加载 ui-init.js 的是首页、简历、项目、旅行和 8 个博客页面。
-    assert.ok(pagesWithInit.length >= 12, `只有 ${pagesWithInit.length} 个页面加载 /js/ui-init.js`);
+    // 动漫、音乐页面暂时下线后，公开页面中加载 ui-init.js 的是简历、项目、旅行和 8 个博客页面；
+    // 首页线索墙固定深色、只有中英双语文案，不接入主题与多语言切换。
+    assert.ok(pagesWithInit.length >= 11, `只有 ${pagesWithInit.length} 个页面加载 /js/ui-init.js`);
 
     for (const { pagePath, html } of pagesWithInit) {
         const scripts = scriptTags(html);

@@ -1,184 +1,328 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Yui | Portfolio</title>
-<script src="/js/ui-init.js"></script>
-<style>
-        html { background-color: #ffffff; }
-        html.dark { background-color: #0f0f0f; }
-        html[data-ui-ready="false"] body { opacity: 0; }
-        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
-</style>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Inter:wght@300..600&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="/styles/site.css" rel="stylesheet"/>
-<script src="/js/theme.js"></script>
-<script src="/js/lang.js?v=20260919-1"></script>
-<script src="/js/blog-data.js"></script>
-<script src="/js/mobile-menu.js"></script>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yui · 悠一 | 线索墙 Clue Wall</title>
+  <meta name="description" content="悠一 Yui 的个人主页：AI Native Developer，福井大学研究生。拖动环视侦探书房里的线索墙，点击便签打开关于我、项目、博客、履历与照片档案。">
+  <meta name="theme-color" content="#0f0a07">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&amp;family=Ma+Shan+Zheng&amp;family=Noto+Serif+SC:wght@400;600&amp;display=swap" rel="stylesheet">
+  <link href="/styles/clue-wall.css?v=20260919-1" rel="stylesheet">
+  <script src="/js/clue-data.js?v=20260919-1" defer></script>
+  <script src="/js/clue-wall.js?v=20260919-1" defer></script>
 </head>
-<body class="bg-background-light dark:bg-dark-bg font-sans text-text-main dark:text-dark-text antialiased overflow-x-hidden selection:bg-secondary selection:text-primary transition-colors duration-300">
-<div class="relative flex flex-col min-h-screen w-full">
-<header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle bg-white/95 dark:bg-dark-bg/95 dark:border-dark-border backdrop-blur-sm">
-<div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
-<div class="flex items-center gap-4">
-<a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">
-                    Portfolio.
-                </a>
-</div>
-<div class="flex items-center gap-10">
-<nav class="hidden md:flex items-center gap-8">
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
-</nav>
-<div class="flex gap-2">
-<button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="ZH/EN/JA">
-<span class="text-xs font-bold">EN</span>
-</button>
-<button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
-<span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
-</button>
-<button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card transition-colors" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu">
-<span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
-</button>
-</div>
-</div>
-</div>
-<nav id="mobileMenu" class="hidden md:hidden border-t border-border-light dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
-<div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
-</div>
-</nav>
-</header>
-<main class="flex-grow flex flex-col items-center w-full">
-<section class="w-full px-6 md:px-12 py-16 md:py-28 max-w-7xl mx-auto">
-<div class="flex flex-col-reverse lg:flex-row items-center gap-16 lg:gap-24">
-<div class="flex flex-col gap-8 lg:w-1/2 text-center lg:text-left items-center lg:items-start">
-<div class="space-y-4">
-<span class="inline-block px-3 py-1 bg-surface-light dark:bg-dark-card text-text-muted dark:text-dark-text-muted text-[10px] font-bold tracking-[0.2em] uppercase border border-border-light dark:border-dark-border rounded-full" data-i18n="available">
-                                Available for hire
-                            </span>
-<h1 class="font-serif text-5xl md:text-6xl lg:text-7xl leading-[1.1] text-text-main dark:text-dark-text">
-                                <span data-i18n="hello">Hello, I'm</span> <span class="italic text-gray-500 dark:text-gray-400" data-i18n="name">Yui</span>.
-                            </h1>
-<p class="text-lg font-light text-text-muted dark:text-dark-text-muted max-w-lg mx-auto lg:mx-0 leading-relaxed">
-                                <span data-i18n="intro">I focus on building clean digital products with excellent user experience.</span><br class="hidden md:block"/> <span data-i18n="role">Designer | Developer | Creator</span>
-                            </p>
-<p class="text-sm text-text-muted dark:text-dark-text-muted max-w-xl mx-auto lg:mx-0 leading-relaxed break-all">
-                                <span data-i18n="agentInfoLabel">Send this URL to your agent to get my information:</span>
-                                <a class="underline underline-offset-4 hover:text-primary dark:hover:text-dark-text transition-colors" href="https://aaccx.pw/SKILL.md" target="_blank" rel="noopener noreferrer">https://aaccx.pw/SKILL.md</a>
-                            </p>
-</div>
-<div class="flex flex-wrap gap-4 justify-center lg:justify-start pt-2">
-<a class="btn-primary" href="/resume/" data-i18n="resume">
-                                Resume
-                            </a>
-<a class="btn-secondary dark:bg-dark-card dark:border-dark-border dark:text-dark-text dark:hover:border-gray-500" href="#contact" data-i18n="contactMe">
-                                Contact Me
-                            </a>
-</div>
+<body>
+<div class="cw-root" id="clueWall">
+  <nav class="cw-nav" aria-label="站内导航">
+    <a href="/projects/">项目<span class="cw-nav-en"> PROJECTS</span></a>
+    <a href="/blog/">博客<span class="cw-nav-en"> BLOG</span></a>
+    <a href="/travel/">旅行<span class="cw-nav-en"> TRAVEL</span></a>
+    <a href="/resume/">履历<span class="cw-nav-en"> RESUME</span></a>
+    <a href="/shop/">商店<span class="cw-nav-en"> SHOP</span></a>
+  </nav>
 
-</div>
-<div class="lg:w-1/2 flex justify-center lg:justify-end relative">
-<div class="relative w-72 h-96 md:w-[400px] md:h-[500px]">
-<div class="absolute -bottom-6 -left-6 w-full h-full border border-gray-200 dark:border-dark-border hidden md:block"></div>
-<div class="relative z-10 w-full h-full rounded-none overflow-hidden bg-gray-100 dark:bg-dark-card shadow-soft dark:shadow-soft-dark" data-alt="Portrait of Yui" style='background-image: url("/images/profile/portrait-compressed.jpg"); background-size: cover; background-position: center;'>
-</div>
-</div>
-</div>
-</div>
-</section>
-<section class="w-full bg-surface-light dark:bg-dark-surface py-24 px-6 md:px-12" id="work">
-<div class="max-w-7xl mx-auto flex flex-col gap-12">
-<div class="flex flex-col md:flex-row justify-between items-end border-b border-gray-200 dark:border-dark-border pb-6 gap-4">
-<div>
-<span class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-2 block" data-i18n="portfolio">Portfolio</span>
-<h2 class="section-title dark:text-dark-text" data-i18n="selectedWorks">Selected Works</h2>
-</div>
-<a class="text-text-main dark:text-dark-text font-medium text-sm flex items-center gap-2 hover:opacity-60 transition-opacity border-b border-black dark:border-dark-text pb-0.5" href="/projects/">
-                            <span data-i18n="viewAll">View All Projects</span> <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</a>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
-<div class="group flex flex-col">
-<div class="aspect-[4/3] w-full bg-gray-200 dark:bg-dark-card overflow-hidden mb-5 rounded-sm relative">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" src="/images/hackathon/渝客松Google GDG赛道第一名.jpg" alt="Yukesong Google GDG 1st Place" loading="lazy" decoding="async"/>
-<div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
-</div>
-<div class="flex flex-col">
-<div class="flex justify-between items-start mb-2">
-<h3 class="text-xl font-serif font-medium text-text-main dark:text-dark-text">Yukesong Google GDG - 1st Place</h3>
-<span class="text-[10px] font-bold border border-gray-200 dark:border-dark-border px-2 py-1 uppercase tracking-wider text-text-muted dark:text-dark-text-muted">Award</span>
-</div>
-<p class="text-sm text-text-muted dark:text-dark-text-muted font-light line-clamp-2 leading-relaxed">Won 1st place in the Google GDG track at the Yukesong Hackathon.</p>
-</div>
-</div>
-<div class="group flex flex-col">
-<div class="aspect-[4/3] w-full bg-gray-200 dark:bg-dark-card overflow-hidden mb-5 rounded-sm relative">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" src="/images/hackathon/trae-hackathon-08.jpg" alt="TRAE SOLO Hackathon Shanghai" loading="lazy" decoding="async"/>
-<div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
-</div>
-<div class="flex flex-col">
-<div class="flex justify-between items-start mb-2">
-<h3 class="text-xl font-serif font-medium text-text-main dark:text-dark-text">TRAE SOLO Hackathon Shanghai</h3>
-<span class="text-[10px] font-bold border border-gray-200 dark:border-dark-border px-2 py-1 uppercase tracking-wider text-text-muted dark:text-dark-text-muted">Award</span>
-</div>
-<p class="text-sm text-text-muted dark:text-dark-text-muted font-light line-clamp-2 leading-relaxed">Won 2nd place at TRAE SOLO Hackathon Shanghai.</p>
-</div>
-</div>
-<div class="group flex flex-col">
-<div class="aspect-[4/3] w-full bg-gray-200 dark:bg-dark-card overflow-hidden mb-5 rounded-sm relative">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" src="/images/hackathon/无锡Rokid ARAI三等奖.jpg" alt="Wuxi Rokid AR AI" loading="lazy" decoding="async"/>
-<div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
-</div>
-<div class="flex flex-col">
-<div class="flex justify-between items-start mb-2">
-<h3 class="text-xl font-serif font-medium text-text-main dark:text-dark-text">Wuxi Rokid AR AI - 3rd Place</h3>
-<span class="text-[10px] font-bold border border-gray-200 dark:border-dark-border px-2 py-1 uppercase tracking-wider text-text-muted dark:text-dark-text-muted">Award</span>
-</div>
-<p class="text-sm text-text-muted dark:text-dark-text-muted font-light line-clamp-2 leading-relaxed">Won 3rd place in the Wuxi Rokid AR AI competition.</p>
-</div>
-</div>
-</div>
-</div>
-</div>
-</section>
-<section class="w-full px-6 md:px-12 py-24 bg-surface-light dark:bg-dark-surface" id="blog">
-<div class="max-w-7xl mx-auto flex flex-col gap-12">
-<div class="flex flex-col md:flex-row justify-between items-end border-b border-gray-200 dark:border-dark-border pb-6 gap-4">
-<div>
-<span class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-2 block" data-i18n="journal">日志</span>
-<h2 class="section-title dark:text-dark-text" data-i18n="latestThoughts">最新想法</h2>
-</div>
-<a class="text-text-main dark:text-dark-text font-medium text-sm flex items-center gap-2 hover:opacity-60 transition-opacity border-b border-black dark:border-dark-text pb-0.5" href="/blog/">
-<span data-i18n="viewAllArticles">查看全部文章</span> <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</a>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-10" id="homeLatestPosts"></div>
-</div>
-</section>
-</main>
-<footer class="w-full bg-white dark:bg-dark-bg py-12 md:py-16 border-t border-gray-100 dark:border-dark-border" id="contact">
-    <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div class="flex flex-col gap-1 text-center md:text-left">
-            <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold">Yui的作品集</h2>
-            <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="homeFooterCopyright">© 2026 个人主页.</p>
+  <div class="cw-scene" id="cwScene">
+    <div class="cw-stage" id="cwStage">
+      <div class="cw-cam" id="cwCam">
+        <div class="cw-drift" id="cwDrift">
+
+          <div class="cw-face cw-ceiling" aria-hidden="true"></div>
+
+          <div class="cw-face cw-floor" aria-hidden="true">
+            <div class="cw-rug"></div>
+            <div class="cw-floor-light"></div>
+          </div>
+
+          <div class="cw-face cw-wall-left" aria-hidden="true">
+            <div class="cw-window">
+              <div class="cw-window-glass">
+                <div class="cw-blinds"></div>
+                <div class="cw-mullion-v"></div>
+                <div class="cw-mullion-h"></div>
+              </div>
+            </div>
+            <div class="cw-bookshelf">
+              <div class="cw-shelf"><div class="cw-books cw-books--1"></div></div>
+              <div class="cw-shelf"><div class="cw-books cw-books--2"></div></div>
+              <div class="cw-shelf"><div class="cw-books cw-books--3"></div></div>
+              <div class="cw-shelf"><div class="cw-books cw-books--4"></div></div>
+            </div>
+          </div>
+
+          <div class="cw-face cw-wall-right" aria-hidden="true">
+            <div class="cw-cabinet">
+              <div class="cw-drawer"><div class="cw-drawer-label">2024</div><div class="cw-drawer-handle"></div></div>
+              <div class="cw-drawer"><div class="cw-drawer-label">2025</div><div class="cw-drawer-handle"></div></div>
+              <div class="cw-drawer"><div class="cw-drawer-label">2026</div><div class="cw-drawer-handle"></div></div>
+              <div class="cw-drawer"><div class="cw-drawer-label cw-drawer-label--small">MISC</div><div class="cw-drawer-handle"></div></div>
+            </div>
+            <div class="cw-clock">
+              <div class="cw-clock-hour"></div>
+              <div class="cw-clock-minute"></div>
+              <div class="cw-clock-pin"></div>
+            </div>
+            <div class="cw-license">
+              <div class="cw-license-paper">
+                <div class="cw-license-no">LICENSE № 2026</div>
+                <div class="cw-license-title">私家侦探</div>
+                <div class="cw-license-en">PRIVATE INVESTIGATOR</div>
+                <div class="cw-license-rule"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cw-face cw-wall-back">
+            <div class="cw-wall-glow"></div>
+            <div class="cw-wainscot"></div>
+            <div class="cw-board-frame"></div>
+            <div class="cw-cork">
+
+              <div class="cw-card cw-card--about" data-section="about" data-tilt="-4" role="button" tabindex="0" aria-label="打开档案 01：关于我 · 谁是悠一？">
+                <div class="cw-about-kicker">FILE 01 · 关于我</div>
+                <div class="cw-about-title">谁是悠一？</div>
+                <div class="cw-about-en">WHO IS YUI?</div>
+                <div class="cw-about-desc">AI Native Developer · 福井大学研究生 · 接受远程工作</div>
+              </div>
+
+              <div class="cw-card cw-card--portrait" data-section="about" data-tilt="-2" role="button" tabindex="0" aria-label="打开档案 01：主角 · 悠一 Yui">
+                <div class="cw-portrait-photo"><img src="/images/profile/portrait-compressed.jpg" alt="悠一 Yui" decoding="async"></div>
+                <div class="cw-portrait-caption">主角 · 悠一 Yui</div>
+                <div class="cw-portrait-sub">SUBJECT · AI NATIVE DEVELOPER</div>
+              </div>
+              <div class="cw-tape-label">福井大学 研究生 · 独立开发者 · 设计师 · 创作者</div>
+
+              <div class="cw-card cw-card--projects" data-section="projects" data-tilt="3" role="button" tabindex="0" aria-label="打开档案 02：项目 · 案件时间线">
+                <div class="cw-projects-photo"><img src="/images/optimized/clue-wall/global-gold.webp" alt="环球黑客松 金奖" decoding="async"></div>
+                <div class="cw-projects-row"><span>FILE 02 · 项目</span><span>2024 → 2026</span></div>
+                <div class="cw-projects-title">项目 · 案件时间线</div>
+                <div class="cw-projects-sub">CASE TIMELINE · 10+ HACKATHONS · 4+ AWARDS</div>
+                <div class="cw-projects-stamp">金奖 AWARDED</div>
+              </div>
+
+              <div class="cw-card cw-card--map" data-section="photos" data-tilt="-1.5" role="button" tabindex="0" aria-label="打开档案 05：行踪图 · 照片">
+                <img class="cw-map-img" src="/images/optimized/clue-wall/travel-map-1100.webp" alt="行踪图 · 悠一的旅行路线" decoding="async">
+                <div class="cw-map-row">
+                  <div class="cw-map-title">行踪图 · 2024 → 2026</div>
+                  <div class="cw-map-sub">TRAVEL LOG · 长三角 → 重庆 → 福井 → 日本</div>
+                </div>
+              </div>
+
+              <div class="cw-bizcard">
+                <div class="cw-bizcard-name">YUI · 悠一</div>
+                <div class="cw-bizcard-lines">xiaobianfuai@gmail.com<br>15951875192<br>aaccx.pw</div>
+              </div>
+
+              <div class="cw-card cw-card--blog" data-section="blog" data-tilt="2" role="button" tabindex="0" aria-label="打开档案 03：博客 · 笔记 Field Notes">
+                <div class="cw-blog-row"><span>FILE 03 · 博客</span><span>6 ENTRIES</span></div>
+                <div class="cw-blog-title">笔记 · Field Notes</div>
+                <div class="cw-blog-list">
+                  <div>2026.06 — Back to Vibe Coding（上）</div>
+                  <div>2026.06 — 低成本使用 Codex Token</div>
+                  <div>2026.06 — SpeakMore 云输入是怎么做的</div>
+                </div>
+              </div>
+
+              <div class="cw-ai-note">
+                <div class="cw-ai-note-tape"></div>
+                <div class="cw-ai-note-title">AI Native Developer：黑客松赛场上的开发者生存范式</div>
+                <div class="cw-ai-note-scribble"></div>
+              </div>
+
+              <div class="cw-card cw-card--photos" data-section="photos" data-tilt="4" role="button" tabindex="0" aria-label="打开档案 05：照片 · 行踪">
+                <div class="cw-stack-sheet cw-stack-sheet--1"></div>
+                <div class="cw-stack-sheet cw-stack-sheet--2"></div>
+                <div class="cw-stack-front">
+                  <div class="cw-stack-photo"><img src="/images/optimized/clue-wall/tokyo-night.webp" alt="东京夜景" decoding="async"></div>
+                  <div class="cw-stack-row">
+                    <div class="cw-stack-title">照片 · 行踪</div>
+                    <div class="cw-stack-file">FILE 05</div>
+                  </div>
+                  <div class="cw-stack-sub">SIGHTINGS · 东京 京都 名古屋 南京</div>
+                </div>
+              </div>
+
+              <div class="cw-card cw-card--resume" data-section="resume" data-tilt="-3" role="button" tabindex="0" aria-label="打开档案 04：履历 · DOSSIER">
+                <div class="cw-resume-kicker">FILE 04 · 履历 · DOSSIER</div>
+                <div class="cw-resume-name">WU JIANXIANG</div>
+                <div class="cw-resume-lines">福井大学 工学研究科 · 2026–2028<br>国家能源研究院 R&amp;D 实习 · 2025–2026<br>JLPT N2 · TOEIC 850 · TOEFL 84</div>
+                <div class="cw-resume-stamp">机密 CONFIDENTIAL</div>
+                <div class="cw-redact cw-redact--1"></div>
+                <div class="cw-redact cw-redact--2"></div>
+              </div>
+
+              <svg class="cw-strings" aria-hidden="true">
+                <g class="cw-strings-shadow" transform="translate(3,6)">
+                  <path d="M850 132 Q575 170 300 165"></path><path d="M850 132 Q1120 160 1390 125"></path><path d="M850 132 Q540 420 280 675"></path><path d="M850 132 Q1230 420 1500 665"></path><path d="M850 132 Q660 380 500 592"></path><path d="M1020 592 Q1105 615 1190 615"></path><path d="M300 165 Q250 420 280 675"></path><path d="M1500 665 Q1380 590 1235 480"></path><path d="M1390 125 Q1330 310 1235 480"></path>
+                </g>
+                <g class="cw-strings-red">
+                  <path d="M850 132 Q575 170 300 165"></path><path d="M850 132 Q1120 160 1390 125"></path><path d="M850 132 Q540 420 280 675"></path><path d="M850 132 Q1230 420 1500 665"></path><path d="M850 132 Q660 380 500 592"></path><path d="M1020 592 Q1105 615 1190 615"></path><path d="M300 165 Q250 420 280 675"></path><path d="M1500 665 Q1380 590 1235 480"></path><path d="M1390 125 Q1330 310 1235 480"></path>
+                </g>
+              </svg>
+
+              <span class="cw-pin cw-pin--gold" style="left:850px; top:132px"></span>
+              <span class="cw-pin cw-pin--red" style="left:300px; top:165px"></span>
+              <span class="cw-pin cw-pin--red" style="left:1390px; top:125px"></span>
+              <span class="cw-pin cw-pin--red" style="left:280px; top:675px"></span>
+              <span class="cw-pin cw-pin--red" style="left:1500px; top:665px"></span>
+              <span class="cw-pin cw-pin--red" style="left:1190px; top:615px"></span>
+              <span class="cw-pin cw-pin--blue" style="left:500px; top:592px"></span>
+              <span class="cw-pin cw-pin--blue" style="left:1020px; top:592px"></span>
+              <span class="cw-pin cw-pin--blue" style="left:1235px; top:480px"></span>
+            </div>
+          </div>
+
         </div>
-        <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
-            <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
-            <span class="cursor-default">15951875192</span>
-        </div>
+      </div>
     </div>
-</footer>
-</div>
+  </div>
 
-<script src="/js/home.js"></script>
-</body></html>
+  <div class="cw-vignette" aria-hidden="true"></div>
+  <div class="cw-dim" id="cwDim" aria-hidden="true"></div>
+
+  <button class="cw-sound" id="cwSound" type="button" aria-pressed="false">环境音 · <span class="cw-sound-en">AMBIENT: </span><span id="cwSoundState">OFF</span></button>
+  <div class="cw-hint" id="cwHint">拖动环视 · DRAG TO LOOK AROUND — 点击便签打开档案 · CLICK A NOTE</div>
+
+  <div class="cw-overlay" id="cwOverlay" role="dialog" aria-modal="true" hidden>
+    <div class="cw-overlay-content" id="cwOverlayContent">
+      <div class="cw-board" id="cwBoard">
+        <button class="cw-back" id="cwBack" type="button">← 回到线索墙 · BACK TO WALL</button>
+
+        <section class="cw-file cw-file--about" data-file="about" aria-labelledby="cwFileAbout" hidden>
+          <div class="cw-file-meta"><a class="cw-file-link" href="https://aaccx.pw/SKILL.md" target="_blank" rel="noopener noreferrer">SKILL.md · 给 AGENT 的档案 →</a><span class="cw-file-label">FILE 01 / 05 · ESC</span></div>
+          <header class="cw-file-head">
+            <h2 class="cw-file-title" id="cwFileAbout">关于我 · 谁是悠一？</h2>
+            <p class="cw-file-sub">FILE 01 · SUBJECT PROFILE · WHO IS YUI?</p>
+          </header>
+          <div class="cw-stamp cw-about-stamp">接受远程 · OPEN TO REMOTE</div>
+          <figure class="cw-about-photo">
+            <div class="cw-about-photo-img"><img src="/images/profile/portrait-compressed.jpg" alt="悠一 Yui" loading="lazy" decoding="async"></div>
+            <figcaption>悠一 Yui · 福井大学</figcaption>
+          </figure>
+          <div class="cw-about-profile">
+            <div class="cw-about-profile-kicker">SUBJECT PROFILE · 基本档案</div>
+            <dl class="cw-about-profile-grid">
+              <dt>姓名 NAME</dt><dd>Yui / 悠一（WU JIANXIANG）</dd>
+              <dt>现状 STATUS</dt><dd>日本福井大学 研究生 · 2026.4 – 2028.3</dd>
+              <dt>定位 ROLE</dt><dd>AI Native Developer · 独立开发者 · 设计师 · 创作者</dd>
+              <dt>状态 AVAILABILITY</dt><dd>接受远程工作 · open to remote</dd>
+              <dt>出没 SEEN AT</dt><dd>长三角 &amp; 线上黑客松 · 10+ 场 · 8+ 座城市</dd>
+            </dl>
+          </div>
+          <ul class="cw-keywords" data-list="keywords"></ul>
+          <div class="cw-about-metaphors">
+            <div class="cw-about-metaphors-kicker">三个隐喻 · THREE METAPHORS</div>
+            <div class="cw-about-metaphors-title">放大镜 · 指挥棒 · 瑞士军刀</div>
+            <p class="cw-about-metaphors-text">AI 放大个体能力，让开发者可以指挥多个 agent，也更有底气面对陌生挑战。</p>
+          </div>
+          <div class="cw-about-note cw-about-note--vibe">
+            <div class="cw-about-note-title">VIBE <span>氛围</span></div>
+            <p class="cw-about-note-text">探索想法、用户情绪、产品方向与情感价值。</p>
+          </div>
+          <div class="cw-about-note cw-about-note--spec">
+            <div class="cw-about-note-title">SPEC <span>规范</span></div>
+            <p class="cw-about-note-text">需求、用户流程、技术边界、MVP / P0 / P1、可测试的行为。</p>
+          </div>
+          <div class="cw-about-note cw-about-note--harness">
+            <div class="cw-about-note-title">HARNESS <span>支撑</span></div>
+            <p class="cw-about-note-text">skills、plans、tests、smoke tests、debug loops、review checkpoints。</p>
+          </div>
+          <div class="cw-about-contact">
+            <div class="cw-about-contact-title">CONTACT · 联系</div>
+            <div class="cw-about-contact-lines"><a href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a><br><span>15951875192</span><br><a href="https://aaccx.pw" target="_blank" rel="noopener">aaccx.pw</a></div>
+          </div>
+          <svg class="cw-file-strings" aria-hidden="true">
+            <g class="cw-strings-shadow" transform="translate(3,5)"><path d="M195 242 Q400 275 600 246"></path><path d="M600 246 Q565 430 545 610"></path><path d="M545 610 Q685 665 825 630"></path><path d="M825 630 Q965 665 1105 610"></path></g>
+            <g class="cw-strings-red"><path d="M195 242 Q400 275 600 246"></path><path d="M600 246 Q565 430 545 610"></path><path d="M545 610 Q685 665 825 630"></path><path d="M825 630 Q965 665 1105 610"></path></g>
+          </svg>
+          <span class="cw-pin cw-pin--red" style="left:195px; top:242px"></span>
+          <span class="cw-pin cw-pin--red" style="left:600px; top:246px"></span>
+          <span class="cw-pin cw-pin--red" style="left:545px; top:610px"></span>
+          <span class="cw-pin cw-pin--red" style="left:825px; top:630px"></span>
+          <span class="cw-pin cw-pin--red" style="left:1105px; top:610px"></span>
+        </section>
+
+        <section class="cw-file cw-file--projects" data-file="projects" aria-labelledby="cwFileProjects" hidden>
+          <div class="cw-file-meta"><a class="cw-file-link" href="/projects/">全部案卷 · ALL CASES →</a><span class="cw-file-label">FILE 02 / 05 · ESC</span></div>
+          <header class="cw-file-head">
+            <h2 class="cw-file-title" id="cwFileProjects">项目 · 案件时间线</h2>
+            <p class="cw-file-sub">FILE 02 · CASE TIMELINE — 10+ 黑客松 · 4+ 奖项 · 8+ 座城市 · 2024 → 2026</p>
+          </header>
+          <svg class="cw-file-strings" aria-hidden="true">
+            <g class="cw-strings-shadow cw-strings--flat" transform="translate(2,5)"><path d="M20 250 Q700 268 1380 250"></path><path d="M20 586 Q700 604 1380 586"></path></g>
+            <g class="cw-strings-red cw-strings--flat"><path d="M20 250 Q700 268 1380 250"></path><path d="M20 586 Q700 604 1380 586"></path></g>
+          </svg>
+          <ol class="cw-cases" data-list="timeline"></ol>
+        </section>
+
+        <section class="cw-file cw-file--blog" data-file="blog" aria-labelledby="cwFileBlog" hidden>
+          <div class="cw-file-meta"><a class="cw-file-link" href="/blog/">全部笔记 · ALL NOTES →</a><span class="cw-file-label">FILE 03 / 05 · ESC</span></div>
+          <header class="cw-file-head">
+            <h2 class="cw-file-title" id="cwFileBlog">博客 · 笔记 Field Notes</h2>
+            <p class="cw-file-sub">FILE 03 · FIELD NOTES — 6 ENTRIES · 2025.12 → 2026.06 · AACCX.PW/BLOG</p>
+          </header>
+          <div class="cw-posts" data-list="posts"></div>
+        </section>
+
+        <section class="cw-file cw-file--resume" data-file="resume" aria-labelledby="cwFileResume" hidden>
+          <div class="cw-file-meta"><a class="cw-file-link" href="/resume/">完整履历 · FULL RESUME →</a><span class="cw-file-label">FILE 04 / 05 · ESC</span></div>
+          <header class="cw-file-head">
+            <h2 class="cw-file-title" id="cwFileResume">履历 · 身份档案</h2>
+            <p class="cw-file-sub">FILE 04 · DOSSIER — WU JIANXIANG · AI NATIVE DEVELOPER</p>
+          </header>
+          <div class="cw-stamp cw-resume-file-stamp">机密 CONFIDENTIAL</div>
+          <div class="cw-dossier">
+            <div class="cw-dossier-main">
+              <h3 class="cw-dossier-head">教育 · EDUCATION</h3>
+              <div class="cw-dossier-edu">
+                <div><span class="cw-strong">福井大学</span> · 工学研究科 知识社会基础工学</div><div class="cw-dossier-date">2026.4 – 2028.3</div>
+              </div>
+              <h3 class="cw-dossier-head">经历 · EXPERIENCE</h3>
+              <div class="cw-dossier-exp">
+                <div class="cw-dossier-exp-row"><div><span class="cw-strong">国家能源研究院（南京）</span> · R&amp;D / DevOps 实习</div><div class="cw-dossier-date">2025.9 – 2026.3</div></div>
+                <p class="cw-dossier-exp-desc">多模态 RAG 的开发、部署与运维：把原始文档变成可检索的文本、图片、表格与向量资产。</p>
+                <ul class="cw-dossier-exp-list">
+                  <li>从源文档抽取文本、图片与表格，进入检索工作流</li>
+                  <li>本地视觉模型打标，embedding 向量化与召回测试</li>
+                  <li>设计 Docker 网络，构建多模态 Agentic RAG 对话 WebUI 并完成前后端集成</li>
+                </ul>
+              </div>
+              <h3 class="cw-dossier-head">证书 · CERTIFICATIONS</h3>
+              <div class="cw-dossier-certs">
+                <div class="cw-dossier-box"><div class="cw-dossier-cert">JLPT N2</div><div class="cw-dossier-cert-date">2024.7</div></div>
+                <div class="cw-dossier-box"><div class="cw-dossier-cert">TOEIC 850</div><div class="cw-dossier-cert-date">2024.5</div></div>
+                <div class="cw-dossier-box"><div class="cw-dossier-cert">TOEFL iBT 84</div><div class="cw-dossier-cert-date">2024.12</div></div>
+              </div>
+            </div>
+            <div class="cw-dossier-side">
+              <h3 class="cw-dossier-head">技能 · SKILLS</h3>
+              <div class="cw-dossier-skills">
+                <div class="cw-dossier-box"><div class="cw-dossier-skill">RAG 系统</div><p class="cw-dossier-skill-text">多模态 RAG、Agentic RAG、GraphRAG、向量数据库、语义检索与召回评估</p></div>
+                <div class="cw-dossier-box"><div class="cw-dossier-skill">工作流自动化</div><p class="cw-dossier-skill-text">Dify、n8n、Coze、LangGraph 与 AI 工作流编排</p></div>
+                <div class="cw-dossier-box"><div class="cw-dossier-skill">AI Native 开发</div><p class="cw-dossier-skill-text">从需求、上下文设计、代码审查到上线验证的 Codex 式工作流</p></div>
+                <div class="cw-dossier-box"><div class="cw-dossier-skill">部署 Deployment</div><p class="cw-dossier-skill-text">Docker 网络、前后端 WebUI 交付、本地模型集成与运维</p></div>
+              </div>
+              <h3 class="cw-dossier-head">奖项 · AWARDS</h3>
+              <ul class="cw-dossier-awards" data-list="awards"></ul>
+            </div>
+          </div>
+          <a class="cw-dossier-download" href="/files/WU_JIANXIANG_resume.pdf" target="_blank" rel="noopener"><span class="cw-dossier-download-dot"></span>下载 PDF · DOWNLOAD RESUME</a>
+          <div class="cw-dossier-verified">已核实 VERIFIED · 2026.09</div>
+        </section>
+
+        <section class="cw-file cw-file--photos" data-file="photos" aria-labelledby="cwFilePhotos" hidden>
+          <div class="cw-file-meta"><a class="cw-file-link" href="/travel/">全部照片 · ALL PHOTOS →</a><span class="cw-file-label">FILE 05 / 05 · ESC</span></div>
+          <header class="cw-file-head">
+            <h2 class="cw-file-title" id="cwFilePhotos">照片 · 行踪</h2>
+            <p class="cw-file-sub">FILE 05 · SIGHTINGS — 东京 · 京都 · 大阪 · 名古屋 · 广岛 · 横滨 · 杭州 · 南京</p>
+          </header>
+          <div class="cw-travel-map"><img src="/images/optimized/clue-wall/travel-map.webp" alt="行踪图 · 悠一的旅行路线 2024 → 2026" loading="lazy" decoding="async"></div>
+          <div class="cw-sightings" data-list="photos"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
