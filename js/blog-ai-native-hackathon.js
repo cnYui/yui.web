@@ -65,7 +65,7 @@ const articleLocales = {
                     <p>In the AI era, action itself is the most effective antidote to anxiety. Build, test, discard, rebuild, and finish your first truly AI Native product.</p>
                     <div class="article-card-block text-center"><p class="text-xl font-semibold text-primary dark:text-dark-text">Build, experiment, and finish your first AI Native product.</p></div>
                     <div class="w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card my-8 shadow-md">
-                        <img class="w-full h-auto object-cover" src="/images/blog/ai-native-hackathon/finale.jpg" alt="Closing image" loading="lazy" decoding="async"/>
+                        <img class="w-full h-auto object-cover" src="/images/optimized/blog/ai-native-hackathon/finale.webp" alt="Closing image" loading="lazy" decoding="async"/>
                     </div>
                 `
     },
@@ -123,7 +123,7 @@ const articleLocales = {
                     <p>AI 時代において、行動力そのものが不安への最良の解毒剤です。作って、試して、壊して、作り直して、自分の最初の AI Native 製品を完成させることです。</p>
                     <div class="article-card-block text-center"><p class="text-xl font-semibold text-primary dark:text-dark-text">作って、試して、自分の最初の AI Native 製品を完成させよう。</p></div>
                     <div class="w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card my-8 shadow-md">
-                        <img class="w-full h-auto object-cover" src="/images/blog/ai-native-hackathon/finale.jpg" alt="締めの画像" loading="lazy" decoding="async"/>
+                        <img class="w-full h-auto object-cover" src="/images/optimized/blog/ai-native-hackathon/finale.webp" alt="締めの画像" loading="lazy" decoding="async"/>
                     </div>
                 `
     }

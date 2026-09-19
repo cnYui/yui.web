@@ -43,7 +43,7 @@ const articles = {
             en: 'Lessons from more than a year of AI coding, from design thinking to debugging tricks that reduce messy code.',
             ja: '1年以上の AI コーディング実践から、設計とデバッグのコツを整理し、コード品質を高める方法をまとめました。'
         },
-        image: '/images/blog/vibe-coding-guide.jpg',
+        image: '/images/optimized/blog/vibe-coding-guide.webp',
         tags: {
             zh: ['AI Coding', 'Vibe Coding', 'Trae', '开发效率', '前端'],
             en: ['AI Coding', 'Vibe Coding', 'Trae', 'Productivity', 'Frontend'],

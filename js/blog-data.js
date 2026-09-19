@@ -36,7 +36,7 @@
         {
             id: 11,
             publishedAt: '2026-06-06',
-            image: '/images/blog/codex-token-low-cost-cover.png',
+            image: '/images/optimized/blog/codex-token-low-cost-cover.webp',
             category: 'AI',
             author: 'Yui',
             link: '/blog/codex-token-low-cost',
@@ -102,7 +102,7 @@
         {
             id: 9,
             publishedAt: '2026-04-13',
-            image: '/images/blog/ai-native-hackathon/hackathon-01.jpg',
+            image: '/images/optimized/blog/ai-native-hackathon/hackathon-01.webp',
             category: 'AI',
             author: 'Yui',
             link: '/blog/ai-native-hackathon',
@@ -135,7 +135,7 @@
         {
             id: 8,
             publishedAt: '2026-01-04',
-            image: '/images/blog/ai-image-video-guide.jpg',
+            image: '/images/optimized/blog/ai-image-video-guide.webp',
             category: 'AI',
             author: 'Yui',
             link: '/blog/ai-image-video',
@@ -168,7 +168,7 @@
         {
             id: 7,
             publishedAt: '2025-12-31',
-            image: '/images/blog/vibe-coding-guide.jpg',
+            image: '/images/optimized/blog/vibe-coding-guide.webp',
             category: 'AI',
             author: 'Yui',
             link: '/blog/vibe-coding',

@@ -57,10 +57,10 @@ const articleLocales = {
                     <p>もともと写真が好きで、多少の美意識と Vibe Coding 的な試行錯誤にも慣れていたので、画像生成用のプロンプトを書く楽しさをかなり感じています。</p>
                     <p><strong>実際に作った作品の一部はこちらです。</strong></p>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-8">
-                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/chiikawa-1.jpg" alt="AI作品1" loading="lazy" decoding="async"/></div>
-                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/chiikawa-2.jpg" alt="AI作品2" loading="lazy" decoding="async"/></div>
-                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-3.jpg" alt="AI作品3" loading="lazy" decoding="async"/></div>
-                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-4.jpg" alt="AI作品4" loading="lazy" decoding="async"/></div>
+                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/optimized/blog/chiikawa-1.webp" alt="AI作品1" loading="lazy" decoding="async"/></div>
+                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/optimized/blog/chiikawa-2.webp" alt="AI作品2" loading="lazy" decoding="async"/></div>
+                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/optimized/blog/ai-gallery-3.webp" alt="AI作品3" loading="lazy" decoding="async"/></div>
+                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/optimized/blog/ai-gallery-4.webp" alt="AI作品4" loading="lazy" decoding="async"/></div>
                     </div>
                     <hr/>
                     <h2 class="text-primary dark:text-dark-text">Chiikawa 漫画を一人で作ってみた</h2>
@@ -73,14 +73,14 @@ const articleLocales = {
                         <li><strong>人物の一貫性を微調整する</strong> - 世界観を崩さないように整える</li>
                     </ol>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
-                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-1.jpg" alt="Chiikawa作品1" loading="lazy" decoding="async"/></div>
-                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/blog/ai-gallery-2.jpg" alt="Chiikawa作品2" loading="lazy" decoding="async"/></div>
+                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/optimized/blog/ai-gallery-1.webp" alt="Chiikawa作品1" loading="lazy" decoding="async"/></div>
+                        <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card"><img class="w-full h-auto object-cover" src="/images/optimized/blog/ai-gallery-2.webp" alt="Chiikawa作品2" loading="lazy" decoding="async"/></div>
                     </div>
                     <h2 class="text-primary dark:text-dark-text">審美眼とプロンプト設計が差になる</h2>
                     <p>私は <strong>幻想的で夢のような雰囲気</strong> を特に好みます。この空気感こそ、プロンプトで最も言語化しづらい部分です。AI で生成した写真を見て、裏側の Prompt をすぐ想像できないなら、その一枚は半分成功していると思っています。</p>
                     <p>こうした「言葉にしにくい創造性」は、いまも人間の強い武器です。参考事例や審美の蓄積を増やすために、私は <strong><a href="https://super-i.cn/" target="_blank" class="text-primary dark:text-dark-text hover:underline font-medium">刺猬星球</a></strong> のようなサイトもよく見ています。</p>
                     <div class="w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card my-8 shadow-md">
-                        <img class="w-full h-auto object-cover" src="/images/blog/hedgehog-homepage.jpg" alt="刺猬星球" loading="lazy" decoding="async"/>
+                        <img class="w-full h-auto object-cover" src="/images/optimized/blog/hedgehog-homepage.webp" alt="刺猬星球" loading="lazy" decoding="async"/>
                         <p class="text-sm text-center text-text-muted dark:text-dark-text-muted py-3 bg-gray-50 dark:bg-dark-surface border-t border-border-subtle dark:border-dark-border">刺猬星球: プロンプト事例と審美の蓄積に役立つサイト</p>
                     </div>
                     <p>フィルムシミュレーションや写真家のスタイル参照など、複数のテクニックを組み合わせることで、自分だけの絵作りに近づけます。</p>
@@ -97,11 +97,11 @@ const articleLocales = {
                     <p>原図を図例と局所構造に分けて参照画像と一緒に渡し、適切な Prompt で工程の意味を理解させることで、高品質な疑似 3D 表現を直接生成できるようにしました。</p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-8">
                         <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm group">
-                            <div class="relative overflow-hidden"><img class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" src="/images/blog/factory-2d-drawing.jpg" alt="2D図面" loading="lazy" decoding="async"/></div>
+                            <div class="relative overflow-hidden"><img class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" src="/images/optimized/blog/factory-2d-drawing.webp" alt="2D図面" loading="lazy" decoding="async"/></div>
                             <p class="text-sm text-center font-medium text-text-muted dark:text-dark-text-muted py-3 bg-gray-50 dark:bg-dark-surface">入力: 元の 2D 工業図面</p>
                         </div>
                         <div class="rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-sm group">
-                            <div class="relative overflow-hidden"><img class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" src="/images/blog/factory-3d-render.jpg" alt="3D表示" loading="lazy" decoding="async"/></div>
+                            <div class="relative overflow-hidden"><img class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" src="/images/optimized/blog/factory-3d-render.webp" alt="3D表示" loading="lazy" decoding="async"/></div>
                             <p class="text-sm text-center font-medium text-text-muted dark:text-dark-text-muted py-3 bg-gray-50 dark:bg-dark-surface">出力: AI が生成した疑似 3D モニタリング図</p>
                         </div>
                     </div>
