@@ -2617,6 +2617,10 @@ body {
 
 .cw-dossier-download {
     position: absolute;
+    border: 0;
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
     left: 940px;
     top: 676px;
     display: inline-flex;

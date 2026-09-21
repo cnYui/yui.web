@@ -151,6 +151,8 @@ test('首页不再有和档案重复的顶部导航', () => {
     for (const [name, source] of [['index.html', html], ['clue-wall.css', css], ['clue-wall.js', js]]) {
         assert.ok(!source.includes('cw-nav'), `${name} 里还有顶部导航的残留`);
     }
-    // 简历 PDF 不在墙上的任何一张便签里，这条外链得留着。
-    assert.ok(html.includes('href="/files/WU_JIANXIANG_resume.pdf"'), '首页缺少简历 PDF 入口');
+    // 简历 PDF 改为密码校验后下载，首页只保留触发密码框的按钮，不再直接外链文件。
+    assert.ok(html.includes('data-resume-download'), '首页缺少简历 PDF 下载入口');
+    assert.ok(!html.includes('href="/files/WU_JIANXIANG_resume.pdf"'), '首页不应再直接外链简历 PDF');
+    assert.ok(html.includes('/js/resume-download.js'), '首页缺少密码校验脚本');
 });

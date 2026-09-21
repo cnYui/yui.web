@@ -22,7 +22,9 @@ const entries = [
     'travel',
 ];
 // 动漫、音乐页面暂时下线，其派生图片也不进入公开产物。
+// 简历 PDF 改为密码校验后下载，公开产物里不能带上原文件。
 const excludedPaths = new Set([
+    'files/WU_JIANXIANG_resume.pdf',
     'images/optimized/animate',
     'images/optimized/music_pic',
 ].map((entry) => path.join(rootDir, entry)));
