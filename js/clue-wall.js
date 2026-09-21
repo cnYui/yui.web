@@ -58,6 +58,8 @@
     const coverFile = document.getElementById('cwCoverFile');
     const coverTitle = document.getElementById('cwCoverTitle');
     const coverSub = document.getElementById('cwCoverSub');
+    const handCanvas = document.getElementById('cwHandCanvas');
+    const propsCanvas = document.getElementById('cwPropsCanvas');
     const clockHour = document.getElementById('cwClockHour');
     const clockMinute = document.getElementById('cwClockMinute');
     const clockSecond = document.getElementById('cwClockSecond');
@@ -92,6 +94,9 @@
     let turnTimers = [];
     let opener = null;
     let articlesLoading = false;
+    let hand = null;            // js/hand3d.js 里的 3D 手，加载好之前一直是 null
+    let handLoading = false;
+    let lastHand = {};          // 上一次同步给 3D 手的状态，避免每帧重复下发
 
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
     const num = (value) => Number(value) || 0;
@@ -387,6 +392,64 @@
         return { x: p.x, y: p.y, r };
     }
 
+    // ---- 3D 手（js/hand3d.js + js/vendor 里自托管的 three.js）----
+
+    // 600 KB 出头的 three.js 不该进首屏：等访客第一次碰这面墙（按下、hover 便签或直接开档案）再加载。
+    // 加载完成前一直用 SVG 的平面手顶着，加载失败就一直用它。
+    function initHand() {
+        if (hand || handLoading || !handCanvas || !propsCanvas || skipChoreography()) return;
+        handLoading = true;
+        import('/js/hand3d.js?v=20260921-1').then((module) => {
+            hand = module.createHand(handCanvas, {
+                propsCanvas,
+                style: 'glove',
+                onReady: () => { root.classList.add('has-hand3d'); render(); },
+                onError: () => { root.classList.remove('has-hand3d'); }
+            });
+            hand.setSceneEls(cam, drift);
+            hand.resize(state.vw, state.vh, state.k);
+            hand.moveTo(state.handPos || restPos(), 0, 'inOut');
+            hand.setCurl(state.fingers === 'closed' ? 0.9 : 0.18, 0);
+            syncPaper(state.phase);
+            lastHand = { handPos: state.handPos, handTrans: state.handTrans, fingers: state.fingers, vw: state.vw, vh: state.vh, phase: state.phase };
+        }).catch(() => { handLoading = false; });
+    }
+
+    function usingHand3d() { return Boolean(hand) && root.classList.contains('has-hand3d'); }
+
+    // 告诉 3D 手它正伸手去够哪张纸（当遮挡体用），或者正捏着哪张（每帧按捏点驱动）。
+    function syncPaper(phase) {
+        if (!hand) return;
+        const { note, land } = state;
+        if (!note) { hand.hold(null); hand.setPaper(null); return; }
+        const wall = { x: note.x, y: note.y, w: note.w, h: note.h, r: note.r };
+        const desk = land ? { x: land.x, y: land.y, w: land.w, h: land.h, r: 0 } : null;
+        const grip = (r0, r1, s0, s1) => ({ w: note.w, h: note.h, ax: PINCH.ax, ay: PINCH.ay, r0, r1, s0, s1, el: carried });
+        switch (phase) {
+            case 'reach': hand.hold(null); hand.setPaper(wall); break;
+            case 'grab': hand.setPaper(null); hand.hold(grip(note.r, note.r, 1, 1)); break;
+            case 'carry': hand.hold(grip(note.r, 0, 1, 1.25)); break;
+            case 'land': case 'closing': hand.hold(null); hand.setPaper(desk); break;
+            case 'grab2': hand.setPaper(null); hand.hold(grip(0, 0, 1.25, 1.25)); break;
+            case 'return': hand.hold(grip(0, note.r, 1.25, 1)); break;
+            case 'release': hand.hold(null); hand.setPaper(wall); break;
+            default: hand.hold(null); hand.setPaper(null);
+        }
+    }
+
+    // 把这一帧的状态差分下发给 3D 手：位置、手指弯曲、视口、以及它该遮挡/捏住哪张纸。
+    function syncHand() {
+        if (!hand) return;
+        const durations = { reach: 650, carry: 1050, retreat: 600 };
+        if (lastHand.handPos !== state.handPos || lastHand.handTrans !== state.handTrans) {
+            hand.moveTo(state.handPos || restPos(), durations[state.handTrans] || 0, state.handTrans === 'retreat' ? 'in' : 'inOut');
+        }
+        if (lastHand.fingers !== state.fingers) hand.setCurl(state.fingers === 'closed' ? 0.9 : 0.18, 220);
+        if (lastHand.vw !== state.vw || lastHand.vh !== state.vh) hand.resize(state.vw, state.vh, state.k);
+        if (lastHand.phase !== state.phase) syncPaper(state.phase);
+        lastHand = { handPos: state.handPos, handTrans: state.handTrans, fingers: state.fingers, vw: state.vw, vh: state.vh, phase: state.phase };
+    }
+
     // ---- 渲染 ----
 
     function render() {
@@ -410,6 +473,7 @@
 
         renderHand();
         renderSheet();
+        syncHand();
     }
 
     function renderHand() {
@@ -443,14 +507,17 @@
         coverSub.textContent = cover.sub;
         carried.style.background = cover.bg;
         carried.style.color = cover.fg;
-        const atLand = phase === 'carry' || phase === 'grab2';
+        // 有 3D 手时，被捏住的纸每帧由手按捏点驱动（Web Animations），这里只画出行程起点的姿势；
+        // 没有 3D 手时，纸自己跟着手的 CSS transition 走。
+        const on3d = usingHand3d();
+        const atLand = on3d ? (phase === 'grab2' || phase === 'return') : (phase === 'carry' || phase === 'grab2');
         const target = atLand ? state.land : state.note;
         const scale = atLand ? 1.25 : 1;
         const w = state.note.w / k;
         const h = state.note.h / k;
         carried.style.width = `${w}px`;
         carried.style.height = `${h}px`;
-        carried.style.transition = transition;
+        carried.style.transition = on3d ? 'none' : transition;
         carried.style.transform = `translate(${target.x}px, ${target.y}px) rotate(${atLand ? 0 : state.note.r}deg) scale(${k * scale}) translate(${-w / 2}px, ${-h / 2}px)`;
     }
 
@@ -483,6 +550,7 @@
     function clearTimers() { timers.forEach(clearTimeout); timers = []; }
 
     function take(id, rect, cardName, trigger) {
+        initHand();
         clearTimers();
         clearTurnTimers();
         const { vw: W, vh: H, k } = state;
@@ -628,6 +696,7 @@
     // ---- 拖动环视 ----
 
     function onPointerDown(event) {
+        initHand();
         if (state.phase !== 'idle' || (event.button !== undefined && event.button !== 0)) return;
         drag = { x: event.clientX, y: event.clientY, rx: state.rx, ry: state.ry };
         moved = false;
@@ -789,6 +858,9 @@
 
     scene.addEventListener('pointerdown', onPointerDown);
     cards.forEach((card) => {
+        // 鼠标挪到便签上、或用键盘聚焦到便签时就开始加载 3D 手，点下去时通常已经就位。
+        card.addEventListener('pointerenter', initHand);
+        card.addEventListener('focus', initHand);
         card.addEventListener('click', () => { if (!moved) openFromCard(card); });
         card.addEventListener('keydown', (event) => {
             if (event.key !== 'Enter' && event.key !== ' ') return;

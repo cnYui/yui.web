@@ -150,7 +150,16 @@
 - 新增内容：项目 25 条带分类筛选（获奖 / 黑客松 / 聚会 / 项目），旅行 26 张带城市筛选，商店档案（Sub2API 通行券），博客卡片点开后在桌上按手稿排版读全文，挂钟改成按本地时间走时。
 - 文件：`index.html`、`styles/clue-wall.css`（墙面 1440 × 900、桌上的档案 1280 × 760）、`js/clue-wall.js`（相位编排 + 取件手 + 阅读器）、`js/clue-data.js`、`js/blog-articles.js`。
 - `js/blog-articles.js`（约 67 KB）由 `node scripts/build-blog-articles.js` 从 `blog/*.html` 正文和 `js/blog-data.js` 的中文元信息生成，不要手改；博客正文改动后重新跑一次。它不在首屏同步加载，由 `clue-wall.js` 在第一次点开文章时插入 `<script>`。
-- 设计稿里的 3D 手（`hand3d.js`）依赖 esm.sh 的 three.js 和 jsDelivr 的 `.glb`，被 `script-src 'self'` / `connect-src 'self'` 挡住，没有实现；线上用的是设计稿自带的 SVG 手（设计里 `svgHandOpacity` 那条回退路径），取件编排完全一致。要上 3D 手需要先把 three.js（365 KB）、GLTFLoader（115 KB）和 `right.glb`（94 KB）自托管到 `js/` 与 `files/` 下。
+- 设计稿里的 3D 手（`hand3d.js`）依赖 esm.sh 的 three.js 和 jsDelivr 的 `.glb`，被 CSP 挡住，本次先用设计稿自带的 SVG 手回退路径；当天晚些时候改成自托管，见下一条。
 - 行踪图换成 v4：源图 `images/clue-wall/travel-map-v4.png`（比 v3 多了奈良与冲绳），仍用无头 Chrome 2x 渲染设计稿的 `travel-map.html` 再转 256 色 PNG；派生图只保留 1100px 一档（页面最大只显示到 540 CSS px），`travel-map.webp` + `travel-map-1100.webp` 两档共 315 KB 降到 52 KB。
 - 首屏体积：文本 gzip 22 KB → 36 KB、图片 150 KB → 224 KB，合计约 172 KB → 260 KB；商店便签用 420px 的 `shop-entry.webp` 而不是 1800px 的店面原图。
 - 实施记录见 `docs/ai/context/20260921-174800-clue-wall-v2-desk-implementation_CN.md`。
+
+## 2026-09-21 首页线索墙 3D 手（自托管 three.js）
+
+- 设计稿那只骨骼手（WebXR generic-hand，Apache-2.0）已经上线，SVG 平面手退为回退方案。three.js r184、GLTFLoader 和模型全部自托管：`js/vendor/{three.module.min.js,three.core.min.js,GLTFLoader.js,BufferGeometryUtils.js,SkeletonUtils.js}` + `files/webxr-generic-hand-right.glb`，站点 CSP 是 `script-src 'self'` / `connect-src 'self'`，不能从 CDN 引。
+- 注意 `three.module.min.js` 会 `import './three.core.min.js'`，两个都要放；GLTFLoader 还会引 `../utils/{BufferGeometryUtils,SkeletonUtils}.js`。vendor 里只把裸导入 `'three'` 改成同目录的相对路径，其余原样，升级时照做即可（浏览器里没有 import map —— `<script type="importmap">` 是内联脚本，同样被 CSP 挡）。
+- 合计 1009 KB / gzip 297 KB，**不进首屏**：`js/clue-wall.js` 在第一次 pointerdown、hover 或聚焦便签时才 `import('/js/hand3d.js')`。窄屏（< 900px）和 `prefers-reduced-motion` 下根本不加载（`skipChoreography()` 直接 return）。加载失败或还没就绪时，SVG 手顶着，取件编排一模一样。
+- 3D 手同时还画桌上的道具（马克杯、铅笔、放大镜）和左墙的书柜，用的是第二块 canvas（`#cwPropsCanvas`，z-index 12，压在桌面档案下面）；手自己在 `#cwHandCanvas`（z-index 27，压在被举起的便签上面）。3D 书柜就位后 CSS 画的那个用 `.has-hand3d .cw-bookshelf { display:none }` 藏掉，避免两个叠在一起。
+- 被捏住的便签由 `hand3d.js` 每帧用 Web Animations 驱动（不是写 style），所以 `.cw-carried` 在 3D 模式下要把 transition 设成 none，`atLand` 的判定也和 SVG 模式不同。
+- `test/home-clue-wall.test.js` 会校验：首页没有同步引 hand3d、clue-wall.js 里是动态 import、vendor 里没有 CDN 或裸导入、glb 文件头是 `glTF`。
