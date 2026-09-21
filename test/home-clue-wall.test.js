@@ -142,10 +142,15 @@ test('3D 手全部自托管，且只在交互后懒加载', () => {
     assert.equal(glb.subarray(0, 4).toString('ascii'), 'glTF', '手的模型不是有效的 glb');
 });
 
-test('首页保留到各个子页面的入口', () => {
+// 顶部导航和桌上的档案讲的是同一件事，留一条就够了。
+test('首页不再有和档案重复的顶部导航', () => {
     const html = readFile('index.html');
+    const css = readFile('styles/clue-wall.css');
+    const js = readFile('js/clue-wall.js');
 
-    for (const href of ['/projects/', '/blog/', '/travel/', '/resume/', '/shop/', '/files/WU_JIANXIANG_resume.pdf']) {
-        assert.ok(html.includes(`href="${href}"`), `首页缺少 ${href} 入口`);
+    for (const [name, source] of [['index.html', html], ['clue-wall.css', css], ['clue-wall.js', js]]) {
+        assert.ok(!source.includes('cw-nav'), `${name} 里还有顶部导航的残留`);
     }
+    // 简历 PDF 不在墙上的任何一张便签里，这条外链得留着。
+    assert.ok(html.includes('href="/files/WU_JIANXIANG_resume.pdf"'), '首页缺少简历 PDF 入口');
 });
