@@ -43,7 +43,6 @@
     const drift = document.getElementById('cwDrift');
     const dim = document.getElementById('cwDim');
     const hint = document.getElementById('cwHint');
-    const nav = root.querySelector('.cw-nav');
     const soundButton = document.getElementById('cwSound');
     const soundState = document.getElementById('cwSoundState');
     const sheet = document.getElementById('cwSheet');
@@ -541,7 +540,7 @@
     }
 
     function setBackgroundInert(value) {
-        [scene, nav, soundButton].forEach((element) => { element.inert = value; });
+        [scene, soundButton].forEach((element) => { element.inert = value; });
     }
 
     // ---- 取件编排：手把便签从墙上取下来，摊到桌上 ----
