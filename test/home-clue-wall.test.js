@@ -127,7 +127,7 @@ test('3D 手全部自托管，且只在交互后懒加载', () => {
 
     // CSP 是 script-src 'self' / connect-src 'self'：模型和库都必须是站内路径。
     assert.match(hand, /const HAND_URL = '\/files\/[^']+\.glb'/);
-    const vendored = ['js/vendor/three.module.min.js', 'js/vendor/three.core.min.js', 'js/vendor/GLTFLoader.js', 'js/vendor/BufferGeometryUtils.js', 'js/vendor/SkeletonUtils.js'];
+    const vendored = ['js/three/three.module.min.js', 'js/three/three.core.min.js', 'js/three/GLTFLoader.js', 'js/three/BufferGeometryUtils.js', 'js/three/SkeletonUtils.js'];
     for (const file of [...vendored, 'js/hand3d.js']) {
         assert.ok(fs.existsSync(path.join(rootDir, file)), `缺少 ${file}`);
         // 先去掉注释：GLTFLoader 的 JSDoc 里有 `@three_import ... from 'three/addons/...'` 这种示例。
