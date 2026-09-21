@@ -1399,6 +1399,35 @@ body {
 
 /* ---- 取件的手 ---- */
 
+/* 两层 WebGL 画布：道具（马克杯、铅笔、放大镜、书柜）压在桌面档案下面，
+   手压在最上面，这样手可以挡住它举着的那张便签。没加载 three.js 时两层都是空的。 */
+.cw-canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.cw-canvas--props {
+    z-index: 12;
+}
+
+.cw-canvas--hand {
+    z-index: 27;
+}
+
+/* 3D 手就位之后，SVG 的平面手让位。 */
+.cw-root.has-hand3d .cw-hand {
+    opacity: 0;
+}
+
+/* hand3d 还会在左墙画一个真的书柜，这时候就不要再叠一个 CSS 画的了。 */
+.cw-root.has-hand3d .cw-bookshelf {
+    display: none;
+}
+
 .cw-hand {
     position: absolute;
     left: 0;

@@ -114,6 +114,34 @@ test('桌上的文章手稿覆盖每篇博客，图片都在站内', () => {
     }
 });
 
+test('3D 手全部自托管，且只在交互后懒加载', () => {
+    const html = readFile('index.html');
+    const wall = readFile('js/clue-wall.js');
+    const hand = readFile('js/hand3d.js');
+
+    // 首屏不能同步引它：整套 three.js 有 1 MB，只有真的要演取件时才值得下载。
+    assert.ok(!/<script[^>]+hand3d\.js/.test(html), 'hand3d.js 不应在首页同步加载');
+    assert.match(wall, /import\('\/js\/hand3d\.js\?v=[^']+'\)/, 'clue-wall.js 应该动态 import hand3d.js');
+    assert.match(html, /id="cwHandCanvas"/);
+    assert.match(html, /id="cwPropsCanvas"/);
+
+    // CSP 是 script-src 'self' / connect-src 'self'：模型和库都必须是站内路径。
+    assert.match(hand, /const HAND_URL = '\/files\/[^']+\.glb'/);
+    const vendored = ['js/vendor/three.module.min.js', 'js/vendor/three.core.min.js', 'js/vendor/GLTFLoader.js', 'js/vendor/BufferGeometryUtils.js', 'js/vendor/SkeletonUtils.js'];
+    for (const file of [...vendored, 'js/hand3d.js']) {
+        assert.ok(fs.existsSync(path.join(rootDir, file)), `缺少 ${file}`);
+        // 先去掉注释：GLTFLoader 的 JSDoc 里有 `@three_import ... from 'three/addons/...'` 这种示例。
+        const source = readFile(file).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+        for (const [, spec] of source.matchAll(/(?:^|[\s;}])(?:import|export)[^;]*?from\s*['"]([^'"]+)['"]/g)) {
+            assert.ok(!/^https?:/.test(spec), `${file} 还在从 CDN 引 ${spec}`);
+            assert.ok(spec.startsWith('.') || spec.startsWith('/'), `${file} 有裸导入 ${spec}，浏览器没有 import map 解析不了`);
+        }
+    }
+
+    const glb = fs.readFileSync(path.join(rootDir, 'files/webxr-generic-hand-right.glb'));
+    assert.equal(glb.subarray(0, 4).toString('ascii'), 'glTF', '手的模型不是有效的 glb');
+});
+
 test('首页保留到各个子页面的入口', () => {
     const html = readFile('index.html');
 
