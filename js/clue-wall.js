@@ -392,7 +392,7 @@
         return { x: p.x, y: p.y, r };
     }
 
-    // ---- 3D 手（js/hand3d.js + js/vendor 里自托管的 three.js）----
+    // ---- 3D 手（js/hand3d.js + js/three 里自托管的 three.js）----
 
     // 600 KB 出头的 three.js 不该进首屏：等访客第一次碰这面墙（按下、hover 便签或直接开档案）再加载。
     // 加载完成前一直用 SVG 的平面手顶着，加载失败就一直用它。

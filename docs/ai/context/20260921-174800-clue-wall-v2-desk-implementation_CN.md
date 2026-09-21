@@ -36,7 +36,7 @@
 
 ## 取舍
 
-- **3D 手没有实现。** 设计稿的 `hand3d.js` 从 esm.sh 引 three.js、从 jsDelivr 拉 WebXR `generic-hand/right.glb`，被站点 CSP 的 `script-src 'self'` 和 `connect-src 'self'` 挡住。线上用的是设计稿自带的 SVG 手——设计里 `svgHandOpacity: s.hand3d ? 0 : 1` 那条回退路径，取件编排、捏点、落点完全一致，只是手本身是平面的。要上 3D 手需要自托管 three.js（365 KB）、GLTFLoader（115 KB）和 `right.glb`（94 KB），合计约 574 KB / gzip 约 145 KB，建议放 `js/vendor/` 与 `files/` 并改成首次点击便签后再懒加载。
+- **3D 手没有实现。** 设计稿的 `hand3d.js` 从 esm.sh 引 three.js、从 jsDelivr 拉 WebXR `generic-hand/right.glb`，被站点 CSP 的 `script-src 'self'` 和 `connect-src 'self'` 挡住。线上用的是设计稿自带的 SVG 手——设计里 `svgHandOpacity: s.hand3d ? 0 : 1` 那条回退路径，取件编排、捏点、落点完全一致，只是手本身是平面的。要上 3D 手需要自托管 three.js（365 KB）、GLTFLoader（115 KB）和 `right.glb`（94 KB），合计约 574 KB / gzip 约 145 KB，建议放 `js/three/` 与 `files/` 并改成首次点击便签后再懒加载。
 - 同样因为没有 three.js，设计稿里由 `hand3d.js` 画的桌面道具（马克杯、铅笔、放大镜）和左墙的 3D 书架没有实现；桌面上 CSS 画的绿色台面、铜牌、案卷、照片、备忘条都在，左墙保留 v1 的 CSS 书架。
 - 窄屏（< 900px）与 `prefers-reduced-motion` 下跳过整套取件动画，档案直接铺满屏幕单列滚动，手和封面不出现。
 

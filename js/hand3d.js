@@ -1,10 +1,10 @@
 // 线索墙的 3D 侦探手 —— 真实的骨骼手部网格（WebXR generic-hand profile，Apache-2.0），
 // 用 three.js 在一层透明覆盖 canvas 上摆姿势和做动画。对外的坐标都是 CSS 像素。
 // 对应 Claude Design「侦探线索墙个人主页」的 hand3d.js；站点 CSP 是 script-src 'self' / connect-src 'self'，
-// 所以 three.js、GLTFLoader 和手的模型都改成站内自托管（见 js/vendor/ 与 files/）。
+// 所以 three.js、GLTFLoader 和手的模型都改成站内自托管（见 js/three/ 与 files/）。
 // 这个模块由 js/clue-wall.js 在第一次取件时才动态 import()，首屏不加载。
-import * as THREE from '/js/vendor/three.module.min.js';
-import { GLTFLoader } from '/js/vendor/GLTFLoader.js';
+import * as THREE from '/js/three/three.module.min.js';
+import { GLTFLoader } from '/js/three/GLTFLoader.js';
 
 const HAND_URL = '/files/webxr-generic-hand-right.glb';
 const FINGERS = ['index-finger', 'middle-finger', 'ring-finger', 'pinky-finger'];

@@ -157,7 +157,8 @@
 
 ## 2026-09-21 首页线索墙 3D 手（自托管 three.js）
 
-- 设计稿那只骨骼手（WebXR generic-hand，Apache-2.0）已经上线，SVG 平面手退为回退方案。three.js r184、GLTFLoader 和模型全部自托管：`js/vendor/{three.module.min.js,three.core.min.js,GLTFLoader.js,BufferGeometryUtils.js,SkeletonUtils.js}` + `files/webxr-generic-hand-right.glb`，站点 CSP 是 `script-src 'self'` / `connect-src 'self'`，不能从 CDN 引。
+- 设计稿那只骨骼手（WebXR generic-hand，Apache-2.0）已经上线，SVG 平面手退为回退方案。three.js r184、GLTFLoader 和模型全部自托管：`js/three/{three.module.min.js,three.core.min.js,GLTFLoader.js,BufferGeometryUtils.js,SkeletonUtils.js}` + `files/webxr-generic-hand-right.glb`，站点 CSP 是 `script-src 'self'` / `connect-src 'self'`，不能从 CDN 引。
+- 目录叫 `js/three/` 而不是 `js/vendor/`：aaccx.pw 的 Cloudflare 把 `/js/vendor/` 下的一切都拦成 403（连 `.txt` 也拦），源站本身是 200。`js/three/`、`js/lib3d/` 实测都放行，改名比动 WAF 规则安全。
 - 注意 `three.module.min.js` 会 `import './three.core.min.js'`，两个都要放；GLTFLoader 还会引 `../utils/{BufferGeometryUtils,SkeletonUtils}.js`。vendor 里只把裸导入 `'three'` 改成同目录的相对路径，其余原样，升级时照做即可（浏览器里没有 import map —— `<script type="importmap">` 是内联脚本，同样被 CSP 挡）。
 - 合计 1009 KB / gzip 297 KB，**不进首屏**：`js/clue-wall.js` 在第一次 pointerdown、hover 或聚焦便签时才 `import('/js/hand3d.js')`。窄屏（< 900px）和 `prefers-reduced-motion` 下根本不加载（`skipChoreography()` 直接 return）。加载失败或还没就绪时，SVG 手顶着，取件编排一模一样。
 - 3D 手同时还画桌上的道具（马克杯、铅笔、放大镜）和左墙的书柜，用的是第二块 canvas（`#cwPropsCanvas`，z-index 12，压在桌面档案下面）；手自己在 `#cwHandCanvas`（z-index 27，压在被举起的便签上面）。3D 书柜就位后 CSS 画的那个用 `.has-hand3d .cw-bookshelf { display:none }` 藏掉，避免两个叠在一起。
