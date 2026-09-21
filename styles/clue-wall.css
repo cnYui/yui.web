@@ -2485,10 +2485,11 @@ body {
 
 /* 档案 04：履历 */
 
+/* 盖在档案左下角：证书行下沿到纸张底边只有 148px，倾角收到 7 度才两头都留得住空白 */
 .cw-resume-file-stamp {
-    left: 900px;
-    top: 90px;
-    transform: rotate(-10deg);
+    left: 56px;
+    top: 654px;
+    transform: rotate(-7deg);
     font-size: 28px;
     letter-spacing: .26em;
     padding: 8px 18px;
@@ -2701,22 +2702,6 @@ body {
     border-radius: 50%;
     background: #2a1d12;
     box-shadow: inset 0 0 0 2px #e8d9b5;
-}
-
-.cw-dossier-verified {
-    position: absolute;
-    left: 60px;
-    top: 690px;
-    transform: rotate(-4deg);
-    font-family: 'Special Elite', serif;
-    font-size: 14px;
-    letter-spacing: .24em;
-    color: #2b62a8;
-    border: 2.5px double #2b62a8;
-    padding: 4px 10px;
-    opacity: .75;
-    mix-blend-mode: multiply;
-    white-space: nowrap;
 }
 
 /* 档案 05：旅行 · 行踪 */
@@ -3115,7 +3100,6 @@ body {
     .cw-scroll,
     .cw-dossier,
     .cw-dossier-download,
-    .cw-dossier-verified,
     .cw-travel-map,
     .cw-travel-recent,
     .cw-shop-storefront,
