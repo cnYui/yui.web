@@ -2583,6 +2583,18 @@ body {
     color: #2a1d12;
 }
 
+/* 多段经历之间留一点气口，最新的那段在最上面。 */
+.cw-dossier-exp + .cw-dossier-exp {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(90, 60, 30, .3);
+}
+
+/* 在职的那段日期标红，扫一眼就知道哪份还在进行。 */
+.cw-dossier-date--now {
+    color: #8a2a22;
+}
+
 .cw-dossier-exp-row {
     display: flex;
     justify-content: space-between;
