@@ -60,6 +60,18 @@ const clueWallImages = [
     ['images/travel/杭州某家咖啡店.JPG', 'hangzhou-coffee.webp'],
     ['images/travel/第一次吃一兰.jpg', 'ichiran.webp'],
     ['images/travel/路过富士山.jpg', 'fuji.webp'],
+    // 案卷墙里原本没配图的 11 条，源图沿用项目页 js/projects.js 已经在用的同一张。
+    ['images/hackathon/openclaw-feishu.jpg', 'openclaw-feishu.webp'],
+    ['images/hackathon/nanjing-opc.jpg', 'nanjing-opc.webp'],
+    ['images/ai-video-comic.jpg', 'ai-video-comic.webp'],
+    ['images/hackathon/shanghai-christmas-hackathon.jpg', 'shanghai-xmas.webp'],
+    ['images/hackathon/volcano-force.jpg', 'volcano-force.webp'],
+    ['images/hackathon/image copy 2.png', 'xhs-n8n.webp'],
+    ['images/hackathon/image copy.png', 'douyin-coze.webp'],
+    ['images/hackathon/trae-hackathon-05.jpg', 'nankesong.webp'],
+    ['images/hackathon/trae-hackathon-09.jpg', 'trae-nanjing.webp'],
+    ['images/hackathon/trae-hackathon-04.jpg', 'trae-suzhou.webp'],
+    ['images/hackathon/trae-hackathon-01.jpg', 'adventurex25.webp'],
 ].map(([from, name, resize = '640x640>', quality]) => ({ from, to: `images/optimized/clue-wall/${name}`, resize, quality }));
 
 // 页面只引用这里生成的 WebP；images/ 下其余目录是源图，不进 public-dist。
