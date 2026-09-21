@@ -169,4 +169,4 @@
 
 - `js/clue-data.js` 的 25 条案卷里原本有 11 条 `img: ''`（OpenClaw 飞书插件、南京 OPC、AI 视频/漫画、上海圣诞黑客松、火山引擎 Force、n8n + 小红书、抖音创作者大赛、南客松 S1、TRAE Friends 南京 / 苏州、2025 AdventureX），桌上的案卷只有文字。源图项目页 `js/projects.js` 一直在用，只是没生成线索墙那一档缩略图。
 - 在 `scripts/build-optimized-images.js` 的线索墙任务表里补了这 11 条（640px / q78，和其余案卷图一档），`node scripts/build-optimized-images.js clue-wall` 生成到 `images/optimized/clue-wall/`，合计 364 KB。源图里 `image copy.png` / `image copy 2.png` 这种名字换成了 `douyin-coze.webp` / `xhs-n8n.webp`，与目录里其余 ASCII 文件名一致。
-- `js/clue-data.js` 改了内容，`index.html` 里它的版本号从 `?v=20260921-2` 抬到 `?v=20260921-3`（同一天「首页去掉顶部导航」那次已经把三个文件抬到 -2，Cloudflare 按 `max-age` 缓存）。图片都是新文件名，不涉及缓存。
+- `js/clue-data.js` 改了内容，`index.html` 里它的版本号抬到 `?v=20260921-4`（同一天另外几次改动已经把线索墙三个文件抬到 -3，Cloudflare 按 `max-age` 缓存）。图片都是新文件名，不涉及缓存。

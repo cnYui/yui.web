@@ -1549,17 +1549,6 @@ body {
     outline-offset: 3px;
 }
 
-.cw-file-label {
-    position: absolute;
-    right: 40px;
-    top: 38px;
-    font-family: 'Special Elite', serif;
-    font-size: 13px;
-    letter-spacing: .3em;
-    color: #6a5238;
-    white-space: nowrap;
-}
-
 .cw-file {
     position: absolute;
     inset: 0;
@@ -2485,10 +2474,11 @@ body {
 
 /* 档案 04：履历 */
 
+/* 盖在档案左下角：证书行下沿到纸张底边只有 148px，倾角收到 7 度才两头都留得住空白 */
 .cw-resume-file-stamp {
-    left: 900px;
-    top: 90px;
-    transform: rotate(-10deg);
+    left: 56px;
+    top: 654px;
+    transform: rotate(-7deg);
     font-size: 28px;
     letter-spacing: .26em;
     padding: 8px 18px;
@@ -2703,22 +2693,6 @@ body {
     box-shadow: inset 0 0 0 2px #e8d9b5;
 }
 
-.cw-dossier-verified {
-    position: absolute;
-    left: 60px;
-    top: 690px;
-    transform: rotate(-4deg);
-    font-family: 'Special Elite', serif;
-    font-size: 14px;
-    letter-spacing: .24em;
-    color: #2b62a8;
-    border: 2.5px double #2b62a8;
-    padding: 4px 10px;
-    opacity: .75;
-    mix-blend-mode: multiply;
-    white-space: nowrap;
-}
-
 /* 档案 05：旅行 · 行踪 */
 
 .cw-travel-map {
@@ -2908,18 +2882,6 @@ body {
     object-fit: cover;
 }
 
-.cw-shop-storefront-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-top: 12px;
-    font-family: 'Special Elite', 'Noto Serif SC', serif;
-    font-size: 13px;
-    letter-spacing: .2em;
-    color: #e6d7b5;
-    white-space: nowrap;
-}
-
 .cw-shop-ticket {
     position: absolute;
     left: 810px;
@@ -3094,14 +3056,6 @@ body {
         white-space: nowrap;
     }
 
-    .cw-file-label {
-        position: fixed;
-        right: 16px;
-        top: 20px;
-        font-size: 10px;
-        letter-spacing: .12em;
-    }
-
     /* 单列排版下，所有绝对定位的模块改为按顺序流动。 */
     .cw-file,
     .cw-file-head,
@@ -3115,7 +3069,6 @@ body {
     .cw-scroll,
     .cw-dossier,
     .cw-dossier-download,
-    .cw-dossier-verified,
     .cw-travel-map,
     .cw-travel-recent,
     .cw-shop-storefront,

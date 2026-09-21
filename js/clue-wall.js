@@ -20,10 +20,6 @@
     const DESK_TILT = 64;
     const PINCH = { ax: -0.15, ay: 0.38 };
 
-    const FILE_LABELS = {
-        about: 'FILE 01 / 06', projects: 'FILE 02 / 06', blog: 'FILE 03 / 06',
-        resume: 'FILE 04 / 06', travel: 'FILE 05 / 06', shop: 'FILE 06 / 06'
-    };
     const CAT_LABELS = { award: '获奖 AWARD', hackathon: '黑客松 HACKATHON', meetup: '聚会 MEETUP', project: '项目 PROJECT' };
     // 手里举着的封面长什么样，取决于被取下来的是哪张便签，而不只是哪个档案。
     const COVERS = {
@@ -48,7 +44,6 @@
     const sheet = document.getElementById('cwSheet');
     const sheetInner = document.getElementById('cwSheetInner');
     const backButton = document.getElementById('cwBack');
-    const fileLabel = document.getElementById('cwFileLabel');
     const handBack = document.getElementById('cwHandBack');
     const handFront = document.getElementById('cwHandFront');
     const fingers = document.getElementById('cwFingers');
@@ -525,7 +520,6 @@
         sheet.hidden = !state.sheetIn;
         if (!state.sheetIn) { sheet.classList.remove('is-open'); return; }
         sheet.dataset.file = state.active || '';
-        fileLabel.textContent = `${FILE_LABELS[state.active] || ''} · ESC`;
         Object.keys(files).forEach((id) => { files[id].hidden = id !== state.active; });
         const labelledBy = files[state.active] && files[state.active].getAttribute('aria-labelledby');
         if (labelledBy) sheet.setAttribute('aria-labelledby', labelledBy);
