@@ -143,3 +143,14 @@
 - 派生规格集中在 `scripts/build-optimized-images.js`：旅行 1000px / q72（旅行页头图单独 1600px / q70）、项目 1000px / q76、博客 1400px / q76（`ai-native-hackathon` 1200px）、头像与首页肖像 q80。新增或替换图片后用 `node scripts/build-optimized-images.js <过滤词>` 重建对应任务。
 - Cloudflare 会按 `max-age=604800` 缓存图片：同名图片重新压缩后要改引用处的版本号，旅行照片统一由 `js/travel.js` 的 `travelImageVersion` 控制。
 - 首页行踪图源图改为 256 色 PNG（1.4 MB → 390 KB，PSNR 47 dB）；图片总量约 26.7 MB → 12.8 MB，项目页 6.6 MB → 1.8 MB。
+
+## 2026-09-21 首页线索墙 v2：取件动画与桌面档案
+
+- 首页按 Claude Design「侦探线索墙个人主页」的 `Clue Wall Study v2.dc.html` 重做：点击便签后，一只手把它从墙上取下来、带到桌前摊开，镜头同时压到桌面；关闭时原路钉回墙上。档案从 5 份扩到 6 份（关于我 / 项目 / 博客 / 履历 / 旅行 / 商店），锚点相应变成 `#about`、`#projects`、`#blog`、`#resume`、`#travel`、`#shop`，旧的 `#photos` 会重定向到 `#travel`。
+- 新增内容：项目 25 条带分类筛选（获奖 / 黑客松 / 聚会 / 项目），旅行 26 张带城市筛选，商店档案（Sub2API 通行券），博客卡片点开后在桌上按手稿排版读全文，挂钟改成按本地时间走时。
+- 文件：`index.html`、`styles/clue-wall.css`（墙面 1440 × 900、桌上的档案 1280 × 760）、`js/clue-wall.js`（相位编排 + 取件手 + 阅读器）、`js/clue-data.js`、`js/blog-articles.js`。
+- `js/blog-articles.js`（约 67 KB）由 `node scripts/build-blog-articles.js` 从 `blog/*.html` 正文和 `js/blog-data.js` 的中文元信息生成，不要手改；博客正文改动后重新跑一次。它不在首屏同步加载，由 `clue-wall.js` 在第一次点开文章时插入 `<script>`。
+- 设计稿里的 3D 手（`hand3d.js`）依赖 esm.sh 的 three.js 和 jsDelivr 的 `.glb`，被 `script-src 'self'` / `connect-src 'self'` 挡住，没有实现；线上用的是设计稿自带的 SVG 手（设计里 `svgHandOpacity` 那条回退路径），取件编排完全一致。要上 3D 手需要先把 three.js（365 KB）、GLTFLoader（115 KB）和 `right.glb`（94 KB）自托管到 `js/` 与 `files/` 下。
+- 行踪图换成 v4：源图 `images/clue-wall/travel-map-v4.png`（比 v3 多了奈良与冲绳），仍用无头 Chrome 2x 渲染设计稿的 `travel-map.html` 再转 256 色 PNG；派生图只保留 1100px 一档（页面最大只显示到 540 CSS px），`travel-map.webp` + `travel-map-1100.webp` 两档共 315 KB 降到 52 KB。
+- 首屏体积：文本 gzip 22 KB → 36 KB、图片 150 KB → 224 KB，合计约 172 KB → 260 KB；商店便签用 420px 的 `shop-entry.webp` 而不是 1800px 的店面原图。
+- 实施记录见 `docs/ai/context/20260921-174800-clue-wall-v2-desk-implementation_CN.md`。

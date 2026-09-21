@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Yui · 悠一 | 线索墙 Clue Wall</title>
-  <meta name="description" content="悠一 Yui 的个人主页：AI Native Developer，福井大学研究生。拖动环视侦探书房里的线索墙，点击便签打开关于我、项目、博客、履历与照片档案。">
+  <meta name="description" content="悠一 Yui 的个人主页：AI Native Developer，福井大学研究生。拖动环视侦探书房里的线索墙，点击便签把档案取到桌上细看——关于我、项目、博客、履历、旅行与商店。">
   <meta name="theme-color" content="#0f0a07">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Special+Elite&amp;family=Ma+Shan+Zheng&amp;family=Noto+Serif+SC:wght@400;600&amp;display=swap" rel="stylesheet">
-  <link href="/styles/clue-wall.css?v=20260919-1" rel="stylesheet">
-  <script src="/js/clue-data.js?v=20260919-1" defer></script>
-  <script src="/js/clue-wall.js?v=20260919-1" defer></script>
+  <link href="/styles/clue-wall.css?v=20260921-1" rel="stylesheet">
+  <script src="/js/clue-data.js?v=20260921-1" defer></script>
+  <script src="/js/clue-wall.js?v=20260921-1" defer></script>
 </head>
 <body>
 <div class="cw-root" id="clueWall">
@@ -59,9 +59,17 @@
               <div class="cw-drawer"><div class="cw-drawer-label cw-drawer-label--small">MISC</div><div class="cw-drawer-handle"></div></div>
             </div>
             <div class="cw-clock">
-              <div class="cw-clock-hour"></div>
-              <div class="cw-clock-minute"></div>
+              <div class="cw-clock-ticks" id="cwClockTicks"></div>
+              <div class="cw-clock-numeral cw-clock-numeral--12">12</div>
+              <div class="cw-clock-numeral cw-clock-numeral--3">3</div>
+              <div class="cw-clock-numeral cw-clock-numeral--6">6</div>
+              <div class="cw-clock-numeral cw-clock-numeral--9">9</div>
+              <div class="cw-clock-brand">YUI &amp; CO. · FUKUI</div>
+              <div class="cw-clock-hour" id="cwClockHour"></div>
+              <div class="cw-clock-minute" id="cwClockMinute"></div>
+              <div class="cw-clock-second" id="cwClockSecond"></div>
               <div class="cw-clock-pin"></div>
+              <div class="cw-clock-glass"></div>
             </div>
             <div class="cw-license">
               <div class="cw-license-paper">
@@ -79,42 +87,46 @@
             <div class="cw-board-frame"></div>
             <div class="cw-cork">
 
-              <div class="cw-card cw-card--about" data-section="about" data-tilt="-4" role="button" tabindex="0" aria-label="打开档案 01：关于我 · 谁是悠一？">
+              <div class="cw-card cw-card--about" data-section="about" data-card="aboutNote" data-tilt="-4" role="button" tabindex="0" aria-label="打开档案 01：关于我 · 谁是悠一？">
                 <div class="cw-about-kicker">FILE 01 · 关于我</div>
                 <div class="cw-about-title">谁是悠一？</div>
                 <div class="cw-about-en">WHO IS YUI?</div>
                 <div class="cw-about-desc">AI Native Developer · 福井大学研究生 · 接受远程工作</div>
               </div>
 
-              <div class="cw-card cw-card--portrait" data-section="about" data-tilt="-2" role="button" tabindex="0" aria-label="打开档案 01：主角 · 悠一 Yui">
+              <div class="cw-card cw-card--portrait" data-section="about" data-card="aboutPortrait" data-tilt="-2" role="button" tabindex="0" aria-label="打开档案 01：主角 · 悠一 Yui">
                 <div class="cw-portrait-photo"><img src="/images/optimized/profile/portrait-compressed.webp" alt="悠一 Yui" decoding="async"></div>
                 <div class="cw-portrait-caption">主角 · 悠一 Yui</div>
                 <div class="cw-portrait-sub">SUBJECT · AI NATIVE DEVELOPER</div>
               </div>
               <div class="cw-tape-label">福井大学 研究生 · 独立开发者 · 设计师 · 创作者</div>
 
-              <div class="cw-card cw-card--projects" data-section="projects" data-tilt="3" role="button" tabindex="0" aria-label="打开档案 02：项目 · 案件时间线">
-                <div class="cw-projects-photo"><img src="/images/optimized/clue-wall/global-gold.webp" alt="环球黑客松 金奖" decoding="async"></div>
-                <div class="cw-projects-row"><span>FILE 02 · 项目</span><span>2024 → 2026</span></div>
-                <div class="cw-projects-title">项目 · 案件时间线</div>
-                <div class="cw-projects-sub">CASE TIMELINE · 10+ HACKATHONS · 4+ AWARDS</div>
-                <div class="cw-projects-stamp">金奖 AWARDED</div>
-              </div>
-
-              <div class="cw-card cw-card--map" data-section="photos" data-tilt="-1.5" role="button" tabindex="0" aria-label="打开档案 05：行踪图 · 照片">
-                <img class="cw-map-img" src="/images/optimized/clue-wall/travel-map-1100.webp" alt="行踪图 · 悠一的旅行路线" decoding="async">
-                <div class="cw-map-row">
-                  <div class="cw-map-title">行踪图 · 2024 → 2026</div>
-                  <div class="cw-map-sub">TRAVEL LOG · 长三角 → 重庆 → 福井 → 日本</div>
-                </div>
-              </div>
-
               <div class="cw-bizcard">
                 <div class="cw-bizcard-name">YUI · 悠一</div>
                 <div class="cw-bizcard-lines">xiaobianfuai@gmail.com<br>15951875192<br>aaccx.pw</div>
               </div>
 
-              <div class="cw-card cw-card--blog" data-section="blog" data-tilt="2" role="button" tabindex="0" aria-label="打开档案 03：博客 · 笔记 Field Notes">
+              <div class="cw-card cw-card--shop" data-section="shop" data-card="shop" data-tilt="4" role="button" tabindex="0" aria-label="打开档案 06：商店 · CODE TRANSIT">
+                <div class="cw-shop-photo"><img src="/images/optimized/clue-wall/shop-entry.webp" alt="CODE TRANSIT · Shop" decoding="async"></div>
+                <div class="cw-shop-row"><span>FILE 06 · 商店</span><span>SHOP</span></div>
+                <div class="cw-shop-title">CODE TRANSIT</div>
+              </div>
+
+              <div class="cw-card cw-card--projects" data-section="projects" data-card="projects" data-tilt="3" role="button" tabindex="0" aria-label="打开档案 02：项目 · 案件时间线">
+                <div class="cw-projects-photo"><img src="/images/optimized/clue-wall/global-gold.webp" alt="环球黑客松 金奖" decoding="async"></div>
+                <div class="cw-projects-row"><span>FILE 02 · 项目</span><span>2024 → 2026</span></div>
+                <div class="cw-projects-title">项目 · 案件时间线</div>
+                <div class="cw-projects-sub">CASE TIMELINE · 25 CASES · 6 AWARDS</div>
+                <div class="cw-projects-stamp">金奖 AWARDED</div>
+              </div>
+
+              <div class="cw-ai-note">
+                <div class="cw-ai-note-tape"></div>
+                <div class="cw-ai-note-title">AI Native Developer：黑客松赛场上的开发者生存范式</div>
+                <div class="cw-ai-note-scribble"></div>
+              </div>
+
+              <div class="cw-card cw-card--blog" data-section="blog" data-card="blog" data-tilt="2" role="button" tabindex="0" aria-label="打开档案 03：博客 · 笔记 Field Notes">
                 <div class="cw-blog-row"><span>FILE 03 · 博客</span><span>6 ENTRIES</span></div>
                 <div class="cw-blog-title">笔记 · Field Notes</div>
                 <div class="cw-blog-list">
@@ -124,26 +136,28 @@
                 </div>
               </div>
 
-              <div class="cw-ai-note">
-                <div class="cw-ai-note-tape"></div>
-                <div class="cw-ai-note-title">AI Native Developer：黑客松赛场上的开发者生存范式</div>
-                <div class="cw-ai-note-scribble"></div>
+              <div class="cw-card cw-card--map" data-section="travel" data-card="travelMap" data-tilt="-1.5" role="button" tabindex="0" aria-label="打开档案 05：行踪图 · 旅行">
+                <img class="cw-map-img" src="/images/optimized/clue-wall/travel-map-v4.webp" alt="行踪图 · 悠一的旅行路线" decoding="async">
+                <div class="cw-map-row">
+                  <div class="cw-map-title">行踪图 · 旅行 2024 → 2026</div>
+                  <div class="cw-map-sub">FILE 05 · TRAVEL LOG</div>
+                </div>
               </div>
 
-              <div class="cw-card cw-card--photos" data-section="photos" data-tilt="4" role="button" tabindex="0" aria-label="打开档案 05：照片 · 行踪">
+              <div class="cw-card cw-card--photos" data-section="travel" data-card="travelPhoto" data-tilt="4" role="button" tabindex="0" aria-label="打开档案 05：照片 · 行踪">
                 <div class="cw-stack-sheet cw-stack-sheet--1"></div>
                 <div class="cw-stack-sheet cw-stack-sheet--2"></div>
                 <div class="cw-stack-front">
                   <div class="cw-stack-photo"><img src="/images/optimized/clue-wall/tokyo-night.webp" alt="东京夜景" decoding="async"></div>
                   <div class="cw-stack-row">
                     <div class="cw-stack-title">照片 · 行踪</div>
-                    <div class="cw-stack-file">FILE 05</div>
+                    <div class="cw-stack-file">80+ PHOTOS</div>
                   </div>
-                  <div class="cw-stack-sub">SIGHTINGS · 东京 京都 名古屋 南京</div>
+                  <div class="cw-stack-sub">SIGHTINGS · 东京 京都 大阪 奈良 冲绳 ...</div>
                 </div>
               </div>
 
-              <div class="cw-card cw-card--resume" data-section="resume" data-tilt="-3" role="button" tabindex="0" aria-label="打开档案 04：履历 · DOSSIER">
+              <div class="cw-card cw-card--resume" data-section="resume" data-card="resume" data-tilt="-3" role="button" tabindex="0" aria-label="打开档案 04：履历 · DOSSIER">
                 <div class="cw-resume-kicker">FILE 04 · 履历 · DOSSIER</div>
                 <div class="cw-resume-name">WU JIANXIANG</div>
                 <div class="cw-resume-lines">福井大学 工学研究科 · 2026–2028<br>国家能源研究院 R&amp;D 实习 · 2025–2026<br>JLPT N2 · TOEIC 850 · TOEFL 84</div>
@@ -152,26 +166,40 @@
                 <div class="cw-redact cw-redact--2"></div>
               </div>
 
-              <svg class="cw-strings" aria-hidden="true">
+              <svg class="cw-strings" viewBox="0 0 1700 880" preserveAspectRatio="none" aria-hidden="true">
                 <g class="cw-strings-shadow" transform="translate(3,6)">
-                  <path d="M850 132 Q575 170 300 165"></path><path d="M850 132 Q1120 160 1390 125"></path><path d="M850 132 Q540 420 280 675"></path><path d="M850 132 Q1230 420 1500 665"></path><path d="M850 132 Q660 380 500 592"></path><path d="M1020 592 Q1105 615 1190 615"></path><path d="M300 165 Q250 420 280 675"></path><path d="M1500 665 Q1380 590 1235 480"></path><path d="M1390 125 Q1330 310 1235 480"></path>
+                  <path d="M850 95 Q575 160 300 150"></path><path d="M850 95 Q1120 130 1390 92"></path><path d="M850 95 Q520 380 280 612"></path><path d="M850 95 Q1230 330 1525 532"></path><path d="M850 95 Q660 340 515 545"></path><path d="M850 95 Q1060 360 1210 575"></path><path d="M850 95 Q1000 220 1130 300"></path><path d="M300 150 Q260 390 280 612"></path><path d="M1390 92 Q1490 320 1525 532"></path><path d="M1005 545 Q1110 590 1210 575"></path>
                 </g>
                 <g class="cw-strings-red">
-                  <path d="M850 132 Q575 170 300 165"></path><path d="M850 132 Q1120 160 1390 125"></path><path d="M850 132 Q540 420 280 675"></path><path d="M850 132 Q1230 420 1500 665"></path><path d="M850 132 Q660 380 500 592"></path><path d="M1020 592 Q1105 615 1190 615"></path><path d="M300 165 Q250 420 280 675"></path><path d="M1500 665 Q1380 590 1235 480"></path><path d="M1390 125 Q1330 310 1235 480"></path>
+                  <path d="M850 95 Q575 160 300 150"></path><path d="M850 95 Q1120 130 1390 92"></path><path d="M850 95 Q520 380 280 612"></path><path d="M850 95 Q1230 330 1525 532"></path><path d="M850 95 Q660 340 515 545"></path><path d="M850 95 Q1060 360 1210 575"></path><path d="M850 95 Q1000 220 1130 300"></path><path d="M300 150 Q260 390 280 612"></path><path d="M1390 92 Q1490 320 1525 532"></path><path d="M1005 545 Q1110 590 1210 575"></path>
                 </g>
               </svg>
 
-              <span class="cw-pin cw-pin--gold" style="left:850px; top:132px"></span>
-              <span class="cw-pin cw-pin--red" style="left:300px; top:165px"></span>
-              <span class="cw-pin cw-pin--red" style="left:1390px; top:125px"></span>
-              <span class="cw-pin cw-pin--red" style="left:280px; top:675px"></span>
-              <span class="cw-pin cw-pin--red" style="left:1500px; top:665px"></span>
-              <span class="cw-pin cw-pin--red" style="left:1190px; top:615px"></span>
-              <span class="cw-pin cw-pin--blue" style="left:500px; top:592px"></span>
-              <span class="cw-pin cw-pin--blue" style="left:1020px; top:592px"></span>
-              <span class="cw-pin cw-pin--blue" style="left:1235px; top:480px"></span>
+              <span class="cw-pin cw-pin--gold" style="left:850px; top:95px"></span>
+              <span class="cw-pin cw-pin--red" style="left:300px; top:150px"></span>
+              <span class="cw-pin cw-pin--red" style="left:1390px; top:92px"></span>
+              <span class="cw-pin cw-pin--red" style="left:280px; top:612px"></span>
+              <span class="cw-pin cw-pin--red" style="left:1525px; top:532px"></span>
+              <span class="cw-pin cw-pin--red" style="left:1210px; top:575px"></span>
+              <span class="cw-pin cw-pin--red" style="left:1130px; top:300px"></span>
+              <span class="cw-pin cw-pin--blue" style="left:515px; top:545px"></span>
+              <span class="cw-pin cw-pin--blue" style="left:1005px; top:545px"></span>
             </div>
           </div>
+
+          <div class="cw-face cw-desk" aria-hidden="true">
+            <div class="cw-desk-blotter"></div>
+            <div class="cw-desk-plate">悠一 · 私家侦探事务所</div>
+            <div class="cw-desk-folder cw-desk-folder--1">CASE 2025</div>
+            <div class="cw-desk-folder cw-desk-folder--2">CASE 2026</div>
+            <div class="cw-desk-photo">
+              <div class="cw-desk-photo-img"><img src="/images/optimized/clue-wall/nagoya-blue.webp" alt="" decoding="async"></div>
+              <div class="cw-desk-photo-cap">名古屋 · 蓝调时刻</div>
+            </div>
+            <div class="cw-desk-ring"></div>
+            <div class="cw-desk-memo">MEMO · 待办<br>· 整理 2026 案卷<br>· 回复 xiaobianfuai@gmail.com</div>
+          </div>
+          <div class="cw-face cw-desk-edge" aria-hidden="true"></div>
 
         </div>
       </div>
@@ -182,15 +210,15 @@
   <div class="cw-dim" id="cwDim" aria-hidden="true"></div>
 
   <button class="cw-sound" id="cwSound" type="button" aria-pressed="false">环境音 · <span class="cw-sound-en">AMBIENT: </span><span id="cwSoundState">OFF</span></button>
-  <div class="cw-hint" id="cwHint">拖动环视 · DRAG TO LOOK AROUND — 点击便签打开档案 · CLICK A NOTE</div>
+  <div class="cw-hint" id="cwHint">拖动环视 · DRAG TO LOOK AROUND — 点击便签，取下来放到桌上细看 · CLICK A NOTE TO TAKE IT DOWN</div>
 
-  <div class="cw-overlay" id="cwOverlay" role="dialog" aria-modal="true" hidden>
-    <div class="cw-overlay-content" id="cwOverlayContent">
-      <div class="cw-board" id="cwBoard">
-        <button class="cw-back" id="cwBack" type="button">← 回到线索墙 · BACK TO WALL</button>
+  <div class="cw-desk-layer" id="cwDeskLayer">
+    <div class="cw-sheet" id="cwSheet" role="dialog" aria-modal="true" hidden>
+      <div class="cw-sheet-inner" id="cwSheetInner">
+        <button class="cw-back" id="cwBack" type="button">← 钉回墙上 · PIN IT BACK</button>
+        <div class="cw-file-label" id="cwFileLabel"></div>
 
         <section class="cw-file cw-file--about" data-file="about" aria-labelledby="cwFileAbout" hidden>
-          <div class="cw-file-meta"><a class="cw-file-link" href="https://aaccx.pw/SKILL.md" target="_blank" rel="noopener noreferrer">SKILL.md · 给 AGENT 的档案 →</a><span class="cw-file-label">FILE 01 / 05 · ESC</span></div>
           <header class="cw-file-head">
             <h2 class="cw-file-title" id="cwFileAbout">关于我 · 谁是悠一？</h2>
             <p class="cw-file-sub">FILE 01 · SUBJECT PROFILE · WHO IS YUI?</p>
@@ -207,7 +235,7 @@
               <dt>现状 STATUS</dt><dd>日本福井大学 研究生 · 2026.4 – 2028.3</dd>
               <dt>定位 ROLE</dt><dd>AI Native Developer · 独立开发者 · 设计师 · 创作者</dd>
               <dt>状态 AVAILABILITY</dt><dd>接受远程工作 · open to remote</dd>
-              <dt>出没 SEEN AT</dt><dd>长三角 &amp; 线上黑客松 · 10+ 场 · 8+ 座城市</dd>
+              <dt>出没 SEEN AT</dt><dd>长三角 &amp; 线上黑客松 · 25 场活动 · 10 座城市</dd>
             </dl>
           </div>
           <ul class="cw-keywords" data-list="keywords"></ul>
@@ -230,43 +258,65 @@
           </div>
           <div class="cw-about-contact">
             <div class="cw-about-contact-title">CONTACT · 联系</div>
-            <div class="cw-about-contact-lines"><a href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a><br><span>15951875192</span><br><a href="https://aaccx.pw" target="_blank" rel="noopener">aaccx.pw</a></div>
+            <div class="cw-about-contact-lines"><a href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a><br><span>15951875192</span><br><a href="https://aaccx.pw/SKILL.md" target="_blank" rel="noopener noreferrer">SKILL.md · 给 AGENT 的档案</a></div>
           </div>
-          <svg class="cw-file-strings" aria-hidden="true">
-            <g class="cw-strings-shadow" transform="translate(3,5)"><path d="M195 242 Q400 275 600 246"></path><path d="M600 246 Q565 430 545 610"></path><path d="M545 610 Q685 665 825 630"></path><path d="M825 630 Q965 665 1105 610"></path></g>
-            <g class="cw-strings-red"><path d="M195 242 Q400 275 600 246"></path><path d="M600 246 Q565 430 545 610"></path><path d="M545 610 Q685 665 825 630"></path><path d="M825 630 Q965 665 1105 610"></path></g>
+          <svg class="cw-file-strings" viewBox="0 0 1280 760" preserveAspectRatio="none" aria-hidden="true">
+            <g class="cw-strings-shadow" transform="translate(3,5)"><path d="M180 214 Q380 250 566 216"></path><path d="M566 216 Q540 400 512 588"></path><path d="M512 588 Q640 640 776 604"></path><path d="M776 604 Q900 640 1040 588"></path></g>
+            <g class="cw-strings-red"><path d="M180 214 Q380 250 566 216"></path><path d="M566 216 Q540 400 512 588"></path><path d="M512 588 Q640 640 776 604"></path><path d="M776 604 Q900 640 1040 588"></path></g>
           </svg>
-          <span class="cw-pin cw-pin--red" style="left:195px; top:242px"></span>
-          <span class="cw-pin cw-pin--red" style="left:600px; top:246px"></span>
-          <span class="cw-pin cw-pin--red" style="left:545px; top:610px"></span>
-          <span class="cw-pin cw-pin--red" style="left:825px; top:630px"></span>
-          <span class="cw-pin cw-pin--red" style="left:1105px; top:610px"></span>
+          <span class="cw-pin cw-pin--red" style="left:180px; top:214px"></span>
+          <span class="cw-pin cw-pin--red" style="left:566px; top:216px"></span>
+          <span class="cw-pin cw-pin--red" style="left:512px; top:588px"></span>
+          <span class="cw-pin cw-pin--red" style="left:776px; top:604px"></span>
+          <span class="cw-pin cw-pin--red" style="left:1040px; top:588px"></span>
         </section>
 
         <section class="cw-file cw-file--projects" data-file="projects" aria-labelledby="cwFileProjects" hidden>
-          <div class="cw-file-meta"><a class="cw-file-link" href="/projects/">全部案卷 · ALL CASES →</a><span class="cw-file-label">FILE 02 / 05 · ESC</span></div>
           <header class="cw-file-head">
             <h2 class="cw-file-title" id="cwFileProjects">项目 · 案件时间线</h2>
-            <p class="cw-file-sub">FILE 02 · CASE TIMELINE — 10+ 黑客松 · 4+ 奖项 · 8+ 座城市 · 2024 → 2026</p>
+            <p class="cw-file-sub">FILE 02 · CASE TIMELINE — 25 CASES · 6 AWARDS · 10 CITIES · 2024 → 2026</p>
           </header>
-          <svg class="cw-file-strings" aria-hidden="true">
-            <g class="cw-strings-shadow cw-strings--flat" transform="translate(2,5)"><path d="M20 250 Q700 268 1380 250"></path><path d="M20 586 Q700 604 1380 586"></path></g>
-            <g class="cw-strings-red cw-strings--flat"><path d="M20 250 Q700 268 1380 250"></path><path d="M20 586 Q700 604 1380 586"></path></g>
-          </svg>
-          <ol class="cw-cases" data-list="timeline"></ol>
+          <div class="cw-stamp cw-projects-file-stamp">已结案 SOLVED · <span id="cwProjectCount"></span></div>
+          <div class="cw-tabs" data-list="projectTabs"></div>
+          <div class="cw-scroll cw-projects-scroll">
+            <div class="cw-cases" data-list="projects"></div>
+          </div>
         </section>
 
         <section class="cw-file cw-file--blog" data-file="blog" aria-labelledby="cwFileBlog" hidden>
-          <div class="cw-file-meta"><a class="cw-file-link" href="/blog/">全部笔记 · ALL NOTES →</a><span class="cw-file-label">FILE 03 / 05 · ESC</span></div>
-          <header class="cw-file-head">
-            <h2 class="cw-file-title" id="cwFileBlog">博客 · 笔记 Field Notes</h2>
-            <p class="cw-file-sub">FILE 03 · FIELD NOTES — 6 ENTRIES · 2025.12 → 2026.06 · AACCX.PW/BLOG</p>
-          </header>
-          <div class="cw-posts" data-list="posts"></div>
+          <div class="cw-blog-pane" id="cwBlogList">
+            <header class="cw-file-head">
+              <h2 class="cw-file-title" id="cwFileBlog">博客 · 笔记 Field Notes</h2>
+              <p class="cw-file-sub">FILE 03 · FIELD NOTES — 6 ENTRIES · 2025.12 → 2026.06 · 点击卡片在桌上阅读 · READ ON THE DESK</p>
+            </header>
+            <div class="cw-posts" data-list="posts"></div>
+          </div>
+          <div class="cw-reader" id="cwReader" hidden>
+            <div class="cw-reader-cover">
+              <div class="cw-reader-cover-top">
+                <span class="cw-reader-kicker">案卷 · CASE NOTE</span>
+                <span class="cw-reader-ai">AI</span>
+              </div>
+              <div class="cw-reader-title" id="cwArtTitle"></div>
+              <div class="cw-reader-meta" id="cwArtMeta"></div>
+              <div class="cw-reader-hero" id="cwArtHero" hidden><div class="cw-reader-hero-img"><img id="cwArtHeroImg" src="" alt="" loading="lazy" decoding="async"></div></div>
+              <div class="cw-reader-excerpt" id="cwArtExcerpt"></div>
+              <div class="cw-reader-tags" id="cwArtTags"></div>
+              <div class="cw-reader-spacer"></div>
+              <div class="cw-reader-actions">
+                <button class="cw-reader-back" id="cwArtBack" type="button">← 回到笔记 · ALL NOTES</button>
+                <a class="cw-reader-link" id="cwArtLink" href="#" target="_blank" rel="noopener">原文 · ORIGINAL ↗</a>
+              </div>
+            </div>
+            <div class="cw-reader-paper" id="cwArtPaper">
+              <div class="cw-reader-paper-head"><span id="cwArtPaperDate"></span><span id="cwArtPaperCount"></span></div>
+              <div class="cw-reader-blocks" id="cwArtBlocks"></div>
+              <div class="cw-reader-end"><span>— END OF REPORT · 完 —</span><a id="cwArtEndLink" href="#" target="_blank" rel="noopener">原文 · aaccx.pw ↗</a></div>
+            </div>
+          </div>
         </section>
 
         <section class="cw-file cw-file--resume" data-file="resume" aria-labelledby="cwFileResume" hidden>
-          <div class="cw-file-meta"><a class="cw-file-link" href="/resume/">完整履历 · FULL RESUME →</a><span class="cw-file-label">FILE 04 / 05 · ESC</span></div>
           <header class="cw-file-head">
             <h2 class="cw-file-title" id="cwFileResume">履历 · 身份档案</h2>
             <p class="cw-file-sub">FILE 04 · DOSSIER — WU JIANXIANG · AI NATIVE DEVELOPER</p>
@@ -311,17 +361,88 @@
           <div class="cw-dossier-verified">已核实 VERIFIED · 2026.09</div>
         </section>
 
-        <section class="cw-file cw-file--photos" data-file="photos" aria-labelledby="cwFilePhotos" hidden>
-          <div class="cw-file-meta"><a class="cw-file-link" href="/travel/">全部照片 · ALL PHOTOS →</a><span class="cw-file-label">FILE 05 / 05 · ESC</span></div>
+        <section class="cw-file cw-file--travel" data-file="travel" aria-labelledby="cwFileTravel" hidden>
           <header class="cw-file-head">
-            <h2 class="cw-file-title" id="cwFilePhotos">照片 · 行踪</h2>
-            <p class="cw-file-sub">FILE 05 · SIGHTINGS — 东京 · 京都 · 大阪 · 名古屋 · 广岛 · 横滨 · 杭州 · 南京</p>
+            <h2 class="cw-file-title" id="cwFileTravel">旅行 · 行踪</h2>
+            <p class="cw-file-sub">FILE 05 · TRAVEL LOG — 2 COUNTRIES · 13 CITIES · 80+ PHOTOS · 下一站 NEXT: 大阪 OSAKA</p>
           </header>
-          <div class="cw-travel-map"><img src="/images/optimized/clue-wall/travel-map.webp" alt="行踪图 · 悠一的旅行路线 2024 → 2026" loading="lazy" decoding="async"></div>
-          <div class="cw-sightings" data-list="photos"></div>
+          <div class="cw-travel-map">
+            <img src="/images/optimized/clue-wall/travel-map-v4.webp" alt="行踪图 · 悠一的旅行路线 2024–2026" loading="lazy" decoding="async">
+            <div class="cw-travel-map-row"><span>行踪图 · TRAVEL LOG</span><span>NATURAL EARTH · MERCATOR</span></div>
+          </div>
+          <div class="cw-travel-recent">
+            <div class="cw-travel-recent-kicker">最近目击 · RECENT SIGHTINGS</div>
+            <div class="cw-travel-recent-list">
+              <div><span>2026.09.18 · 福井 永平寺 Eiheiji</span><span>曹洞宗大本山</span></div>
+              <div><span>2026.08.15 · 冲绳 Okinawa</span><span>一周 · 与那原大绳曳</span></div>
+              <div><span>2026.06.30 · 奈良 Nara</span><span>鹿 · 春日大社</span></div>
+              <div><span>2026.07 · 京都 IVS2026</span><span>见 FILE 02</span></div>
+            </div>
+          </div>
+          <div class="cw-tabs cw-tabs--travel" data-list="travelTabs"></div>
+          <div class="cw-scroll cw-travel-scroll">
+            <div class="cw-sightings" data-list="travel"></div>
+          </div>
+        </section>
+
+        <section class="cw-file cw-file--shop" data-file="shop" aria-labelledby="cwFileShop" hidden>
+          <header class="cw-file-head">
+            <h2 class="cw-file-title" id="cwFileShop">商店 · 天才程序员中转站</h2>
+            <p class="cw-file-sub">FILE 06 · SHOP — CODE TRANSIT · Sub2API · AACCX.PW/SHOP</p>
+          </header>
+          <a class="cw-shop-storefront" href="https://aaccx.pw/login" target="_blank" rel="noopener">
+            <div class="cw-shop-storefront-img"><img src="/images/optimized/shop/code-transit-entry.webp" alt="CODE TRANSIT · 进入 Sub2API" loading="lazy" decoding="async"></div>
+            <div class="cw-shop-storefront-row"><span>STOREFRONT · 店面</span><span>点击图片进入 · CLICK TO ENTER →</span></div>
+          </a>
+          <a class="cw-shop-ticket" href="https://aaccx.pw/login" target="_blank" rel="noopener">
+            <div class="cw-shop-ticket-main">
+              <div class="cw-shop-ticket-kicker">ADMIT ONE · 通行券</div>
+              <div class="cw-shop-ticket-title">Sub2API</div>
+              <div class="cw-shop-ticket-sub">CODE TRANSIT · AACCX.PW/LOGIN</div>
+              <div class="cw-shop-ticket-cta">进入商店 · ENTER →</div>
+            </div>
+            <div class="cw-shop-ticket-stub">№ 2026-09</div>
+          </a>
+          <div class="cw-shop-clue">
+            <div class="cw-shop-clue-kicker">线索 · CLUE</div>
+            <div class="cw-shop-clue-title">入口藏在店面图片的正中央。</div>
+            <div class="cw-shop-clue-en">THE ENTRANCE IS HIDDEN AT THE CENTER OF THE PICTURE.</div>
+          </div>
+          <div class="cw-stamp cw-shop-stamp">营业中 OPEN</div>
         </section>
       </div>
     </div>
+  </div>
+
+  <div class="cw-hand cw-hand--back" id="cwHandBack" aria-hidden="true">
+    <svg viewBox="0 0 300 1700" width="300" height="1700">
+      <path d="M62 470 L238 470 L292 1700 L8 1700 Z" fill="#221a15"></path>
+      <path d="M70 480 L112 480 L96 1700 L20 1700 Z" fill="rgba(255,255,255,.035)"></path>
+      <rect x="56" y="420" width="188" height="56" rx="8" fill="#e6dccb"></rect>
+      <rect x="56" y="458" width="188" height="18" rx="4" fill="rgba(0,0,0,.14)"></rect>
+      <circle cx="226" cy="446" r="5" fill="#b8923e"></circle>
+      <path d="M86 236 Q82 198 108 194 L198 194 Q226 198 224 236 L230 396 Q230 432 196 434 L106 434 Q78 432 78 396 Z" fill="#2e1f18"></path>
+      <path d="M100 250 Q150 232 210 250" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="3"></path>
+    </svg>
+  </div>
+
+  <div class="cw-carried" id="cwCarried" aria-hidden="true" hidden>
+    <div class="cw-carried-file" id="cwCoverFile"></div>
+    <div class="cw-carried-title" id="cwCoverTitle"></div>
+    <div class="cw-carried-sub" id="cwCoverSub"></div>
+  </div>
+
+  <div class="cw-hand cw-hand--front" id="cwHandFront" aria-hidden="true">
+    <svg viewBox="0 0 300 1700" width="300" height="1700">
+      <g class="cw-hand-fingers" id="cwFingers">
+        <rect x="92" y="68" width="34" height="176" rx="17" fill="#33231a"></rect>
+        <rect x="132" y="38" width="36" height="206" rx="18" fill="#33231a"></rect>
+        <rect x="174" y="54" width="34" height="190" rx="17" fill="#33231a"></rect>
+        <rect x="214" y="104" width="30" height="140" rx="15" fill="#33231a"></rect>
+        <path d="M100 90 L100 200 M140 62 L140 200 M182 78 L182 200 M221 124 L221 200" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="3" stroke-linecap="round"></path>
+      </g>
+      <rect class="cw-hand-thumb" id="cwThumb" x="24" y="206" width="36" height="150" rx="18" fill="#33231a"></rect>
+    </svg>
   </div>
 </div>
 </body>
