@@ -108,8 +108,8 @@ const travelData = [
     { image: '/images/optimized/travel/all things are connected.webp', title: 'All Connected', city: 'Others', desc: 'Philosophical moment' },
 ];
 
-// 照片重新压缩后更新版本号，避开浏览器与 Cloudflare 对同名旧图的 7 天缓存。
-const travelImageVersion = '20260919-2';
+// 照片重新压缩或转正方向后更新版本号，避开浏览器与 Cloudflare 对同名旧图的 7 天缓存。
+const travelImageVersion = '20260921-1';
 
 // Randomize aspect ratios for masonry effect
 const aspectRatios = ['aspect-[3/4]', 'aspect-[4/5]', 'aspect-square', 'aspect-[4/3]'];

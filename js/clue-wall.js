@@ -21,6 +21,8 @@
     const PINCH = { ax: -0.15, ay: 0.38 };
 
     const CAT_LABELS = { award: '获奖 AWARD', hackathon: '黑客松 HACKATHON', meetup: '聚会 MEETUP', project: '项目 PROJECT' };
+    // 行踪照片转正方向后更新版本号，避开浏览器与 Cloudflare 对同名旧图的 7 天缓存。
+    const TRAVEL_IMG_VERSION = '20260921-1';
     // 手里举着的封面长什么样，取决于被取下来的是哪张便签，而不只是哪个档案。
     const COVERS = {
         about: { file: 'FILE 01 · 关于我', title: '谁是悠一？', sub: 'WHO IS YUI?', bg: 'linear-gradient(135deg,#cfae7c,#bb955f 55%,#caa877)', fg: '#2a1d12' },
@@ -149,7 +151,7 @@
         renderTabs('travelTabs', data().travelCities, state.tf, 'tf');
         setList('travel', list.map((item) => `
             <figure class="cw-sighting" style="--rot:${num(item.rot)}deg">
-                <div class="cw-sighting-photo">${item.img ? `<img src="${escapeHtml(item.img)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async">` : ''}</div>
+                <div class="cw-sighting-photo">${item.img ? `<img src="${escapeHtml(item.img)}?v=${TRAVEL_IMG_VERSION}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async">` : ''}</div>
                 <figcaption>
                     <div class="cw-sighting-title">${escapeHtml(item.title)}</div>
                     <div class="cw-sighting-en">${escapeHtml(item.en)}</div>
