@@ -1,6 +1,6 @@
-/* 首页线索墙（侦探书房）。设计稿：Claude Design「侦探线索墙个人主页」Clue Wall Study。
-   墙面按 1440 × 900、档案浮层按 1400 × 860 的设计尺寸排版，由 js/clue-wall.js 按视口整体缩放；
-   窄屏（< 900px）下档案浮层改为可滚动的单列排版。 */
+/* 首页线索墙（侦探书房）。设计稿：Claude Design「侦探线索墙个人主页」Clue Wall Study v2。
+   墙面按 1440 × 900、桌上的档案按 1280 × 760 的设计尺寸排版，由 js/clue-wall.js 按视口整体缩放；
+   窄屏（< 900px）下档案改为可滚动的单列排版，并跳过取件动画。 */
 
 html,
 body {
@@ -122,10 +122,10 @@ body {
 
 .cw-rug {
     position: absolute;
-    left: 450px;
-    top: 380px;
-    width: 1100px;
-    height: 560px;
+    left: 350px;
+    top: 200px;
+    width: 1300px;
+    height: 820px;
     background: #5a2622;
     border: 26px solid #3b1a17;
     box-shadow: inset 0 0 0 6px #8a5a3a, 0 0 40px rgba(0, 0, 0, .5);
@@ -313,51 +313,113 @@ body {
 
 .cw-clock {
     position: absolute;
-    left: 620px;
+    left: 400px;
     top: 250px;
     width: 220px;
     height: 220px;
     border-radius: 50%;
     border: 12px solid #3a2a1c;
-    background: radial-gradient(circle at 50% 50%, #f1e8d4, #dfd3b8);
-    box-shadow: 0 16px 30px rgba(0, 0, 0, .5), inset 0 0 20px rgba(0, 0, 0, .2);
+    background: radial-gradient(circle at 50% 42%, #f5eedc, #dfd3b8 68%, #cbbc9c);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, .5), inset 0 0 0 3px #8a6a3a, inset 0 0 24px rgba(0, 0, 0, .28);
     box-sizing: border-box;
 }
 
+.cw-clock-ticks {
+    position: absolute;
+    inset: 0;
+}
+
+.cw-clock-tick {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin-top: -88px;
+    transform-origin: 50% 88px;
+    background: #1f1712;
+}
+
+.cw-clock-numeral {
+    position: absolute;
+    font-family: 'Special Elite', serif;
+    font-size: 17px;
+    line-height: 1;
+    color: #1f1712;
+}
+
+.cw-clock-numeral--12 { left: 50%; top: 24px; transform: translateX(-50%); }
+.cw-clock-numeral--3 { right: 24px; top: 50%; transform: translateY(-50%); }
+.cw-clock-numeral--6 { left: 50%; bottom: 24px; transform: translateX(-50%); }
+.cw-clock-numeral--9 { left: 24px; top: 50%; transform: translateY(-50%); }
+
+.cw-clock-brand {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, 26px);
+    font-family: 'Special Elite', serif;
+    font-size: 7.5px;
+    letter-spacing: .22em;
+    color: #6a5238;
+    white-space: nowrap;
+}
+
 .cw-clock-hour,
-.cw-clock-minute {
+.cw-clock-minute,
+.cw-clock-second {
     position: absolute;
     left: 50%;
     top: 50%;
     background: #1f1712;
-    transform-origin: 50% 100%;
 }
 
 .cw-clock-hour {
-    width: 4px;
-    height: 64px;
-    margin-left: -2px;
-    margin-top: -64px;
-    transform: rotate(-55deg);
+    width: 6px;
+    height: 58px;
+    margin-left: -3px;
+    margin-top: -50px;
+    border-radius: 3px 3px 1px 1px;
+    transform-origin: 50% 50px;
+    transition: transform .6s ease;
 }
 
 .cw-clock-minute {
-    width: 3px;
-    height: 84px;
-    margin-left: -1.5px;
-    margin-top: -84px;
-    transform: rotate(60deg);
+    width: 4px;
+    height: 82px;
+    margin-left: -2px;
+    margin-top: -72px;
+    border-radius: 2px 2px 1px 1px;
+    transform-origin: 50% 72px;
+    transition: transform .6s ease;
+}
+
+.cw-clock-second {
+    width: 1.6px;
+    height: 104px;
+    margin-left: -.8px;
+    margin-top: -82px;
+    background: #b3261e;
+    transform-origin: 50% 82px;
+    transition: transform .25s cubic-bezier(.3, 1.5, .5, 1);
 }
 
 .cw-clock-pin {
     position: absolute;
     left: 50%;
     top: 50%;
-    width: 10px;
-    height: 10px;
-    margin: -5px 0 0 -5px;
+    width: 11px;
+    height: 11px;
+    margin: -5.5px 0 0 -5.5px;
     border-radius: 50%;
-    background: #8a2a22;
+    background: radial-gradient(circle at 35% 35%, #ffd27a, #b8923e 60%, #5a4218);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+}
+
+.cw-clock-glass {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, 0) 46%, rgba(0, 0, 0, .07));
+    pointer-events: none;
 }
 
 .cw-license {
@@ -425,7 +487,7 @@ body {
 .cw-wall-glow {
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse 1000px 760px at 50% 60%, rgba(255, 190, 110, .26), rgba(255, 170, 90, .08) 45%, transparent 72%);
+    background: radial-gradient(ellipse 1000px 760px at 50% 48%, rgba(255, 190, 110, .26), rgba(255, 170, 90, .08) 45%, transparent 72%);
     pointer-events: none;
 }
 
@@ -444,7 +506,7 @@ body {
     left: 124px;
     top: 104px;
     width: 1752px;
-    height: 1052px;
+    height: 932px;
     background: linear-gradient(135deg, #6b4a2d, #4a3220 50%, #5e4027);
     box-shadow: 0 30px 60px rgba(0, 0, 0, .65), inset 0 0 0 4px rgba(0, 0, 0, .35);
 }
@@ -454,7 +516,7 @@ body {
     left: 150px;
     top: 130px;
     width: 1700px;
-    height: 1000px;
+    height: 880px;
     background-color: #b98a5c;
     background-image: radial-gradient(circle at 25% 35%, rgba(90, 50, 20, .28) 0 1.5px, transparent 2.5px), radial-gradient(circle at 70% 65%, rgba(255, 228, 190, .22) 0 1.5px, transparent 2.5px), radial-gradient(circle at 50% 10%, rgba(120, 70, 30, .25) 0 1px, transparent 2px);
     background-size: 23px 19px, 31px 27px, 13px 17px;
@@ -467,7 +529,11 @@ body {
     position: absolute;
     box-sizing: border-box;
     cursor: pointer;
-    transition: transform .35s ease, box-shadow .35s ease;
+    transition: transform .35s ease, box-shadow .35s ease, opacity .25s ease;
+}
+
+.cw-card.is-lifted {
+    opacity: 0;
 }
 
 .cw-card:focus {
@@ -488,13 +554,13 @@ body {
 
 .cw-card--about {
     left: 120px;
-    top: 150px;
+    top: 130px;
     width: 360px;
-    height: 250px;
+    height: 240px;
     transform: rotate(-4deg);
     background: linear-gradient(135deg, #cfae7c, #bb955f 55%, #caa877);
     box-shadow: 0 10px 18px rgba(0, 0, 0, .45), inset 0 0 50px rgba(90, 60, 20, .18);
-    padding: 34px 28px 24px;
+    padding: 32px 28px 24px;
 }
 
 .cw-about-kicker {
@@ -528,7 +594,7 @@ body {
 
 .cw-card--portrait {
     left: 700px;
-    top: 120px;
+    top: 80px;
     width: 300px;
     transform: rotate(-2deg);
     background: #f2ede2;
@@ -567,7 +633,7 @@ body {
 .cw-tape-label {
     position: absolute;
     left: 690px;
-    top: 526px;
+    top: 494px;
     width: 320px;
     height: 36px;
     background: rgba(236, 222, 180, .9);
@@ -584,7 +650,7 @@ body {
 
 .cw-card--projects {
     left: 1230px;
-    top: 110px;
+    top: 80px;
     width: 320px;
     transform: rotate(3deg);
     background: #f2ede2;
@@ -594,7 +660,7 @@ body {
 
 .cw-projects-photo {
     width: 292px;
-    height: 250px;
+    height: 230px;
     overflow: hidden;
     background: #222;
 }
@@ -647,7 +713,7 @@ body {
 .cw-projects-stamp {
     position: absolute;
     right: -16px;
-    top: 196px;
+    top: 176px;
     transform: rotate(-14deg);
     font-size: 21px;
     letter-spacing: .24em;
@@ -656,9 +722,9 @@ body {
 }
 
 .cw-card--map {
-    left: 480px;
-    top: 578px;
-    width: 560px;
+    left: 500px;
+    top: 530px;
+    width: 520px;
     transform: rotate(-1.5deg);
     background: #e8dcc0;
     padding: 10px 10px 12px;
@@ -666,8 +732,8 @@ body {
 }
 
 .cw-card .cw-map-img {
-    width: 540px;
-    height: 291px;
+    width: 500px;
+    height: 269px;
 }
 
 .cw-map-row {
@@ -693,27 +759,29 @@ body {
 
 .cw-bizcard {
     position: absolute;
-    left: 1120px;
-    top: 470px;
-    width: 230px;
-    height: 130px;
-    transform: rotate(5deg);
+    left: 490px;
+    top: 400px;
+    width: 200px;
+    height: 110px;
+    transform: rotate(3deg);
     background: #f6f1e6;
     box-shadow: 0 8px 16px rgba(0, 0, 0, .4);
-    padding: 16px 18px;
+    padding: 14px 16px;
     box-sizing: border-box;
 }
 
 .cw-bizcard-name {
     font-family: 'Special Elite', serif;
-    font-size: 18px;
+    font-size: 17px;
+    white-space: nowrap;
     color: #1f1712;
     letter-spacing: .08em;
 }
 
 .cw-bizcard-lines {
     font-family: 'Special Elite', serif;
-    font-size: 12.5px;
+    font-size: 12px;
+    white-space: nowrap;
     color: #4a3524;
     margin-top: 6px;
     line-height: 1.6;
@@ -721,9 +789,9 @@ body {
 
 .cw-card--blog {
     left: 90px;
-    top: 660px;
+    top: 600px;
     width: 380px;
-    height: 250px;
+    height: 240px;
     transform: rotate(2deg);
     background-color: #efe6d0;
     background-image: linear-gradient(180deg, #c95c4d 0 3px, transparent 3px), repeating-linear-gradient(180deg, transparent 0 31px, rgba(70, 110, 170, .28) 31px 33px);
@@ -766,8 +834,8 @@ body {
 
 .cw-ai-note {
     position: absolute;
-    left: 140px;
-    top: 430px;
+    left: 130px;
+    top: 410px;
     width: 260px;
     height: 150px;
     transform: rotate(-2deg);
@@ -804,8 +872,8 @@ body {
 }
 
 .cw-card--photos {
-    left: 1040px;
-    top: 600px;
+    left: 1060px;
+    top: 560px;
     width: 300px;
     height: 280px;
     transform: rotate(4deg);
@@ -877,15 +945,59 @@ body {
     white-space: nowrap;
 }
 
+.cw-card--shop {
+    left: 1030px;
+    top: 290px;
+    width: 200px;
+    height: 180px;
+    transform: rotate(4deg);
+    background: #1a1512;
+    box-shadow: 0 10px 18px rgba(0, 0, 0, .5);
+    padding: 10px;
+}
+
+.cw-shop-photo {
+    height: 104px;
+    overflow: hidden;
+    background: #000;
+}
+
+.cw-shop-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: contrast(1.05) saturate(.9);
+}
+
+.cw-shop-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 12px;
+    letter-spacing: .18em;
+    color: #e6d7b5;
+    white-space: nowrap;
+}
+
+.cw-shop-title {
+    font-family: 'Special Elite', serif;
+    font-size: 14px;
+    letter-spacing: .14em;
+    color: #f2e8d0;
+    margin-top: 6px;
+    white-space: nowrap;
+}
+
 .cw-card--resume {
-    left: 1330px;
-    top: 650px;
-    width: 340px;
+    left: 1370px;
+    top: 520px;
+    width: 310px;
     height: 270px;
     transform: rotate(-3deg);
     background: linear-gradient(180deg, #f4efe3, #e9e1cf);
     box-shadow: 0 10px 18px rgba(0, 0, 0, .45);
-    padding: 26px;
+    padding: 26px 24px;
     overflow: hidden;
 }
 
@@ -991,12 +1103,12 @@ body {
 
 .cw-strings {
     width: 1700px;
-    height: 1000px;
+    height: 880px;
 }
 
 .cw-file-strings {
-    width: 1400px;
-    height: 860px;
+    width: 1280px;
+    height: 760px;
 }
 
 .cw-strings-shadow,
@@ -1138,66 +1250,283 @@ body {
     white-space: nowrap;
 }
 
-/* ---- 档案浮层 ---- */
+/* ---- 书桌：便签被取下来之后落在这里 ---- */
 
-.cw-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 10;
-    transform-origin: 0 0;
-    background: #efe6d0;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, .65);
+.cw-desk {
+    left: -1000px;
+    top: -650px;
+    width: 2000px;
+    height: 1300px;
+    transform: translate3d(0, 380px, 50px) rotateX(90deg);
+    background-color: #5b3a22;
+    background-image:
+        radial-gradient(ellipse 900px 520px at 50% 52%, rgba(255, 205, 130, .34), rgba(255, 190, 110, .10) 55%, transparent 78%),
+        radial-gradient(ellipse 700px 420px at 82% 18%, rgba(255, 200, 120, .26), transparent 70%),
+        linear-gradient(180deg, rgba(0, 0, 0, .35), rgba(0, 0, 0, 0) 22%, rgba(0, 0, 0, .18)),
+        repeating-linear-gradient(91deg, rgba(0, 0, 0, .16) 0 2px, transparent 2px 9px, rgba(255, 255, 255, .035) 9px 11px, transparent 11px 29px);
+    box-shadow: inset 0 0 0 12px #3a2414, 0 30px 40px rgba(0, 0, 0, .6);
     overflow: hidden;
-    will-change: transform;
-    user-select: text;
-    -webkit-user-select: text;
 }
 
-.cw-overlay[hidden],
-.cw-file[hidden] {
+.cw-desk-blotter {
+    position: absolute;
+    left: 350px;
+    top: 290px;
+    width: 1300px;
+    height: 720px;
+    background: linear-gradient(135deg, #2a4034, #1e3027);
+    box-shadow: inset 0 0 0 14px #6b4a2b, inset 0 0 0 16px rgba(0, 0, 0, .35), inset 0 0 90px rgba(0, 0, 0, .4);
+}
+
+.cw-desk-plate {
+    position: absolute;
+    left: 850px;
+    top: 40px;
+    width: 300px;
+    height: 44px;
+    background: linear-gradient(180deg, #d9b25a, #a8813a);
+    box-shadow: inset 0 0 0 3px #6d4f1f, 0 3px 6px rgba(0, 0, 0, .5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 17px;
+    letter-spacing: .24em;
+    color: #2a1d12;
+    white-space: nowrap;
+}
+
+.cw-desk-folder {
+    position: absolute;
+    width: 210px;
+    height: 145px;
+    padding: 14px 16px;
+    box-sizing: border-box;
+    font-family: 'Special Elite', serif;
+    font-size: 13px;
+    letter-spacing: .2em;
+    color: #3a2a1c;
+}
+
+.cw-desk-folder--1 {
+    left: 340px;
+    top: 260px;
+    transform: rotate(-3deg);
+    background: linear-gradient(135deg, #cfae7c, #bb955f);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, .45);
+}
+
+.cw-desk-folder--2 {
+    left: 352px;
+    top: 244px;
+    transform: rotate(4deg);
+    background: linear-gradient(135deg, #d6b884, #c19f68);
+    box-shadow: 0 8px 14px rgba(0, 0, 0, .5);
+}
+
+.cw-desk-photo {
+    position: absolute;
+    left: 430px;
+    top: 820px;
+    width: 200px;
+    height: 130px;
+    transform: rotate(-6deg);
+    background: #f2ede2;
+    padding: 8px 8px 10px;
+    box-sizing: border-box;
+    box-shadow: 0 8px 14px rgba(0, 0, 0, .45);
+}
+
+.cw-desk-photo-img {
+    height: 80px;
+    overflow: hidden;
+    background: #222;
+}
+
+.cw-desk-photo-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: sepia(.3) contrast(1.05) saturate(.85);
+}
+
+.cw-desk-photo-cap {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 15px;
+    color: #2a1d12;
+    margin-top: 5px;
+    white-space: nowrap;
+}
+
+.cw-desk-ring {
+    position: absolute;
+    left: 1580px;
+    top: 420px;
+    width: 108px;
+    height: 108px;
+    border-radius: 50%;
+    border: 6px solid rgba(60, 30, 10, .32);
+    box-sizing: border-box;
+}
+
+.cw-desk-memo {
+    position: absolute;
+    left: 1240px;
+    top: 1000px;
+    width: 280px;
+    height: 120px;
+    transform: rotate(3deg);
+    background: #efe6d0;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, .4);
+    padding: 12px 16px;
+    box-sizing: border-box;
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 12px;
+    letter-spacing: .1em;
+    color: #4a3524;
+    line-height: 1.7;
+}
+
+.cw-desk-edge {
+    left: -1000px;
+    top: -30px;
+    width: 2000px;
+    height: 60px;
+    transform: translate3d(0, 410px, 700px);
+    background: linear-gradient(180deg, #3a2414, #2a1a0e);
+    box-shadow: inset 0 3px 0 rgba(255, 220, 180, .12), 0 20px 30px rgba(0, 0, 0, .6);
+}
+
+/* ---- 取件的手 ---- */
+
+.cw-hand {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 300px;
+    height: 1700px;
+    transform-origin: 0 0;
+    pointer-events: none;
+}
+
+.cw-hand svg {
+    display: block;
+    overflow: visible;
+}
+
+.cw-hand--back {
+    z-index: 24;
+    filter: drop-shadow(0 22px 26px rgba(0, 0, 0, .6));
+}
+
+.cw-hand--front {
+    z-index: 26;
+    filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .45));
+}
+
+.cw-hand-fingers {
+    transform-origin: 150px 240px;
+    transition: transform .22s ease;
+}
+
+.cw-hand-thumb {
+    transform-origin: 42px 350px;
+    transition: transform .22s ease;
+}
+
+/* 手里举着的那张便签：只画封面，落到桌上后由正式档案接管。 */
+.cw-carried {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 25;
+    transform-origin: 0 0;
+    box-shadow: 0 30px 50px rgba(0, 0, 0, .6);
+    padding: 22px 24px;
+    box-sizing: border-box;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.cw-carried[hidden] {
     display: none;
 }
 
-.cw-overlay[data-file="about"] {
-    background: linear-gradient(135deg, #cfae7c, #bb955f 55%, #caa877);
+.cw-carried-file {
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 14px;
+    letter-spacing: .22em;
+    opacity: .75;
+    white-space: nowrap;
 }
 
-.cw-overlay[data-file="projects"] {
-    background: linear-gradient(180deg, #f1ece1, #e9e2d3);
+.cw-carried-title {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 40px;
+    margin-top: 8px;
+    line-height: 1.1;
+    white-space: nowrap;
 }
 
-.cw-overlay[data-file="blog"] {
-    background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0 44px, rgba(70, 110, 170, .2) 44px 46px), linear-gradient(180deg, #f0e8d4, #ebe2cb);
+.cw-carried-sub {
+    font-family: 'Special Elite', serif;
+    font-size: 15px;
+    margin-top: 6px;
+    opacity: .85;
+    white-space: nowrap;
 }
 
-.cw-overlay[data-file="resume"] {
-    background: linear-gradient(180deg, #f4efe3, #e9e1cf);
+/* ---- 桌面上的档案：1280 × 760 的一张纸 ---- */
+
+.cw-desk-layer {
+    position: absolute;
+    inset: 0;
+    perspective: 2400px;
+    perspective-origin: 50% 62%;
+    pointer-events: none;
+    z-index: 20;
 }
 
-.cw-overlay[data-file="photos"] {
-    background: linear-gradient(180deg, #f3eee4, #ebe5d8);
+.cw-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1280px;
+    height: 760px;
+    transform-origin: 0 0;
+    box-shadow: 0 40px 70px rgba(0, 0, 0, .6), 0 4px 10px rgba(0, 0, 0, .35);
+    pointer-events: auto;
+    will-change: transform;
+    transition: transform .55s cubic-bezier(.6, 0, .2, 1);
 }
 
-.cw-overlay-content {
+.cw-sheet[hidden] {
+    display: none;
+}
+
+.cw-sheet[data-file="about"] { background: linear-gradient(135deg, #cfae7c, #bb955f 55%, #caa877); }
+.cw-sheet[data-file="projects"] { background: linear-gradient(180deg, #f1ece1, #e9e2d3); }
+.cw-sheet[data-file="blog"] { background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0 44px, rgba(70, 110, 170, .2) 44px 46px), linear-gradient(180deg, #f0e8d4, #ebe2cb); }
+.cw-sheet[data-file="resume"] { background: linear-gradient(180deg, #f4efe3, #e9e1cf); }
+.cw-sheet[data-file="travel"] { background: linear-gradient(180deg, #ebe0c6, #e3d5b6); }
+.cw-sheet[data-file="shop"] { background: linear-gradient(180deg, #f1ebdd, #e8e0cf); }
+
+.cw-sheet-inner {
     position: absolute;
     inset: 0;
     opacity: 0;
+    transition: opacity .2s ease;
 }
 
-.cw-board {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 1400px;
-    height: 860px;
-    transform: translate(-50%, -50%);
-    transform-origin: 50% 50%;
+.cw-sheet.is-open .cw-sheet-inner {
+    opacity: 1;
+    transition: opacity .45s ease .3s;
 }
 
 .cw-back {
     position: absolute;
-    left: 40px;
-    top: 34px;
+    left: 36px;
+    top: 30px;
     z-index: 5;
     font-family: 'Special Elite', 'Noto Serif SC', serif;
     font-size: 14px;
@@ -1213,8 +1542,19 @@ body {
 }
 
 .cw-back:focus-visible {
-    outline: 2px solid #8a2a22;
+    outline: 2px solid #b3261e;
     outline-offset: 3px;
+}
+
+.cw-file-label {
+    position: absolute;
+    right: 40px;
+    top: 38px;
+    font-family: 'Special Elite', serif;
+    font-size: 13px;
+    letter-spacing: .3em;
+    color: #6a5238;
+    white-space: nowrap;
 }
 
 .cw-file {
@@ -1222,47 +1562,27 @@ body {
     inset: 0;
 }
 
-.cw-file-meta {
-    position: absolute;
-    right: 44px;
-    top: 38px;
-    display: flex;
-    align-items: center;
-    gap: 26px;
-    white-space: nowrap;
-}
-
-.cw-file-link {
-    font-family: 'Special Elite', 'Noto Serif SC', serif;
-    font-size: 13px;
-    letter-spacing: .18em;
-    color: #8a2a22;
-}
-
-.cw-file-label {
-    font-family: 'Special Elite', serif;
-    font-size: 13px;
-    letter-spacing: .3em;
-    color: #6a5238;
+.cw-file[hidden] {
+    display: none;
 }
 
 .cw-file-head {
     position: absolute;
-    left: 60px;
-    top: 104px;
+    left: 56px;
+    top: 86px;
 }
 
 .cw-file-title {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 58px;
-    font-weight: 400;
+    font-size: 54px;
     line-height: 1;
     color: #2a1d12;
+    white-space: nowrap;
 }
 
 .cw-file-sub {
     font-family: 'Special Elite', 'Noto Serif SC', serif;
-    font-size: 14px;
+    font-size: 13px;
     letter-spacing: .28em;
     color: #5a4028;
     margin-top: 10px;
@@ -1270,30 +1590,90 @@ body {
 }
 
 .cw-file .cw-pin {
-    pointer-events: auto;
+    position: absolute;
 }
 
 .cw-stamp {
     position: absolute;
+    opacity: .85;
+}
+
+/* 档案里的滚动区：项目和旅行的卡片墙。 */
+.cw-scroll {
+    position: absolute;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    border-top: 2px solid rgba(90, 60, 30, .35);
+    scrollbar-width: thin;
+    scrollbar-color: #8a6a3a rgba(0, 0, 0, .08);
+}
+
+.cw-scroll::-webkit-scrollbar { width: 10px; }
+.cw-scroll::-webkit-scrollbar-track { background: rgba(0, 0, 0, .08); }
+.cw-scroll::-webkit-scrollbar-thumb { background: #8a6a3a; border-radius: 5px; }
+
+.cw-tabs {
+    position: absolute;
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+}
+
+.cw-tab {
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 13px;
+    letter-spacing: .16em;
+    padding: 10px 16px 9px;
+    border: 0;
+    cursor: pointer;
+    background: rgba(236, 222, 180, .94);
+    color: #2a1d12;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, .18);
+    border-radius: 6px 6px 0 0;
+    white-space: nowrap;
+}
+
+.cw-tab.is-active {
+    background: #2a1d12;
+    color: #f2e8d0;
+}
+
+.cw-tab:focus-visible {
+    outline: 2px solid #b3261e;
+    outline-offset: 2px;
+}
+
+.cw-tabs--travel {
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
+}
+
+.cw-tabs--travel .cw-tab {
+    font-size: 12.5px;
+    letter-spacing: .14em;
+    padding: 8px 12px 7px;
+    border-radius: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .18);
 }
 
 /* 档案 01：关于我 */
 
 .cw-about-stamp {
-    left: 940px;
-    top: 118px;
+    left: 900px;
+    top: 100px;
     transform: rotate(-8deg);
-    font-size: 22px;
+    font-size: 21px;
     letter-spacing: .22em;
     padding: 6px 14px;
-    opacity: .85;
 }
 
 .cw-about-photo {
     position: absolute;
-    left: 70px;
-    top: 232px;
-    width: 250px;
+    left: 64px;
+    top: 204px;
+    width: 230px;
     transform: rotate(-3deg);
     background: #f2ede2;
     padding: 12px 12px 14px;
@@ -1302,7 +1682,7 @@ body {
 }
 
 .cw-about-photo-img {
-    height: 250px;
+    height: 230px;
     overflow: hidden;
     background: #222;
 }
@@ -1311,12 +1691,12 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    pointer-events: none;
+    filter: sepia(.35) contrast(1.08) saturate(.8);
 }
 
 .cw-about-photo figcaption {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 24px;
+    font-size: 23px;
     color: #2a1d12;
     margin-top: 10px;
     line-height: 1.1;
@@ -1325,9 +1705,9 @@ body {
 
 .cw-about-profile {
     position: absolute;
-    left: 360px;
-    top: 236px;
-    width: 480px;
+    left: 328px;
+    top: 206px;
+    width: 492px;
     transform: rotate(1deg);
     background-color: #f1e9d6;
     background-image: linear-gradient(180deg, #c95c4d 0 3px, transparent 3px);
@@ -1342,14 +1722,15 @@ body {
     font-size: 13px;
     letter-spacing: .24em;
     color: #6a5238;
+    white-space: nowrap;
 }
 
 .cw-about-profile-grid {
     display: grid;
-    grid-template-columns: 150px 1fr;
+    grid-template-columns: 140px 1fr;
     gap: 9px 14px;
     margin-top: 12px;
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.45;
     color: #2a1d12;
 }
@@ -1362,9 +1743,9 @@ body {
 
 .cw-keywords {
     position: absolute;
-    left: 890px;
-    top: 250px;
-    width: 450px;
+    left: 840px;
+    top: 222px;
+    width: 420px;
     display: flex;
     flex-wrap: wrap;
     gap: 14px 12px;
@@ -1384,31 +1765,32 @@ body {
 
 .cw-about-metaphors {
     position: absolute;
-    left: 70px;
-    top: 566px;
-    width: 300px;
-    height: 230px;
+    left: 64px;
+    top: 540px;
+    width: 290px;
+    min-height: 196px;
     transform: rotate(3deg);
     background: linear-gradient(180deg, #eedb86, #e2c96a);
     box-shadow: 0 10px 20px rgba(0, 0, 0, .35);
-    padding: 20px 22px;
+    padding: 18px 22px;
     box-sizing: border-box;
 }
 
 .cw-about-metaphors-kicker {
+    font-size: 12.5px;
     color: #6a5a28;
 }
 
 .cw-about-metaphors-title {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 32px;
+    font-size: 30px;
     color: #2a1d12;
     line-height: 1.15;
     margin-top: 8px;
 }
 
 .cw-about-metaphors-text {
-    font-size: 15px;
+    font-size: 14.5px;
     line-height: 1.55;
     color: #4a3a18;
     margin-top: 8px;
@@ -1416,31 +1798,17 @@ body {
 
 .cw-about-note {
     position: absolute;
-    width: 250px;
-    height: 180px;
+    width: 240px;
+    height: 166px;
     background: #f1e9d6;
     box-shadow: 0 8px 18px rgba(0, 0, 0, .3);
-    padding: 28px 20px 16px;
+    padding: 26px 20px 16px;
     box-sizing: border-box;
 }
 
-.cw-about-note--vibe {
-    left: 420px;
-    top: 600px;
-    transform: rotate(-1deg);
-}
-
-.cw-about-note--spec {
-    left: 700px;
-    top: 620px;
-    transform: rotate(1.5deg);
-}
-
-.cw-about-note--harness {
-    left: 980px;
-    top: 600px;
-    transform: rotate(-1deg);
-}
+.cw-about-note--vibe { left: 392px; top: 578px; transform: rotate(-1deg); }
+.cw-about-note--spec { left: 656px; top: 594px; transform: rotate(1.5deg); }
+.cw-about-note--harness { left: 920px; top: 578px; transform: rotate(-1deg); }
 
 .cw-about-note-title {
     font-family: 'Special Elite', serif;
@@ -1465,10 +1833,10 @@ body {
 
 .cw-about-contact {
     position: absolute;
-    left: 1110px;
-    top: 704px;
-    width: 240px;
-    height: 120px;
+    left: 1040px;
+    top: 410px;
+    width: 230px;
+    height: 116px;
     transform: rotate(-4deg);
     background: #f6f1e6;
     box-shadow: 0 8px 16px rgba(0, 0, 0, .4);
@@ -1481,6 +1849,7 @@ body {
     font-size: 16px;
     color: #1f1712;
     letter-spacing: .08em;
+    white-space: nowrap;
 }
 
 .cw-about-contact-lines {
@@ -1488,6 +1857,7 @@ body {
     font-size: 12.5px;
     margin-top: 6px;
     line-height: 1.6;
+    white-space: nowrap;
 }
 
 .cw-about-contact-lines span {
@@ -1496,62 +1866,66 @@ body {
 
 /* 档案 02：项目 · 案件时间线 */
 
+.cw-projects-file-stamp {
+    left: 960px;
+    top: 98px;
+    transform: rotate(6deg);
+    font-size: 20px;
+    letter-spacing: .22em;
+    padding: 5px 12px;
+}
+
+.cw-file--projects .cw-tabs {
+    left: 56px;
+    top: 180px;
+}
+
+.cw-projects-scroll {
+    left: 56px;
+    top: 222px;
+    width: 1168px;
+    height: 500px;
+    padding: 16px 14px 30px 8px;
+}
+
 .cw-cases {
-    position: absolute;
-    left: 50px;
-    top: 236px;
-    width: 1300px;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 44px 24px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 30px 22px;
     align-items: start;
 }
 
 .cw-case {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    background: #f6f2ea;
+    padding: 12px 12px 14px;
+    box-sizing: border-box;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, .3);
     transform: rotate(var(--rot, 0deg));
 }
 
 .cw-case-clip {
-    position: relative;
-    z-index: 2;
-    width: 16px;
-    height: 28px;
-    margin-bottom: -8px;
-    background: linear-gradient(90deg, #8a8a8a, #dcdcdc, #8a8a8a);
-    border-radius: 3px;
-    box-shadow: 0 2px 3px rgba(0, 0, 0, .4);
+    position: absolute;
+    left: 50%;
+    top: -9px;
+    width: 84px;
+    height: 20px;
+    margin-left: -42px;
+    background: rgba(236, 222, 180, .94);
+    transform: rotate(-2deg);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
 }
 
-.cw-case-card {
-    width: 280px;
-    background: #f6f2ea;
-    padding: 12px 12px 14px;
-    box-sizing: border-box;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, .35);
-}
-
-.cw-case-photo,
-.cw-post-photo,
-.cw-sighting-photo {
+.cw-case-photo {
+    height: 130px;
     overflow: hidden;
     background: #222;
 }
 
-.cw-case-photo {
-    height: 140px;
-}
-
-.cw-case-photo img,
-.cw-post-photo img,
-.cw-sighting-photo img {
+.cw-case-photo img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    pointer-events: none;
     filter: sepia(.3) contrast(1.05) saturate(.85);
 }
 
@@ -1560,49 +1934,90 @@ body {
     justify-content: space-between;
     margin-top: 10px;
     font-family: 'Special Elite', 'Noto Serif SC', serif;
-    font-size: 12.5px;
+    font-size: 12px;
     letter-spacing: .1em;
     color: #6a5238;
+    white-space: nowrap;
 }
 
 .cw-case-title {
+    font-family: 'Noto Serif SC', serif;
     font-weight: 600;
-    font-size: 16px;
+    font-size: 15px;
+    line-height: 1.3;
     color: #2a1d12;
     margin-top: 4px;
-    line-height: 1.3;
 }
 
 .cw-case-note {
-    font-family: 'Ma Shan Zheng', cursive;
-    font-size: 19px;
+    font-size: 12.5px;
+    line-height: 1.5;
     color: #4a3524;
-    margin-top: 2px;
-    line-height: 1.2;
+    margin-top: 4px;
+}
+
+.cw-case-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 8px;
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 11px;
+    letter-spacing: .16em;
+    color: #8a6a3a;
+    white-space: nowrap;
+}
+
+.cw-case-foot a {
+    color: #8a2a22;
 }
 
 .cw-case-award {
     position: absolute;
-    right: -4px;
-    top: 118px;
+    right: -6px;
+    top: 104px;
     transform: rotate(-14deg);
-    font-size: 14px;
+    font-family: 'Special Elite', serif;
+    font-size: 13px;
     letter-spacing: .2em;
-    border-width: 2.5px;
+    color: #b3261e;
+    border: 2.5px double #b3261e;
     padding: 3px 8px;
     opacity: .88;
+    mix-blend-mode: multiply;
+    white-space: nowrap;
+    background: rgba(246, 242, 234, .6);
 }
 
-/* 档案 03：博客 */
+/* 档案 03：博客 · 笔记 */
+
+.cw-file--blog {
+    overflow: hidden;
+}
+
+.cw-blog-pane {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    transform-origin: 50% 50%;
+    transition: transform .8s cubic-bezier(.2, .75, .15, 1), opacity .55s ease, filter .6s ease;
+}
+
+.cw-blog-pane.is-behind {
+    transform: scale(1.05);
+    opacity: 0;
+    filter: blur(10px);
+    pointer-events: none;
+}
 
 .cw-posts {
     position: absolute;
-    left: 50px;
-    top: 224px;
-    width: 1300px;
+    left: 56px;
+    top: 200px;
+    width: 1168px;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 34px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 30px;
     align-items: start;
 }
 
@@ -1610,9 +2025,17 @@ body {
     position: relative;
     background: #f7f2e6;
     padding: 18px 20px 16px;
-    box-sizing: border-box;
     box-shadow: 0 8px 18px rgba(0, 0, 0, .3);
     transform: rotate(var(--rot, 0deg));
+    box-sizing: border-box;
+    cursor: pointer;
+    border: 0;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    display: block;
+    width: 100%;
+    transition: transform .3s ease, box-shadow .3s ease;
 }
 
 .cw-post-tape {
@@ -1634,27 +2057,34 @@ body {
     font-size: 12.5px;
     letter-spacing: .12em;
     color: #6a5238;
+    white-space: nowrap;
 }
 
 .cw-post-photo {
-    height: 96px;
+    height: 90px;
+    overflow: hidden;
     margin-top: 10px;
+    background: #222;
 }
 
 .cw-post-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     filter: sepia(.25) contrast(1.05) saturate(.85);
 }
 
 .cw-post-title {
+    font-family: 'Noto Serif SC', serif;
     font-weight: 600;
-    font-size: 17px;
+    font-size: 16px;
     line-height: 1.35;
     color: #2a1d12;
     margin-top: 10px;
 }
 
 .cw-post-excerpt {
-    font-size: 13.5px;
+    font-size: 13px;
     line-height: 1.6;
     color: #4a3524;
     margin-top: 8px;
@@ -1664,44 +2094,417 @@ body {
     overflow: hidden;
 }
 
-.cw-post-link,
-.cw-post-link:hover {
-    color: #8a2a22;
-}
-
 .cw-post-link {
     display: inline-block;
     margin-top: 10px;
     font-family: 'Special Elite', serif;
     font-size: 12.5px;
     letter-spacing: .18em;
+    color: #8a2a22;
+    border-bottom: 1px solid #8a2a22;
+}
+
+/* 文章阅读器：从被点开的卡片里长出来，模糊转清晰。 */
+
+.cw-reader {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    transform-origin: 0 0;
+    opacity: 0;
+    filter: blur(16px);
+    transition: transform .8s cubic-bezier(.2, .75, .15, 1), filter .8s cubic-bezier(.3, .6, .2, 1), opacity .5s ease;
+    will-change: transform, filter;
+    background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0 44px, rgba(70, 110, 170, .2) 44px 46px), linear-gradient(180deg, #f0e8d4, #ebe2cb);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, .35);
+}
+
+.cw-reader[hidden] {
+    display: none;
+}
+
+.cw-reader.is-in {
+    transform: translate(0, 0) scale(1, 1);
+    opacity: 1;
+    filter: blur(0);
+}
+
+.cw-reader-cover {
+    position: absolute;
+    left: 56px;
+    top: 84px;
+    width: 330px;
+    height: 640px;
+    background: linear-gradient(135deg, #cfae7c, #bb955f 55%, #caa877);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, .4), inset 0 0 50px rgba(90, 60, 20, .18);
+    padding: 22px 22px 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    transform: rotate(-.6deg);
+}
+
+.cw-reader-cover-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.cw-reader-kicker {
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 12px;
+    letter-spacing: .24em;
+    color: #5a4028;
+}
+
+.cw-reader-ai {
+    transform: rotate(-6deg);
+    font-family: 'Special Elite', serif;
+    font-size: 13px;
+    letter-spacing: .2em;
+    color: #b3261e;
+    border: 2.5px double #b3261e;
+    padding: 2px 8px;
+    opacity: .85;
+    mix-blend-mode: multiply;
+}
+
+.cw-reader-title {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 27px;
+    line-height: 1.2;
+    color: #2a1d12;
+    margin-top: 10px;
+}
+
+.cw-reader-meta {
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 12px;
+    letter-spacing: .14em;
+    color: #4a3524;
+    margin-top: 8px;
+    white-space: nowrap;
+}
+
+.cw-reader-hero {
+    margin: 14px 0 0;
+    background: #f2ede2;
+    padding: 8px 8px 10px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, .35);
+    transform: rotate(1.5deg);
+}
+
+.cw-reader-hero-img {
+    height: 140px;
+    overflow: hidden;
+    background: #222;
+}
+
+.cw-reader-hero-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: sepia(.2) contrast(1.05);
+}
+
+.cw-reader-excerpt {
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: #3a2a1c;
+    margin-top: 14px;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.cw-reader-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.cw-reader-tag {
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 11px;
+    letter-spacing: .12em;
+    color: #2a1d12;
+    background: rgba(236, 222, 180, .94);
+    padding: 4px 9px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+    white-space: nowrap;
+}
+
+.cw-reader-spacer {
+    flex: 1;
+}
+
+.cw-reader-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.cw-reader-back {
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 12.5px;
+    letter-spacing: .16em;
+    color: #f2e8d0;
+    background: #2a1d12;
+    border: 0;
+    padding: 9px 14px;
+    cursor: pointer;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, .3);
+    white-space: nowrap;
+}
+
+.cw-reader-link {
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 12px;
+    letter-spacing: .14em;
+    color: #7a1f18;
+    white-space: nowrap;
+}
+
+.cw-reader-paper {
+    position: absolute;
+    left: 414px;
+    top: 84px;
+    width: 810px;
+    height: 640px;
+    background: linear-gradient(180deg, #f8f3e8, #f1eadc);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, .35);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 34px 44px 44px;
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: #8a6a3a rgba(0, 0, 0, .08);
+}
+
+.cw-reader-paper::-webkit-scrollbar { width: 10px; }
+.cw-reader-paper::-webkit-scrollbar-track { background: rgba(0, 0, 0, .08); }
+.cw-reader-paper::-webkit-scrollbar-thumb { background: #8a6a3a; border-radius: 5px; }
+
+.cw-reader-paper-head,
+.cw-reader-end {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    letter-spacing: .24em;
+    color: #8a6a3a;
+    white-space: nowrap;
+}
+
+.cw-reader-paper-head {
+    font-size: 11.5px;
+    border-bottom: 1px dashed rgba(90, 60, 30, .4);
+    padding-bottom: 8px;
+}
+
+.cw-reader-end {
+    margin-top: 36px;
+    align-items: center;
+    font-size: 12px;
+    letter-spacing: .2em;
+    color: #6a5238;
+}
+
+.cw-reader-end a {
+    color: #7a1f18;
+}
+
+.cw-blk-h2 {
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 20px;
+    letter-spacing: .04em;
+    color: #2a1d12;
+    margin: 30px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1.5px solid #8a2a22;
+    line-height: 1.35;
+}
+
+.cw-blk-h3 {
+    font-family: 'Noto Serif SC', serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: #2a1d12;
+    margin: 22px 0 8px;
+    line-height: 1.4;
+}
+
+.cw-blk-p {
+    font-size: 15.5px;
+    line-height: 1.85;
+    color: #2a2118;
+    margin: 0 0 14px;
+    text-wrap: pretty;
+}
+
+.cw-blk-img {
+    position: relative;
+    margin: 18px 10px 22px;
+    background: #fbf8f1;
+    padding: 10px 10px 8px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, .28);
+    transform: rotate(var(--rot, 0deg));
+}
+
+.cw-blk-img-tape {
+    position: absolute;
+    left: 50%;
+    top: -10px;
+    width: 90px;
+    height: 22px;
+    margin-left: -45px;
+    background: rgba(230, 215, 170, .92);
+    transform: rotate(-2deg);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+}
+
+.cw-blk-img img {
+    width: 100%;
+    height: auto;
+    background: #e8e0cf;
+}
+
+.cw-blk-img-cap {
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 11.5px;
+    letter-spacing: .1em;
+    color: #6a5238;
+    margin-top: 8px;
+    text-align: center;
+}
+
+.cw-blk-code {
+    margin: 16px 0 18px;
+    background: #2b241e;
+    color: #e8dfc9;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, .35);
+    padding: 14px 18px 16px;
+}
+
+.cw-blk-code-kicker {
+    font-family: 'Special Elite', serif;
+    font-size: 10.5px;
+    letter-spacing: .3em;
+    color: #b8a27a;
+    margin-bottom: 8px;
+}
+
+.cw-blk-code pre {
+    margin: 0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.cw-blk-list {
+    margin: 4px 0 14px 6px;
+}
+
+.cw-blk-list-item {
+    display: flex;
+    gap: 12px;
+    font-size: 15px;
+    line-height: 1.75;
+    color: #2a2118;
+    margin-bottom: 4px;
+}
+
+.cw-blk-list-mark {
+    font-family: 'Special Elite', serif;
+    color: #8a2a22;
+    flex: none;
+}
+
+.cw-blk-list--ol .cw-blk-list-mark {
+    min-width: 18px;
+}
+
+.cw-blk-quote {
+    margin: 16px 0 18px;
+    padding: 14px 20px 14px 46px;
+    background: rgba(236, 222, 180, .55);
+    position: relative;
+    font-style: italic;
+    font-size: 15.5px;
+    line-height: 1.75;
+    color: #3a2a1c;
+}
+
+.cw-blk-quote::before {
+    content: '\201C';
+    position: absolute;
+    left: 14px;
+    top: 2px;
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 38px;
+    line-height: 1;
+    color: #b3261e;
+}
+
+.cw-blk-table {
+    margin: 14px 0 18px;
+    border-top: 1.5px solid #2a1d12;
+    border-bottom: 1.5px solid #2a1d12;
+}
+
+.cw-blk-row {
+    display: flex;
+    border-bottom: 1px dashed rgba(90, 60, 30, .35);
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #2a2118;
+}
+
+.cw-blk-row--head {
+    font-weight: 600;
+}
+
+.cw-blk-cell {
+    flex: 1;
+    padding: 8px 10px;
+    min-width: 0;
+}
+
+.cw-blk-hr {
+    margin: 22px 0;
+    border-top: 1px dashed rgba(90, 60, 30, .45);
 }
 
 /* 档案 04：履历 */
 
 .cw-resume-file-stamp {
-    left: 960px;
-    top: 98px;
+    left: 900px;
+    top: 90px;
     transform: rotate(-10deg);
-    font-size: 30px;
+    font-size: 28px;
     letter-spacing: .26em;
-    border-width: 4px;
     padding: 8px 18px;
+    border-width: 4px;
     opacity: .8;
 }
 
 .cw-dossier {
     position: absolute;
-    left: 60px;
-    top: 214px;
-    width: 1290px;
+    left: 56px;
+    top: 190px;
+    width: 1168px;
     display: flex;
-    gap: 44px;
+    gap: 40px;
     align-items: flex-start;
 }
 
 .cw-dossier-main {
-    flex: 0 0 640px;
+    flex: 0 0 580px;
 }
 
 .cw-dossier-side {
@@ -1712,12 +2515,12 @@ body {
 .cw-dossier-head {
     font-family: 'Special Elite', 'Noto Serif SC', serif;
     font-size: 13px;
-    font-weight: 400;
     letter-spacing: .26em;
     color: #8a2a22;
     border-bottom: 1.5px solid #8a2a22;
     padding-bottom: 6px;
-    margin-top: 26px;
+    margin-top: 22px;
+    font-weight: 400;
 }
 
 .cw-dossier-head:first-child {
@@ -1735,18 +2538,18 @@ body {
 }
 
 .cw-dossier-edu {
-    margin-top: 12px;
+    margin-top: 10px;
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 8px 20px;
-    font-size: 15.5px;
+    font-size: 15px;
     line-height: 1.45;
     color: #2a1d12;
 }
 
 .cw-dossier-exp {
-    margin-top: 12px;
-    font-size: 15.5px;
+    margin-top: 10px;
+    font-size: 15px;
     line-height: 1.45;
     color: #2a1d12;
 }
@@ -1760,33 +2563,33 @@ body {
 .cw-dossier-exp-desc {
     margin-top: 6px;
     color: #4a3524;
-    font-size: 14.5px;
+    font-size: 14px;
     line-height: 1.55;
 }
 
 .cw-dossier-exp-list {
     margin: 8px 0 0;
     padding-left: 18px;
-    list-style: disc;
     color: #4a3524;
-    font-size: 14px;
+    font-size: 13.5px;
     line-height: 1.6;
+    list-style: disc;
 }
 
 .cw-dossier-certs {
     display: flex;
     gap: 12px;
-    margin-top: 12px;
+    margin-top: 10px;
 }
 
 .cw-dossier-box {
     background: #f8f4ea;
     border: 1px solid rgba(90, 60, 30, .25);
+    padding: 10px 12px;
 }
 
 .cw-dossier-certs .cw-dossier-box {
     flex: 1;
-    padding: 10px 12px;
 }
 
 .cw-dossier-cert {
@@ -1803,14 +2606,14 @@ body {
 }
 
 .cw-dossier-skills {
-    margin-top: 12px;
+    margin-top: 10px;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
 }
 
 .cw-dossier-skills .cw-dossier-box {
-    padding: 12px 14px;
+    padding: 11px 13px;
 }
 
 .cw-dossier-skill {
@@ -1821,24 +2624,24 @@ body {
 }
 
 .cw-dossier-skill-text {
-    font-size: 13px;
+    font-size: 12.5px;
     line-height: 1.5;
     color: #4a3524;
     margin-top: 4px;
 }
 
 .cw-dossier-awards {
-    margin-top: 8px;
+    margin-top: 6px;
 }
 
 .cw-dossier-award {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 16px;
-    font-size: 14.5px;
+    font-size: 13.5px;
     line-height: 1.4;
     color: #2a1d12;
-    padding: 5px 0;
+    padding: 4px 0;
     border-bottom: 1px dashed rgba(90, 60, 30, .3);
 }
 
@@ -1857,16 +2660,16 @@ body {
 .cw-dossier-download,
 .cw-dossier-download:hover {
     color: #1f1712;
+    text-decoration: none;
 }
 
 .cw-dossier-download {
     position: absolute;
-    left: 1000px;
-    top: 740px;
+    left: 940px;
+    top: 676px;
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    white-space: nowrap;
     background: linear-gradient(135deg, #cfae7c, #bb955f);
     padding: 12px 18px 12px 14px;
     transform: rotate(-3deg);
@@ -1874,7 +2677,7 @@ body {
     font-family: 'Special Elite', 'Noto Serif SC', serif;
     font-size: 13px;
     letter-spacing: .18em;
-    text-decoration: none;
+    white-space: nowrap;
 }
 
 .cw-dossier-download-dot {
@@ -1887,11 +2690,11 @@ body {
 
 .cw-dossier-verified {
     position: absolute;
-    left: 64px;
-    top: 770px;
+    left: 60px;
+    top: 690px;
     transform: rotate(-4deg);
     font-family: 'Special Elite', serif;
-    font-size: 15px;
+    font-size: 14px;
     letter-spacing: .24em;
     color: #2b62a8;
     border: 2.5px double #2b62a8;
@@ -1901,77 +2704,330 @@ body {
     white-space: nowrap;
 }
 
-/* 档案 05：照片 · 行踪 */
+/* 档案 05：旅行 · 行踪 */
 
 .cw-travel-map {
     position: absolute;
-    left: 50px;
-    top: 196px;
-    width: 1300px;
-    height: 650px;
+    left: 56px;
+    top: 186px;
+    width: 560px;
     background: #e8dcc0;
     padding: 10px;
     box-sizing: border-box;
     box-shadow: 0 10px 24px rgba(0, 0, 0, .3);
+    transform: rotate(-1deg);
 }
 
 .cw-travel-map img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    pointer-events: none;
+    width: 540px;
+    height: 291px;
+    object-fit: cover;
+}
+
+.cw-travel-map-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 12px;
+    letter-spacing: .16em;
+    color: #6a5238;
+    white-space: nowrap;
+}
+
+.cw-travel-recent {
+    position: absolute;
+    left: 64px;
+    top: 530px;
+    width: 544px;
+    background: #f6f1e6;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, .3);
+    padding: 16px 20px;
+    box-sizing: border-box;
+    transform: rotate(.6deg);
+}
+
+.cw-travel-recent-kicker {
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 12px;
+    letter-spacing: .24em;
+    color: #6a5238;
+    white-space: nowrap;
+}
+
+.cw-travel-recent-list {
+    margin-top: 8px;
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 13px;
+    line-height: 1.9;
+    color: #2a1d12;
+    white-space: nowrap;
+}
+
+.cw-travel-recent-list > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    border-bottom: 1px dashed rgba(90, 60, 30, .3);
+}
+
+.cw-travel-recent-list > div:last-child {
+    border-bottom: 0;
+}
+
+.cw-travel-recent-list span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cw-travel-recent-list span:last-child {
+    color: #6a5238;
+}
+
+.cw-file--travel .cw-tabs {
+    left: 650px;
+    top: 186px;
+    width: 590px;
+}
+
+.cw-travel-scroll {
+    left: 650px;
+    top: 276px;
+    width: 590px;
+    height: 452px;
+    padding: 16px 12px 24px 6px;
 }
 
 .cw-sightings {
-    position: absolute;
-    left: 50px;
-    top: 196px;
-    width: 1300px;
-    height: 650px;
-    pointer-events: none;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 26px 18px;
+    align-items: start;
 }
 
 .cw-sighting {
-    position: absolute;
-    left: var(--x, 0);
-    top: var(--y, 0);
-    width: 180px;
-    transform: rotate(var(--rot, 0deg));
     background: #f6f2ea;
-    padding: 10px;
+    padding: 9px 9px 10px;
     box-sizing: border-box;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, .4);
-    pointer-events: auto;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, .35);
+    transform: rotate(var(--rot, 0deg));
 }
 
 .cw-sighting-photo {
-    height: 120px;
+    height: 124px;
+    overflow: hidden;
+    background: #222;
 }
 
-.cw-sighting-caption {
+.cw-sighting-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: sepia(.25) contrast(1.05) saturate(.9);
+}
+
+.cw-sighting-title {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 18px;
+    font-size: 19px;
     color: #2a1d12;
-    margin-top: 6px;
+    margin-top: 7px;
     line-height: 1.15;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.cw-sighting-pin {
-    position: absolute;
-    left: var(--x, 0);
-    top: var(--y, 0);
-    width: 14px;
-    height: 14px;
-    margin: -7px 0 0 -7px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #ff8a7a, #c22b22 55%, #6e130d);
-    box-shadow: 0 3px 4px rgba(0, 0, 0, .5);
+.cw-sighting-en {
+    font-family: 'Special Elite', serif;
+    font-size: 10.5px;
+    letter-spacing: .08em;
+    color: #6a5238;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* ---- 窄屏：档案改为单列滚动排版 ---- */
+.cw-sighting-desc {
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: #4a3524;
+    margin-top: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* 档案 06：商店 */
+
+.cw-shop-storefront,
+.cw-shop-storefront:hover,
+.cw-shop-ticket,
+.cw-shop-ticket:hover {
+    text-decoration: none;
+}
+
+.cw-shop-storefront {
+    position: absolute;
+    left: 56px;
+    top: 186px;
+    width: 700px;
+    display: block;
+    background: #1a1512;
+    padding: 14px 14px 16px;
+    box-sizing: border-box;
+    box-shadow: 0 16px 30px rgba(0, 0, 0, .5);
+    transform: rotate(-1.5deg);
+}
+
+.cw-shop-storefront-img {
+    height: 400px;
+    overflow: hidden;
+    background: #000;
+}
+
+.cw-shop-storefront-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cw-shop-storefront-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 12px;
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 13px;
+    letter-spacing: .2em;
+    color: #e6d7b5;
+    white-space: nowrap;
+}
+
+.cw-shop-ticket {
+    position: absolute;
+    left: 810px;
+    top: 226px;
+    width: 430px;
+    height: 190px;
+    transform: rotate(2deg);
+    background: linear-gradient(180deg, #e9d9a8, #dcc88f);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, .35);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 96px;
+    color: #2a1d12;
+    overflow: hidden;
+}
+
+.cw-shop-ticket-main {
+    padding: 20px 22px;
+    border-right: 2px dashed rgba(42, 29, 18, .45);
+}
+
+.cw-shop-ticket-kicker {
+    font-family: 'Special Elite', serif;
+    font-size: 12px;
+    letter-spacing: .3em;
+    color: #6a5238;
+    white-space: nowrap;
+}
+
+.cw-shop-ticket-title {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 40px;
+    line-height: 1.05;
+    margin-top: 8px;
+    white-space: nowrap;
+}
+
+.cw-shop-ticket-sub {
+    font-family: 'Special Elite', serif;
+    font-size: 12.5px;
+    letter-spacing: .14em;
+    margin-top: 8px;
+    white-space: nowrap;
+}
+
+.cw-shop-ticket-cta {
+    margin-top: 12px;
+    display: inline-block;
+    background: #2a1d12;
+    color: #f2e8d0;
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 13px;
+    letter-spacing: .2em;
+    padding: 8px 14px;
+    white-space: nowrap;
+}
+
+.cw-shop-ticket-stub {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    writing-mode: vertical-rl;
+    font-family: 'Special Elite', serif;
+    font-size: 14px;
+    letter-spacing: .3em;
+    color: #6a5238;
+}
+
+.cw-shop-clue {
+    position: absolute;
+    left: 830px;
+    top: 460px;
+    width: 400px;
+    height: 150px;
+    transform: rotate(-2deg);
+    background: #f6f1e6;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, .3);
+    padding: 18px 22px;
+    box-sizing: border-box;
+}
+
+.cw-shop-clue-kicker {
+    font-family: 'Special Elite', 'Noto Serif SC', serif;
+    font-size: 12px;
+    letter-spacing: .24em;
+    color: #6a5238;
+    white-space: nowrap;
+}
+
+.cw-shop-clue-title {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 26px;
+    color: #2a1d12;
+    margin-top: 8px;
+    line-height: 1.2;
+}
+
+.cw-shop-clue-en {
+    font-family: 'Special Elite', serif;
+    font-size: 12.5px;
+    letter-spacing: .1em;
+    color: #4a3524;
+    margin-top: 6px;
+}
+
+.cw-shop-stamp {
+    left: 1000px;
+    top: 640px;
+    transform: rotate(-8deg);
+    font-size: 20px;
+    letter-spacing: .22em;
+    padding: 5px 12px;
+}
+
+/* ---- 悬停 ---- */
+
+@media (hover: hover) {
+    .cw-post:hover {
+        transform: rotate(0deg) translateY(-6px);
+        box-shadow: 0 18px 30px rgba(0, 0, 0, .4);
+    }
+}
+
+/* ---- 窄屏：桌面上的档案改成单列滚动 ---- */
 
 @media (max-width: 899px) {
     .cw-nav {
@@ -1996,6 +3052,205 @@ body {
         letter-spacing: .12em;
     }
 
+    .cw-desk-layer {
+        perspective: none;
+    }
+
+    .cw-sheet {
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        transform: none !important;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        box-shadow: none;
+    }
+
+    .cw-sheet-inner {
+        position: relative;
+        inset: auto;
+        min-height: 100%;
+        padding: 74px 18px 40px;
+        box-sizing: border-box;
+    }
+
+    .cw-back {
+        position: fixed;
+        left: 16px;
+        top: 16px;
+        transform: none;
+        font-size: 11px;
+        letter-spacing: .12em;
+        padding: 8px 11px;
+        max-width: 58vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .cw-file-label {
+        position: fixed;
+        right: 16px;
+        top: 20px;
+        font-size: 10px;
+        letter-spacing: .12em;
+    }
+
+    /* 单列排版下，所有绝对定位的模块改为按顺序流动。 */
+    .cw-file,
+    .cw-file-head,
+    .cw-about-photo,
+    .cw-about-profile,
+    .cw-keywords,
+    .cw-about-metaphors,
+    .cw-about-note,
+    .cw-about-contact,
+    .cw-tabs,
+    .cw-scroll,
+    .cw-dossier,
+    .cw-dossier-download,
+    .cw-dossier-verified,
+    .cw-travel-map,
+    .cw-travel-recent,
+    .cw-shop-storefront,
+    .cw-shop-ticket,
+    .cw-shop-clue,
+    .cw-blog-pane,
+    .cw-posts,
+    .cw-reader,
+    .cw-reader-cover,
+    .cw-reader-paper {
+        position: relative;
+        left: auto;
+        top: auto;
+        right: auto;
+        bottom: auto;
+        inset: auto;
+        width: auto;
+        max-width: 100%;
+        height: auto;
+        transform: none;
+        margin: 0 0 18px;
+    }
+
+    .cw-file-title {
+        font-size: 34px;
+        white-space: normal;
+    }
+
+    .cw-file-sub {
+        font-size: 11px;
+        letter-spacing: .16em;
+        white-space: normal;
+        line-height: 1.6;
+    }
+
+    .cw-stamp,
+    .cw-file .cw-pin,
+    .cw-file-strings,
+    .cw-desk-layer .cw-strings {
+        display: none;
+    }
+
+    .cw-scroll {
+        overflow: visible;
+        border-top: 0;
+        padding: 0;
+    }
+
+    .cw-cases,
+    .cw-posts,
+    .cw-sightings {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px 12px;
+    }
+
+    .cw-case,
+    .cw-post,
+    .cw-sighting {
+        transform: none;
+    }
+
+    .cw-keywords {
+        gap: 8px;
+    }
+
+    .cw-dossier {
+        display: block;
+    }
+
+    .cw-dossier-main,
+    .cw-dossier-side {
+        flex: none;
+    }
+
+    .cw-dossier-side {
+        margin-top: 22px;
+    }
+
+    .cw-dossier-skills {
+        grid-template-columns: 1fr;
+    }
+
+    .cw-dossier-certs {
+        flex-wrap: wrap;
+    }
+
+    .cw-travel-map img {
+        width: 100%;
+        height: auto;
+    }
+
+    .cw-shop-storefront-img {
+        height: auto;
+        aspect-ratio: 7 / 4;
+    }
+
+    .cw-shop-ticket {
+        display: block;
+        min-height: 0;
+    }
+
+    .cw-shop-ticket-main {
+        border-right: 0;
+        border-bottom: 2px dashed rgba(42, 29, 18, .45);
+    }
+
+    .cw-shop-ticket-stub {
+        writing-mode: horizontal-tb;
+        padding: 8px 22px 14px;
+        justify-content: flex-start;
+    }
+
+    .cw-reader {
+        filter: none;
+        opacity: 1;
+        transform: none;
+        box-shadow: none;
+        background: none;
+    }
+
+    .cw-reader-paper {
+        overflow: visible;
+        padding: 18px;
+    }
+
+    .cw-reader-cover {
+        display: block;
+    }
+
+    .cw-blog-pane.is-behind {
+        display: none;
+    }
+
+    /* 窄屏不演取件动画，手和封面都不出现。 */
+    .cw-hand,
+    .cw-carried {
+        display: none;
+    }
+
     .cw-hint {
         width: calc(100% - 32px);
         bottom: 18px;
@@ -2005,229 +3260,34 @@ body {
         text-align: center;
         white-space: normal;
     }
-
-    .cw-overlay-content {
-        overflow-y: auto;
-        overscroll-behavior: contain;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .cw-board {
-        position: relative;
-        left: auto;
-        top: auto;
-        width: auto;
-        max-width: 640px;
-        height: auto;
-        margin: 0 auto;
-        padding: 16px 20px 56px;
-        transform: none;
-    }
-
-    .cw-back {
-        position: sticky;
-        left: auto;
-        top: 12px;
-        margin-bottom: 10px;
-        font-size: 13px;
-        letter-spacing: .12em;
-    }
-
-    .cw-file,
-    .cw-file-head,
-    .cw-stamp,
-    .cw-about-photo,
-    .cw-about-profile,
-    .cw-keywords,
-    .cw-about-metaphors,
-    .cw-about-note,
-    .cw-about-contact,
-    .cw-cases,
-    .cw-posts,
-    .cw-dossier,
-    .cw-dossier-download,
-    .cw-dossier-verified,
-    .cw-travel-map,
-    .cw-sightings,
-    .cw-sighting {
-        position: relative;
-        left: auto;
-        top: auto;
-        width: auto;
-        height: auto;
-    }
-
-    .cw-file-meta {
-        position: static;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        gap: 6px 16px;
-        margin: 6px 0 18px;
-        white-space: normal;
-    }
-
-    .cw-file-title {
-        font-size: 40px;
-        line-height: 1.1;
-    }
-
-    .cw-file-sub {
-        font-size: 12px;
-        letter-spacing: .14em;
-        line-height: 1.6;
-        white-space: normal;
-    }
-
-    .cw-file-strings,
-    .cw-file .cw-pin,
-    .cw-sighting-pin {
-        display: none;
-    }
-
-    .cw-stamp {
-        display: inline-block;
-        margin: 18px 0 4px;
-    }
-
-    .cw-about-stamp {
-        font-size: 16px;
-        letter-spacing: .14em;
-    }
-
-    .cw-resume-file-stamp {
-        font-size: 20px;
-        letter-spacing: .16em;
-        transform: rotate(-4deg);
-    }
-
-    .cw-about-photo {
-        width: 230px;
-        margin: 24px auto 0;
-    }
-
-    .cw-about-photo-img {
-        height: 230px;
-    }
-
-    .cw-about-profile,
-    .cw-about-metaphors,
-    .cw-about-note,
-    .cw-about-contact {
-        margin-top: 24px;
-    }
-
-    .cw-about-profile-grid {
-        grid-template-columns: minmax(96px, auto) 1fr;
-        font-size: 15px;
-    }
-
-    .cw-keywords {
-        margin-top: 24px;
-    }
-
-    .cw-about-metaphors,
-    .cw-about-note {
-        min-height: 150px;
-    }
-
-    .cw-about-note {
-        padding-top: 22px;
-    }
-
-    .cw-about-contact {
-        max-width: 280px;
-    }
-
-    .cw-cases {
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        justify-items: center;
-        gap: 36px 16px;
-        margin-top: 24px;
-    }
-
-    .cw-case {
-        width: 100%;
-        max-width: 280px;
-    }
-
-    .cw-case-card {
-        width: 100%;
-    }
-
-    .cw-posts {
-        grid-template-columns: 1fr;
-        gap: 30px;
-        margin-top: 28px;
-    }
-
-    .cw-dossier {
-        flex-direction: column;
-        gap: 26px;
-        margin-top: 16px;
-    }
-
-    .cw-dossier-main,
-    .cw-dossier-side {
-        flex: none;
-        width: 100%;
-    }
-
-    .cw-dossier-exp-row {
-        flex-direction: column;
-        gap: 2px;
-    }
-
-    .cw-dossier-certs {
-        flex-wrap: wrap;
-    }
-
-    .cw-dossier-certs .cw-dossier-box {
-        flex: 1 1 100px;
-    }
-
-    .cw-dossier-skills {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    }
-
-    .cw-dossier-award span:first-child {
-        white-space: normal;
-    }
-
-    .cw-dossier-download {
-        margin-top: 28px;
-    }
-
-    .cw-dossier-verified {
-        display: inline-block;
-        margin: 22px 0 0 8px;
-    }
-
-    .cw-travel-map {
-        margin-top: 20px;
-    }
-
-    .cw-travel-map img {
-        height: auto;
-    }
-
-    .cw-sightings {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 22px 16px;
-        margin-top: 24px;
-        pointer-events: auto;
-    }
 }
+
+/* ---- 降低动效 ---- */
 
 @media (prefers-reduced-motion: reduce) {
     .cw-drift {
         animation: none;
     }
 
-    .cw-card,
-    .cw-dim,
-    .cw-hint {
-        transition: none;
+    .cw-cam,
+    .cw-sheet,
+    .cw-sheet-inner,
+    .cw-hand,
+    .cw-carried,
+    .cw-reader,
+    .cw-blog-pane,
+    .cw-clock-hour,
+    .cw-clock-minute,
+    .cw-clock-second {
+        transition: none !important;
+    }
+
+    .cw-hand,
+    .cw-carried {
+        display: none;
+    }
+
+    .cw-reader {
+        filter: none;
     }
 }

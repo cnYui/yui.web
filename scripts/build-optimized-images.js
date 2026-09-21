@@ -7,11 +7,10 @@ const { spawnSync } = require('node:child_process');
 
 const rootDir = path.resolve(__dirname, '..');
 
-// 首页线索墙：源图沿用站内原图（行踪图源图是 Claude Design 的 travel-map.html 2x 渲染后转成 256 色 PNG），
-// 输出使用 ASCII 文件名，缩略图够首页墙面与档案浮层在 2x 屏上使用即可。
+// 首页线索墙：源图沿用站内原图（行踪图源图 travel-map-v4.png 是 Claude Design 的 travel-map.html 2x 渲染后转成 256 色 PNG），
+// 输出使用 ASCII 文件名，缩略图够首页墙面与桌上的档案在 2x 屏上使用即可。
 const clueWallImages = [
-    ['images/clue-wall/travel-map.png', 'travel-map.webp', '2600x2600>', '85'],
-    ['images/clue-wall/travel-map.png', 'travel-map-1100.webp', '1100x1100>', '85'],
+    ['images/clue-wall/travel-map-v4.png', 'travel-map-v4.webp', '1100x1100>', '85'],
     ['images/hackathon/huanqiu-gold.jpg', 'global-gold.webp', '720x720>'],
     ['images/travel/东京夜景.jpg', 'tokyo-night.webp', '720x720>'],
     ['images/hackathon/AdventureX24.jpg', 'adventurex24.webp'],
@@ -31,6 +30,32 @@ const clueWallImages = [
     ['images/travel/名古屋城.jpg', 'nagoya-castle.webp'],
     ['images/travel/南京玄武鸡鸣寺.jpg', 'nanjing-jiming.webp'],
     ['images/travel/大巴途中.jpg', 'bus.webp'],
+    // v2 的项目案卷墙（25 条）与旅行照片墙（26 张）新增的缩略图。
+    ['images/shop/code-transit-entry.webp', 'shop-entry.webp', '420x420>'],
+    ['images/hackathon/osaka-rokid-mini-hackathon-2026.webp', 'osaka-rokid.webp'],
+    ['images/hackathon/ivs2026-kyoto-waytoagi.webp', 'ivs-kyoto.webp'],
+    ['images/hackathon/tangquan-hackathon.jpg', 'tangquan.webp'],
+    ['images/hackathon/nanjing-mofa-hackathon.jpg', 'mofa.webp'],
+    ['images/hackathon/trae-hackathon-07.jpg', 'huikesong.webp'],
+    ['images/hackathon/yunqi-conference.jpg', 'yunqi.webp'],
+    ['images/travel/eiheiji-gate-2026.jpg', 'eiheiji.webp'],
+    ['images/travel/okinawa-beach-2026.jpg', 'okinawa-beach.webp'],
+    ['images/travel/okinawa-yonabaru-tsunahiki-2026.jpg', 'okinawa-tug.webp'],
+    ['images/travel/nara-deer-2026.jpg', 'nara-deer.webp'],
+    ['images/travel/nara-kasuga-lanterns-2026.jpg', 'nara-lanterns.webp'],
+    ['images/travel/晴空塔.jpg', 'skytree.webp'],
+    ['images/travel/雷门.JPG', 'kaminarimon.webp'],
+    ['images/travel/金阁寺.JPG', 'kinkakuji.webp'],
+    ['images/travel/天守阁.jpg', 'osaka-castle.webp'],
+    ['images/travel/竖起小指吧.jpg', 'glico.webp'],
+    ['images/travel/黑门市场.jpg', 'kuromon.webp'],
+    ['images/travel/名古屋城吉伊.jpg', 'nagoya-mascot.webp'],
+    ['images/travel/原子弹爆照遗址.jpg', 'abomb-dome.webp'],
+    ['images/travel/水中神社.jpg', 'itsukushima.webp'],
+    ['images/travel/横滨某座桥.jpg', 'yokohama.webp'],
+    ['images/travel/杭州某家咖啡店.JPG', 'hangzhou-coffee.webp'],
+    ['images/travel/第一次吃一兰.jpg', 'ichiran.webp'],
+    ['images/travel/路过富士山.jpg', 'fuji.webp'],
 ].map(([from, name, resize = '640x640>', quality]) => ({ from, to: `images/optimized/clue-wall/${name}`, resize, quality }));
 
 // 页面只引用这里生成的 WebP；images/ 下其余目录是源图，不进 public-dist。
