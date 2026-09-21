@@ -50,7 +50,7 @@ test('每张便签都标了自己的封面，取件动画才知道举的是哪�
     const cards = [...html.matchAll(/class="cw-card[^"]*" data-section="([^"]+)" data-card="([^"]+)" data-tilt="(-?[\d.]+)"/g)]
         .map(([, section, card, tilt]) => ({ section, card, tilt }));
 
-    assert.equal(cards.length, 8, '墙上应有 8 张可点开的便签');
+    assert.equal(cards.length, 7, '墙上应有 7 张可点开的便签');
     assert.equal(new Set(cards.map((card) => card.card)).size, cards.length, 'data-card 不能重复');
     for (const card of cards) {
         assert.ok(Number.isFinite(Number(card.tilt)), `${card.card} 的 data-tilt 不是数字`);

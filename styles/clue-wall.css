@@ -665,8 +665,7 @@ body {
     background: #222;
 }
 
-.cw-projects-photo img,
-.cw-stack-photo img {
+.cw-projects-photo img {
     filter: sepia(.3) contrast(1.05) saturate(.85);
 }
 
@@ -871,78 +870,53 @@ body {
     opacity: .6;
 }
 
-.cw-card--photos {
-    left: 1060px;
-    top: 560px;
-    width: 300px;
-    height: 280px;
-    transform: rotate(4deg);
-    transition: transform .35s ease;
-}
-
-.cw-stack-sheet {
+/* 墙上钉着的那张拍立得。它只是块装饰，不带 .cw-card，也就没有指针、焦点框和取件动画。
+   比例照实物的 SX-70 / 600 相纸：相纸 88 × 107 mm，画面 79 × 77 mm（接近正方形），
+   上、左、右各留白约 4.5 mm，底下那条压着显影药包的「下巴」约 25 mm。
+   这里按 230 px 宽等比缩，1 mm ≈ 2.61 px，于是留白 12 px、画面 206 × 201 px、下巴 67 px。 */
+.cw-polaroid {
     position: absolute;
-    width: 270px;
-    height: 250px;
-    background: #f2ede2;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, .4);
-}
-
-.cw-stack-sheet--1 {
-    left: 14px;
-    top: 10px;
-    transform: rotate(-7deg);
-}
-
-.cw-stack-sheet--2 {
-    left: 6px;
-    top: 4px;
-    transform: rotate(4deg);
-}
-
-.cw-stack-front {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 280px;
-    background: #f2ede2;
-    padding: 12px 12px 14px;
+    left: 1078px;
+    top: 568px;
+    width: 230px;
     box-sizing: border-box;
-    box-shadow: 0 12px 22px rgba(0, 0, 0, .5);
+    padding: 12px 12px 67px;
+    border-radius: 3px;
+    /* 相纸是偏冷的白，从左上到右下略微转暗，像一张被压平的纸。 */
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .55), rgba(255, 255, 255, 0) 14%),
+        linear-gradient(158deg, #fbfaf6, #f3f1e9 60%, #e8e4d8);
+    box-shadow:
+        0 14px 26px rgba(0, 0, 0, .5),
+        inset 0 0 0 1px rgba(120, 100, 70, .18);
+    transform: rotate(4deg);
 }
 
-.cw-stack-photo {
-    height: 190px;
+.cw-polaroid-photo {
+    position: relative;
+    height: 201px;
     overflow: hidden;
-    background: #222;
+    background: #14110e;
+    /* 画面四周那圈暗边，是药膜被相纸压出来的。 */
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .55), inset 0 2px 7px rgba(0, 0, 0, .5);
 }
 
-.cw-stack-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-top: 10px;
-    white-space: nowrap;
+.cw-polaroid-photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    filter: sepia(.3) contrast(1.05) saturate(.85);
 }
 
-.cw-stack-title {
-    font-family: 'Ma Shan Zheng', cursive;
-    font-size: 30px;
-    color: #2a1d12;
-}
-
-.cw-stack-file {
-    font-family: 'Special Elite', serif;
-    font-size: 13px;
-    letter-spacing: .2em;
-    color: #6a5238;
-}
-
-.cw-stack-sub {
-    font-family: 'Special Elite', 'Noto Serif SC', serif;
-    font-size: 12.5px;
-    color: #4a3524;
-    white-space: nowrap;
+/* 相纸表面的反光：一道斜着扫过画面的高光。 */
+.cw-polaroid-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(118deg, rgba(255, 255, 255, .17) 0 17%, rgba(255, 255, 255, .04) 30%, rgba(255, 255, 255, 0) 44%);
 }
 
 .cw-card--shop {
@@ -1078,10 +1052,6 @@ body {
     .cw-card--blog:hover {
         transform: rotate(0deg) translateY(-8px) scale(1.03);
         box-shadow: 0 24px 36px rgba(0, 0, 0, .55);
-    }
-
-    .cw-card--photos:hover {
-        transform: rotate(2deg) translateY(-8px) scale(1.03);
     }
 
     .cw-card--resume:hover {

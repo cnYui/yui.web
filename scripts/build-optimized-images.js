@@ -23,6 +23,10 @@ const clueWallImages = [
     ['images/blog/codex-token-low-cost-cover.png', 'blog-codex.webp'],
     ['images/blog/factory-3d-render.jpg', 'blog-factory.webp'],
     ['images/blog/vibe-coding-guide.jpg', 'blog-vibe.webp'],
+    // 这三张沿用 js/blog-data.js 里博客页各自的封面，线索墙的笔记卡片之前漏了缩略图。
+    ['images/blog/back-to-vibe-coding/00-cover-prompt-to-loop.png', 'blog-loop.webp'],
+    ['images/blog/speakmore-note-cover-guizang.png', 'blog-speakmore.webp'],
+    ['images/blog/ai-native-hackathon/hackathon-01.jpg', 'blog-hackathon.webp'],
     ['images/travel/伏见稻田大社.jpg', 'fushimi.webp'],
     ['images/travel/二年阪.JPG', 'ninenzaka.webp'],
     ['images/travel/京都塔联动京吹.jpg', 'kyoto-tower.webp'],

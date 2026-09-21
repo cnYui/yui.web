@@ -29,7 +29,6 @@
         blog: { file: 'FILE 03 · 博客', title: '笔记 · Field Notes', sub: '6 ENTRIES', bg: '#efe6d0', fg: '#2a1d12' },
         resume: { file: 'FILE 04 · 履历', title: '身份档案', sub: 'DOSSIER · CONFIDENTIAL', bg: 'linear-gradient(180deg,#f4efe3,#e9e1cf)', fg: '#2a1d12' },
         travel: { file: 'FILE 05 · 旅行', title: '行踪图', sub: 'TRAVEL LOG', bg: '#e8dcc0', fg: '#2a1d12' },
-        travelPhoto: { file: 'FILE 05 · 旅行', title: '照片 · 行踪', sub: '60+ PHOTOS', bg: '#f2ede2', fg: '#2a1d12' },
         shop: { file: 'FILE 06 · 商店', title: '天才程序员中转站', sub: 'CODE TRANSIT · SUB2API', bg: '#1a1512', fg: '#f2e8d0' }
     };
 
