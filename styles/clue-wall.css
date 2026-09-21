@@ -1549,17 +1549,6 @@ body {
     outline-offset: 3px;
 }
 
-.cw-file-label {
-    position: absolute;
-    right: 40px;
-    top: 38px;
-    font-family: 'Special Elite', serif;
-    font-size: 13px;
-    letter-spacing: .3em;
-    color: #6a5238;
-    white-space: nowrap;
-}
-
 .cw-file {
     position: absolute;
     inset: 0;
@@ -2908,18 +2897,6 @@ body {
     object-fit: cover;
 }
 
-.cw-shop-storefront-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-top: 12px;
-    font-family: 'Special Elite', 'Noto Serif SC', serif;
-    font-size: 13px;
-    letter-spacing: .2em;
-    color: #e6d7b5;
-    white-space: nowrap;
-}
-
 .cw-shop-ticket {
     position: absolute;
     left: 810px;
@@ -3092,14 +3069,6 @@ body {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-    }
-
-    .cw-file-label {
-        position: fixed;
-        right: 16px;
-        top: 20px;
-        font-size: 10px;
-        letter-spacing: .12em;
     }
 
     /* 单列排版下，所有绝对定位的模块改为按顺序流动。 */
