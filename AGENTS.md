@@ -164,3 +164,9 @@
 - 3D 手同时还画桌上的道具（马克杯、铅笔、放大镜）和左墙的书柜，用的是第二块 canvas（`#cwPropsCanvas`，z-index 12，压在桌面档案下面）；手自己在 `#cwHandCanvas`（z-index 27，压在被举起的便签上面）。3D 书柜就位后 CSS 画的那个用 `.has-hand3d .cw-bookshelf { display:none }` 藏掉，避免两个叠在一起。
 - 被捏住的便签由 `hand3d.js` 每帧用 Web Animations 驱动（不是写 style），所以 `.cw-carried` 在 3D 模式下要把 transition 设成 none，`atLand` 的判定也和 SVG 模式不同。
 - `test/home-clue-wall.test.js` 会校验：首页没有同步引 hand3d、clue-wall.js 里是动态 import、vendor 里没有 CDN 或裸导入、glb 文件头是 `glTF`。
+
+## 2026-09-21 案卷墙补齐 11 张照片
+
+- `js/clue-data.js` 的 25 条案卷里原本有 11 条 `img: ''`（OpenClaw 飞书插件、南京 OPC、AI 视频/漫画、上海圣诞黑客松、火山引擎 Force、n8n + 小红书、抖音创作者大赛、南客松 S1、TRAE Friends 南京 / 苏州、2025 AdventureX），桌上的案卷只有文字。源图项目页 `js/projects.js` 一直在用，只是没生成线索墙那一档缩略图。
+- 在 `scripts/build-optimized-images.js` 的线索墙任务表里补了这 11 条（640px / q78，和其余案卷图一档），`node scripts/build-optimized-images.js clue-wall` 生成到 `images/optimized/clue-wall/`，合计 364 KB。源图里 `image copy.png` / `image copy 2.png` 这种名字换成了 `douyin-coze.webp` / `xhs-n8n.webp`，与目录里其余 ASCII 文件名一致。
+- `js/clue-data.js` 改了内容，`index.html` 里它的版本号跟着从 `?v=20260921-1` 抬到 `?v=20260921-2`（Cloudflare 按 `max-age` 缓存）。图片是新文件名，不涉及缓存。
