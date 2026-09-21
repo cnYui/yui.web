@@ -1186,11 +1186,12 @@ body {
     transition: opacity 1s ease;
 }
 
-.cw-nav,
 .cw-sound {
     position: absolute;
     top: 30px;
+    right: 32px;
     z-index: 3;
+    padding: 10px 14px;
     font-family: 'Special Elite', 'Noto Serif SC', serif;
     font-size: 12px;
     letter-spacing: .24em;
@@ -1198,37 +1199,10 @@ body {
     background: rgba(20, 12, 8, .55);
     border: 1px solid rgba(226, 207, 166, .45);
     white-space: nowrap;
-}
-
-.cw-nav {
-    left: 32px;
-    display: flex;
-}
-
-.cw-nav a {
-    padding: 10px 12px;
-    color: #e2cfa6;
-    text-decoration: none;
-}
-
-.cw-nav a:hover,
-.cw-nav a:focus-visible {
-    color: #fff3d6;
-    background: rgba(226, 207, 166, .12);
-}
-
-.cw-nav a + a {
-    border-left: 1px solid rgba(226, 207, 166, .25);
-}
-
-.cw-sound {
-    right: 32px;
-    padding: 10px 14px;
     cursor: pointer;
 }
 
-.cw-sound:focus-visible,
-.cw-nav a:focus-visible {
+.cw-sound:focus-visible {
     outline: 2px solid #e2cfa6;
     outline-offset: 2px;
 }
@@ -3071,17 +3045,6 @@ body {
 /* ---- 窄屏：桌面上的档案改成单列滚动 ---- */
 
 @media (max-width: 899px) {
-    .cw-nav {
-        left: 16px;
-        top: 16px;
-        letter-spacing: .12em;
-    }
-
-    .cw-nav a {
-        padding: 8px 9px;
-    }
-
-    .cw-nav-en,
     .cw-sound-en {
         display: none;
     }
