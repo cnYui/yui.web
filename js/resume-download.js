@@ -1,9 +1,10 @@
-// 简历 PDF 不再是公开静态文件，必须先向 /api/resume/download 提交口令才能取回。
+// 简历 PDF 不再是公开静态文件，必须先向 /resume/download 提交口令才能取回。
 // 首页线索墙和 /resume/ 页面共用这一份逻辑：任何带 data-resume-download 的按钮都会接管。
 (function () {
     'use strict';
 
-    var ENDPOINT = '/api/resume/download';
+    // 路径见 server.js 里的说明：/api/ 不会被 cloudflared 转发到本服务。
+    var ENDPOINT = '/resume/download';
     var FILE_NAME = 'WU_JIANXIANG_resume.pdf';
     var PASSCODE_LENGTH = 6;
     var STYLE_ID = 'rdl-style';
