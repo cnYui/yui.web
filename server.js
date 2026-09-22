@@ -3480,12 +3480,14 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
     });
 
     // 简历 PDF 已从公开静态目录移除，只能经这里校验口令后取回。
+    // 路径必须挂在 /resume/ 下：cloudflared 的 ingress 只把固定几个前缀转发给本服务，
+    // /api/ 会被转发到 Sub2API，放在那里公网会 404（2026-09-22 实测过）。
     // 6 位数字口令只有 100 万种组合，必须按来源限流，否则可以直接跑字典。
     const resumePdfFile = path.join(rootDir, 'files', RESUME_PDF_FILE_NAME);
     const resumePassword = resolveResumePassword();
     const resumeLimiter = createAttemptLimiter({ maxFailures: 8, windowMs: 10 * 60 * 1000 });
 
-    app.post('/api/resume/download', (req, res) => {
+    app.post('/resume/download', (req, res) => {
         const clientKey = String(req.ip || 'unknown');
         const gate = resumeLimiter.check(clientKey);
         if (!gate.allowed) {
@@ -3519,6 +3521,8 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
             cacheControl: false,
             headers: {
                 'Content-Type': 'application/pdf',
+                // 安全头里的 no-store 只对 /api/ 生效，这里要自己声明，避免被缓存。
+                'Cache-Control': 'no-store',
                 'Content-Disposition': 'attachment; filename="' + RESUME_PDF_FILE_NAME + '"'
             }
         });
