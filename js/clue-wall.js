@@ -93,6 +93,16 @@
     let handLoading = false;
     let lastHand = {};          // 上一次同步给 3D 手的状态，避免每帧重复下发
 
+    // 房间只要在动，3D 手那边就得每帧重绘手和道具两个场景（实测 344 个 GL 调用/帧）。
+    // 所以这里要如实知道"房间还在不在动"：呼吸动画有没有在跑、有没有在拖、相机的
+    // transition 还剩多久。
+    const DRIFT_IDLE_MS = 8000;
+    let driftPaused = false;    // 呼吸动画这一帧是不是停着
+    let driftIdle = false;      // 是不是因为待机太久才停的
+    let driftIdleTimer = 0;
+    let lastCamTransform = '';
+    let camHoldMs = 0;          // 相机刚换了目标姿态，transition 还要跑这么久
+
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
     const num = (value) => Number(value) || 0;
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -392,7 +402,7 @@
     function initHand() {
         if (hand || handLoading || !handCanvas || !propsCanvas || skipChoreography()) return;
         handLoading = true;
-        import('/js/hand3d.js?v=20260921-1').then((module) => {
+        import('/js/hand3d.js?v=20260922-6').then((module) => {
             hand = module.createHand(handCanvas, {
                 propsCanvas,
                 style: 'glove',
@@ -433,6 +443,8 @@
     // 把这一帧的状态差分下发给 3D 手：位置、手指弯曲、视口、以及它该遮挡/捏住哪张纸。
     function syncHand() {
         if (!hand) return;
+        // 房间停了就让 3D 手停止每帧轮询 + 重绘；拖动和相机过渡期间必须继续跟。
+        hand.setRoomLive((!driftPaused && !reducedMotion.matches) || state.dragging, camHoldMs);
         const durations = { reach: 650, carry: 1050, retreat: 600 };
         if (lastHand.handPos !== state.handPos || lastHand.handTrans !== state.handTrans) {
             hand.moveTo(state.handPos || restPos(), durations[state.handTrans] || 0, state.handTrans === 'retreat' ? 'in' : 'inOut');
@@ -450,10 +462,19 @@
         const onDesk = DESK_PHASES.includes(phase);
         scene.style.perspective = `${Math.round(1100 * k)}px`;
         stage.style.transform = `scale3d(${k}, ${k}, ${k})`;
-        cam.style.transform = onDesk ? deskCamera() : `translate3d(0px, 0px, 0px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+        const camTransform = onDesk ? deskCamera() : `translate3d(0px, 0px, 0px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+        cam.style.transform = camTransform;
         if (dragging || reducedMotion.matches) cam.style.transition = 'none';
         else cam.style.transition = phase === 'idle' ? 'transform 2.2s cubic-bezier(.2,.7,.2,1)' : 'transform 1.05s cubic-bezier(.55,0,.2,1)';
-        drift.classList.toggle('is-paused', phase !== 'idle' || dragging);
+        // 相机换了目标姿态，接下来这段时间 transition 会一直在动
+        if (camTransform !== lastCamTransform) {
+            lastCamTransform = camTransform;
+            camHoldMs = (dragging || reducedMotion.matches) ? 0 : (phase === 'idle' ? 2200 : 1050);
+        } else {
+            camHoldMs = 0;
+        }
+        driftPaused = phase !== 'idle' || dragging || driftIdle;
+        drift.classList.toggle('is-paused', driftPaused);
         scene.classList.toggle('is-dragging', dragging);
         dim.style.opacity = onDesk ? '0.06' : '0';
         hint.style.opacity = state.hint ? '0.85' : '0';
@@ -847,6 +868,25 @@
 
     setInterval(tickClock, 1000);
     window.addEventListener('yui-clue-data', renderAll);
+
+    // 没人动的时候让房间也歇着：呼吸动画一直跑，3D 手就得一直重绘一幅没有变化的画面。
+    // animation-play-state 是就地暂停/继续，恢复时不会跳帧。
+    function noteActivity() {
+        if (driftIdle) {
+            driftIdle = false;
+            render();
+        }
+        clearTimeout(driftIdleTimer);
+        driftIdleTimer = setTimeout(() => {
+            if (driftIdle) return;
+            driftIdle = true;
+            render();
+        }, DRIFT_IDLE_MS);
+    }
+    ['pointermove', 'pointerdown', 'keydown', 'wheel'].forEach((type) => {
+        window.addEventListener(type, noteActivity, { passive: true });
+    });
+    noteActivity();
 
     scene.addEventListener('pointerdown', onPointerDown);
     cards.forEach((card) => {
