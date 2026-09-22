@@ -23,9 +23,18 @@
 
     const BG_COLOR = '#0a0a12';
     const DOT_COLOR = { r: 120, g: 100, b: 200 };
+    const DOT_BRIGHTNESS = 0.7;
+    // 每个点的颜色都一样，所以这串字符串只拼一次：原来是在 8000 多次的内层
+    // 循环里每个点重新拼一遍，实测占掉整帧三成时间。
+    const DOT_FILL = `rgb(${Math.floor(DOT_COLOR.r * DOT_BRIGHTNESS)}, ${Math.floor(DOT_COLOR.g * DOT_BRIGHTNESS)}, ${Math.floor(DOT_COLOR.b * DOT_BRIGHTNESS)})`;
 
     // Pre-rendered map data.
     let mapImageData = null;
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let rafId = 0;
+    let onScreen = false;
+    let loadStarted = false;
 
     // Load and pre-render GeoJSON to a bitmap.
     async function loadAndRenderGeoJSON() {
@@ -54,8 +63,8 @@
 
             mapImageData = mapCtx.getImageData(0, 0, MAP_WIDTH, MAP_HEIGHT);
 
-            resize();
-            requestAnimationFrame(animate);
+            measure();
+            sync();
         } catch (error) {
             console.error('Failed to load GeoJSON:', error);
         }
@@ -84,9 +93,14 @@
         return mapImageData.data[index] > 128;
     }
 
-    function resize() {
+    function measure() {
         width = canvas.width = section.offsetWidth;
         height = canvas.height = section.offsetHeight;
+    }
+
+    function onResize() {
+        measure();
+        if (mapImageData && !rafId) draw();   // 尺寸变了但循环没在跑，补画一帧
     }
 
     function draw() {
@@ -95,6 +109,8 @@
 
         const cols = Math.ceil(width / DOT_SPACING) + 1;
         const rows = Math.ceil(height / DOT_SPACING) + 1;
+
+        ctx.fillStyle = DOT_FILL;
 
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
@@ -105,16 +121,8 @@
                 const lat = 90 - (y / MAP_HEIGHT) * 180;
 
                 if (isLand(lon, lat)) {
-                    const size = MAX_DOT_SIZE;
-                    const brightness = 0.7;
-
-                    const r = Math.floor(DOT_COLOR.r * brightness);
-                    const g = Math.floor(DOT_COLOR.g * brightness);
-                    const b = Math.floor(DOT_COLOR.b * brightness);
-
-                    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
                     ctx.beginPath();
-                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.arc(x, y, MAX_DOT_SIZE, 0, Math.PI * 2);
                     ctx.fill();
                 }
             }
@@ -130,9 +138,44 @@
         if (earthOffset > MAP_WIDTH) earthOffset -= MAP_WIDTH;
 
         draw();
-        requestAnimationFrame(animate);
+        rafId = requestAnimationFrame(animate);
     }
 
-    window.addEventListener('resize', resize);
-    loadAndRenderGeoJSON();
+    // 这个画布是首页英雄区的背景装饰，滚出视口、切到别的标签页、或者访客
+    // 要求减少动效时都没有理由继续画：一帧要扫近万个格点、画三千多个圆。
+    function shouldRun() {
+        return onScreen && !document.hidden && !reducedMotion.matches;
+    }
+
+    function sync() {
+        if (!mapImageData) return;
+        if (shouldRun()) {
+            if (!rafId) {
+                lastTime = performance.now();   // 别把暂停的时间算进位移，否则恢复时会跳一大段
+                rafId = requestAnimationFrame(animate);
+            }
+            return;
+        }
+        if (rafId) {
+            cancelAnimationFrame(rafId);
+            rafId = 0;
+        }
+        // 降低动效时仍然画一帧静止的地图，不是留一块空背景
+        if (reducedMotion.matches && onScreen) draw();
+    }
+
+    // 数据有 900 多 KB，只在这块区域快进视口时才去取。
+    const observer = new IntersectionObserver((entries) => {
+        onScreen = entries.some(entry => entry.isIntersecting);
+        if (onScreen && !loadStarted) {
+            loadStarted = true;
+            loadAndRenderGeoJSON();
+        }
+        sync();
+    }, { rootMargin: '200px' });
+    observer.observe(section);
+
+    window.addEventListener('resize', onResize);
+    document.addEventListener('visibilitychange', sync);
+    reducedMotion.addEventListener('change', sync);
 })();
