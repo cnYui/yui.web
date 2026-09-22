@@ -1954,11 +1954,17 @@ body {
     pointer-events: none;
 }
 
+/* 笔记列表与项目页、旅行页一致，包进 .cw-scroll，超出一屏的卡片可滚动查看。 */
+.cw-blog-scroll {
+    left: 48px;
+    top: 186px;
+    width: 1190px;
+    height: 536px;
+    padding: 14px 14px 30px 8px;
+    border-top: 0;
+}
+
 .cw-posts {
-    position: absolute;
-    left: 56px;
-    top: 200px;
-    width: 1168px;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 30px;
@@ -2205,14 +2211,6 @@ body {
     white-space: nowrap;
 }
 
-.cw-reader-link {
-    font-family: 'Special Elite', 'Noto Serif SC', serif;
-    font-size: 12px;
-    letter-spacing: .14em;
-    color: #7a1f18;
-    white-space: nowrap;
-}
-
 .cw-reader-paper {
     position: absolute;
     left: 414px;
@@ -2252,13 +2250,10 @@ body {
 .cw-reader-end {
     margin-top: 36px;
     align-items: center;
+    justify-content: center;
     font-size: 12px;
     letter-spacing: .2em;
     color: #6a5238;
-}
-
-.cw-reader-end a {
-    color: #7a1f18;
 }
 
 .cw-blk-h2 {

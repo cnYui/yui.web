@@ -9,9 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Special+Elite&amp;family=Ma+Shan+Zheng&amp;family=Noto+Serif+SC:wght@400;600&amp;display=swap" rel="stylesheet">
-  <link href="/styles/clue-wall.css?v=20260921-7" rel="stylesheet">
-  <script src="/js/clue-data.js?v=20260921-7" defer></script>
-  <script src="/js/clue-wall.js?v=20260921-7" defer></script>
+  <link href="/styles/clue-wall.css?v=20260922-1" rel="stylesheet">
+  <script src="/js/clue-data.js?v=20260922-1" defer></script>
+  <script src="/js/clue-wall.js?v=20260922-1" defer></script>
 </head>
 <body>
 <div class="cw-root" id="clueWall">
@@ -271,7 +271,9 @@
               <h2 class="cw-file-title" id="cwFileBlog">博客 · 笔记 Field Notes</h2>
               <p class="cw-file-sub">FILE 03 · FIELD NOTES — 6 ENTRIES · 2025.12 → 2026.06 · 点击卡片在桌上阅读 · READ ON THE DESK</p>
             </header>
-            <div class="cw-posts" data-list="posts"></div>
+            <div class="cw-scroll cw-blog-scroll">
+              <div class="cw-posts" data-list="posts"></div>
+            </div>
           </div>
           <div class="cw-reader" id="cwReader" hidden>
             <div class="cw-reader-cover">
@@ -287,13 +289,12 @@
               <div class="cw-reader-spacer"></div>
               <div class="cw-reader-actions">
                 <button class="cw-reader-back" id="cwArtBack" type="button">← 回到笔记 · ALL NOTES</button>
-                <a class="cw-reader-link" id="cwArtLink" href="#" target="_blank" rel="noopener">原文 · ORIGINAL ↗</a>
               </div>
             </div>
             <div class="cw-reader-paper" id="cwArtPaper">
               <div class="cw-reader-paper-head"><span id="cwArtPaperDate"></span><span id="cwArtPaperCount"></span></div>
               <div class="cw-reader-blocks" id="cwArtBlocks"></div>
-              <div class="cw-reader-end"><span>— END OF REPORT · 完 —</span><a id="cwArtEndLink" href="#" target="_blank" rel="noopener">原文 · aaccx.pw ↗</a></div>
+              <div class="cw-reader-end"><span>— END OF REPORT · 完 —</span></div>
             </div>
           </div>
         </section>

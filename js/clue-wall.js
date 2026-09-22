@@ -214,7 +214,6 @@
         const store = articles();
         const article = store && store[slug];
         if (!article) return false;
-        const link = `${(data().site || 'https://aaccx.pw')}/blog/${article.slug}`;
         const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
         set('cwArtTitle', article.title);
         set('cwArtMeta', `${article.date} · ${article.readTime}`);
@@ -229,7 +228,6 @@
         }
         const tags = document.getElementById('cwArtTags');
         if (tags) tags.innerHTML = (article.tags || []).map((tag) => `<span class="cw-reader-tag">${escapeHtml(tag)}</span>`).join('');
-        ['cwArtLink', 'cwArtEndLink'].forEach((id) => { const el = document.getElementById(id); if (el) el.href = link; });
         let imgIndex = 0;
         const blocks = document.getElementById('cwArtBlocks');
         if (blocks) {
