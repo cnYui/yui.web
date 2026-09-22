@@ -12,6 +12,12 @@ const {
     isRetiredShopPath
 } = require('./lib/static-public-policy');
 const {
+    RESUME_PDF_FILE_NAME,
+    createAttemptLimiter,
+    resolveResumePassword,
+    verifyResumePassword
+} = require('./lib/resume-download');
+const {
     encryptApiKeyEnvelope,
     hashApiKey,
     keyPreview,
@@ -3471,6 +3477,51 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
                 message: error.message || 'usage event 写入失败。'
             });
         }
+    });
+
+    // 简历 PDF 已从公开静态目录移除，只能经这里校验口令后取回。
+    // 6 位数字口令只有 100 万种组合，必须按来源限流，否则可以直接跑字典。
+    const resumePdfFile = path.join(rootDir, 'files', RESUME_PDF_FILE_NAME);
+    const resumePassword = resolveResumePassword();
+    const resumeLimiter = createAttemptLimiter({ maxFailures: 8, windowMs: 10 * 60 * 1000 });
+
+    app.post('/api/resume/download', (req, res) => {
+        const clientKey = String(req.ip || 'unknown');
+        const gate = resumeLimiter.check(clientKey);
+        if (!gate.allowed) {
+            const retryAfterSeconds = Math.max(1, Math.ceil(gate.retryAfterMs / 1000));
+            res.setHeader('Retry-After', String(retryAfterSeconds));
+            return res.status(429).json({
+                code: 'TOO_MANY_ATTEMPTS',
+                message: '尝试次数过多，请稍后再试。'
+            });
+        }
+
+        const password = req.body && typeof req.body.password === 'string' ? req.body.password : '';
+        if (!verifyResumePassword(password, resumePassword)) {
+            resumeLimiter.recordFailure(clientKey);
+            return res.status(401).json({
+                code: 'INVALID_PASSWORD',
+                message: '密码不正确。'
+            });
+        }
+
+        resumeLimiter.reset(clientKey);
+        if (!fs.existsSync(resumePdfFile)) {
+            return res.status(404).json({
+                code: 'RESUME_FILE_MISSING',
+                message: '简历文件暂时不可用。'
+            });
+        }
+
+        // cacheControl: false 保留上面安全头设的 no-store，避免 express 覆盖成可缓存。
+        return res.sendFile(resumePdfFile, {
+            cacheControl: false,
+            headers: {
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': 'attachment; filename="' + RESUME_PDF_FILE_NAME + '"'
+            }
+        });
     });
 
     app.get(['/shop', '/shop/', '/shop/index.html'], renderShopHomePage);

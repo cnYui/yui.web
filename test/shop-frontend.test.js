@@ -76,11 +76,13 @@ test('公共顶部导航支持 Shop 的中英日翻译', () => {
     assert.match(script, /path === '\/shop' \|\| path\.startsWith\('\/shop\/'\)[\s\S]*return null/);
 });
 
-test('Resume 页面展示公开履历并提供原始 PDF 下载', () => {
+test('Resume 页面展示公开履历并提供密码校验后的 PDF 下载', () => {
     const resume = readFile('resume/index.html');
 
-    assert.match(resume, /href="\/files\/WU_JIANXIANG_resume\.pdf"/);
-    assert.match(resume, /download="WU_JIANXIANG_resume\.pdf"/);
+    // 简历 PDF 改为密码校验后下载，页面只保留触发密码框的按钮。
+    assert.match(resume, /data-resume-download/);
+    assert.match(resume, /\/js\/resume-download\.js/);
+    assert.doesNotMatch(resume, /href="\/files\/WU_JIANXIANG_resume\.pdf"/);
     assert.match(resume, /xiaobianfuai@gmail\.com/);
     assert.match(resume, /University of Fukui/);
     assert.match(resume, /Shandong Jiaotong University/);
