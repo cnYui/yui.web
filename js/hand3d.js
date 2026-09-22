@@ -199,6 +199,11 @@ export function createHand(canvas, opts = {}) {
   let W = 1440, H = 900, k = 1;
   const cur = { x: -9999, y: -9999, r: -40, curl: .12 }, from = { ...cur }, to = { ...cur };
   let t0 = 0, dur = 0, fn = ease.inOut, curlFrom = cur.curl, curlTo = cur.curl, curlT0 = 0, curlDur = 0, raf = 0, fb = 0, active = false, tiltY = .42, tiltX = -.4, wasVisible = null, propsDirty = true, handDirty = false;
+  // 房间（CSS 的 .cw-cam / .cw-drift）还在动吗。只有页面明说在动的时候才继续每帧
+  // 轮询 getComputedStyle 并重绘两个场景；房间停下来之后循环也必须停下来，
+  // 否则一个一动不动的画面要一直烧掉每帧 300 多个 GL 调用。
+  let roomLive = true, liveUntil = 0;
+  const SETTLE_MS = 700;   // 收到"停了"之后再多跟几帧，等 CSS transition 真正落位
   function resize(w, h, scale) {
     W = w; H = h; k = scale;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -286,13 +291,21 @@ export function createHand(canvas, opts = {}) {
       active = onScreen;
     }
     if (propsRenderer && (roomMoved || propsDirty)) { propsDirty = false; propsRenderer.render(propsScene, camera); }
-    if (busy || camEl) kick();
+    if (busy || (camEl && (roomLive || now < liveUntil))) kick();
   }
   return {
     resize, moveTo, setCurl,
     setStyle(s) { style = s; applyStyle(); kick(); },
     setTilt(y) { tiltY = y; kick(); },
     setSceneEls(c, d) { camEl = c; driftEl = d; lastA = ''; lastB = ''; kick(); },
+    // 页面告诉它房间是不是在动：drift 动画在跑、正在拖、或者相机 transition 还没走完。
+    // holdMs 用来盖住一段已知时长的过渡（比如开档案时相机那 1.05 秒）。
+    setRoomLive(live, holdMs) {
+      roomLive = Boolean(live);
+      const hold = Math.max(Number(holdMs) || 0, roomLive ? 0 : SETTLE_MS);
+      liveUntil = Math.max(liveUntil, performance.now() + hold);
+      kick();
+    },
     setPaper(r) { paperRect = r || null; handDirty = true; kick(); },   // 手即将捏起的那张纸（屏幕中心、尺寸、旋转）
     tune(o) { Object.assign(MUL, o.mul || {}); if (o.tiltY !== undefined) tiltY = o.tiltY; if (o.tiltX !== undefined) tiltX = o.tiltX; calibrate(); kick(); },
     hold(h) { if (held && held.anim && !(h && h.el === held.el)) { try { held.anim.cancel(); } catch (_) {} } if (h && held && held.anim && h.el === held.el) h.anim = held.anim; held = h || null; handDirty = true; kick(); },           // 手捏着的纸：{ w, h, ax, ay, r0, r1, s0, s1, el }，每帧驱动
