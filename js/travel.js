@@ -54,7 +54,6 @@ const travelData = [
     { image: '/images/optimized/travel/俯瞰大版.webp', title: 'Osaka Panorama', city: 'Osaka', desc: 'Panoramic city view' },
     { image: '/images/optimized/travel/大阪大学吉祥物.webp', title: 'Osaka University Mascot', city: 'Osaka', desc: 'Cute university mascot' },
     { image: '/images/optimized/travel/大版警察府.webp', title: 'Osaka Police HQ', city: 'Osaka', desc: 'Historic police building' },
-    { image: '/images/optimized/travel/竖起小指吧.webp', title: 'Glico Sign', city: 'Osaka', desc: 'Famous Dotonbori landmark' },
     { image: '/images/optimized/travel/LoveLIve！.webp', title: 'Love Live!', city: 'Osaka', desc: 'Anime collaboration event' },
     { image: '/images/optimized/travel/mygo！！！！！.webp', title: 'MyGO!!!!!', city: 'Osaka', desc: 'BanG Dream collaboration' },
     { image: '/images/optimized/travel/Parco魂系游戏联名店.webp', title: 'Souls Game Store', city: 'Osaka', desc: 'FromSoftware collaboration shop' },
@@ -74,6 +73,9 @@ const travelData = [
     // Yokohama
     { image: '/images/optimized/travel/横国.webp', title: 'Yokohama National University', city: 'Yokohama', desc: 'Prestigious national university' },
     { image: '/images/optimized/travel/横滨某座桥.webp', title: 'Yokohama Waterfront', city: 'Yokohama', desc: 'Scenic harbor area' },
+
+    // Kawasaki
+    { image: '/images/optimized/travel/竖起小指吧.webp', title: 'Kawasaki Nakamise-dori', city: 'Kawasaki', desc: 'Covered arcade street beside Kawasaki Station' },
 
     // Hangzhou
     { image: '/images/optimized/travel/杭师大食堂.webp', title: 'Hangzhou Normal University', city: 'Hangzhou', desc: 'Historic university campus' },
@@ -122,9 +124,9 @@ const gallery = document.getElementById('gallery');
 const loadMoreContainer = document.getElementById('loadMoreContainer');
 const filterButtons = document.querySelectorAll('.filter-btn');
 const cityLabels = {
-    zh: { Tokyo: '东京', Kyoto: '京都', Osaka: '大阪', Nagoya: '名古屋', Hiroshima: '广岛', Yokohama: '横滨', Nara: '奈良', Okinawa: '冲绳', Fukui: '福井', Hangzhou: '杭州', Nanjing: '南京', Beijing: '北京', Food: '美食', Others: '其他' },
-    en: { Tokyo: 'Tokyo', Kyoto: 'Kyoto', Osaka: 'Osaka', Nagoya: 'Nagoya', Hiroshima: 'Hiroshima', Yokohama: 'Yokohama', Nara: 'Nara', Okinawa: 'Okinawa', Fukui: 'Fukui', Hangzhou: 'Hangzhou', Nanjing: 'Nanjing', Beijing: 'Beijing', Food: 'Food', Others: 'Others' },
-    ja: { Tokyo: '東京', Kyoto: '京都', Osaka: '大阪', Nagoya: '名古屋', Hiroshima: '広島', Yokohama: '横浜', Nara: '奈良', Okinawa: '沖縄', Fukui: '福井', Hangzhou: '杭州', Nanjing: '南京', Beijing: '北京', Food: 'グルメ', Others: 'その他' }
+    zh: { Tokyo: '东京', Kyoto: '京都', Osaka: '大阪', Nagoya: '名古屋', Hiroshima: '广岛', Yokohama: '横滨', Kawasaki: '川崎', Nara: '奈良', Okinawa: '冲绳', Fukui: '福井', Hangzhou: '杭州', Nanjing: '南京', Beijing: '北京', Food: '美食', Others: '其他' },
+    en: { Tokyo: 'Tokyo', Kyoto: 'Kyoto', Osaka: 'Osaka', Nagoya: 'Nagoya', Hiroshima: 'Hiroshima', Yokohama: 'Yokohama', Kawasaki: 'Kawasaki', Nara: 'Nara', Okinawa: 'Okinawa', Fukui: 'Fukui', Hangzhou: 'Hangzhou', Nanjing: 'Nanjing', Beijing: 'Beijing', Food: 'Food', Others: 'Others' },
+    ja: { Tokyo: '東京', Kyoto: '京都', Osaka: '大阪', Nagoya: '名古屋', Hiroshima: '広島', Yokohama: '横浜', Kawasaki: '川崎', Nara: '奈良', Okinawa: '沖縄', Fukui: '福井', Hangzhou: '杭州', Nanjing: '南京', Beijing: '北京', Food: 'グルメ', Others: 'その他' }
 };
 const travelJaContent = {
     'Eiheiji Temple': ['永平寺', '2026年9月18日・曹洞宗の大本山。スティーブ・ジョブズやティム・クックも訪れたと言われる'],
@@ -174,7 +176,6 @@ const travelJaContent = {
     'Osaka Panorama': ['大阪パノラマ', '広がる大阪の街並み'],
     'Osaka University Mascot': ['大阪大学マスコット', 'かわいい大学マスコット'],
     'Osaka Police HQ': ['大阪府警本部', '歴史を感じる警察庁舎'],
-    'Glico Sign': ['グリコサイン', '道頓堀の有名なランドマーク'],
     'Love Live!': ['Love Live!', 'アニメコラボイベントの記録'],
     'MyGO!!!!!': ['MyGO!!!!!', 'BanG Dream! コラボの記録'],
     'Souls Game Store': ['ソウル系ゲームショップ', 'FromSoftware コラボショップ'],
@@ -188,6 +189,7 @@ const travelJaContent = {
     'Mountain Top': ['山頂', '宮島の山から見た景色'],
     'Yokohama National University': ['横浜国立大学', '落ち着いた国立大学のキャンパス'],
     'Yokohama Waterfront': ['横浜ウォーターフロント', '港町らしい橋と水辺の景色'],
+    'Kawasaki Nakamise-dori': ['川崎仲見世通り', '川崎駅のそばに続くアーケード商店街'],
     'Hangzhou Normal University': ['杭州師範大学', '歴史ある大学キャンパス'],
     'Hotel near HZNU': ['杭師大近くのホテル', 'キャンパス近くの宿泊先'],
     'Hangzhou Coffee Culture': ['杭州のカフェ文化', '居心地のよいコーヒーショップ'],
