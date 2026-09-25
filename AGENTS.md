@@ -170,3 +170,12 @@
 - `js/clue-data.js` 的 25 条案卷里原本有 11 条 `img: ''`（OpenClaw 飞书插件、南京 OPC、AI 视频/漫画、上海圣诞黑客松、火山引擎 Force、n8n + 小红书、抖音创作者大赛、南客松 S1、TRAE Friends 南京 / 苏州、2025 AdventureX），桌上的案卷只有文字。源图项目页 `js/projects.js` 一直在用，只是没生成线索墙那一档缩略图。
 - 在 `scripts/build-optimized-images.js` 的线索墙任务表里补了这 11 条（640px / q78，和其余案卷图一档），`node scripts/build-optimized-images.js clue-wall` 生成到 `images/optimized/clue-wall/`，合计 364 KB。源图里 `image copy.png` / `image copy 2.png` 这种名字换成了 `douyin-coze.webp` / `xhs-n8n.webp`，与目录里其余 ASCII 文件名一致。
 - `js/clue-data.js` 改了内容，`index.html` 里它的版本号抬到 `?v=20260921-4`（同一天另外几次改动已经把线索墙三个文件抬到 -3，Cloudflare 按 `max-age` 缓存）。图片都是新文件名，不涉及缓存。
+
+## 2026-09-25 /skill/ 自托管 marked 与 /SKILL.md 放行
+
+- `/skill/` 的正文此前一直是空的，两个独立原因：页面从 `cdn.jsdelivr.net` 引 marked，被 `script-src 'self'` 整个挡掉（`window.marked` 始终 undefined）；`/SKILL.md` 又在 `lib/static-public-policy.js` 的 `blockedStaticFiles` 里，`js/skill.js` 的 fetch 必然 404。
+- marked 改为自托管 `js/markdown/marked.umd.js`（v18.0.14，MIT），UMD 包挂 `window.marked`。**新增自托管第三方库时目录不能用 `js/vendor/`**（Cloudflare 拦成 403），也不能放 `js/` 顶层（Tailwind 的 `content` 会扫 `./js/*.js`）；上线前可以直接 `curl` 线上探一个不存在的同前缀路径，404 说明能穿到源站，403 说明被 WAF 拦。
+- `/SKILL.md` 从 `blockedStaticFiles` 挪到 `allowedStaticFiles`：它是写给 agent 读的公开档案，首页和 `/skill/` 都对外链它。`AGENTS.md`、`README.md`、`package.json` 保持屏蔽。`scripts/build-public-dist.js` 也补上了 `SKILL.md`，否则 GitHub Pages 上的 `/skill/` 一样 404。
+- 线上 `/SKILL.md` 一直是 200，因为 cloudflared 把它单独分流给了 nginx `127.0.0.1:8081`，绕开了 yui.web 的白名单——只有本地和 `public-dist` 会暴露这个问题。
+- `test/page-csp.test.js` 原来只校验同源脚本（`url.origin !== baseUrl` 直接 continue），所以漏掉了这个 CDN 标签；现已补上跨域脚本检查，另有 `test/skill-page.test.js` 覆盖 `/skill/` 的渲染链路。
+- 实施记录见 `docs/ai/context/20260925-193013-skill-page-marked-selfhost-and-skill-md-allowlist_CN.md`。

@@ -73,6 +73,23 @@ function cspAllowsInlineScript(directives, kind) {
     return sources.includes("'unsafe-inline'") && !hasNonceOrHash;
 }
 
+// 只覆盖 CSP 里实际会写的源形式：*、'self'、scheme-source（https:）和 host-source（可带 *. 前缀和端口）。
+function cspAllowsScriptUrl(directives, url, pageOrigin) {
+    const sources = directives.get('script-src-elem') || directives.get('script-src') || directives.get('default-src');
+    if (!sources) return true;
+    return sources.some((source) => {
+        if (source === '*') return true;
+        if (source === "'self'") return url.origin === pageOrigin;
+        if (source.startsWith("'")) return false;
+        if (/^[a-z][a-z0-9+.-]*:$/i.test(source)) return url.protocol.toLowerCase() === source.toLowerCase();
+        const [, wildcard, host, port] = source.match(/^(?:[a-z][a-z0-9+.-]*:\/\/)?(\*\.)?([^/:]+)(:\d+|:\*)?/i) || [];
+        if (!host) return false;
+        const hostMatches = wildcard ? url.hostname.endsWith(`.${host.toLowerCase()}`) : url.hostname === host.toLowerCase();
+        if (!hostMatches) return false;
+        return !port || port === ':*' || `:${url.port}` === port;
+    });
+}
+
 before(async () => {
     dbPath = path.join(os.tmpdir(), `yui-page-csp-test-${Date.now()}-${Math.random().toString(16).slice(2)}.sqlite`);
     const created = createShopApp({
@@ -135,6 +152,22 @@ test('公开页面不包含会被 CSP 拦截的内联脚本、事件属性或 ja
             }
         }
         return found;
+    });
+
+    assert.deepEqual(violations, []);
+});
+
+// script-src 'self' 会把 CDN 脚本整个挡掉，页面上只表现为某个全局对象莫名 undefined，
+// 排查成本很高。第三方库必须像 js/three/、js/markdown/ 那样自托管。
+test('公开页面不引用会被 CSP 拦掉的跨域脚本', () => {
+    const violations = pages.flatMap(({ pagePath, csp, html }) => {
+        const directives = parseCsp(csp);
+        const pageOrigin = new URL(`${baseUrl}${pagePath}`).origin;
+        return scriptTags(html)
+            .filter((script) => script.src !== null && isExecutable(script))
+            .map((script) => ({ script, url: new URL(script.src, `${baseUrl}${pagePath}`) }))
+            .filter(({ url }) => !cspAllowsScriptUrl(directives, url, pageOrigin))
+            .map(({ script }) => `${pagePath}: 跨域脚本 ${script.src}`);
     });
 
     assert.deepEqual(violations, []);
