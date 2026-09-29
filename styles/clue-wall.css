@@ -1349,8 +1349,9 @@ body {
     opacity: 0;
 }
 
-/* hand3d 还会在左墙画一个真的书柜，这时候就不要再叠一个 CSS 画的了。 */
-.cw-root.has-hand3d .cw-bookshelf {
+/* hand3d 还会在左墙画一个真的书柜，这时候就不要再叠一个 CSS 画的了。
+   窄屏的 propsOnly 模式没有手但有书柜，所以这里认 has-props3d 而不是 has-hand3d。 */
+.cw-root.has-props3d .cw-bookshelf {
     display: none;
 }
 

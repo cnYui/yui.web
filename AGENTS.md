@@ -170,3 +170,13 @@
 - `js/clue-data.js` 的 25 条案卷里原本有 11 条 `img: ''`（OpenClaw 飞书插件、南京 OPC、AI 视频/漫画、上海圣诞黑客松、火山引擎 Force、n8n + 小红书、抖音创作者大赛、南客松 S1、TRAE Friends 南京 / 苏州、2025 AdventureX），桌上的案卷只有文字。源图项目页 `js/projects.js` 一直在用，只是没生成线索墙那一档缩略图。
 - 在 `scripts/build-optimized-images.js` 的线索墙任务表里补了这 11 条（640px / q78，和其余案卷图一档），`node scripts/build-optimized-images.js clue-wall` 生成到 `images/optimized/clue-wall/`，合计 364 KB。源图里 `image copy.png` / `image copy 2.png` 这种名字换成了 `douyin-coze.webp` / `xhs-n8n.webp`，与目录里其余 ASCII 文件名一致。
 - `js/clue-data.js` 改了内容，`index.html` 里它的版本号抬到 `?v=20260921-4`（同一天另外几次改动已经把线索墙三个文件抬到 -3，Cloudflare 按 `max-age` 缓存）。图片都是新文件名，不涉及缓存。
+
+## 2026-09-29 线索墙移动端只加载道具
+
+- 窄屏（< 900px）和 reduced-motion 以前在 `initHand()` 里被 `skipChoreography()` 整个挡掉，`hand3d.js` 根本不 import，于是手机上桌面道具（马克杯 / 铅笔 / 放大镜）彻底消失、左墙只剩 CSS 书柜。现在改成**只跳过手，道具照建**。
+- 拆分点是流量而不是文件：道具和书柜全是程序化原生几何体，只要 three 核心（187 KB gzip）；`GLTFLoader` + 两个 utils + `.glb`（105 KB gzip）只有手需要。所以 `hand3d.js` 顶部的静态 `import { GLTFLoader }` 改成用到时才动态 import，并新增 `opts.propsOnly`：道具模式不建手的 WebGL 上下文、不进 GLTFLoader 分支，`queueMicrotask` 触发 `onReady`。
+- **新增第三方依赖时注意别再写成静态 import**，否则道具模式会被迫把那 105 KB 拖下来；`test/home-clue-wall.test.js` 现在会断言这一点，也会扫动态 `import()` 的裸导入（原来的正则只匹配 `import ... from`）。
+- CSS 分两个 class：`has-props3d` = 3D 家具就位（`.cw-bookshelf` 让位），`has-hand3d` = 真有一只 3D 手（`.cw-hand` 让位）。道具模式只加前者，别再把书柜的让位规则挂回 `has-hand3d`。
+- 窄 → 宽（把窗口拉宽）会 `dispose()` 后重建成完整模式；宽 → 窄不管，手留着不演。
+- reduced-motion 现在也会拿到静态道具（道具本身无动画）；要改回 CSS 路线就把 `propsOnly` 的判据从 `skipChoreography()` 换成 `stackedQuery.matches`。
+- 实施记录见 `docs/ai/context/20260929-092508-clue-wall-mobile-props-only-3d_CN.md`。

@@ -89,8 +89,9 @@
     let turnTimers = [];
     let opener = null;
     let articlesLoading = false;
-    let hand = null;            // js/hand3d.js 里的 3D 手，加载好之前一直是 null
+    let hand = null;            // js/hand3d.js 里的 3D 场景，加载好之前一直是 null
     let handLoading = false;
+    let handPropsOnly = false;  // true = 只建了桌面道具和书柜，没有手（窄屏、reduced-motion）
     let lastHand = {};          // 上一次同步给 3D 手的状态，避免每帧重复下发
 
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -389,18 +390,40 @@
 
     // 600 KB 出头的 three.js 不该进首屏：等访客第一次碰这面墙（按下、hover 便签或直接开档案）再加载。
     // 加载完成前一直用 SVG 的平面手顶着，加载失败就一直用它。
+    //
+    // 窄屏和 reduced-motion 不演取件动画，所以那只手用不上——但桌上的道具和左墙的书柜是
+    // 同一个模块画的，一起跳过就等于手机上整个房间空着。这里改成只跳过手：propsOnly 模式
+    // 不 import GLTFLoader，也不请求 .glb（约 105 KB gzip），只留 three 核心把道具建起来。
     function initHand() {
-        if (hand || handLoading || !handCanvas || !propsCanvas || skipChoreography()) return;
+        const propsOnly = skipChoreography();
+        // 已经就位的话，只有「道具模式 → 现在需要手」这一种情况要重建（把窄窗口拉宽）。
+        // 反过来（宽变窄）不用管：手留着不演就是了。
+        if (hand && !(handPropsOnly && !propsOnly)) return;
+        if (handLoading || !propsCanvas) return;
+        if (!propsOnly && !handCanvas) return;
+        if (hand) {
+            hand.dispose();
+            hand = null;
+            lastHand = {};
+            root.classList.remove('has-props3d');
+            root.classList.remove('has-hand3d');
+        }
         handLoading = true;
-        import('/js/hand3d.js?v=20260921-1').then((module) => {
-            hand = module.createHand(handCanvas, {
+        handPropsOnly = propsOnly;
+        import('/js/hand3d.js?v=20260929-2').then((module) => {
+            handLoading = false;
+            hand = module.createHand(propsOnly ? null : handCanvas, {
                 propsCanvas,
+                propsOnly,
                 style: 'glove',
-                onReady: () => { root.classList.add('has-hand3d'); render(); },
-                onError: () => { root.classList.remove('has-hand3d'); }
+                // 两个 class 分开：has-props3d 只说明 3D 家具就位（CSS 书柜该让位），
+                // has-hand3d 才说明真有一只 3D 手（SVG 平面手该让位）。
+                onReady: () => { root.classList.add('has-props3d'); if (!propsOnly) root.classList.add('has-hand3d'); render(); },
+                onError: () => { root.classList.remove('has-props3d'); root.classList.remove('has-hand3d'); }
             });
             hand.setSceneEls(cam, drift);
             hand.resize(state.vw, state.vh, state.k);
+            if (propsOnly) return;
             hand.moveTo(state.handPos || restPos(), 0, 'inOut');
             hand.setCurl(state.fingers === 'closed' ? 0.9 : 0.18, 0);
             syncPaper(state.phase);
@@ -412,7 +435,7 @@
 
     // 告诉 3D 手它正伸手去够哪张纸（当遮挡体用），或者正捏着哪张（每帧按捏点驱动）。
     function syncPaper(phase) {
-        if (!hand) return;
+        if (!hand || handPropsOnly) return;
         const { note, land } = state;
         if (!note) { hand.hold(null); hand.setPaper(null); return; }
         const wall = { x: note.x, y: note.y, w: note.w, h: note.h, r: note.r };
@@ -433,12 +456,14 @@
     // 把这一帧的状态差分下发给 3D 手：位置、手指弯曲、视口、以及它该遮挡/捏住哪张纸。
     function syncHand() {
         if (!hand) return;
+        // 视口变化两种模式都要跟：道具和书柜也是按视口尺寸换算位置的。
+        if (lastHand.vw !== state.vw || lastHand.vh !== state.vh) hand.resize(state.vw, state.vh, state.k);
+        if (handPropsOnly) { lastHand = { ...lastHand, vw: state.vw, vh: state.vh }; return; }
         const durations = { reach: 650, carry: 1050, retreat: 600 };
         if (lastHand.handPos !== state.handPos || lastHand.handTrans !== state.handTrans) {
             hand.moveTo(state.handPos || restPos(), durations[state.handTrans] || 0, state.handTrans === 'retreat' ? 'in' : 'inOut');
         }
         if (lastHand.fingers !== state.fingers) hand.setCurl(state.fingers === 'closed' ? 0.9 : 0.18, 220);
-        if (lastHand.vw !== state.vw || lastHand.vh !== state.vh) hand.resize(state.vw, state.vh, state.k);
         if (lastHand.phase !== state.phase) syncPaper(state.phase);
         lastHand = { handPos: state.handPos, handTrans: state.handTrans, fingers: state.fingers, vw: state.vw, vh: state.vh, phase: state.phase };
     }
