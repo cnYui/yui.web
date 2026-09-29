@@ -132,7 +132,12 @@ test('3D 手全部自托管，且只在交互后懒加载', () => {
         assert.ok(fs.existsSync(path.join(rootDir, file)), `缺少 ${file}`);
         // 先去掉注释：GLTFLoader 的 JSDoc 里有 `@three_import ... from 'three/addons/...'` 这种示例。
         const source = readFile(file).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-        for (const [, spec] of source.matchAll(/(?:^|[\s;}])(?:import|export)[^;]*?from\s*['"]([^'"]+)['"]/g)) {
+        const specs = [
+            ...[...source.matchAll(/(?:^|[\s;}])(?:import|export)[^;]*?from\s*['"]([^'"]+)['"]/g)].map(([, s]) => s),
+            // 动态 import() 没有 from，上面那条扫不到，但一样会发请求。
+            ...[...source.matchAll(/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g)].map(([, s]) => s),
+        ];
+        for (const spec of specs) {
             assert.ok(!/^https?:/.test(spec), `${file} 还在从 CDN 引 ${spec}`);
             assert.ok(spec.startsWith('.') || spec.startsWith('/'), `${file} 有裸导入 ${spec}，浏览器没有 import map 解析不了`);
         }
@@ -140,6 +145,43 @@ test('3D 手全部自托管，且只在交互后懒加载', () => {
 
     const glb = fs.readFileSync(path.join(rootDir, 'files/webxr-generic-hand-right.glb'));
     assert.equal(glb.subarray(0, 4).toString('ascii'), 'glTF', '手的模型不是有效的 glb');
+});
+
+// 窄屏和 reduced-motion 不演取件动画，以前连 hand3d.js 都不加载，于是桌上的马克杯、
+// 铅笔、放大镜和左墙的 3D 书柜在手机上全部消失。现在只跳过手，道具照建。
+test('窄屏只建桌面道具，不下载手的 GLTFLoader 和 glb', () => {
+    const wall = readFile('js/clue-wall.js');
+    const hand = readFile('js/hand3d.js');
+    const css = readFile('styles/clue-wall.css');
+
+    // 关键：GLTFLoader 只能是动态 import。写成静态 import 的话，道具模式也会被迫
+    // 下载 GLTFLoader + BufferGeometryUtils + SkeletonUtils（约 105 KB gzip）。
+    assert.ok(
+        !/^\s*import\s[^;]*\sfrom\s*['"][^'"]*GLTFLoader[^'"]*['"]/m.test(hand),
+        'hand3d.js 不能静态 import GLTFLoader，否则道具模式也会把它拖下来'
+    );
+    assert.match(hand, /import\s*\(\s*['"]\/js\/three\/GLTFLoader\.js['"]\s*\)/, 'hand3d.js 应该动态 import GLTFLoader');
+
+    // 道具模式：不建手那块 renderer，也不进 GLTFLoader 分支。
+    assert.match(hand, /wantHand\s*=\s*!opts\.propsOnly/, 'hand3d.js 缺少 propsOnly 开关');
+    assert.match(hand, /const renderer\s*=\s*wantHand\s*\?/, '道具模式不应为手创建 WebGL 上下文');
+
+    // clue-wall.js 不能再用 skipChoreography() 把整个 initHand 挡掉。
+    assert.ok(
+        !/function initHand\(\)\s*\{[^}]*skipChoreography\(\)\s*\)\s*return/.test(wall),
+        'initHand() 不应再被 skipChoreography() 整个挡住，否则手机上没有任何 3D'
+    );
+    assert.match(wall, /propsOnly\s*=\s*skipChoreography\(\)/, 'clue-wall.js 应按 skipChoreography() 决定是否只要道具');
+    assert.match(wall, /createHand\(\s*propsOnly\s*\?\s*null\s*:\s*handCanvas/, '道具模式应该不传手的 canvas');
+
+    // 3D 书柜就位后要把 CSS 画的那个藏掉；道具模式没有 has-hand3d，所以这条规则得认 has-props3d。
+    assert.match(css, /\.cw-root\.has-props3d \.cw-bookshelf\s*\{\s*display:\s*none/, 'CSS 书柜应在 has-props3d 时让位');
+    assert.ok(
+        !/\.cw-root\.has-hand3d \.cw-bookshelf/.test(css),
+        '书柜的让位规则不该只认 has-hand3d，否则窄屏会叠两个书柜'
+    );
+    // SVG 平面手只在真有 3D 手时才让位。
+    assert.match(css, /\.cw-root\.has-hand3d \.cw-hand\s*\{\s*opacity:\s*0/);
 });
 
 // 顶部导航和桌上的档案讲的是同一件事，留一条就够了。

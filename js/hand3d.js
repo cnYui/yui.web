@@ -3,16 +3,21 @@
 // 对应 Claude Design「侦探线索墙个人主页」的 hand3d.js；站点 CSP 是 script-src 'self' / connect-src 'self'，
 // 所以 three.js、GLTFLoader 和手的模型都改成站内自托管（见 js/three/ 与 files/）。
 // 这个模块由 js/clue-wall.js 在第一次取件时才动态 import()，首屏不加载。
+//
+// 桌上的道具和左墙的书柜全是程序化的原生几何体，只依赖 three 核心（约 187 KB gzip）；
+// 只有手要 GLTFLoader + 两个 utils + .glb（另外约 105 KB gzip）。所以 GLTFLoader 是动态
+// import 的：窄屏和 reduced-motion 走 opts.propsOnly，只建道具，那 105 KB 根本不会请求。
 import * as THREE from '/js/three/three.module.min.js';
-import { GLTFLoader } from '/js/three/GLTFLoader.js';
 
 const HAND_URL = '/files/webxr-generic-hand-right.glb';
 const FINGERS = ['index-finger', 'middle-finger', 'ring-finger', 'pinky-finger'];
 const ease = { inOut: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2, out: t => 1 - Math.pow(1 - t, 3), in: t => t * t * t };
 
 export function createHand(canvas, opts = {}) {
+  const wantHand = !opts.propsOnly;
   const mkRenderer = (c) => { const r = new THREE.WebGLRenderer({ canvas: c, alpha: true, antialias: true, premultipliedAlpha: true, preserveDrawingBuffer: true }); r.setClearColor(0x000000, 0); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05; return r; };
-  const renderer = mkRenderer(canvas);
+  // 道具模式下连手那块 canvas 的 WebGL 上下文都不建：手机上少一个上下文就少一份显存。
+  const renderer = wantHand ? mkRenderer(canvas) : null;
   const propsRenderer = opts.propsCanvas ? mkRenderer(opts.propsCanvas) : null;
   const propsScene = new THREE.Scene();
   propsScene.add(new THREE.HemisphereLight(0xffe2b8, 0x2a1a10, 1.1));
@@ -141,7 +146,7 @@ export function createHand(canvas, opts = {}) {
   }
 
   let model = null, joints = {}, curlBones = [], ready = false, meshes = [];
-  new GLTFLoader().load(HAND_URL, (gltf) => {
+  function buildHand(gltf) {
     model = gltf.scene;
     model.traverse(o => { if (o.isMesh) { o.frustumCulled = false; meshes.push(o); } if (o.isBone || o.type === 'Bone' || o.name) joints[o.name] = o; });
     applyStyle();
@@ -191,7 +196,19 @@ export function createHand(canvas, opts = {}) {
       calibrate();
     } else { rig.add(model); }
     ready = true; if (opts.onReady) opts.onReady(); kick();
-  }, undefined, (err) => { if (opts.onError) opts.onError(err); });
+  }
+
+  const fail = (err) => { if (opts.onError) opts.onError(err); };
+  if (wantHand) {
+    // GLTFLoader 会连带引入 BufferGeometryUtils 和 SkeletonUtils；加上 .glb 合计约 105 KB gzip。
+    import('/js/three/GLTFLoader.js')
+      .then(({ GLTFLoader }) => { new GLTFLoader().load(HAND_URL, buildHand, undefined, fail); })
+      .catch(fail);
+  } else {
+    // 道具模式没有模型要等，建完就能上屏。用微任务而不是同步回调，
+    // 好让调用方先拿到返回值、接上 setSceneEls / resize，再收到 onReady。
+    queueMicrotask(() => { ready = true; if (opts.onReady) opts.onReady(); kick(); });
+  }
 
   function applyStyle() { const m = style === 'skin' ? mats.skin : mats.glove; meshes.forEach(o => { o.material = m; }); }
 
@@ -202,7 +219,7 @@ export function createHand(canvas, opts = {}) {
   function resize(w, h, scale) {
     W = w; H = h; k = scale;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    renderer.setPixelRatio(dpr); renderer.setSize(w, h, false); if (propsRenderer) { propsRenderer.setPixelRatio(dpr); propsRenderer.setSize(w, h, false); }
+    if (renderer) { renderer.setPixelRatio(dpr); renderer.setSize(w, h, false); } if (propsRenderer) { propsRenderer.setPixelRatio(dpr); propsRenderer.setSize(w, h, false); }
     camera.aspect = w / h; camera.position.set(0, 0, 1100 * k); camera.fov = 2 * Math.atan(h / (2 * 1100 * k)) * 180 / Math.PI; camera.updateProjectionMatrix(); lastA = ''; lastB = ''; propsDirty = true;
     kick();
   }
@@ -245,8 +262,9 @@ export function createHand(canvas, opts = {}) {
     else cur.curl = curlTo;
     const onScreen = cur.x > -400 * k && cur.x < W + 400 * k && cur.y > -400 * k && cur.y < H + 400 * k;
     const roomMoved = syncRoom();
-    hand.visible = ready && (onScreen || active);
-    if (roomMoved || busy || handDirty || hand.visible !== wasVisible) {
+    hand.visible = Boolean(renderer) && ready && (onScreen || active);
+    // 道具模式下没有手那块 renderer，整段手的排布和渲染都跳过，只留下面的道具渲染。
+    if (renderer && (roomMoved || busy || handDirty || hand.visible !== wasVisible)) {
       wasVisible = hand.visible; handDirty = false;
       const S = 1280 * k, d = 1100 * k;
       let rect = null;
@@ -296,8 +314,8 @@ export function createHand(canvas, opts = {}) {
     setPaper(r) { paperRect = r || null; handDirty = true; kick(); },   // 手即将捏起的那张纸（屏幕中心、尺寸、旋转）
     tune(o) { Object.assign(MUL, o.mul || {}); if (o.tiltY !== undefined) tiltY = o.tiltY; if (o.tiltX !== undefined) tiltX = o.tiltX; calibrate(); kick(); },
     hold(h) { if (held && held.anim && !(h && h.el === held.el)) { try { held.anim.cancel(); } catch (_) {} } if (h && held && held.anim && h.el === held.el) h.anim = held.anim; held = h || null; handDirty = true; kick(); },           // 手捏着的纸：{ w, h, ax, ay, r0, r1, s0, s1, el }，每帧驱动
-    debug() { try { frame(performance.now()); return { ready, cur: { ...cur }, to: { ...to }, W, H, k, frames: renderer.info.render.frame, hv: hand.visible, hp: hand.position.toArray().map(Math.round), wasVisible, active, camEl: !!camEl, bones: curlBones.length, pinch: pinchLocal.toArray().map(v => +v.toFixed(3)), calib: calibLog, mul: { ...MUL }, tips: [+tipA.z.toFixed(1), +tipB.z.toFixed(1)], paper: paper.visible, held: !!held, curl: cur.curl, err: null }; } catch (e) { return { err: String(e && e.stack || e) }; } },
+    debug() { try { frame(performance.now()); return { ready, propsOnly: !wantHand, cur: { ...cur }, to: { ...to }, W, H, k, frames: renderer ? renderer.info.render.frame : -1, hv: hand.visible, hp: hand.position.toArray().map(Math.round), wasVisible, active, camEl: !!camEl, bones: curlBones.length, pinch: pinchLocal.toArray().map(v => +v.toFixed(3)), calib: calibLog, mul: { ...MUL }, tips: [+tipA.z.toFixed(1), +tipB.z.toFixed(1)], paper: paper.visible, held: !!held, curl: cur.curl, err: null }; } catch (e) { return { err: String(e && e.stack || e) }; } },
     get ready() { return ready; },
-    dispose() { cancelAnimationFrame(raf); clearTimeout(fb); renderer.dispose(); if (propsRenderer) propsRenderer.dispose(); }
+    dispose() { cancelAnimationFrame(raf); clearTimeout(fb); if (renderer) renderer.dispose(); if (propsRenderer) propsRenderer.dispose(); }
   };
 }
