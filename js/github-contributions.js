@@ -84,7 +84,6 @@
         const { cells, weeks, first, leading } = buildGrid(days);
         const fragment = document.createDocumentFragment();
         cells.forEach((element) => fragment.appendChild(element));
-        gridEl.style.setProperty('--weeks', String(weeks));
         gridEl.replaceChildren(fragment);
 
         monthsEl.replaceChildren(...monthLabels(first, leading, weeks).map(({ col, text }) => {

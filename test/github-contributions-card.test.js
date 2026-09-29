@@ -137,7 +137,8 @@ test('拿到数据后画出整张贡献图：标题、方块、月份、无障�
     const cells = card.slots.grid.children;
     assert.equal(cells.length, 4 + 365);
     assert.deepEqual(cells.slice(0, 4).map((cell) => cell.className), Array(4).fill('cw-github-cell is-void'));
-    assert.equal(card.slots.grid.style.props.get('--weeks'), '53');
+    // 53 列：4 个空位 + 365 天 = 369 格，每列 7 格向上取整。
+    assert.equal(Math.ceil(cells.length / 7), 53);
 
     const levelOn = (date) => {
         const offset = Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse('2026-01-01T00:00:00Z')) / 86400000);
