@@ -82,6 +82,15 @@ test('页面及其脚本引用的图片都是 images/optimized 下的压缩图',
     assert.deepEqual(problems, []);
 });
 
+test('public-dist 带上 /skill/ 要 fetch 的 SKILL.md', () => {
+    buildPublicDist();
+
+    assert.equal(fs.existsSync(path.join(outDir, 'skill', 'index.html')), true);
+    assert.equal(fs.existsSync(path.join(outDir, 'SKILL.md')), true, '缺少 SKILL.md，/skill/ 正文会 404');
+    // 协作文档不能跟着进公开产物。
+    assert.equal(fs.existsSync(path.join(outDir, 'AGENTS.md')), false);
+});
+
 test('public-dist 不包含暂时下线的动漫、音乐页面及其图片', () => {
     buildPublicDist();
 

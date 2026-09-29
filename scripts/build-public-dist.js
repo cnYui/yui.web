@@ -9,6 +9,8 @@ const entries = [
     'CNAME',
     'custom.geo.json',
     'index.html',
+    // /skill/ 会 fetch /SKILL.md 渲染正文，公开产物里必须带上这份 Markdown。
+    'SKILL.md',
     'blog',
     'files',
     // 页面只引用 images/optimized 下的压缩图，其余 images/ 目录是源图，不打包。
