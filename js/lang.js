@@ -401,60 +401,6 @@
                 relatedArticles: '関連記事'
             }
         },
-        // Skill page specific
-        skill: {
-            zh: {
-                title: 'Yui Intro Skill',
-                brand: 'Yui Skill.',
-                navRawMarkdown: 'Raw Markdown',
-                navPortfolio: '作品集',
-                eyebrowAgent: '可供 agent 读取的档案',
-                eyebrowMarkdown: 'Markdown 实时渲染',
-                statusLoading: '正在加载 /SKILL.md...',
-                statusError: '加载 /SKILL.md 失败:'
-            },
-            en: {
-                title: 'Yui Intro Skill',
-                brand: 'Yui Skill.',
-                navRawMarkdown: 'Raw Markdown',
-                navPortfolio: 'Portfolio',
-                eyebrowAgent: 'Agent-readable profile',
-                eyebrowMarkdown: 'Markdown rendered live',
-                statusLoading: 'Loading /SKILL.md...',
-                statusError: 'Failed to load /SKILL.md:'
-            },
-            ja: {
-                title: 'Yui Intro Skill',
-                brand: 'Yui スキル.',
-                navRawMarkdown: 'Raw Markdown',
-                navPortfolio: 'ポートフォリオ',
-                eyebrowAgent: 'エージェントが読めるプロフィール',
-                eyebrowMarkdown: 'Markdown をライブレンダリング',
-                statusLoading: '/SKILL.md を読み込み中...',
-                statusError: '/SKILL.md の読み込みに失敗しました:'
-            }
-        },
-        // Notfound page specific
-        notfound: {
-            zh: {
-                title: '404 - 页面未找到',
-                heading: '页面未找到',
-                description: '抱歉，您访问的页面不存在。',
-                homeLink: '返回首页'
-            },
-            en: {
-                title: '404 - Page Not Found',
-                heading: 'Page Not Found',
-                description: 'Sorry, the page you are looking for does not exist.',
-                homeLink: 'Return home'
-            },
-            ja: {
-                title: '404 - ページが見つかりません',
-                heading: 'ページが見つかりません',
-                description: '申し訳ありません、お探しのページは存在しません。',
-                homeLink: 'ホームに戻る'
-            }
-        },
         // Music page specific
         music: {
             zh: {
@@ -860,6 +806,7 @@
                 footerText: '© 2026 アニメコレクション.'
             }
         },
+        // Notfound page specific
         notfound: {
             zh: {
                 title: '404 - 页面未找到',
@@ -880,6 +827,7 @@
                 backHome: 'ホームへ戻る'
             }
         },
+        // Skill page specific
         skill: {
             zh: {
                 title: 'Yui Intro Skill',

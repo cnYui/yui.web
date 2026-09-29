@@ -170,3 +170,10 @@
 - `js/clue-data.js` 的 25 条案卷里原本有 11 条 `img: ''`（OpenClaw 飞书插件、南京 OPC、AI 视频/漫画、上海圣诞黑客松、火山引擎 Force、n8n + 小红书、抖音创作者大赛、南客松 S1、TRAE Friends 南京 / 苏州、2025 AdventureX），桌上的案卷只有文字。源图项目页 `js/projects.js` 一直在用，只是没生成线索墙那一档缩略图。
 - 在 `scripts/build-optimized-images.js` 的线索墙任务表里补了这 11 条（640px / q78，和其余案卷图一档），`node scripts/build-optimized-images.js clue-wall` 生成到 `images/optimized/clue-wall/`，合计 364 KB。源图里 `image copy.png` / `image copy 2.png` 这种名字换成了 `douyin-coze.webp` / `xhs-n8n.webp`，与目录里其余 ASCII 文件名一致。
 - `js/clue-data.js` 改了内容，`index.html` 里它的版本号抬到 `?v=20260921-4`（同一天另外几次改动已经把线索墙三个文件抬到 -3，Cloudflare 按 `max-age` 缓存）。图片都是新文件名，不涉及缓存。
+
+## 2026-09-29 js/lang.js 翻译 section 去重
+
+- `js/lang.js` 的 `translations` 里 `skill` 和 `notfound` 各被声明了两次，先写的那份被后写的覆盖，是永远读不到的死代码；已删掉先写的两份，生效的那份不变（`skill` 用 `rawMarkdown` / `portfolio` / `eyebrowPrimary` / `eyebrowSecondary` / `loading` / `loadError`，`notfound` 用 `backHome`）。
+- 新增 `test/lang-translations.test.js`：同一层对象里 key 重复会报错并给出双方文件行号；skill 与 404 页面的 `data-i18n` key 必须在 zh/en/ja 都有；全站 HTML 引用 `/js/lang.js` 的 `?v=` 必须都带且只能有一种取值。以后改翻译表不要再靠肉眼查重复。
+- 本次 `/js/lang.js` 的缓存版本号从 `?v=20260921-7` 抬到 `?v=20260929-1`，15 个页面一起改；`travel/index.html` 里 `travel.js` 也叫 `?v=20260921-7`，那个没动。
+- 实施记录见 `docs/ai/context/20260929-091549-lang-duplicate-translation-sections-cleanup_CN.md`。
