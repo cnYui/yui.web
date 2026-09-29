@@ -17,6 +17,7 @@ const {
     resolveResumePassword,
     verifyResumePassword
 } = require('./lib/resume-download');
+const { createContributionsService } = require('./lib/github-contributions');
 const {
     encryptApiKeyEnvelope,
     hashApiKey,
@@ -3479,6 +3480,33 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         }
     });
 
+    // 首页线索墙上的 GitHub 贡献图。页面 CSP 是 connect-src 'self'，浏览器不能直连 GitHub，
+    // 所以由服务端从 GitHub 公开页面拉取、缓存 15 分钟，前端只读这一个接口（无需登录，只读公开数据）。
+    // 路径同样要落在 cloudflared 转发给本服务的前缀下，挂在 /files/ 下且不带扩展名
+    // （带 .json 会被 scripts/check-static-assets.js 当成缺失的静态文件）。
+    const githubContributions = createContributionsService({
+        login: options.githubContributionsLogin ?? process.env.GITHUB_CONTRIBUTIONS_LOGIN,
+        ttlMs: options.githubContributionsTtlMs ?? process.env.GITHUB_CONTRIBUTIONS_TTL_MS,
+        fetchImpl: options.githubContributionsFetch,
+        warn: options.githubContributionsWarn,
+        now: options.now
+    });
+
+    app.get('/files/github-contributions', async (req, res) => {
+        try {
+            const snapshot = await githubContributions.get();
+            // 数据是旧的（GitHub 暂时拉不到）时缩短缓存，恢复后能尽快换上新的。
+            res.setHeader('Cache-Control', snapshot.stale ? 'public, max-age=60' : 'public, max-age=300');
+            return res.json(snapshot);
+        } catch (error) {
+            res.setHeader('Cache-Control', 'no-store');
+            return res.status(503).json({
+                code: 'GITHUB_CONTRIBUTIONS_UNAVAILABLE',
+                message: 'GitHub 贡献数据暂时不可用。'
+            });
+        }
+    });
+
     // 简历 PDF 已从公开静态目录移除，只能经这里校验口令后取回。
     // 路径必须挂在 /resume/ 下：cloudflared 的 ingress 只把固定几个前缀转发给本服务，
     // /api/ 会被转发到 Sub2API，放在那里公网会 404（2026-09-22 实测过）。
@@ -3551,14 +3579,16 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
         res.status(404).sendFile(path.join(rootDir, '404.html'));
     });
 
-    return { app, db, dbPath, usageImporter };
+    return { app, db, dbPath, usageImporter, githubContributions };
 }
 
 if (require.main === module) {
-    const { app } = createShopApp();
+    const { app, githubContributions } = createShopApp();
     const port = Number(process.env.PORT || 4173);
     app.listen(port, () => {
         console.log(`Yui web shop server listening on http://localhost:${port}`);
+        // 提前拉一次，第一个访客就不用等 GitHub；失败只记日志，之后由请求触发重试。
+        githubContributions.get().catch(() => {});
     });
 }
 
