@@ -9,10 +9,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Special+Elite&amp;family=Ma+Shan+Zheng&amp;family=Noto+Serif+SC:wght@400;600&amp;display=swap" rel="stylesheet">
-  <link href="/styles/clue-wall.css?v=20260922-2" rel="stylesheet">
+  <link href="/styles/clue-wall.css?v=20260929-1" rel="stylesheet">
   <script src="/js/clue-data.js?v=20260922-2" defer></script>
   <script src="/js/clue-wall.js?v=20260922-2" defer></script>
   <script src="/js/resume-download.js?v=20260922-3" defer></script>
+  <script src="/js/github-contributions.js?v=20260929-1" defer></script>
 </head>
 <body>
 <div class="cw-root" id="clueWall">
@@ -151,12 +152,29 @@
                 <div class="cw-redact cw-redact--2"></div>
               </div>
 
+              <!-- 墙上钉着的一张 GitHub 贡献图。纯展示：不是 .cw-card，没有点击、焦点和取件动画；
+                   数据由 js/github-contributions.js 从 /files/github-contributions 取来填入，取不到就一直透明。 -->
+              <div class="cw-github" id="cwGithub" aria-hidden="true">
+                <span class="cw-pin cw-pin--blue cw-github-pin--left"></span>
+                <span class="cw-pin cw-pin--blue cw-github-pin--right"></span>
+                <div class="cw-github-head" data-gh="title"></div>
+                <div class="cw-github-graph">
+                  <div class="cw-github-months" data-gh="months"></div>
+                  <div class="cw-github-days"><span style="--row:1">Mon</span><span style="--row:3">Wed</span><span style="--row:5">Fri</span></div>
+                  <div class="cw-github-grid" data-gh="grid"></div>
+                </div>
+                <div class="cw-github-foot">
+                  <span data-gh="source"></span>
+                  <span class="cw-github-legend">Less<i data-level="0"></i><i data-level="1"></i><i data-level="2"></i><i data-level="3"></i><i data-level="4"></i>More</span>
+                </div>
+              </div>
+
               <svg class="cw-strings" viewBox="0 0 1700 880" preserveAspectRatio="none" aria-hidden="true">
                 <g class="cw-strings-shadow" transform="translate(3,6)">
-                  <path d="M850 95 Q575 160 300 150"></path><path d="M850 95 Q1120 130 1390 92"></path><path d="M850 95 Q520 380 280 612"></path><path d="M850 95 Q1230 330 1525 532"></path><path d="M850 95 Q660 340 515 545"></path><path d="M850 95 Q1060 360 1210 575"></path><path d="M850 95 Q1000 220 1130 300"></path><path d="M300 150 Q260 390 280 612"></path><path d="M1390 92 Q1490 320 1525 532"></path><path d="M1005 545 Q1110 590 1210 575"></path>
+                  <path d="M850 95 Q575 160 300 150"></path><path d="M850 95 Q1120 130 1390 92"></path><path d="M850 95 Q520 380 280 612"></path><path d="M850 95 Q1230 320 1525 464"></path><path d="M850 95 Q660 340 515 545"></path><path d="M850 95 Q1060 345 1210 507"></path><path d="M850 95 Q1000 220 1130 300"></path><path d="M300 150 Q260 390 280 612"></path><path d="M1390 92 Q1490 300 1525 464"></path><path d="M1005 545 Q1110 565 1210 507"></path>
                 </g>
                 <g class="cw-strings-red">
-                  <path d="M850 95 Q575 160 300 150"></path><path d="M850 95 Q1120 130 1390 92"></path><path d="M850 95 Q520 380 280 612"></path><path d="M850 95 Q1230 330 1525 532"></path><path d="M850 95 Q660 340 515 545"></path><path d="M850 95 Q1060 360 1210 575"></path><path d="M850 95 Q1000 220 1130 300"></path><path d="M300 150 Q260 390 280 612"></path><path d="M1390 92 Q1490 320 1525 532"></path><path d="M1005 545 Q1110 590 1210 575"></path>
+                  <path d="M850 95 Q575 160 300 150"></path><path d="M850 95 Q1120 130 1390 92"></path><path d="M850 95 Q520 380 280 612"></path><path d="M850 95 Q1230 320 1525 464"></path><path d="M850 95 Q660 340 515 545"></path><path d="M850 95 Q1060 345 1210 507"></path><path d="M850 95 Q1000 220 1130 300"></path><path d="M300 150 Q260 390 280 612"></path><path d="M1390 92 Q1490 300 1525 464"></path><path d="M1005 545 Q1110 565 1210 507"></path>
                 </g>
               </svg>
 
@@ -164,8 +182,8 @@
               <span class="cw-pin cw-pin--red" style="left:300px; top:150px"></span>
               <span class="cw-pin cw-pin--red" style="left:1390px; top:92px"></span>
               <span class="cw-pin cw-pin--red" style="left:280px; top:612px"></span>
-              <span class="cw-pin cw-pin--red" style="left:1525px; top:532px"></span>
-              <span class="cw-pin cw-pin--red" style="left:1210px; top:575px"></span>
+              <span class="cw-pin cw-pin--red" style="left:1525px; top:464px"></span>
+              <span class="cw-pin cw-pin--red" style="left:1210px; top:507px"></span>
               <span class="cw-pin cw-pin--red" style="left:1130px; top:300px"></span>
               <span class="cw-pin cw-pin--blue" style="left:515px; top:545px"></span>
               <span class="cw-pin cw-pin--blue" style="left:1005px; top:545px"></span>

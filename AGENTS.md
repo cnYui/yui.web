@@ -170,3 +170,14 @@
 - `js/clue-data.js` 的 25 条案卷里原本有 11 条 `img: ''`（OpenClaw 飞书插件、南京 OPC、AI 视频/漫画、上海圣诞黑客松、火山引擎 Force、n8n + 小红书、抖音创作者大赛、南客松 S1、TRAE Friends 南京 / 苏州、2025 AdventureX），桌上的案卷只有文字。源图项目页 `js/projects.js` 一直在用，只是没生成线索墙那一档缩略图。
 - 在 `scripts/build-optimized-images.js` 的线索墙任务表里补了这 11 条（640px / q78，和其余案卷图一档），`node scripts/build-optimized-images.js clue-wall` 生成到 `images/optimized/clue-wall/`，合计 364 KB。源图里 `image copy.png` / `image copy 2.png` 这种名字换成了 `douyin-coze.webp` / `xhs-n8n.webp`，与目录里其余 ASCII 文件名一致。
 - `js/clue-data.js` 改了内容，`index.html` 里它的版本号抬到 `?v=20260921-4`（同一天另外几次改动已经把线索墙三个文件抬到 -3，Cloudflare 按 `max-age` 缓存）。图片都是新文件名，不涉及缓存。
+
+## 2026-09-29 首页线索墙 GitHub 贡献图
+
+- 首页软木板右下角新增一张只展示的 GitHub 贡献图（`#cwGithub`，样式 `.cw-github`）：不是 `.cw-card`，没有点击、悬停、聚焦，整张 `pointer-events: none`；数据到达前保持透明，取不到数据时一直不显示，墙面其余部分不受影响。
+- 数据流：`js/github-contributions.js` 读 `GET /files/github-contributions`（`server.js`），由 `lib/github-contributions.js` 从 GitHub 公开页面 `https://github.com/users/<login>/contributions?from=<年>-01-01&to=<年>-12-31` 拉取并解析，服务端内存缓存 15 分钟；拉取失败时继续给旧数据（响应带 `stale: true`），从没成功过返回 503（前端保持隐藏）。前端每 30 分钟刷新一次，页面在后台时不请求。年份取服务器本地时间的当年，跨年自动换成新一年（年初几周图会很空，属预期）。
+- 页面 CSP 是 `connect-src 'self'`，浏览器不能直连 GitHub；接口路径也不能放 `/api/`：cloudflared 只把 `files|styles|js|blog|music|anime|travel|projects|resume|skill|shop` 转给本服务，所以挂在 `/files/` 下，并且不带 `.json` 扩展名，否则 `scripts/check-static-assets.js` 会把它当成缺失的静态文件。
+- 公开页面只含公开仓库的贡献：2026-09-29 实测 1,227，而账号主人登录后看到 1,741，差的 514 次来自私有仓库（用截图逐格比对过，365 格里 311 格完全一致，其余是等级刻度随总数移动和私有活动造成的）。想让看板和本人看到的一致，在 GitHub 个人主页的 Contribution settings 里勾选 “Private contributions”（以匿名计数显示），代码和服务器都不用改；不要为此把个人 token 放进服务器。
+- 可选环境变量：`GITHUB_CONTRIBUTIONS_LOGIN`（默认 `cnYui`）、`GITHUB_CONTRIBUTIONS_TTL_MS`（默认 900000）。用户名只接受合法的 GitHub 登录名，写错会退回默认并打一条警告。
+- 为给卡片腾位置，履历卡上移到 y=452、高度从 270 缩到 250，拍立得上移到 y=500，两者的红线终点与图钉（`index.html` 里 `1525 464`、`1210 507`）同步上移 68px；贡献图卡片钉在软木板右下角 (1096, 722)、宽 584，压住拍立得的下巴。软木板这一带已经没有空位，再往上加东西先看布局。
+- 测试：`lib/github-contributions.test.js`（解析与缓存）、`test/github-contributions-endpoint.test.js`（接口与隧道前缀）、`test/github-contributions-card.test.js`（卡片在假 DOM 里的行为与“只展示”约束），仿 GitHub 的假 HTML 由 `test/helpers/github-calendar-fixture.js` 生成。
+- `index.html` 里 `clue-wall.css` 与新脚本的版本号都是 `?v=20260929-1`；改这两个文件时先看线上已经请求过哪些版本号，别复用。
