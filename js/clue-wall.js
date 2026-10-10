@@ -274,7 +274,7 @@
         if (articlesLoading) return;
         articlesLoading = true;
         const sources = [];
-        if (!articles()) sources.push('/js/blog-articles.js?v=20261010-1');
+        if (!articles()) sources.push('/js/blog-articles.js?v=20261010-3');
         if (needPack) sources.push(`/js/blog-articles.${lang.lang}.js?v=${ARTICLES_VERSION}`);
         let pending = sources.length;
         const settle = () => {
