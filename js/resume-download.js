@@ -16,6 +16,52 @@
     var lastFocused = null;
     var busy = false;
 
+    // 对话框文案按页面语言（<html lang>）取：首页线索墙由 js/clue-i18n.js 维护 lang，/resume/ 页由 js/lang.js 维护。
+    // 这个脚本两个页面共用，所以词典放在这里，不依赖任何一边的词典。
+    var TEXT = {
+        zh: {
+            stamp: '机密 · CONFIDENTIAL', title: '输入密码 · PASSCODE', hint: '下载简历 PDF 需要 {n} 位数字密码。',
+            aria: '密码 PASSCODE', cancel: '取消 · CANCEL', submit: '下载 · DOWNLOAD', checking: '校验中 · CHECKING',
+            needDigits: '请输入 {n} 位数字密码。', wrong: '密码不正确，请重试。', tooMany: '尝试次数过多，请稍后再试。',
+            failed: '下载失败（{status}），请稍后再试。', network: '网络异常，请稍后再试。'
+        },
+        en: {
+            stamp: 'CONFIDENTIAL', title: 'ENTER PASSCODE', hint: 'Downloading the resume PDF requires a {n}-digit passcode.',
+            aria: 'Passcode', cancel: 'CANCEL', submit: 'DOWNLOAD', checking: 'CHECKING…',
+            needDigits: 'Please enter the {n}-digit passcode.', wrong: 'Incorrect passcode. Please try again.', tooMany: 'Too many attempts. Please try again later.',
+            failed: 'Download failed ({status}). Please try again later.', network: 'Network error. Please try again later.'
+        },
+        ja: {
+            stamp: '機密 · CONFIDENTIAL', title: 'パスコード入力 · PASSCODE', hint: '履歴書 PDF のダウンロードには {n} 桁の数字のパスコードが必要です。',
+            aria: 'パスコード', cancel: 'キャンセル · CANCEL', submit: 'ダウンロード · DOWNLOAD', checking: '確認中 · CHECKING',
+            needDigits: '{n} 桁の数字のパスコードを入力してください。', wrong: 'パスコードが正しくありません。もう一度お試しください。', tooMany: '試行回数が多すぎます。しばらくしてからお試しください。',
+            failed: 'ダウンロードに失敗しました（{status}）。しばらくしてからお試しください。', network: 'ネットワークエラーです。しばらくしてからお試しください。'
+        }
+    };
+
+    function pageLang() {
+        var lang = String(document.documentElement.lang || '').toLowerCase();
+        if (lang.indexOf('ja') === 0) return 'ja';
+        if (lang.indexOf('en') === 0) return 'en';
+        return 'zh';
+    }
+
+    function t(key, params) {
+        var value = TEXT[pageLang()][key];
+        var all = { n: PASSCODE_LENGTH };
+        if (params) for (var name in params) all[name] = params[name];
+        return String(value).replace(/\{(\w+)\}/g, function (match, name) { return name in all ? all[name] : match; });
+    }
+
+    // 对话框只建一次，但每次打开时按当时的页面语言重写一遍文案（打开前访客可能切过语言）。
+    function applyText() {
+        if (!overlay) return;
+        var nodes = overlay.querySelectorAll('[data-rdl]');
+        for (var i = 0; i < nodes.length; i += 1) nodes[i].textContent = t(nodes[i].getAttribute('data-rdl'));
+        input.setAttribute('aria-label', t('aria'));
+        if (!busy) submitBtn.textContent = t('submit');
+    }
+
     // 站点 CSP 是 style-src 'self' 'unsafe-inline'，注入 <style> 是允许的；
     // 放在脚本里而不是两份 CSS 里，首页和简历页才不会各写一套。
     function ensureStyle() {
@@ -44,6 +90,7 @@
             'background:#2a1d12;color:#f2e8d0;box-shadow:0 3px 6px rgba(0,0,0,.3)}',
             '.rdl-btn--ghost{background:transparent;color:#6a5238;border:1px solid rgba(90,60,30,.45);box-shadow:none}',
             '.rdl-btn[disabled]{opacity:.55;cursor:default}',
+            '.rdl-card:lang(ja){font-family:"Special Elite","Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif CJK JP",serif}',
             '@media (prefers-reduced-motion:reduce){.rdl-card{transform:none}}'
         ].join('');
         document.head.appendChild(style);
@@ -56,16 +103,16 @@
         overlay.hidden = true;
         overlay.innerHTML = [
             '<div class="rdl-card" role="dialog" aria-modal="true" aria-labelledby="rdlTitle">',
-            '<span class="rdl-stamp">机密 · CONFIDENTIAL</span>',
-            '<h2 class="rdl-title" id="rdlTitle">输入密码 · PASSCODE</h2>',
-            '<p class="rdl-hint">下载简历 PDF 需要 ' + PASSCODE_LENGTH + ' 位数字密码。</p>',
+            '<span class="rdl-stamp" data-rdl="stamp"></span>',
+            '<h2 class="rdl-title" id="rdlTitle" data-rdl="title"></h2>',
+            '<p class="rdl-hint" data-rdl="hint"></p>',
             '<form class="rdl-form" novalidate>',
             '<input class="rdl-input" type="password" inputmode="numeric" autocomplete="off" ',
-            'maxlength="' + PASSCODE_LENGTH + '" aria-label="密码 PASSCODE">',
+            'maxlength="' + PASSCODE_LENGTH + '">',
             '<p class="rdl-error" role="alert" hidden></p>',
             '<div class="rdl-actions">',
-            '<button type="button" class="rdl-btn rdl-btn--ghost" data-rdl-cancel>取消 · CANCEL</button>',
-            '<button type="submit" class="rdl-btn" data-rdl-submit>下载 · DOWNLOAD</button>',
+            '<button type="button" class="rdl-btn rdl-btn--ghost" data-rdl-cancel data-rdl="cancel"></button>',
+            '<button type="submit" class="rdl-btn" data-rdl-submit></button>',
             '</div>',
             '</form>',
             '</div>'
@@ -105,7 +152,7 @@
         busy = value;
         if (submitBtn) {
             submitBtn.disabled = value;
-            submitBtn.textContent = value ? '校验中 · CHECKING' : '下载 · DOWNLOAD';
+            submitBtn.textContent = value ? t('checking') : t('submit');
         }
         if (input) input.disabled = value;
     }
@@ -117,6 +164,7 @@
         input.value = '';
         showError('');
         setBusy(false);
+        applyText();
         input.focus();
     }
 
@@ -143,7 +191,7 @@
         if (busy) return;
         var password = (input.value || '').trim();
         if (password.length !== PASSCODE_LENGTH) {
-            showError('请输入 ' + PASSCODE_LENGTH + ' 位数字密码。');
+            showError(t('needDigits'));
             input.focus();
             return;
         }
@@ -163,22 +211,22 @@
             }
             if (response.status === 401) {
                 setBusy(false);
-                showError('密码不正确，请重试。');
+                showError(t('wrong'));
                 input.value = '';
                 input.focus();
                 return null;
             }
             if (response.status === 429) {
                 setBusy(false);
-                showError('尝试次数过多，请稍后再试。');
+                showError(t('tooMany'));
                 return null;
             }
             setBusy(false);
-            showError('下载失败（' + response.status + '），请稍后再试。');
+            showError(t('failed', { status: response.status }));
             return null;
         }).catch(function () {
             setBusy(false);
-            showError('网络异常，请稍后再试。');
+            showError(t('network'));
         });
     }
 

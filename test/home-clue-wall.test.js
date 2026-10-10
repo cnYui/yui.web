@@ -30,7 +30,7 @@ test('首页线索墙加载独立样式、档案数据和交互脚本', () => {
     assert.ok(html.indexOf('/js/clue-data.js') < html.indexOf('/js/clue-wall.js'), '档案数据必须先于交互脚本加载');
     // 文章正文有 60+ KB，首屏不该同步加载，由 clue-wall.js 在点开文章时按需插入。
     assert.ok(!/<script src="\/js\/blog-articles\.js/.test(html), 'blog-articles.js 不应在首页同步加载');
-    assert.match(readFile('js/clue-wall.js'), /script\.src = '\/js\/blog-articles\.js\?v=[^']+'/);
+    assert.match(readFile('js/clue-wall.js'), /'\/js\/blog-articles\.js\?v=[^']+'/);
 });
 
 test('墙上每张便签都能打开对应档案，每份档案都有便签入口和标题', () => {
@@ -41,7 +41,8 @@ test('墙上每张便签都能打开对应档案，每份档案都有便签入�
     assert.deepEqual([...cardSections].sort(), SECTIONS);
     assert.deepEqual(fileSections.map((match) => match[1]).sort(), SECTIONS);
     for (const [, file, titleId] of fileSections) {
-        assert.match(html, new RegExp(`<h2 class="cw-file-title" id="${titleId}">`), `${file} 档案缺少标题 ${titleId}`);
+        // 标题上还带着 data-i18n，所以 id 后面不一定紧跟 >。
+        assert.match(html, new RegExp(`<h2 class="cw-file-title" id="${titleId}"[ >]`), `${file} 档案缺少标题 ${titleId}`);
     }
 });
 

@@ -181,3 +181,14 @@
 - 为给卡片腾位置，履历卡上移到 y=452、高度从 270 缩到 250，拍立得上移到 y=500，两者的红线终点与图钉（`index.html` 里 `1525 464`、`1210 507`）同步上移 68px；贡献图卡片钉在软木板右下角 (1096, 722)、宽 584，压住拍立得的下巴。软木板这一带已经没有空位，再往上加东西先看布局。
 - 测试：`lib/github-contributions.test.js`（解析与缓存）、`test/github-contributions-endpoint.test.js`（接口与隧道前缀）、`test/github-contributions-card.test.js`（卡片在假 DOM 里的行为与“只展示”约束），仿 GitHub 的假 HTML 由 `test/helpers/github-calendar-fixture.js` 生成。
 - `index.html` 里 `clue-wall.css` 与新脚本的版本号都是 `?v=20260929-1`；改这两个文件时先看线上已经请求过哪些版本号，别复用。
+
+## 2026-10-10 首页线索墙三语（中 / 英 / 日）
+
+- 子页面本来就有三语（`js/lang.js`）；本次补的是首页线索墙。右上角工具栏新增分段切换器 `中文 · EN · 日本語`，层级高于桌上的档案，读档案时也能直接切；窄屏档案铺满屏幕时环境音按钮收起，只留语言切换。
+- 语言取值：存储里的选择 → 浏览器语言（`zh*` / `ja*`，其余英文）。存储 key 是 `yui-portfolio-lang`，和子页面共用；检测结果不写回存储，只有点切换器才写。子页面首次访问（没存过语言）仍默认英文，首页按浏览器语言判断，两边的默认值没有统一。
+- 文件：`js/clue-lang-init.js`（`<head>` 里第一个同步脚本，首屏前定语言，非中文先藏墙，CSS 有 1.5 秒兜底）、`js/clue-i18n.js`（词典 + 引擎）、`js/blog-articles.en.js` / `.ja.js`（文章译文包，切到该语言后点开文章才加载）、`test/home-i18n.test.js`。
+- `index.html` 里写的仍是中文（无脚本 / 爬虫看到的版本），节点带 `data-i18n="键"`；词典 `TEXT` 里每个键同时写 zh / en / ja，测试会校验 HTML 中文和词典 zh 逐字一致。改首页文案要两边一起改，别只改 HTML。`js/clue-data.js` 仍是中文，英日文按下标写在 `DATA.en` / `DATA.ja`，新增项目 / 照片 / 文章卡片要同一下标补译文。
+- 博客文章正文：有英日译文的（文章页 `js/blog-<slug>.js` 的 `articleLocales`）用译文，没有的退回中文并在稿纸顶上提示；`node scripts/build-blog-articles.js` 现在一次生成中 / 英 / 日三个文件。
+- 衬线体 `'Noto Serif SC'` 在 `styles/clue-wall.css` 里只在 `--cw-serif` 定义一处，日文时换成本机日文明朝体；别再往样式里写死这个字体名（测试会拦）。
+- `js/resume-download.js`（首页和 `/resume/` 共用的口令对话框）现在自带三语词典，按 `<html lang>` 取词；两个页面引用它的 `?v=` 必须一致（`resume/index.html` 也要跟着改）。
+- 实施记录见 `docs/ai/context/20261010-160500-clue-wall-i18n-en-ja-implementation_CN.md`。
