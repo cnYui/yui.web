@@ -20,10 +20,12 @@
     const DESK_TILT = 64;
     const PINCH = { ax: -0.15, ay: 0.38 };
 
-    const CAT_LABELS = { award: '获奖 AWARD', hackathon: '黑客松 HACKATHON', meetup: '聚会 MEETUP', project: '项目 PROJECT' };
     // 行踪照片转正方向后更新版本号，避开浏览器与 Cloudflare 对同名旧图的 7 天缓存。
     const TRAVEL_IMG_VERSION = '20260921-1';
+    // 文章译文包（js/blog-articles.en.js / .ja.js）的版本号；改了内容就跟着换，避开 7 天缓存。
+    const ARTICLES_VERSION = '20261010-2';
     // 手里举着的封面长什么样，取决于被取下来的是哪张便签，而不只是哪个档案。
+    // 这里的中文是兜底（也是 zh 词典的来源，测试会核对）；英文 / 日文在 js/clue-i18n.js 的 cover.<名>.file / title / sub。
     const COVERS = {
         about: { file: 'FILE 01 · 关于我', title: '谁是悠一？', sub: 'WHO IS YUI?', bg: 'linear-gradient(135deg,#cfae7c,#bb955f 55%,#caa877)', fg: '#2a1d12' },
         aboutPortrait: { file: 'FILE 01 · 关于我', title: '主角 · 悠一 Yui', sub: 'SUBJECT · AI NATIVE DEVELOPER', bg: '#f2ede2', fg: '#2a1d12' },
@@ -89,7 +91,8 @@
     let turnTimers = [];
     let opener = null;
     let articlesLoading = false;
-    let hand = null;            // js/hand3d.js 里的 3D 手，加载好之前一直是 null
+    let articleWaiters = [];
+    let hand = null;           // js/hand3d.js 里的 3D 手，加载好之前一直是 null
     let handLoading = false;
     let lastHand = {};          // 上一次同步给 3D 手的状态，避免每帧重复下发
 
@@ -99,7 +102,10 @@
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     })[char]);
 
-    function data() { return window.YuiClueData || {}; }
+    // 多语言由 js/clue-i18n.js 提供：data() 是套好当前语言的档案数据，t() 取脚本里渲染的文案。
+    function i18n() { return window.YuiClueI18n || null; }
+    function data() { const lang = i18n(); return (lang && lang.data()) || window.YuiClueData || {}; }
+    function t(key, params) { const lang = i18n(); return lang ? lang.t(key, params) : key; }
     function articles() { return window.YuiArticles || null; }
 
     function setList(name, html) {
@@ -127,6 +133,13 @@
         )).join(''));
     }
 
+    // 分类标签按 cat.<id> 取词；数据里出现词典没有的分类时直接显示 id，不显示成键名。
+    function categoryLabel(cat) {
+        const key = `cat.${cat}`;
+        const lang = i18n();
+        return lang && lang.text[key] ? lang.t(key) : (cat || '');
+    }
+
     function renderProjects() {
         const all = data().projects || [];
         const list = all.filter((item) => state.pf === 'all' || item.cat === state.pf);
@@ -138,7 +151,7 @@
                 <div class="cw-case-meta"><span>${escapeHtml(item.date)}</span><span>${escapeHtml(item.city)}</span></div>
                 <h3 class="cw-case-title">${escapeHtml(item.title)}</h3>
                 <p class="cw-case-note">${escapeHtml(item.desc)}</p>
-                <div class="cw-case-foot"><span>${escapeHtml(CAT_LABELS[item.cat] || item.cat || '')}</span>${item.link ? `<a href="${escapeHtml(item.link)}" target="_blank" rel="noopener">查看 · VIEW →</a>` : ''}</div>
+                <div class="cw-case-foot"><span>${escapeHtml(categoryLabel(item.cat))}</span>${item.link ? `<a href="${escapeHtml(item.link)}" target="_blank" rel="noopener">${escapeHtml(t('link.view'))}</a>` : ''}</div>
                 ${item.award ? `<span class="cw-case-award">${escapeHtml(item.award)}</span>` : ''}
             </article>`).join(''));
         const count = document.getElementById('cwProjectCount');
@@ -166,11 +179,11 @@
         setList('posts', (data().posts || []).map((post) => `
             <button class="cw-post" type="button" style="--rot:${num(post.rot)}deg" data-article="${escapeHtml(slugOf(post.link))}">
                 <span class="cw-post-tape" aria-hidden="true"></span>
-                <span class="cw-post-meta"><span>AI · ${escapeHtml(post.date)}</span><span>${escapeHtml(post.read)}</span></span>
+                <span class="cw-post-meta"><span>${escapeHtml(t('post.kicker', { date: post.date }))}</span><span>${escapeHtml(post.read)}</span></span>
                 ${post.img ? `<span class="cw-post-photo"><img src="${escapeHtml(post.img)}" alt="" loading="lazy" decoding="async"></span>` : ''}
                 <span class="cw-post-title">${escapeHtml(post.title)}</span>
                 <span class="cw-post-excerpt">${escapeHtml(post.excerpt)}</span>
-                <span class="cw-post-link">阅读 · READ →</span>
+                <span class="cw-post-link">${escapeHtml(t('link.read'))}</span>
             </button>`).join(''));
     }
 
@@ -211,15 +224,21 @@
     }
 
     function renderArticle(slug) {
-        const store = articles();
-        const article = store && store[slug];
+        const lang = i18n();
+        const article = lang ? lang.article(slug) : (articles() || {})[slug];
         if (!article) return false;
         const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
         set('cwArtTitle', article.title);
         set('cwArtMeta', `${article.date} · ${article.readTime}`);
         set('cwArtExcerpt', article.excerpt);
-        set('cwArtPaperDate', `REPORT · 手稿 · ${article.date}`);
-        set('cwArtPaperCount', `${article.blocks.length} BLOCKS · YUI`);
+        set('cwArtPaperDate', t('reader.paperDate', { date: article.date }));
+        set('cwArtPaperCount', t('reader.blocks', { n: article.blocks.length }));
+        // 这篇文章还没有当前语言的译文时，正文仍是中文原文，在稿纸顶上说明一句。
+        const note = document.getElementById('cwArtNote');
+        if (note) {
+            note.hidden = article.translated !== false;
+            note.textContent = note.hidden ? '' : t('reader.note');
+        }
         const hero = document.getElementById('cwArtHero');
         const heroImg = document.getElementById('cwArtHeroImg');
         if (hero && heroImg) {
@@ -244,16 +263,36 @@
         return true;
     }
 
-    // 文章正文有 60+ KB，首屏不需要，等真的要看某篇时再按需加载。
+    // 文章正文有 60+ KB（每种译文包还要一份），首屏不需要，等真的要看某篇时再按需加载：
+    // 中文总要加载（图片、没有译文的文章都靠它兜底），英文 / 日文再多加载对应的译文包。
+    // 加载期间进来的调用先排队，等脚本到了一起执行。
     function ensureArticles(then) {
-        if (articles()) { then(); return; }
+        const lang = i18n();
+        const needPack = Boolean(lang) && !lang.articlePackReady();
+        if (articles() && !needPack) { then(); return; }
+        articleWaiters.push(then);
         if (articlesLoading) return;
         articlesLoading = true;
-        const script = document.createElement('script');
-        script.src = '/js/blog-articles.js?v=20261010-1';
-        script.onload = () => { articlesLoading = false; then(); };
-        script.onerror = () => { articlesLoading = false; };
-        document.head.appendChild(script);
+        const sources = [];
+        if (!articles()) sources.push('/js/blog-articles.js?v=20261010-1');
+        if (needPack) sources.push(`/js/blog-articles.${lang.lang}.js?v=${ARTICLES_VERSION}`);
+        let pending = sources.length;
+        const settle = () => {
+            pending -= 1;
+            if (pending > 0) return;
+            articlesLoading = false;
+            const waiters = articleWaiters;
+            articleWaiters = [];
+            waiters.forEach((waiter) => waiter());
+        };
+        sources.forEach((src) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = settle;
+            // 译文包加载失败时仍然放行：renderArticle 会退回中文原文并提示。
+            script.onerror = settle;
+            document.head.appendChild(script);
+        });
     }
 
     function openArticle(slug, trigger) {
@@ -459,6 +498,8 @@
         hint.style.opacity = state.hint ? '0.85' : '0';
         soundState.textContent = state.sound ? 'ON' : 'OFF';
         soundButton.setAttribute('aria-pressed', String(state.sound));
+        // 档案摊开时右上角只留语言切换（窄屏上档案铺满屏幕，环境音按钮会叠在纸上）。
+        root.classList.toggle('is-reading', state.sheetIn);
 
         // 只有真正被取走的那张便签从墙上消失，其它的留在原位。
         const lifted = HIDDEN_PHASES.includes(phase) ? state.card : null;
@@ -494,10 +535,16 @@
         if (!carried) return;
         carried.hidden = !carrying;
         if (!carrying) return;
-        const cover = COVERS[state.card] || COVERS[state.active] || COVERS.about;
-        coverFile.textContent = cover.file;
-        coverTitle.textContent = cover.title;
-        coverSub.textContent = cover.sub;
+        const coverName = COVERS[state.card] ? state.card : (COVERS[state.active] ? state.active : 'about');
+        const cover = COVERS[coverName];
+        const coverText = (part) => {
+            const lang = i18n();
+            const key = `cover.${coverName}.${part}`;
+            return lang && lang.text[key] ? lang.t(key) : cover[part];
+        };
+        coverFile.textContent = coverText('file');
+        coverTitle.textContent = coverText('title');
+        coverSub.textContent = coverText('sub');
         carried.style.background = cover.bg;
         carried.style.color = cover.fg;
         // 有 3D 手时，被捏住的纸每帧由手按捏点驱动（Web Animations），这里只画出行程起点的姿势；
@@ -847,6 +894,12 @@
 
     setInterval(tickClock, 1000);
     window.addEventListener('yui-clue-data', renderAll);
+    // 切换语言：静态文案由 js/clue-i18n.js 换好，这里重画脚本渲染的部分（筛选标签、卡片、桌上正在读的文章、手里的封面）。
+    window.addEventListener('yui-clue-lang', () => {
+        renderAll();
+        if (state.article) ensureArticles(() => { renderArticle(state.article); });
+        render();
+    });
 
     scene.addEventListener('pointerdown', onPointerDown);
     cards.forEach((card) => {

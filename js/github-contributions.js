@@ -18,6 +18,7 @@
 
     let loading = false;
     let loadedAt = 0;
+    let lastData = null;
 
     const pad = (value) => String(value).padStart(2, '0');
     const utc = (text) => {
@@ -99,10 +100,28 @@
 
         // 整张卡片对读屏来说就是一张图，格子本身不用逐个念。
         card.setAttribute('role', 'img');
-        card.setAttribute('aria-label', `GitHub 贡献图：${data.login || ''} 在 ${data.year} 年共 ${total.toLocaleString('en-US')} 次贡献${synced ? `，更新于 ${synced}` : ''}`);
+        lastData = data;
+        updateAriaLabel();
         card.removeAttribute('aria-hidden');
         card.classList.add('is-ready');
         return true;
+    }
+
+    // 读屏描述跟着页面语言走（词典在 js/clue-i18n.js）；卡片上看得见的字是 GitHub 自己的英文界面，不翻译。
+    function updateAriaLabel() {
+        if (!lastData) return;
+        const total = Number(lastData.total).toLocaleString('en-US');
+        const synced = formatSynced(lastData.fetchedAt);
+        const i18n = typeof window !== 'undefined' ? window.YuiClueI18n : null;
+        const label = i18n
+            ? i18n.t('github.aria', {
+                login: lastData.login || '',
+                year: lastData.year,
+                total,
+                synced: synced ? i18n.t('github.synced', { time: synced }) : ''
+            })
+            : `GitHub 贡献图：${lastData.login || ''} 在 ${lastData.year} 年共 ${total} 次贡献${synced ? `，更新于 ${synced}` : ''}`;
+        card.setAttribute('aria-label', label);
     }
 
     function load() {
@@ -116,6 +135,7 @@
     }
 
     load();
+    if (typeof window !== 'undefined') window.addEventListener('yui-clue-lang', updateAriaLabel);
     setInterval(() => { if (!document.hidden) load(); }, REFRESH_MS);
     // 标签页在后台放了很久，切回来时不用等下一个定时点，立刻补一次。
     document.addEventListener('visibilitychange', () => {

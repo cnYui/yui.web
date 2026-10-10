@@ -205,9 +205,10 @@ function innerByProse(html) {
     return '';
 }
 
-// 另一些文章的正文由 js/blog-<slug>.js 在运行时写入，这里把它的 articleLocales.zh 取出来。
+// 另一些文章的正文由 js/blog-<slug>.js 在运行时写入，这里把它的 articleLocales（zh / en / ja）整个取出来。
 // 源文件末尾会操作 DOM，所以整段包在 try/catch 里跑，只要拿到对象就行。
-function readLocale(slug) {
+// 文章页里没翻译的语言，其 body 是 `zhArticleBody`（运行时才有值），在这里的假 DOM 下读出来是空串。
+function readLocales(slug) {
     const file = path.join(rootDir, 'js', `blog-${slug}.js`);
     if (!fs.existsSync(file)) return null;
     const patched = fs.readFileSync(file, 'utf8').replace(/\bconst\s+articleLocales\s*=/, 'articleLocales =');
@@ -222,7 +223,7 @@ function readLocale(slug) {
         const locales = new Function('document', 'window', 'localStorage', 'navigator',
             `var articleLocales; try { ${patched} } catch (e) {} return articleLocales;`
         )(doc, win, { getItem: () => null, setItem() {} }, { language: 'zh-CN', clipboard: {} });
-        return locales && locales.zh ? locales.zh : null;
+        return locales && locales.zh ? locales : null;
     } catch (error) {
         return null;
     }
@@ -235,14 +236,21 @@ function readBlogData() {
     return sandbox.window.YuiBlogData || [];
 }
 
-function zh(value) {
+function pickLang(value, lang) {
     if (!value) return '';
-    return typeof value === 'string' ? value : value.zh || '';
+    return typeof value === 'string' ? value : value[lang] || value.zh || '';
 }
+
+function zh(value) {
+    return pickLang(value, 'zh');
+}
+
+const PACK_LANGS = ['en', 'ja'];
 
 function build() {
     const posts = readBlogData();
     const articles = {};
+    const localesBySlug = {};
     const report = [];
 
     posts.forEach((post) => {
@@ -253,7 +261,9 @@ function build() {
             return;
         }
         const html = fs.readFileSync(file, 'utf8');
-        const locale = readLocale(slug);
+        const locales = readLocales(slug);
+        const locale = locales && locales.zh;
+        localesBySlug[slug] = locales;
         // 正文来源按优先级：HTML 里的 #articleBody → js/blog-<slug>.js 的 zh.body → <article> 里的 .prose。
         let body = innerById(html, 'articleBody').trim();
         let source = '#articleBody';
@@ -301,6 +311,45 @@ function build() {
     console.log('生成 js/blog-articles.js');
     report.forEach((line) => console.log(line));
     console.log(`  共 ${Object.keys(articles).length} 篇 · ${(fs.statSync(out).size / 1024).toFixed(1)} KB`);
+
+    PACK_LANGS.forEach((lang) => buildPack(lang, posts, articles, localesBySlug));
+}
+
+// 英文 / 日文译文包：标题、日期、阅读时长、摘要来自 js/blog-data.js，标签和正文来自文章页 js/blog-<slug>.js 的 articleLocales。
+// 文章页没有译文的语言（body 为空）记为 blocks: null，首页阅读器退回中文原文并提示；标签缺失同样退回中文。
+function buildPack(lang, posts, articles, localesBySlug) {
+    const pack = {};
+    const report = [];
+    posts.forEach((post) => {
+        const slug = String(post.link || '').replace(/\/$/, '').split('/').pop();
+        if (!articles[slug]) return;
+        const locale = localesBySlug[slug] && localesBySlug[slug][lang];
+        const body = locale && typeof locale.body === 'string' ? locale.body.trim() : '';
+        const tags = locale && Array.isArray(locale.tags) && locale.tags.length ? locale.tags : articles[slug].tags;
+        const blocks = body ? collectBlocks(body) : null;
+        pack[slug] = {
+            title: pickLang(post.title, lang),
+            date: pickLang(post.date, lang),
+            readTime: pickLang(post.readTime, lang),
+            excerpt: pickLang(post.excerpt, lang),
+            tags,
+            blocks
+        };
+        report.push(`  ${slug}：${blocks ? `${blocks.length} 块` : '无译文，退回中文正文'}`);
+    });
+
+    const header = [
+        `// 由 \`node scripts/build-blog-articles.js\` 从 js/blog-data.js 与 js/blog-<slug>.js 的 ${lang} 译文生成，请勿手改。`,
+        '// 首页线索墙切到该语言后点开博客卡片时按需加载；blocks 为 null 的文章没有译文，阅读器退回中文正文。',
+        ''
+    ].join('\n');
+    const body = `window.YuiArticlesI18n = window.YuiArticlesI18n || {};\nwindow.YuiArticlesI18n.${lang} = ${JSON.stringify(pack)};\n`;
+    const out = path.join(rootDir, 'js', `blog-articles.${lang}.js`);
+    fs.writeFileSync(out, header + body, 'utf8');
+
+    console.log(`生成 js/blog-articles.${lang}.js`);
+    report.forEach((line) => console.log(line));
+    console.log(`  共 ${Object.keys(pack).length} 篇 · ${(fs.statSync(out).size / 1024).toFixed(1)} KB`);
 }
 
 build();
