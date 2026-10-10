@@ -250,7 +250,7 @@
         if (articlesLoading) return;
         articlesLoading = true;
         const script = document.createElement('script');
-        script.src = '/js/blog-articles.js?v=20260921-1';
+        script.src = '/js/blog-articles.js?v=20261010-1';
         script.onload = () => { articlesLoading = false; then(); };
         script.onerror = () => { articlesLoading = false; };
         document.head.appendChild(script);

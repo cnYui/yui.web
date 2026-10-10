@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>用 Claude Opus 5.5 做视频：它不会生成视频，却能一帧一帧写出来 - Tech Blog</title>
+    <meta name="description" content="Claude 不是扩散模型，却能写代码做出完整视频。拆解 Opus 5.5 做视频的原理、一期视频的全部环节，以及和 Veo、Seedance、可灵的成本对比。"/>
+    <script src="/js/ui-init.js" data-default-lang="zh-CN"></script>
+    <style>
+        html { background-color: #ffffff; }
+        html.dark { background-color: #0f0f0f; }
+        html[data-ui-ready="false"] body { opacity: 0; }
+        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
+    </style>
+    <link href="/styles/site.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="/js/theme.js"></script>
+    <script src="/js/lang.js?v=20260919-1"></script>
+    <script src="/js/mobile-menu.js"></script>
+    <style>
+        .prose, article {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        .prose h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; }
+        .prose h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .prose p { margin-bottom: 1rem; line-height: 1.8; }
+        .prose ul, .prose ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .prose li { margin-bottom: 0.5rem; line-height: 1.7; }
+        .prose strong { font-weight: 600; color: inherit; }
+        .prose a { text-decoration: underline; text-underline-offset: 4px; }
+        .prose code { border-radius: 0.25rem; background: rgba(229, 229, 229, 0.7); padding: 0.12rem 0.35rem; font-size: 0.92em; }
+        .dark .prose code { background: rgba(51, 51, 51, 0.9); }
+        .prose blockquote { border-left: 4px solid #e5e5e5; padding-left: 1rem; margin: 1.5rem 0; font-style: italic; color: #71717a; }
+        .dark .prose blockquote { border-left-color: #333; color: #a0a0a0; }
+        .dark .prose strong { color: #ffffff; }
+        .prose hr { border: none; border-top: 1px solid #e5e5e5; margin: 2rem 0; }
+        .dark .prose hr { border-top-color: #333; }
+        .prose pre { margin: 1.5rem 0; border-radius: 0.5rem; background: rgba(245, 245, 245, 0.92); color: #27272a; padding: 1rem; overflow-x: auto; font-size: 0.9rem; line-height: 1.7; }
+        .dark .prose pre { background: rgba(31, 31, 31, 0.95); color: #e5e5e5; }
+        .prose pre code { background: transparent; color: inherit; padding: 0; }
+        .prose table { width: 100%; margin: 1.5rem 0; border-collapse: collapse; font-size: 0.95rem; }
+        .prose th, .prose td { border: 1px solid #e5e5e5; padding: 0.85rem; text-align: left; vertical-align: top; line-height: 1.7; }
+        .dark .prose th, .dark .prose td { border-color: #333; }
+        .prose th { background: rgba(245, 245, 245, 0.9); font-weight: 600; }
+        .dark .prose th { background: rgba(31, 31, 31, 0.9); }
+        .article-figure { margin: 1.25rem 0 2rem; border-radius: 0.75rem; overflow: hidden; background: #f5f5f5; box-shadow: 0 18px 45px rgba(15, 15, 15, 0.08); }
+        .dark .article-figure { background: #1f1f1f; box-shadow: none; }
+        .article-figure img { display: block; width: 100%; height: auto; }
+    </style>
+</head>
+<body class="bg-background dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col overflow-x-hidden antialiased transition-colors duration-300">
+    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
+        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
+            <div class="flex items-center gap-4">
+                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">作品集.</a>
+            </div>
+            <div class="flex items-center gap-10">
+                <nav class="hidden md:flex items-center gap-8">
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
+                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/blog/">博客</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
+                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
+                </nav>
+                <div class="flex gap-2">
+                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="中/EN/日">
+                        <span class="text-xs font-bold">EN</span>
+                    </button>
+                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
+                        <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
+                    </button>
+                    <button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card transition-colors" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu">
+                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <nav id="mobileMenu" class="hidden md:hidden border-t border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
+            <div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
+                <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 w-fit" href="/blog/">博客</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
+                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-1 w-full">
+        <div class="w-full bg-background-soft dark:bg-dark-surface py-16">
+            <div class="max-w-3xl mx-auto px-6">
+                <a href="/blog/" class="inline-flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors mb-8">
+                    <span class="material-symbols-outlined text-lg">arrow_back</span>
+                    <span data-i18n="backToBlog">返回博客</span>
+                </a>
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="px-3 py-1 rounded bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-xs font-semibold uppercase tracking-wider">AI</span>
+                    <span class="text-sm text-text-muted dark:text-dark-text-muted">2026年10月10日</span>
+                    <span class="text-text-muted dark:text-dark-text-muted">•</span>
+                    <span class="text-sm text-text-muted dark:text-dark-text-muted">9 分钟阅读</span>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-display font-bold text-primary dark:text-dark-text leading-tight mb-6">
+                    用 Claude Opus 5.5 做视频：它不会生成视频，却能一帧一帧写出来
+                </h1>
+                <p class="text-xl text-text-muted dark:text-dark-text-muted font-light leading-relaxed">
+                    Claude 不是扩散模型，却能写代码做出完整视频。拆解 Opus 5.5 做视频的原理、一期视频的全部环节，以及和 Veo、Seedance、可灵的成本对比。
+                </p>
+                <div class="flex items-center gap-4 mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
+                    <div class="w-12 h-12 rounded-full overflow-hidden">
+                        <img src="/images/optimized/profile/avatar-small.webp" alt="Yui" class="w-full h-full object-cover" decoding="async"/>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-primary dark:text-dark-text">Yui</p>
+                        <p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="authorRole">开发者 & 创作者</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full max-w-4xl mx-auto px-6">
+            <div class="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-lg">
+                <img class="w-full h-full object-cover" src="/images/optimized/blog/ai-video-claude-opus/00-cover-claude-video-tutorial.webp" alt="用 Claude 做视频几乎零成本" width="1400" height="788" decoding="async"/>
+            </div>
+        </div>
+
+        <article class="w-full max-w-3xl mx-auto px-6 py-16">
+            <div class="prose prose-lg max-w-none text-text-main dark:text-dark-text">
+                <p>2026 年 9 月 22 日，Anthropic 发布了 Claude Opus 5.5。大家最先聊的是跑分和价格：Artificial Analysis 的智能指数上它排第一，57.6 分；输入和输出每百万 token 是 4 美元和 20 美元，比 Opus 5 便宜 20%，官方还说常见任务整体跑下来要省 40%。</p>
+                <p>但我更在意的是另一件事：它的视觉和电脑操作能力强了一大截，密密麻麻的图表、截图都能看得很细。于是有人开始拿它做视频，发现它对画面里每一个像素都控制得很好，做完还会自己截图检查。</p>
+                <p>我也试了。这篇文章把我做的几条视频、做法、成本和边界整理一遍。对应的两期视频是《被 Claude Opus5.5 生成视频能力吓到震惊瘫坐，没想到是这样实现 AGI 的》和教程《如何使用 Claude 来低成本地生成视频》，后面有链接。</p>
+
+                <figure class="article-figure">
+                    <img src="/images/optimized/blog/ai-video-claude-opus/00-cover-claude-video-tutorial.webp" alt="用 Claude 做视频几乎零成本" width="1400" height="788" loading="lazy" decoding="async"/>
+                </figure>
+
+                <h2 class="text-primary dark:text-dark-text">01 Claude 不会生成视频，它写的是做视频的程序</h2>
+                <p>先澄清一个很多人会搞错的地方。Anthropic 的视觉文档写得很清楚：Claude 只是图像理解模型，它不能生成、编辑图片。那它怎么做视频？</p>
+                <p>Sora、Veo、可灵这类视频模型大多是扩散模型：从一片随机噪点开始，一步一步去噪，直接画出每一帧的像素。Claude 是大语言模型，只会一个字一个字地往外写。但代码也是文字。</p>
+                <blockquote><p>它的办法是：写一个能生成视频的程序，然后自己把程序跑起来。</p></blockquote>
+                <p>视频说到底就是每秒 30 张图片，加一条声音。20 秒的视频就是 600 张图。每一张图，都是一个网页在某个时刻的截图：</p>
+                <ul>
+                    <li>Claude 写一个网页，网页里有个函数叫 <code>renderAt(t)</code>：给它第 3.5 秒，它就画出第 3.5 秒的画面，同一个时间永远画出同一帧。</li>
+                    <li>程序打开网页，从第 0 秒开始每隔 1/30 秒截一张图。</li>
+                    <li>最后用 ffmpeg 把图片和声音拼成视频。</li>
+                </ul>
+                <p>分工很清楚：Claude 写网页和脚本，浏览器把网页画成像素，ffmpeg 合成视频。Claude 能自己跑这些程序，是因为它在 Claude Code 里是个智能体：读代码、改文件、运行命令，报错了自己读报错自己改，一直循环到做完。</p>
+                <p>代码这条路凭什么能和扩散模型比？我的理解是视频里有两类信息。一类是结构：写什么字、放在哪、第几秒出现、怎么动，用语言能说得清清楚楚，正好是语言模型的强项。另一类是质感：光影、皮肤、真实的镜头运动，很难用语言说精确，那是扩散模型的强项。讲解、动画这类视频几乎全是结构，所以用代码来做反而更稳。</p>
+
+                <h2 class="text-primary dark:text-dark-text">02 四个例子和提示词</h2>
+                <p>我先让 Claude 做了三条像素风的动漫剧情短片：银魂、火影忍者疾风传、JoJo 第三部。提示词很短，把动漫名换掉就行：</p>
+                <pre><code>给我做一个动画像素风 银魂动漫剧情的经典场景，按照顺序讲述大致故事， 包含主要人物 动画好看一点 有趣一点 场景丰富一点 直接给我视频</code></pre>
+                <pre><code>给我做一个动画像素风 火影忍者疾风传动漫剧情的经典场景，按照顺序讲述大致故事， 包含主要人物 动画好看一点 有趣一点 场景丰富一点 直接给我视频</code></pre>
+                <p>下面是教程里展示的几个画面。</p>
+                <figure class="article-figure">
+                    <img src="/images/optimized/blog/ai-video-claude-opus/01-gintama-pixel.webp" alt="Claude 做的像素风银魂短片画面" width="1400" height="787" loading="lazy" decoding="async"/>
+                </figure>
+                <figure class="article-figure">
+                    <img src="/images/optimized/blog/ai-video-claude-opus/02-naruto-pixel.webp" alt="Claude 做的像素风火影忍者短片画面" width="1400" height="787" loading="lazy" decoding="async"/>
+                </figure>
+                <figure class="article-figure">
+                    <img src="/images/optimized/blog/ai-video-claude-opus/03-jojo-pixel.webp" alt="Claude 做的像素风 JoJo 第三部短片画面" width="1400" height="787" loading="lazy" decoding="async"/>
+                </figure>
+                <p>第四个例子是我自己的系列《原LAI如此》，一期完整的讲解视频。它不是随手一句话生成的，下一节把它拆开讲。</p>
+                <figure class="article-figure">
+                    <img src="/images/optimized/blog/ai-video-claude-opus/04-yuanlai-episode.webp" alt="《原LAI如此》第 4 期的画面" width="1400" height="787" loading="lazy" decoding="async"/>
+                </figure>
+
+                <h2 class="text-primary dark:text-dark-text">03 一期完整视频，每样东西从哪来</h2>
+                <p>一条带配音、字幕、角色和 BGM 的视频，拆开看每一层都是代码或工具做的：</p>
+                <ul>
+                    <li><strong>台本</strong>：选题我定。Claude 先查官方资料并记下查询日期，再写初稿；写完派两个子智能体分头审，一个查口语和结构，一个逐条核对事实；改完给我确认才往下走。</li>
+                    <li><strong>配音</strong>：用 Fish Audio 的语音合成，一期大约 0.09 美元；也可以自己录。</li>
+                    <li><strong>字幕</strong>：文字就是台本，难的是时间。语音识别给出每个词在第几秒，Claude 按这个时间把配音切成一句一句，字幕就和声音对上了。</li>
+                    <li><strong>前景角色</strong>：鲸鱼娘是 Claude 照着立绘用代码一格一格摆出来的像素角色，一共 21 种颜色，动作帧有一千多帧，全是程序生成的。嘴型也是算出来的：按配音音量逐帧判断，没声音闭嘴，小声半张，大声张开。</li>
+                    <li><strong>动作</strong>：分两层。台本里写的大动作，比如抬手、叉腰，一期 30 个左右；说话时的小手势、句末点头、看向内容由程序自动加，一期 80 多个。放多少是一期一期按反馈调出来的。</li>
+                    <li><strong>BGM 和音效</strong>：全是 Claude 用 Python 合成的，一个采样都没用。电钢琴用 FM 合成，贝斯用几个谐波叠出来，沙锤和刷子是滤过波的噪声，最后是一首 80 BPM、F 大调的 lo-fi 轻爵士。卡片出现的“嗒”、打勾的“叮”也在 F 大调里，不和 BGM 打架。</li>
+                    <li><strong>混音</strong>：说话时 BGM 自动压低，整片响度统一到 −16 LUFS，每期一样响。</li>
+                    <li><strong>片头片尾、封面</strong>：片头片尾也是网页动画，渲染成视频拼在两头；封面用模板，出 16:9 和 4:3 两个尺寸。</li>
+                </ul>
+                <p>每一步做完都有检查：Claude 把抽出的帧拼成一张图自己看，程序检查字有没有出画面、有没有压住字幕、帧数和时长对不对。改了渲染程序，还要拿往期视频抽 200 个时刻逐像素对比，一个像素都不能变。</p>
+
+                <h2 class="text-primary dark:text-dark-text">04 成本：和视频模型比一比</h2>
+                <p>视频模型基本按秒收费。下面是各家官方价目表（截至 2026 年 9 月 28 日）里 1080p 带声音的价格，“6 分钟”一栏等于每秒价格 × 360，并且假设每一秒都一次成功：</p>
+                <table>
+                    <thead>
+                        <tr><th>模型</th><th>1080p 带声音，每秒</th><th>生成 6 分钟</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Google Veo 3.1</td><td>0.40 美元</td><td>约 144 美元</td></tr>
+                        <tr><td>字节 Seedance 2.0</td><td>0.37 美元</td><td>约 133 美元</td></tr>
+                        <tr><td>阿里 万相 3.0</td><td>0.20 美元</td><td>约 72 美元</td></tr>
+                        <tr><td>快手 可灵 3.0</td><td>约 0.17 美元</td><td>约 60 美元</td></tr>
+                        <tr><td>Claude 写代码</td><td>不按秒收费</td><td>订阅费 + 配音约 0.09 美元（自己录就是 0）</td></tr>
+                    </tbody>
+                </table>
+                <p>真做起来还有废片：几十个短镜头拼起来，不满意的重新生成，钱要再付一遍。</p>
+                <p>Claude 这边是订阅制：Pro 每月 20 美元，Max 每月 100 美元起，都带 Claude Code。渲染在自己电脑上跑，浏览器、Playwright、ffmpeg、语音识别都是免费开源的，不需要显卡。我的实际情况是：6 分钟的正片一万多帧，4 路并行，三分钟左右渲完；做一条 6 分钟的视频大约只用掉一周额度的 5% 到 10%。要改哪里，只重渲那一段。</p>
+                <p>一个小提醒：并行数别开太大，我试过两个任务各开 10 路，32 GB 内存直接被吃满。</p>
+
+                <h2 class="text-primary dark:text-dark-text">05 边界</h2>
+                <p>两边做出来的东西不一样。视频模型出的是有真实感的画面，Claude 更适合讲解、动画、信息图这一类，目前我做得出来的主要是像素风和扁平风。想要真人质感的镜头，还是得用扩散模型。按你要做的内容来选。</p>
+                <p>另外，银魂、火影、JoJo 的像素动画是用提示词让 Claude 做的同人作品，角色和剧情版权归原作方所有，这里只做演示。</p>
+
+                <h2 class="text-primary dark:text-dark-text">视频在这里</h2>
+                <ul>
+                    <li>教程《如何使用 Claude 来低成本地生成视频》：<a href="https://www.bilibili.com/video/BV1s2aV6cELo/" target="_blank" rel="noopener noreferrer">B 站</a> / <a href="https://youtu.be/EDWhMPfmZcE" target="_blank" rel="noopener noreferrer">YouTube</a></li>
+                    <li>《被 Claude Opus5.5 生成视频能力吓到震惊瘫坐，没想到是这样实现 AGI 的》：<a href="https://www.bilibili.com/video/BV1XXax6yEwR/" target="_blank" rel="noopener noreferrer">B 站</a></li>
+                </ul>
+                <p>想自己试，先从上面第一段提示词开始，做一条 20 秒的小视频。</p>
+            </div>
+
+            <div class="flex flex-wrap gap-2 mt-12 pt-8 border-t border-border-subtle dark:border-dark-border">
+                <span class="text-sm text-text-muted dark:text-dark-text-muted mr-2" data-i18n="tags">标签:</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Claude Code</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Opus 5.5</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">AI 做视频</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">视频生成</span>
+                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">像素动画</span>
+            </div>
+
+            <div class="flex items-center justify-between mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
+                <span class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="shareArticle">分享文章:</span>
+                <div class="flex gap-4">
+                    <button id="shareBtn" class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text" title="复制链接">
+                        <span class="material-symbols-outlined text-lg">share</span>
+                    </button>
+                </div>
+            </div>
+        </article>
+    </main>
+
+    <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
+        <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex flex-col gap-1 text-center md:text-left">
+                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui的作品集</h2>
+                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 技术博客.</p>
+            </div>
+            <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
+                <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
+                <span class="cursor-default">15951875192</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/blog-ai-video-claude-opus.js"></script>
+</body>
+</html>

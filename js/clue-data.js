@@ -50,6 +50,7 @@ window.YuiClueData = {
         { date: '2024.07', city: '杭州 Hangzhou', title: '2024 AdventureX', cat: 'hackathon', desc: '第一次围观黑客松，向社区学习。', img: CW_IMG + 'adventurex24.webp', award: 'FIRST SIGHTING', link: '', rot: -1.5 }
     ],
     posts: [
+        { date: '2026.10.10', read: '9 分钟', title: '用 Claude Opus 5.5 做视频：它不会生成视频，却能一帧一帧写出来', excerpt: 'Claude 不是扩散模型，却能写代码做出完整视频。拆解做视频的原理、一期视频的全部环节，以及和视频模型的成本对比。', img: CW_IMG + 'blog-claude-video.webp', link: '/blog/ai-video-claude-opus', rot: 1.4 },
         { date: '2026.06.16', read: '13 分钟', title: 'Back to Vibe Coding：AI 驱动开发之前，你需要知道的几件事（上）', excerpt: '从 Prompt 到 Loop，从聊天框到 Agent Harness，重新理解高效使用 AI Coding 工具之前需要建立的规则、记忆和工作流。', img: CW_IMG + 'blog-loop.webp', link: '/blog/back-to-vibe-coding-ai-driven-dev-before', rot: -1.5 },
         { date: '2026.06.06', read: '7 分钟', title: '低成本使用 Codex Token 的几种方法', excerpt: '从 Codex CLI、CPA/CLIProxyAPI、账号池、公网入口和排障方法出发，整理低成本使用 Codex Token 的路径和边界。', img: CW_IMG + 'blog-codex.webp', link: '/blog/codex-token-low-cost', rot: 1 },
         { date: '2026.06.04', read: '12 分钟', title: '我开源了一个又快又准的云输入软件：SpeakMore 是怎么做出来的', excerpt: '从 SenseVoiceSmall、FunASR、LLM 后处理、音频链路到自动粘贴，记录 SpeakMore 的实现细节。', img: CW_IMG + 'blog-speakmore.webp', link: '/blog/speakmore-cloud-input', rot: -0.8 },

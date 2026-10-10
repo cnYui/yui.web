@@ -1,6 +1,39 @@
 (function () {
     window.YuiBlogData = [
         {
+            id: 13,
+            publishedAt: '2026-10-10',
+            image: '/images/optimized/blog/ai-video-claude-opus/00-cover-claude-video-tutorial.webp',
+            category: 'AI',
+            author: 'Yui',
+            link: '/blog/ai-video-claude-opus',
+            title: {
+                zh: '用 Claude Opus 5.5 做视频：它不会生成视频，却能一帧一帧写出来',
+                en: 'Making Videos with Claude Opus 5.5: It Cannot Generate Video, but It Can Write One Frame at a Time',
+                ja: 'Claude Opus 5.5で動画を作る：動画は生成できないが、コードで1フレームずつ描ける'
+            },
+            date: {
+                zh: '2026年10月10日',
+                en: 'Oct 10, 2026',
+                ja: '2026年10月10日'
+            },
+            shortDate: {
+                zh: '10月10日',
+                en: 'Oct 10',
+                ja: '10月10日'
+            },
+            readTime: {
+                zh: '9 分钟阅读',
+                en: '9 min read',
+                ja: '9分で読める'
+            },
+            excerpt: {
+                zh: 'Claude 不是扩散模型，却能写代码做出完整视频。拆解 Opus 5.5 做视频的原理、一期视频的全部环节，以及和 Veo、Seedance、可灵的成本对比。',
+                en: 'Claude is not a diffusion model, yet it can build complete videos with code. How Opus 5.5 makes video, what goes into one episode, and how the cost compares with Veo, Seedance and Kling.',
+                ja: 'Claudeは拡散モデルではありませんが、コードで動画を作れます。Opus 5.5が動画を作る仕組み、1本の動画の中身、Veo・Seedance・可灵とのコスト比較をまとめました。'
+            }
+        },
+        {
             id: 12,
             publishedAt: '2026-06-16',
             image: '/images/optimized/blog/back-to-vibe-coding/00-cover-prompt-to-loop.webp',

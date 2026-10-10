@@ -23,6 +23,7 @@ const clueWallImages = [
     ['images/blog/codex-token-low-cost-cover.png', 'blog-codex.webp'],
     ['images/blog/factory-3d-render.jpg', 'blog-factory.webp'],
     ['images/blog/vibe-coding-guide.jpg', 'blog-vibe.webp'],
+    ['images/blog/ai-video-claude-opus/01-gintama-pixel.png', 'blog-claude-video.webp'],
     // 这三张沿用 js/blog-data.js 里博客页各自的封面，线索墙的笔记卡片之前漏了缩略图。
     ['images/blog/back-to-vibe-coding/00-cover-prompt-to-loop.png', 'blog-loop.webp'],
     ['images/blog/speakmore-note-cover-guizang.png', 'blog-speakmore.webp'],
@@ -85,6 +86,7 @@ const jobs = [
     { from: 'images/blog', to: 'images/optimized/blog', resize: '1400x1400>', quality: '76' },
     { from: 'images/blog/ai-native-hackathon', to: 'images/optimized/blog/ai-native-hackathon', resize: '1200x1200>', quality: '76' },
     { from: 'images/blog/back-to-vibe-coding', to: 'images/optimized/blog/back-to-vibe-coding', resize: '1400x1400>' },
+    { from: 'images/blog/ai-video-claude-opus', to: 'images/optimized/blog/ai-video-claude-opus', resize: '1400x1400>', quality: '76' },
     { from: 'images/profile/portrait-compressed.jpg', to: 'images/optimized/profile/portrait-compressed.webp', resize: '1000x1000>', quality: '80' },
     { from: 'images/profile/avatar-small.jpg', to: 'images/optimized/profile/avatar-small.webp', resize: '200x200>', quality: '80' },
     { from: 'images/shop/code-transit-entry.webp', to: 'images/optimized/shop/code-transit-entry.webp', resize: '1800x1800>' },
