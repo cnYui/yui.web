@@ -59,7 +59,7 @@ test('每张便签都标了自己的封面，取件动画才知道举的是哪�
 
     // 封面按 data-card 找，找不到就退回该档案的封面（行踪图、肖像这类同档案的不同便签）。
     const script = readFile('js/clue-wall.js');
-    const covers = new Set([...script.matchAll(/^\s{8}(\w+): \{ file:/gm)].map((match) => match[1]));
+    const covers = new Set([...script.matchAll(/^\s{8}(\w+): \{ key:/gm)].map((match) => match[1]));
     assert.ok(covers.size > 0, '没有解析到 COVERS');
     for (const { card, section } of cards) {
         assert.ok(covers.has(card) || covers.has(section), `${card} 既没有自己的封面，也没有 ${section} 的封面兜底`);

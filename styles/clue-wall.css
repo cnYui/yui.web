@@ -444,37 +444,22 @@ body {
     width: 100%;
     height: 100%;
     background: linear-gradient(180deg, #f2eadb, #e5dcc6);
-    padding: 18px 16px;
+    padding: 44px 16px 18px;
     box-sizing: border-box;
     text-align: center;
 }
 
-.cw-license-no {
-    font-family: 'Special Elite', serif;
-    font-size: 12px;
-    letter-spacing: .3em;
-    color: #6a5238;
-}
-
 .cw-license-title {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 30px;
+    font-size: 48px;
     color: #2a1d12;
-    margin-top: 8px;
     line-height: 1.1;
-}
-
-.cw-license-en {
-    font-family: 'Special Elite', serif;
-    font-size: 12px;
-    letter-spacing: .2em;
-    color: #3a2a1c;
-    margin-top: 6px;
+    white-space: nowrap;
 }
 
 .cw-license-rule {
-    margin: 12px auto 0;
-    width: 80px;
+    margin: 16px auto 0;
+    width: 110px;
     height: 2px;
     background: #8a2a22;
 }
@@ -558,44 +543,64 @@ body {
     pointer-events: none;
 }
 
+/* 墙上每张便签的统一写法：一个大标签（毛笔体，一眼能认出这是什么）+ 一两行关键信息。
+   数字用 <b> 标出来：比周围的字大半号、换成印章红。 */
+.cw-card b {
+    font-size: 1.45em;
+    font-weight: 700;
+    color: #8a2a22;
+}
+
 .cw-card--about {
     left: 120px;
     top: 130px;
-    width: 360px;
-    height: 240px;
+    width: 380px;
+    height: 236px;
     transform: rotate(-4deg);
     background: linear-gradient(135deg, #cfae7c, #bb955f 55%, #caa877);
     box-shadow: 0 10px 18px rgba(0, 0, 0, .45), inset 0 0 50px rgba(90, 60, 20, .18);
-    padding: 32px 28px 24px;
-}
-
-.cw-about-kicker {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 15px;
-    letter-spacing: .22em;
-    color: #5a4028;
+    padding: 24px 30px;
 }
 
 .cw-about-title {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 46px;
-    line-height: 1.1;
+    font-size: 84px;
+    line-height: 1.05;
     color: #2a1d12;
-    margin-top: 6px;
+    white-space: nowrap;
 }
 
-.cw-about-en {
-    font-family: 'Special Elite', serif;
-    font-size: 19px;
+.cw-about-school,
+.cw-about-remote {
+    font-size: 26px;
+    line-height: 1.4;
     color: #3a2a1c;
-    margin-top: 4px;
+    white-space: nowrap;
 }
 
-.cw-about-desc {
-    font-size: 17px;
-    line-height: 1.5;
-    color: #4a3524;
-    margin-top: 10px;
+.cw-about-school {
+    margin-top: 8px;
+}
+
+/* 「接受远程工作」前面的绿点：表示现在可以接活。 */
+.cw-about-remote {
+    position: relative;
+    padding-left: 24px;
+    font-weight: 600;
+    color: #2a1d12;
+}
+
+.cw-about-remote::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 50%;
+    width: 13px;
+    height: 13px;
+    margin-top: -6px;
+    border-radius: 50%;
+    background: #3e8a3a;
+    box-shadow: 0 0 0 3px rgba(62, 138, 58, .25);
 }
 
 .cw-card--portrait {
@@ -622,36 +627,20 @@ body {
 
 .cw-portrait-caption {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 34px;
+    font-size: 66px;
     color: #2a1d12;
-    margin-top: 10px;
-    line-height: 1.1;
+    margin-top: 8px;
+    line-height: 1.05;
+    white-space: nowrap;
 }
 
 .cw-portrait-sub {
     font-family: 'Special Elite', serif;
-    font-size: 14px;
-    letter-spacing: .14em;
+    font-size: 21px;
+    letter-spacing: .04em;
     color: #4a3524;
     margin-top: 2px;
-}
-
-.cw-tape-label {
-    position: absolute;
-    left: 690px;
-    top: 494px;
-    width: 320px;
-    height: 36px;
-    background: rgba(236, 222, 180, .9);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, .25);
-    transform: rotate(-1deg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 14px;
-    letter-spacing: .1em;
-    color: #2a1d12;
+    white-space: nowrap;
 }
 
 .cw-card--projects {
@@ -666,7 +655,7 @@ body {
 
 .cw-projects-photo {
     width: 292px;
-    height: 230px;
+    height: 206px;
     overflow: hidden;
     background: #222;
 }
@@ -675,37 +664,25 @@ body {
     filter: sepia(.3) contrast(1.05) saturate(.85);
 }
 
-.cw-projects-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-top: 12px;
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 13px;
-    letter-spacing: .18em;
-    color: #6a5238;
-    white-space: nowrap;
-}
-
 .cw-projects-title {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 32px;
-    line-height: 1.1;
+    font-size: 76px;
+    line-height: 1.05;
     color: #2a1d12;
-    margin-top: 2px;
+    margin-top: 6px;
     white-space: nowrap;
 }
 
-.cw-projects-sub {
-    font-family: 'Special Elite', serif;
-    font-size: 13px;
-    color: #4a3524;
-    margin-top: 4px;
+.cw-projects-stat,
+.cw-blog-stat {
+    font-family: 'Special Elite', var(--cw-serif);
+    font-size: 23px;
+    line-height: 1.3;
+    color: #3a2a1c;
     white-space: nowrap;
 }
 
-.cw-projects-stamp,
-.cw-resume-stamp,
+/* 盖章：项目档案右上角的「N / M 个项目」、商店档案里的「营业中」等。 */
 .cw-stamp,
 .cw-case-award {
     font-family: 'Special Elite', serif;
@@ -715,24 +692,13 @@ body {
     white-space: nowrap;
 }
 
-.cw-projects-stamp {
-    position: absolute;
-    right: -16px;
-    top: 176px;
-    transform: rotate(-14deg);
-    font-size: 21px;
-    letter-spacing: .24em;
-    padding: 4px 12px;
-    opacity: .85;
-}
-
 .cw-card--map {
     left: 500px;
     top: 530px;
     width: 520px;
     transform: rotate(-1.5deg);
     background: #e8dcc0;
-    padding: 10px 10px 12px;
+    padding: 10px 10px 8px;
     box-shadow: 0 12px 24px rgba(0, 0, 0, .5);
 }
 
@@ -745,135 +711,81 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-top: 8px;
+    margin-top: 4px;
     white-space: nowrap;
 }
 
 .cw-map-title {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 26px;
+    font-size: 58px;
+    line-height: 1.05;
     color: #2a1d12;
 }
 
-.cw-map-sub {
+.cw-map-years {
     font-family: 'Special Elite', var(--cw-serif);
-    font-size: 12px;
-    letter-spacing: .16em;
-    color: #6a5238;
+    font-size: 24px;
+    letter-spacing: .06em;
+    color: #4a3524;
 }
 
+/* 名片只留「联系我」和邮箱：名字就在旁边的肖像下面，电话和网址在「关于我」的联系方式里都有。 */
 .cw-bizcard {
     position: absolute;
-    left: 490px;
-    top: 400px;
-    width: 200px;
-    height: 110px;
+    left: 150px;
+    top: 424px;
+    width: 250px;
+    height: 100px;
     transform: rotate(3deg);
     background: #f6f1e6;
     box-shadow: 0 8px 16px rgba(0, 0, 0, .4);
-    padding: 14px 16px;
+    padding: 12px 18px;
     box-sizing: border-box;
 }
 
-.cw-bizcard-name {
-    font-family: 'Special Elite', serif;
-    font-size: 17px;
+.cw-bizcard-title {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 40px;
+    line-height: 1.1;
     white-space: nowrap;
     color: #1f1712;
-    letter-spacing: .08em;
 }
 
-.cw-bizcard-lines {
+.cw-bizcard-mail {
     font-family: 'Special Elite', serif;
-    font-size: 12px;
+    font-size: 15px;
     white-space: nowrap;
     color: #4a3524;
     margin-top: 6px;
-    line-height: 1.6;
 }
 
+/* 博客便签是一页笔记本：红色页边线正好压在大标签下面，下面的蓝色横线随便留白。 */
 .cw-card--blog {
     left: 90px;
     top: 600px;
     width: 380px;
-    height: 240px;
+    height: 214px;
     transform: rotate(2deg);
     background-color: #efe6d0;
     background-image: linear-gradient(180deg, #c95c4d 0 3px, transparent 3px), repeating-linear-gradient(180deg, transparent 0 31px, rgba(70, 110, 170, .28) 31px 33px);
-    background-position: 0 46px, 0 46px;
+    background-position: 0 100px, 0 100px;
     background-repeat: no-repeat, repeat;
     box-shadow: 0 10px 18px rgba(0, 0, 0, .45);
-    padding: 12px 24px;
-}
-
-.cw-blog-row {
-    display: flex;
-    justify-content: space-between;
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 14px;
-    letter-spacing: .2em;
-    color: #6a5238;
+    padding: 12px 30px;
 }
 
 .cw-blog-title {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 38px;
+    font-size: 84px;
     color: #2a1d12;
-    line-height: 1.1;
-    margin-top: 2px;
-}
-
-.cw-blog-list {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 15px;
-    line-height: 33px;
-    color: #3a2a1c;
-    margin-top: 4px;
-}
-
-.cw-blog-list div {
+    line-height: 1.05;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-.cw-ai-note {
-    position: absolute;
-    left: 130px;
-    top: 410px;
-    width: 260px;
-    height: 150px;
-    transform: rotate(-2deg);
-    background: #e6dcc4;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, .4);
-    padding: 14px 16px;
-    box-sizing: border-box;
-    overflow: hidden;
-}
-
-.cw-ai-note-tape {
-    position: absolute;
-    left: 90px;
-    top: -10px;
-    width: 80px;
-    height: 20px;
-    background: rgba(236, 222, 180, .9);
-    transform: rotate(-3deg);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
-}
-
-.cw-ai-note-title {
-    font-weight: 600;
-    font-size: 16px;
-    line-height: 1.3;
-    color: #1f1712;
-}
-
-.cw-ai-note-scribble {
-    margin-top: 8px;
-    height: 60px;
-    background: repeating-linear-gradient(180deg, rgba(40, 30, 20, .55) 0 2px, transparent 2px 7px);
-    opacity: .6;
+/* 数字行正好坐在第一条蓝线上（红线在 y=100，蓝线每 33px 一条，第一条在 y=131）。 */
+.cw-blog-stat {
+    margin-top: 4px;
+    line-height: 27px;
 }
 
 /* 墙上钉着的那张拍立得。它只是块装饰，不带 .cw-card，也就没有指针、焦点框和取件动画。
@@ -929,7 +841,7 @@ body {
     left: 1030px;
     top: 290px;
     width: 200px;
-    height: 180px;
+    height: 192px;
     transform: rotate(4deg);
     background: #1a1512;
     box-shadow: 0 10px 18px rgba(0, 0, 0, .5);
@@ -937,7 +849,7 @@ body {
 }
 
 .cw-shop-photo {
-    height: 104px;
+    height: 90px;
     overflow: hidden;
     background: #000;
 }
@@ -949,103 +861,85 @@ body {
     filter: contrast(1.05) saturate(.9);
 }
 
-.cw-shop-row {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 10px;
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 12px;
-    letter-spacing: .18em;
-    color: #e6d7b5;
-    white-space: nowrap;
-}
-
 .cw-shop-title {
-    font-family: 'Special Elite', serif;
-    font-size: 14px;
-    letter-spacing: .14em;
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 54px;
+    line-height: 1.05;
     color: #f2e8d0;
     margin-top: 6px;
     white-space: nowrap;
 }
 
+.cw-shop-brand {
+    font-family: 'Special Elite', serif;
+    font-size: 16px;
+    letter-spacing: .12em;
+    color: #e6d7b5;
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
 .cw-card--resume {
-    left: 1370px;
+    left: 1344px;
     top: 452px;
-    width: 310px;
-    height: 250px;
+    width: 346px;
+    height: 226px;
     transform: rotate(-3deg);
     background: linear-gradient(180deg, #f4efe3, #e9e1cf);
     box-shadow: 0 10px 18px rgba(0, 0, 0, .45);
-    padding: 26px 24px;
+    padding: 22px 24px;
     overflow: hidden;
 }
 
-.cw-resume-kicker {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 13px;
-    letter-spacing: .24em;
-    color: #6a5238;
-}
-
-.cw-resume-name {
-    font-family: 'Special Elite', serif;
-    font-size: 26px;
-    color: #1f1712;
-    margin-top: 10px;
-    line-height: 1.15;
+.cw-resume-title {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 80px;
+    line-height: 1.05;
+    color: #2a1d12;
+    white-space: nowrap;
 }
 
 .cw-resume-lines {
-    font-size: 15px;
+    font-size: 19px;
+    font-weight: 600;
     color: #3a2a1c;
-    margin-top: 8px;
-    line-height: 1.6;
+    margin-top: 6px;
+    line-height: 1.5;
+    white-space: nowrap;
 }
 
-.cw-resume-stamp {
-    position: absolute;
-    right: 12px;
-    top: 12px;
-    transform: rotate(12deg);
-    font-size: 17px;
-    letter-spacing: .2em;
-    padding: 3px 10px;
-    opacity: .8;
-}
+/* 大标签的字号按语言微调（量过真实宽度，见各卡片的内宽）：
+   毛笔体里拉丁字母比汉字小得多，英文放大一档才和中文一样醒目；
+   日文的假名和汉字一样占一整格，「プロジェクト」「ショップ」放在窄便签上要缩小，免得超出纸边。 */
+:lang(en) .cw-about-title { font-size: 96px; }
+:lang(en) .cw-portrait-caption { font-size: 84px; }
+:lang(en) .cw-shop-title { font-size: 58px; }
+:lang(en) .cw-projects-title { font-size: 88px; }
+:lang(en) .cw-blog-title { font-size: 88px; }
+:lang(en) .cw-map-title { font-size: 66px; }
+:lang(en) .cw-resume-title { font-size: 84px; }
+:lang(en) .cw-bizcard-title { font-size: 50px; }
+:lang(en) .cw-about-school,
+:lang(en) .cw-about-remote { font-size: 23px; }
 
-.cw-redact {
-    position: absolute;
-    bottom: 24px;
-    height: 14px;
-    background: #1d1712;
-}
-
-.cw-redact--1 {
-    left: 26px;
-    width: 120px;
-}
-
-.cw-redact--2 {
-    left: 156px;
-    width: 70px;
-}
+:lang(ja) .cw-about-title { font-size: 78px; }
+:lang(ja) .cw-shop-title { font-size: 44px; }
+:lang(ja) .cw-projects-title { font-size: 48px; }
+:lang(ja) .cw-projects-stat { font-size: 21px; }
+:lang(ja) .cw-resume-title { font-size: 86px; }
+:lang(ja) .cw-resume-lines { font-size: 18px; }
 
 /* 墙上钉着的一张 GitHub 个人主页贡献图的「截图」。纯展示：不带 .cw-card，没有指针、焦点框和
    取件动画，整张卡片 pointer-events: none，拖动环视会直接穿过它。数据由 js/github-contributions.js
    填入，拿不到数据时卡片保持透明，墙面不受影响。配色取自 GitHub 深色主题的贡献图（等级 0–4）。 */
 .cw-github {
-    --cell: 8px;
     --gap: 2px;
-    --pitch: calc(var(--cell) + var(--gap));
-    --label: 26px;
-    --months: 11px;
     position: absolute;
     left: 1096px;
     top: 722px;
     width: 584px;
     box-sizing: border-box;
-    padding: 12px 14px 8px;
+    padding: 12px 14px 14px;
     border: 1px solid #3d444d;
     border-radius: 6px;
     background: #0d1117;
@@ -1073,53 +967,48 @@ body {
     top: 1px;
 }
 
+/* 标题行：GitHub 的名字 + 贡献总数（最大最亮）+ 单位和年份。 */
 .cw-github-head {
-    font-size: 14px;
-    line-height: 17px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    white-space: nowrap;
+}
+
+.cw-github-name {
+    font-size: 27px;
+    font-weight: 700;
+    line-height: 1.2;
     color: #f0f6fc;
 }
 
-.cw-github-graph {
-    position: relative;
-    margin-top: 4px;
-    padding-left: var(--label);
+.cw-github-total {
+    margin-left: auto;
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1;
+    color: #56d364;
 }
 
-.cw-github-months {
-    position: relative;
-    height: var(--months);
-    font-size: 9.5px;
-    line-height: 11px;
-    color: #f0f6fc;
+.cw-github-unit {
+    font-size: 18px;
+    line-height: 1.2;
+    color: #9198a1;
 }
 
-.cw-github-months span {
-    position: absolute;
-    top: 0;
-    left: calc(var(--col) * var(--pitch));
-}
-
-/* 星期标签垂直对齐到对应那一行方块的正中。 */
-.cw-github-days span {
-    position: absolute;
-    left: 0;
-    top: calc(var(--months) + var(--row) * var(--pitch) + (var(--cell) - 11px) / 2);
-    font-size: 9.5px;
-    line-height: 11px;
-    color: #f0f6fc;
-}
-
+/* 方块铺满卡片的宽度：列宽按列数平分，方块用 aspect-ratio 保持正方形，所以 53 列和 54 列的年份都不用改样式。 */
 .cw-github-grid {
     display: grid;
-    grid-template-rows: repeat(7, var(--cell));
+    grid-template-rows: repeat(7, auto);
     grid-auto-flow: column;
-    grid-auto-columns: var(--cell);
+    grid-auto-columns: 1fr;
     gap: var(--gap);
+    margin-top: 10px;
 }
 
-.cw-github-cell,
-.cw-github-legend i {
+.cw-github-cell {
     display: block;
+    aspect-ratio: 1;
     border-radius: 2px;
     background: #151b23;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .05);
@@ -1129,45 +1018,20 @@ body {
     visibility: hidden;
 }
 
-.cw-github-cell[data-level="1"],
-.cw-github-legend i[data-level="1"] {
+.cw-github-cell[data-level="1"] {
     background: #033a16;
 }
 
-.cw-github-cell[data-level="2"],
-.cw-github-legend i[data-level="2"] {
+.cw-github-cell[data-level="2"] {
     background: #196c2e;
 }
 
-.cw-github-cell[data-level="3"],
-.cw-github-legend i[data-level="3"] {
+.cw-github-cell[data-level="3"] {
     background: #2ea043;
 }
 
-.cw-github-cell[data-level="4"],
-.cw-github-legend i[data-level="4"] {
+.cw-github-cell[data-level="4"] {
     background: #56d364;
-}
-
-.cw-github-foot {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 5px;
-    font-size: 10px;
-    line-height: 11px;
-    color: #9198a1;
-}
-
-.cw-github-legend {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-}
-
-.cw-github-legend i {
-    width: 9px;
-    height: 9px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1375,8 +1239,8 @@ html[data-i18n-pending] .cw-root {
 .cw-sound {
     padding: 10px 14px;
     font-family: 'Special Elite', var(--cw-serif);
-    font-size: 12px;
-    letter-spacing: .24em;
+    font-size: 13px;
+    letter-spacing: .12em;
     color: #e2cfa6;
     background: rgba(20, 12, 8, .55);
     border: 1px solid rgba(226, 207, 166, .45);
@@ -1396,8 +1260,8 @@ html[data-i18n-pending] .cw-root {
     z-index: 3;
     transform: translateX(-50%);
     font-family: 'Special Elite', var(--cw-serif);
-    font-size: 12px;
-    letter-spacing: .26em;
+    font-size: 15px;
+    letter-spacing: .14em;
     color: #e2cfa6;
     opacity: .85;
     transition: opacity 1s;
@@ -1613,33 +1477,20 @@ html[data-i18n-pending] .cw-root {
     box-sizing: border-box;
     overflow: hidden;
     pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .cw-carried[hidden] {
     display: none;
 }
 
-.cw-carried-file {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 14px;
-    letter-spacing: .22em;
-    opacity: .75;
-    white-space: nowrap;
-}
-
+/* 封面上只有一个大标题，字号由 clue-wall.js 按便签宽度定（见 coverTitleSize）。 */
 .cw-carried-title {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 40px;
-    margin-top: 8px;
+    font-size: 56px;
     line-height: 1.1;
-    white-space: nowrap;
-}
-
-.cw-carried-sub {
-    font-family: 'Special Elite', serif;
-    font-size: 15px;
-    margin-top: 6px;
-    opacity: .85;
     white-space: nowrap;
 }
 
@@ -1736,10 +1587,11 @@ html[data-i18n-pending] .cw-root {
     white-space: nowrap;
 }
 
+/* 标题下面那一行：商店档案里是店名、博客档案里是操作说明、履历档案里是姓名。 */
 .cw-file-sub {
     font-family: 'Special Elite', var(--cw-serif);
-    font-size: 13px;
-    letter-spacing: .28em;
+    font-size: 18px;
+    letter-spacing: .14em;
     color: #5a4028;
     margin-top: 10px;
     white-space: nowrap;
@@ -2026,7 +1878,7 @@ html[data-i18n-pending] .cw-root {
     color: #4a3524;
 }
 
-/* 档案 02：项目 · 案件时间线 */
+/* 档案 02：项目 */
 
 .cw-projects-file-stamp {
     left: 960px;
@@ -2655,17 +2507,6 @@ html[data-i18n-pending] .cw-root {
 /* 档案 04：履历 */
 
 /* 盖在档案左下角：证书行下沿到纸张底边只有 148px，倾角收到 7 度才两头都留得住空白 */
-.cw-resume-file-stamp {
-    left: 56px;
-    top: 654px;
-    transform: rotate(-7deg);
-    font-size: 28px;
-    letter-spacing: .26em;
-    padding: 8px 18px;
-    border-width: 4px;
-    opacity: .8;
-}
-
 .cw-dossier {
     position: absolute;
     left: 56px;
@@ -3191,10 +3032,6 @@ html[data-i18n-pending] .cw-root {
 /* ---- 窄屏：桌面上的档案改成单列滚动 ---- */
 
 @media (max-width: 899px) {
-    .cw-sound-en {
-        display: none;
-    }
-
     .cw-toolbar {
         top: 16px;
         right: 16px;
@@ -3296,8 +3133,8 @@ html[data-i18n-pending] .cw-root {
     }
 
     .cw-file-sub {
-        font-size: 11px;
-        letter-spacing: .16em;
+        font-size: 14px;
+        letter-spacing: .1em;
         white-space: normal;
         line-height: 1.6;
     }

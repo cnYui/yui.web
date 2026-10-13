@@ -25,16 +25,20 @@
     // 文章译文包（js/blog-articles.en.js / .ja.js）的版本号；改了内容就跟着换，避开 7 天缓存。
     const ARTICLES_VERSION = '20261010-2';
     // 手里举着的封面长什么样，取决于被取下来的是哪张便签，而不只是哪个档案。
-    // 这里的中文是兜底（也是 zh 词典的来源，测试会核对）；英文 / 日文在 js/clue-i18n.js 的 cover.<名>.file / title / sub。
+    // 封面上只有一个大标题，和墙上那张便签的标签是同一个词：key 指向 js/clue-i18n.js 里便签标签的词典键，
+    // 这里的中文是词典加载不上时的兜底（测试会核对它和词典 zh 一致）。
     const COVERS = {
-        about: { file: 'FILE 01 · 关于我', title: '谁是悠一？', sub: 'WHO IS YUI?', bg: 'linear-gradient(135deg,#cfae7c,#bb955f 55%,#caa877)', fg: '#2a1d12' },
-        aboutPortrait: { file: 'FILE 01 · 关于我', title: '主角 · 悠一 Yui', sub: 'SUBJECT · AI NATIVE DEVELOPER', bg: '#f2ede2', fg: '#2a1d12' },
-        projects: { file: 'FILE 02 · 项目', title: '案件时间线', sub: 'CASE TIMELINE', bg: '#f2ede2', fg: '#2a1d12' },
-        blog: { file: 'FILE 03 · 博客', title: '笔记 · Field Notes', sub: '6 ENTRIES', bg: '#efe6d0', fg: '#2a1d12' },
-        resume: { file: 'FILE 04 · 履历', title: '身份档案', sub: 'DOSSIER · CONFIDENTIAL', bg: 'linear-gradient(180deg,#f4efe3,#e9e1cf)', fg: '#2a1d12' },
-        travel: { file: 'FILE 05 · 旅行', title: '行踪图', sub: 'TRAVEL LOG', bg: '#e8dcc0', fg: '#2a1d12' },
-        shop: { file: 'FILE 06 · 商店', title: '天才程序员中转站', sub: 'CODE TRANSIT · SUB2API', bg: '#1a1512', fg: '#f2e8d0' }
+        about: { key: 'wall.about.title', title: '关于我', bg: 'linear-gradient(135deg,#cfae7c,#bb955f 55%,#caa877)', fg: '#2a1d12' },
+        aboutPortrait: { key: 'wall.portrait.caption', title: '悠一 Yui', bg: '#f2ede2', fg: '#2a1d12' },
+        projects: { key: 'wall.projects.title', title: '项目', bg: '#f2ede2', fg: '#2a1d12' },
+        blog: { key: 'wall.blog.title', title: '博客', bg: '#efe6d0', fg: '#2a1d12' },
+        resume: { key: 'wall.resume.title', title: '履历', bg: 'linear-gradient(180deg,#f4efe3,#e9e1cf)', fg: '#2a1d12' },
+        travel: { key: 'wall.map.title', title: '旅行', bg: '#e8dcc0', fg: '#2a1d12' },
+        shop: { key: 'wall.shop.title', title: '商店', bg: '#1a1512', fg: '#f2e8d0' }
     };
+    // 封面标题的字号上限（设计 px）。窄便签（商店只有 200 宽）上的长标题要按宽度缩小，不能被裁掉。
+    const COVER_TITLE_MAX = 64;
+    const COVER_TITLE_MIN = 26;
 
     const scene = document.getElementById('cwScene');
     const stage = document.getElementById('cwStage');
@@ -52,9 +56,7 @@
     const fingers = document.getElementById('cwFingers');
     const thumb = document.getElementById('cwThumb');
     const carried = document.getElementById('cwCarried');
-    const coverFile = document.getElementById('cwCoverFile');
     const coverTitle = document.getElementById('cwCoverTitle');
-    const coverSub = document.getElementById('cwCoverSub');
     const handCanvas = document.getElementById('cwHandCanvas');
     const propsCanvas = document.getElementById('cwPropsCanvas');
     const clockHour = document.getElementById('cwClockHour');
@@ -155,7 +157,7 @@
                 ${item.award ? `<span class="cw-case-award">${escapeHtml(item.award)}</span>` : ''}
             </article>`).join(''));
         const count = document.getElementById('cwProjectCount');
-        if (count) count.textContent = `${list.length} / ${all.length}`;
+        if (count && i18n()) count.textContent = t('projects.count', { n: list.length, all: all.length });
     }
 
     function renderTravel() {
@@ -187,12 +189,29 @@
             </button>`).join(''));
     }
 
+    // 墙上便签里的统计数字（项目数、奖项数、文章数）直接数档案数据，所以新增一条后不会再过期。
+    // index.html 里写着中文的静态版本（脚本没跑起来时看到的），测试会核对它和数据一致。
+    function renderStats() {
+        if (!i18n()) return;
+        const projects = data().projects || [];
+        const awards = projects.filter((item) => item.cat === 'award').length;
+        const bold = (value) => `<b>${num(value)}</b>`;
+        const stats = {
+            projects: t('wall.projects.stat', { n: bold(projects.length), a: bold(awards) }),
+            blog: t('wall.blog.stat', { n: bold((data().posts || []).length) })
+        };
+        root.querySelectorAll('[data-stat]').forEach((el) => {
+            if (stats[el.dataset.stat] !== undefined) el.innerHTML = stats[el.dataset.stat];
+        });
+    }
+
     function renderAll() {
         renderKeywords();
         renderAwards();
         renderProjects();
         renderTravel();
         renderPosts();
+        renderStats();
     }
 
     // ---- 文章手稿 ----
@@ -496,7 +515,7 @@
         scene.classList.toggle('is-dragging', dragging);
         dim.style.opacity = onDesk ? '0.06' : '0';
         hint.style.opacity = state.hint ? '0.85' : '0';
-        soundState.textContent = state.sound ? 'ON' : 'OFF';
+        if (i18n()) soundState.textContent = t(state.sound ? 'ui.sound.on' : 'ui.sound.off');
         soundButton.setAttribute('aria-pressed', String(state.sound));
         // 档案摊开时右上角只留语言切换（窄屏上档案铺满屏幕，环境音按钮会叠在纸上）。
         root.classList.toggle('is-reading', state.sheetIn);
@@ -508,6 +527,13 @@
         renderHand();
         renderSheet();
         syncHand();
+    }
+
+    // 封面标题的字号：汉字 / 假名按一个字宽、其余按半个字宽估出标题的字数宽度，再按便签的宽度缩放，
+    // 既要尽量大，也不能超出便签（比如日文的「プロジェクト」放在窄便签上）。width 是便签的设计宽度。
+    function coverTitleSize(title, width) {
+        const em = Array.from(title).reduce((sum, char) => sum + (char.charCodeAt(0) > 0x2e7f ? 1 : 0.55), 0);
+        return Math.round(clamp((width - 48) / Math.max(em, 1), COVER_TITLE_MIN, COVER_TITLE_MAX));
     }
 
     function renderHand() {
@@ -537,14 +563,10 @@
         if (!carrying) return;
         const coverName = COVERS[state.card] ? state.card : (COVERS[state.active] ? state.active : 'about');
         const cover = COVERS[coverName];
-        const coverText = (part) => {
-            const lang = i18n();
-            const key = `cover.${coverName}.${part}`;
-            return lang && lang.text[key] ? lang.t(key) : cover[part];
-        };
-        coverFile.textContent = coverText('file');
-        coverTitle.textContent = coverText('title');
-        coverSub.textContent = coverText('sub');
+        const lang = i18n();
+        const title = lang && lang.text[cover.key] ? lang.t(cover.key) : cover.title;
+        coverTitle.textContent = title;
+        coverTitle.style.fontSize = `${coverTitleSize(title, state.note.w / k)}px`;
         carried.style.background = cover.bg;
         carried.style.color = cover.fg;
         // 有 3D 手时，被捏住的纸每帧由手按捏点驱动（Web Animations），这里只画出行程起点的姿势；

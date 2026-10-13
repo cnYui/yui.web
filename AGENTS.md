@@ -192,3 +192,13 @@
 - 衬线体 `'Noto Serif SC'` 在 `styles/clue-wall.css` 里只在 `--cw-serif` 定义一处，日文时换成本机日文明朝体；别再往样式里写死这个字体名（测试会拦）。
 - `js/resume-download.js`（首页和 `/resume/` 共用的口令对话框）现在自带三语词典，按 `<html lang>` 取词；两个页面引用它的 `?v=` 必须一致（`resume/index.html` 也要跟着改）。
 - 实施记录见 `docs/ai/context/20261010-160500-clue-wall-i18n-en-ja-implementation_CN.md`。
+
+## 2026-10-13 首页线索墙卡片：一张一个大标签，只用一种语言
+
+- 墙上每张便签只留一个大标签（关于我 / 项目 / 博客 / 履历 / 旅行 / 商店，毛笔体）加一两行关键信息；`FILE 01`、`CASE TIMELINE`、`CONFIDENTIAL`、`SUBJECT` 这类侦探味的二级文字和印章已经删掉，别再加回去。文案只用当前语言写一遍，三语靠词典：`test/home-i18n.test.js` 的「墙上和档案页头的文案是单一语言」会拦住 zh / ja 里 4 个以上大写字母的英文标签、en 里夹汉字假名（品牌和证书名在测试里登记白名单）。
+- 便签里的数字（项目数、奖项数、文章数）不要写死：由 `js/clue-wall.js` 的 `renderStats()` 数 `clue-data.js`，词典模板用 `{n}` / `{a}`；`index.html` 里的静态中文数字有测试核对。新增项目或文章后页面自己会变，只要补同下标的英日译文。
+- 档案标题和墙上便签的大标签是同一个词（测试守着），手里举着的封面只有这一个标题，直接按便签标签的词典键取词（`COVERS[...].key`）。
+- 大标签字号按语言微调（`styles/clue-wall.css` 里的 `:lang(en)` / `:lang(ja)` 覆盖块）：毛笔体里拉丁字母偏小要放大，日文假名占整格、窄便签上要缩小；新增语言或改标签文字后用 `scrollWidth > clientWidth` 探针把三种语言各扫一遍。
+- GitHub 贡献图卡片只留 `GitHub` + 总数 + 单位 · 年份和方块图，单位走词典；月份、星期、图例、同步时间已删。
+- 档案里面的分节标签（`教育 · EDUCATION`、`姓名 NAME`）和数据字段（`city` 的 `大阪 Osaka`、案件徽章 `2ND PLACE`）仍是中英并排，这次没动。
+- 实施记录见 `docs/ai/context/20261013-173520-clue-wall-card-clarity-implementation_CN.md`。

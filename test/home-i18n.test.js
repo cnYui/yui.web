@@ -152,9 +152,7 @@ test('每个词典键都有中 / 英 / 日三种文案', () => {
         for (const lang of LANGS) {
             assert.equal(typeof TEXT[key][lang], 'string', `${key} 缺少 ${lang}`);
         }
-        // 英文版可以不要环境音的第二段；其余键三种语言都得有内容。
         for (const lang of LANGS) {
-            if (key === 'ui.sound.en' && lang === 'en') continue;
             assert.ok(TEXT[key][lang].trim(), `${key} 的 ${lang} 为空`);
         }
     }
@@ -195,17 +193,83 @@ test('index.html 里的中文和词典 zh 一致，词典没有多余或缺失�
     }
 });
 
-test('封面兜底文案和词典 zh 一致，覆盖每张可点开的便签', () => {
+// 手里举着的封面只有一个大标题，且和墙上那张便签的大标签是同一个词：封面直接按便签标签的键取词，
+// 脚本里写死的中文只是词典没加载上时的兜底，要和词典 zh 一致。
+test('封面标题取自便签标签的词典键，兜底文案和词典 zh 一致，覆盖每张可点开的便签', () => {
     const script = readFile('js/clue-wall.js');
-    const covers = [...script.matchAll(/^\s{8}(\w+): \{ file: '([^']*)', title: '([^']*)', sub: '([^']*)'/gm)];
+    const covers = [...script.matchAll(/^\s{8}(\w+): \{ key: '([^']*)', title: '([^']*)'/gm)];
     assert.equal(covers.length, 7);
-    for (const [, name, file, title, sub] of covers) {
-        assert.equal(TEXT[`cover.${name}.file`].zh, file, `cover.${name}.file`);
-        assert.equal(TEXT[`cover.${name}.title`].zh, title, `cover.${name}.title`);
-        assert.equal(TEXT[`cover.${name}.sub`].zh, sub, `cover.${name}.sub`);
+    const labelKeys = new Set([...html.matchAll(/data-i18n="(wall\.[a-z]+\.(?:title|caption))"/g)].map((match) => match[1]));
+    for (const [, name, key, title] of covers) {
+        assert.ok(labelKeys.has(key), `${name} 的封面键 ${key} 不是墙上某张便签的大标签`);
+        assert.equal(TEXT[key].zh, title, `${name} 的封面兜底文案和词典 zh 不一致`);
     }
     for (const category of ['award', 'hackathon', 'meetup', 'project']) {
         assert.ok(TEXT[`cat.${category}`], `缺少分类 ${category} 的标签`);
+    }
+});
+
+// 点开前后叫法一致：便签上叫「项目」，打开的档案标题也是「项目」，而不是另起一个侦探味的名字。
+test('档案标题和墙上便签的大标签是同一个词，三种语言都一致', () => {
+    const pairs = [
+        ['wall.about.title', 'about.title'],
+        ['wall.projects.title', 'projects.title'],
+        ['wall.blog.title', 'blog.title'],
+        ['wall.resume.title', 'resume.title'],
+        ['wall.map.title', 'travel.title'],
+        ['wall.shop.title', 'shop.title']
+    ];
+    for (const [card, file] of pairs) {
+        for (const lang of LANGS) assert.equal(TEXT[file][lang], TEXT[card][lang], `${file} 和 ${card} 的 ${lang} 叫法不一致`);
+    }
+});
+
+// 墙上和档案页头的文案只用当前语言写一遍：不能再有「FILE 01 · 关于我」「机密 CONFIDENTIAL」这种中英混排。
+// 中文 / 日文里不许出现 4 个以上连续大写字母的英文词（品牌和证书名在这里登记），英文里不许夹汉字假名。
+test('墙上和档案页头的文案是单一语言，不再中英混排', () => {
+    const prefixes = ['wall.', 'ui.'];
+    const extra = ['about.title', 'about.stamp', 'projects.title', 'projects.count', 'blog.title', 'blog.sub', 'resume.title', 'travel.title', 'shop.title', 'shop.sub', 'shop.stamp', 'github.unit', 'github.unit.one'];
+    const keys = Object.keys(TEXT).filter((key) => prefixes.some((prefix) => key.startsWith(prefix)) || extra.includes(key));
+    assert.ok(keys.length > 40, '没筛到要检查的键');
+
+    const ALLOWED = ['TOEIC', 'TOEFL'];
+    const strip = (text) => ALLOWED.reduce((out, word) => out.split(word).join(''), text);
+    for (const key of keys) {
+        for (const lang of ['zh', 'ja']) {
+            const value = strip(TEXT[key][lang]);
+            const shouting = value.match(/[A-Z]{4,}/g);
+            assert.equal(shouting, null, `${key} 的 ${lang} 里还有英文大写标签 ${shouting}：${TEXT[key][lang]}`);
+        }
+        assert.doesNotMatch(TEXT[key].en, /[ぁ-ヿ一-鿿]/, `${key} 的英文里夹着汉字 / 假名：${TEXT[key].en}`);
+    }
+});
+
+// 墙上便签里的数字（项目数、奖项数、文章数）数的是档案数据，而不是写死的：新增一条数据后会自己变。
+// index.html 里写着数字的静态版本是脚本没跑起来时看到的，不能和数据脱节。
+test('墙上的统计数字来自档案数据，静态版本和词典模板都对得上', () => {
+    const data = loadClueData();
+    const awards = data.projects.filter((item) => item.cat === 'award').length;
+    const numbersIn = (text) => (text.match(/\d+/g) || []).map(Number);
+    const staticStat = (name) => {
+        const match = new RegExp(`data-stat="${name}">(.*?)</div>`).exec(html);
+        assert.ok(match, `index.html 里没有 data-stat="${name}"`);
+        assert.equal((match[1].match(/<b>\d+<\/b>/g) || []).length, numbersIn(match[1]).length, '数字都要用 <b> 包起来');
+        return numbersIn(match[1]);
+    };
+    assert.deepEqual(staticStat('projects'), [data.projects.length, awards], '项目卡片的静态数字和 clue-data.js 对不上');
+    assert.deepEqual(staticStat('blog'), [data.posts.length], '博客卡片的静态数字和 clue-data.js 对不上');
+    assert.deepEqual(numbersIn(/id="cwProjectCount">([^<]*)</.exec(html)[1]), [data.projects.length, data.projects.length], '项目档案的计数章和 clue-data.js 对不上');
+    assert.ok(awards > 0 && data.posts.length > 0);
+
+    // 三种语言的模板都要带齐占位符，填进去之后数字原样出现。
+    const { i18n } = loadEngine();
+    for (const lang of LANGS) {
+        i18n.setLang(lang, false);
+        const projects = i18n.t('wall.projects.stat', { n: '<b>25</b>', a: '<b>6</b>' });
+        assert.ok(projects.includes('<b>25</b>') && projects.includes('<b>6</b>'), `${lang} 的 wall.projects.stat 缺占位符：${projects}`);
+        assert.ok(i18n.t('wall.blog.stat', { n: '<b>7</b>' }).includes('<b>7</b>'), `${lang} 的 wall.blog.stat 缺占位符`);
+        const count = i18n.t('projects.count', { n: 6, all: 25 });
+        assert.ok(/\b6\b/.test(count) && /\b25\b/.test(count), `${lang} 的 projects.count 缺占位符：${count}`);
     }
 });
 
