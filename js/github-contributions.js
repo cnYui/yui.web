@@ -9,11 +9,11 @@
     // 服务端每 15 分钟才刷新一次数据，页面开着不关时，半小时来取一次就够了。
     const REFRESH_MS = 30 * 60 * 1000;
     const DAY_MS = 24 * 60 * 60 * 1000;
-    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    const titleEl = card.querySelector('[data-gh="title"]');
-    const sourceEl = card.querySelector('[data-gh="source"]');
-    const monthsEl = card.querySelector('[data-gh="months"]');
+    // 卡片上只有三样东西：GitHub 的名字（写死在页面里）、贡献总数、单位 + 年份，再加整年的方块图。
+    // 月份、星期、图例、同步时间都不画：墙上缩小之后根本看不清，反而让人更难一眼认出这是什么。
+    const totalEl = card.querySelector('[data-gh="total"]');
+    const unitEl = card.querySelector('[data-gh="unit"]');
     const gridEl = card.querySelector('[data-gh="grid"]');
 
     let loading = false;
@@ -47,28 +47,7 @@
             cells.push(cell(Math.min(4, Math.max(0, Number(day.level) || 0))));
             previous = time;
         }
-        return { cells, weeks: Math.ceil(cells.length / 7), first, leading };
-    }
-
-    // GitHub 的规则：月份标在「周日落在该月 1–7 号」的那一列，全年第一个月标在第一列。
-    function monthLabels(first, leading, weeks) {
-        const labels = [];
-        let lastMonth = -1;
-        let lastCol = -10;
-        for (let col = 0; col < weeks; col++) {
-            const probe = new Date(col === 0 ? first : first + (col * 7 - leading) * DAY_MS);
-            const month = probe.getUTCMonth();
-            const isMonthStart = col === 0 || probe.getUTCDate() <= 7;
-            if (!isMonthStart || month === lastMonth || col - lastCol < 3) continue;
-            labels.push({ col, text: MONTHS[month] });
-            lastMonth = month;
-            lastCol = col;
-        }
-        return labels;
-    }
-
-    function formatTitle(total, year) {
-        return `${total.toLocaleString('en-US')} ${total === 1 ? 'contribution' : 'contributions'} in ${year}`;
+        return cells;
     }
 
     function formatSynced(iso) {
@@ -82,37 +61,30 @@
         const total = Number(data && data.total);
         if (days.length === 0 || !Number.isFinite(total)) return false;
 
-        const { cells, weeks, first, leading } = buildGrid(days);
         const fragment = document.createDocumentFragment();
-        cells.forEach((element) => fragment.appendChild(element));
+        buildGrid(days).forEach((element) => fragment.appendChild(element));
         gridEl.replaceChildren(fragment);
-
-        monthsEl.replaceChildren(...monthLabels(first, leading, weeks).map(({ col, text }) => {
-            const label = document.createElement('span');
-            label.style.setProperty('--col', String(col));
-            label.textContent = text;
-            return label;
-        }));
-
-        const synced = formatSynced(data.fetchedAt);
-        titleEl.textContent = formatTitle(total, data.year);
-        sourceEl.textContent = [data.login ? `@${data.login}` : '', synced ? `synced ${synced}` : ''].filter(Boolean).join(' · ');
 
         // 整张卡片对读屏来说就是一张图，格子本身不用逐个念。
         card.setAttribute('role', 'img');
         lastData = data;
-        updateAriaLabel();
+        updateLabels();
         card.removeAttribute('aria-hidden');
         card.classList.add('is-ready');
         return true;
     }
 
-    // 读屏描述跟着页面语言走（词典在 js/clue-i18n.js）；卡片上看得见的字是 GitHub 自己的英文界面，不翻译。
-    function updateAriaLabel() {
+    // 单位 + 年份和读屏描述都跟着页面语言走（词典在 js/clue-i18n.js）；总数是数字，各语言一样。
+    function updateLabels() {
         if (!lastData) return;
-        const total = Number(lastData.total).toLocaleString('en-US');
+        const count = Number(lastData.total);
+        const total = count.toLocaleString('en-US');
         const synced = formatSynced(lastData.fetchedAt);
         const i18n = typeof window !== 'undefined' ? window.YuiClueI18n : null;
+        totalEl.textContent = total;
+        unitEl.textContent = i18n
+            ? i18n.t(count === 1 ? 'github.unit.one' : 'github.unit', { year: lastData.year })
+            : `${count === 1 ? 'contribution' : 'contributions'} · ${lastData.year}`;
         const label = i18n
             ? i18n.t('github.aria', {
                 login: lastData.login || '',
@@ -135,7 +107,7 @@
     }
 
     load();
-    if (typeof window !== 'undefined') window.addEventListener('yui-clue-lang', updateAriaLabel);
+    if (typeof window !== 'undefined') window.addEventListener('yui-clue-lang', updateLabels);
     setInterval(() => { if (!document.hidden) load(); }, REFRESH_MS);
     // 标签页在后台放了很久，切回来时不用等下一个定时点，立刻补一次。
     document.addEventListener('visibilitychange', () => {
