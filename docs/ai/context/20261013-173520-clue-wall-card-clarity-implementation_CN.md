@@ -61,7 +61,11 @@
 - 浏览器里按 1440 × 900 看了中 / 英 / 日三种语言的整面墙，并用「把软木板克隆成 2D 覆盖层、按 1:1 平移」逐块看过卡片相邻处有没有互相遮字；`scrollWidth > clientWidth` 的溢出探针三种语言都是空的。手机尺寸（375 × 812）能读出每张便签的标签。
 - 点开商店 / 项目档案看了手举封面的那一瞬间和落到桌上之后的页头；用锚点逐个打开了 6 份档案。
 
-## 上线时注意
+## 上线
+
+2026-10-13 合并为 #74（合并提交 `b40c2a4`）后手动部署到 Mac（合并本身不会更新 aaccx.pw）。
 
 - 改动的静态资源 `?v=` 统一提到 `20261013-1`（`clue-wall.css`、`clue-i18n.js`、`clue-wall.js`、`github-contributions.js`）；`clue-data.js` 没改，仍是 `20261010-2`。按部署约定先传资源、验证后再传 `index.html`，不要先探测还没部署的真实 key。
-- 这次没有部署：Mac 上的拷贝仍是旧版。
+- 部署前只读比对发现 Mac 上的拷贝比 main 落后 #72（文章配图）和 #73（版本号补丁），所以按「Mac 与合并提交之间所有有差异的路径」一起部署，共 22 个文件：阶段 A 20 个（含 #72 的 10 张配图和 `js/blog-articles.js`）→ 阶段 B 博客页 `blog/ai-video-claude-opus.html` → 阶段 C `index.html`。旧文件备份在 Mac 的 `~/CodeSpace/yui.web-deploy-backups/20261013-175332-clue-wall-card-clarity/`。
+- 验证分层做：Mac 上逐阶段按 blob 哈希核对，整体重新比对 0 差异 / 0 缺失；公网先用从没请求过的 `?v=probe-…` 验哈希，再请求真实的 `?v=20261013-1` 和 `blog-articles.js?v=20261010-3`（首次 MISS、第二次 HIT，字节一致）；内置浏览器打开 https://aaccx.pw/ 看了中 / 英 / 日三种语言，溢出探针为空，控制台只有已知的 Cloudflare 统计脚本被 CSP 拦截。
+- 只有静态文件，没有重启 LaunchAgent；Sub2API 没动。
