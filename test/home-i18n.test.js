@@ -147,7 +147,7 @@ test('首页加载语言预处理、词典和切换器，且顺序正确', () =>
 
 test('每个词典键都有中 / 英 / 日三种文案', () => {
     const keys = Object.keys(TEXT);
-    assert.ok(keys.length > 100, '词典键太少，是不是没加载到');
+    assert.ok(keys.length > 80, '词典键太少，是不是没加载到');
     for (const key of keys) {
         for (const lang of LANGS) {
             assert.equal(typeof TEXT[key][lang], 'string', `${key} 缺少 ${lang}`);
@@ -166,7 +166,7 @@ test('每个词典键都有中 / 英 / 日三种文案', () => {
 
 test('index.html 里的中文和词典 zh 一致，词典没有多余或缺失的键', () => {
     const { texts, attrs } = extractMarkers(html);
-    assert.ok(texts.size > 90, `只解析到 ${texts.size} 个 data-i18n 节点`);
+    assert.ok(texts.size > 60, `只解析到 ${texts.size} 个 data-i18n 节点`);
 
     for (const [key, value] of texts) {
         assert.ok(TEXT[key], `词典缺少 ${key}`);
@@ -204,9 +204,6 @@ test('封面标题取自便签标签的词典键，兜底文案和词典 zh 一�
         assert.ok(labelKeys.has(key), `${name} 的封面键 ${key} 不是墙上某张便签的大标签`);
         assert.equal(TEXT[key].zh, title, `${name} 的封面兜底文案和词典 zh 不一致`);
     }
-    for (const category of ['award', 'hackathon', 'meetup', 'project']) {
-        assert.ok(TEXT[`cat.${category}`], `缺少分类 ${category} 的标签`);
-    }
 });
 
 // 点开前后叫法一致：便签上叫「项目」，打开的档案标题也是「项目」，而不是另起一个侦探味的名字。
@@ -228,9 +225,15 @@ test('档案标题和墙上便签的大标签是同一个词，三种语言都�
 // 中文 / 日文里不许出现 4 个以上连续大写字母的英文词（品牌和证书名在这里登记），英文里不许夹汉字假名。
 test('墙上和档案页头的文案是单一语言，不再中英混排', () => {
     const prefixes = ['wall.', 'ui.'];
-    const extra = ['about.title', 'about.stamp', 'projects.title', 'projects.count', 'blog.title', 'blog.sub', 'resume.title', 'travel.title', 'shop.title', 'shop.sub', 'shop.stamp', 'github.unit', 'github.unit.one'];
+    // 档案页头、分节标题和按钮上的小标签也守着单一语言（SKILL.md / VIBE 这类概念名不在其中）。
+    const extra = [
+        'about.title', 'about.dt.name', 'about.dt.status', 'about.dt.role', 'about.dt.avail', 'about.dt.seen', 'about.meta.kicker', 'about.contact.title',
+        'projects.title', 'projects.award', 'blog.title', 'reader.back', 'link.view',
+        'resume.title', 'resume.h.edu', 'resume.h.exp', 'resume.h.cert', 'resume.h.skills', 'resume.h.awards', 'resume.download',
+        'travel.title', 'shop.title', 'shop.sub', 'shop.ticket.cta', 'github.unit', 'github.unit.one'
+    ];
     const keys = Object.keys(TEXT).filter((key) => prefixes.some((prefix) => key.startsWith(prefix)) || extra.includes(key));
-    assert.ok(keys.length > 40, '没筛到要检查的键');
+    assert.ok(keys.length > 50, '没筛到要检查的键');
 
     const ALLOWED = ['TOEIC', 'TOEFL'];
     const strip = (text) => ALLOWED.reduce((out, word) => out.split(word).join(''), text);
@@ -258,7 +261,6 @@ test('墙上的统计数字来自档案数据，静态版本和词典模板都�
     };
     assert.deepEqual(staticStat('projects'), [data.projects.length, awards], '项目卡片的静态数字和 clue-data.js 对不上');
     assert.deepEqual(staticStat('blog'), [data.posts.length], '博客卡片的静态数字和 clue-data.js 对不上');
-    assert.deepEqual(numbersIn(/id="cwProjectCount">([^<]*)</.exec(html)[1]), [data.projects.length, data.projects.length], '项目档案的计数章和 clue-data.js 对不上');
     assert.ok(awards > 0 && data.posts.length > 0);
 
     // 三种语言的模板都要带齐占位符，填进去之后数字原样出现。
@@ -268,8 +270,6 @@ test('墙上的统计数字来自档案数据，静态版本和词典模板都�
         const projects = i18n.t('wall.projects.stat', { n: '<b>25</b>', a: '<b>6</b>' });
         assert.ok(projects.includes('<b>25</b>') && projects.includes('<b>6</b>'), `${lang} 的 wall.projects.stat 缺占位符：${projects}`);
         assert.ok(i18n.t('wall.blog.stat', { n: '<b>7</b>' }).includes('<b>7</b>'), `${lang} 的 wall.blog.stat 缺占位符`);
-        const count = i18n.t('projects.count', { n: 6, all: 25 });
-        assert.ok(/\b6\b/.test(count) && /\b25\b/.test(count), `${lang} 的 projects.count 缺占位符：${count}`);
     }
 });
 
@@ -277,10 +277,8 @@ test('英 / 日档案数据按下标对齐 clue-data.js，字段齐全', () => {
     const base = loadClueData();
     const fields = {
         projects: ['title', 'desc', 'city'],
-        projectCats: ['label'],
         posts: ['title', 'excerpt', 'read'],
         travel: ['title', 'en', 'desc'],
-        travelCities: ['label'],
         awards: ['t'],
         keywords: ['t']
     };
@@ -296,8 +294,6 @@ test('英 / 日档案数据按下标对齐 clue-data.js，字段齐全', () => {
             });
         }
     }
-    // 筛选标签的 id 不翻译：翻译只覆盖 label，所以 id 仍能选出东西。
-    assert.ok(!('id' in engine.packs.en.projectCats[0]));
 });
 
 test('引擎：切换语言后文案、数据、文章按语言取，没有译文时退回中文', () => {
@@ -306,8 +302,7 @@ test('引擎：切换语言后文案、数据、文章按语言取，没有译�
 
     assert.equal(i18n.lang, 'zh');
     assert.equal(i18n.data(), zhData, '中文直接用原始数据，不复制');
-    assert.equal(i18n.t('link.read'), TEXT['link.read'].zh);
-    assert.equal(i18n.t('post.kicker', { date: '2026.06.16' }), 'AI · 2026.06.16');
+    assert.equal(i18n.t('link.view'), TEXT['link.view'].zh);
     assert.equal(i18n.t('no.such.key'), 'no.such.key', '没有的键原样返回，便于一眼看出');
     assert.ok(!htmlEl.attrs.has('data-i18n-pending'), '启动后要摘掉首屏隐藏标记');
 
@@ -317,10 +312,9 @@ test('引擎：切换语言后文案、数据、文章按语言取，没有译�
     assert.equal(store['yui-portfolio-lang'], 'ja', '点切换器才写存储，且和子页面共用同一个 key');
     assert.equal(events.at(-1).type, 'yui-clue-lang');
     assert.equal(events.at(-1).detail.lang, 'ja');
-    assert.equal(i18n.t('link.read'), '読む · READ →');
+    assert.equal(i18n.t('link.view'), '見る →');
     assert.equal(i18n.data().projects[0].city, '大阪 Osaka');
     assert.equal(i18n.data().projects[0].img, zhData.projects[0].img, '图片、链接这类字段不翻译，沿用原数据');
-    assert.equal(i18n.data().projectCats[1].id, 'award', '筛选 id 不变');
     assert.equal(i18n.data(), i18n.data(), '同一语言重复取要走缓存');
 
     i18n.setLang('en', false);

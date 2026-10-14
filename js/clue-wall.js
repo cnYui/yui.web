@@ -78,7 +78,7 @@
         rx: -6, ry: 16, dragging: false, k: 1, vw: DESIGN_WIDTH, vh: DESIGN_HEIGHT,
         phase: 'idle', active: null, card: null, note: null, land: null,
         sheetIn: false, sheetFull: false, fingers: 'open', handPos: null, handTrans: 'none',
-        pf: 'all', tf: 'all', sound: false, hint: true,
+        sound: false, hint: true,
         article: null, zoom: null, readerIn: false, listMounted: false
     };
 
@@ -118,58 +118,53 @@
 
     function renderKeywords() {
         setList('keywords', (data().keywords || []).map((item) => (
-            `<li class="cw-keyword" style="--rot:${num(item.rot)}deg">${escapeHtml(item.t)}</li>`
+            `<li class="cw-keyword">${escapeHtml(item.t)}</li>`
         )).join(''));
     }
 
     function renderAwards() {
         setList('awards', (data().awards || []).map((award) => (
-            `<li class="cw-dossier-award"><span>${escapeHtml(award.t)}</span><span>${escapeHtml(award.y)}</span></li>`
+            `<li><span>${escapeHtml(award.t)}</span><span class="cw-a4-date">${escapeHtml(award.y)}</span></li>`
         )).join(''));
     }
 
-    function renderTabs(name, list, current, key) {
-        setList(name, (list || []).map((tab) => (
-            `<button class="cw-tab${tab.id === current ? ' is-active' : ''}" type="button" data-filter="${key}" data-value="${escapeHtml(tab.id)}">${escapeHtml(tab.label)}</button>`
-        )).join(''));
-    }
-
-    // 分类标签按 cat.<id> 取词；数据里出现词典没有的分类时直接显示 id，不显示成键名。
-    function categoryLabel(cat) {
-        const key = `cat.${cat}`;
-        const lang = i18n();
-        return lang && lang.text[key] ? lang.t(key) : (cat || '');
-    }
-
+    // 项目档案是一条时间线：一个节点一场比赛 / 一个项目，每个节点占满一屏（见 styles/clue-wall.css 的 .cw-event），
+    // 滚轮一格翻一个。获奖的节点用红点和「获奖」两个字标出来，不再分类、不盖章。
     function renderProjects() {
-        const all = data().projects || [];
-        const list = all.filter((item) => state.pf === 'all' || item.cat === state.pf);
-        renderTabs('projectTabs', data().projectCats, state.pf, 'pf');
-        setList('projects', list.map((item) => `
-            <article class="cw-case" style="--rot:${num(item.rot)}deg">
-                <span class="cw-case-clip" aria-hidden="true"></span>
-                ${item.img ? `<div class="cw-case-photo"><img src="${escapeHtml(item.img)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async"></div>` : ''}
-                <div class="cw-case-meta"><span>${escapeHtml(item.date)}</span><span>${escapeHtml(item.city)}</span></div>
-                <h3 class="cw-case-title">${escapeHtml(item.title)}</h3>
-                <p class="cw-case-note">${escapeHtml(item.desc)}</p>
-                <div class="cw-case-foot"><span>${escapeHtml(categoryLabel(item.cat))}</span>${item.link ? `<a href="${escapeHtml(item.link)}" target="_blank" rel="noopener">${escapeHtml(t('link.view'))}</a>` : ''}</div>
-                ${item.award ? `<span class="cw-case-award">${escapeHtml(item.award)}</span>` : ''}
-            </article>`).join(''));
-        const count = document.getElementById('cwProjectCount');
-        if (count && i18n()) count.textContent = t('projects.count', { n: list.length, all: all.length });
+        const list = data().projects || [];
+        setList('projects', `<ol class="cw-timeline">${list.map((item) => {
+            const award = item.cat === 'award';
+            const photo = item.img
+                ? `<div class="cw-event-photo"><img src="${escapeHtml(item.img)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async"></div>`
+                : '';
+            return `
+            <li class="cw-event${award ? ' is-award' : ''}">
+                <div class="cw-event-date">${escapeHtml(item.date)}</div>
+                <span class="cw-event-dot" aria-hidden="true"></span>
+                <article class="cw-event-card${photo ? '' : ' cw-event-card--text'}">
+                    ${photo}
+                    <div class="cw-event-head">
+                        <h3 class="cw-event-title">${escapeHtml(item.title)}</h3>
+                        ${award ? `<span class="cw-event-award">${escapeHtml(t('projects.award'))}</span>` : ''}
+                    </div>
+                    <div class="cw-event-sub">
+                        <span class="cw-event-city">${escapeHtml(item.city)}</span>
+                        ${item.link ? `<a class="cw-event-link" href="${escapeHtml(item.link)}" target="_blank" rel="noopener">${escapeHtml(t('link.view'))}</a>` : ''}
+                    </div>
+                    <p class="cw-event-desc">${escapeHtml(item.desc)}</p>
+                </article>
+            </li>`;
+        }).join('')}</ol>`);
     }
 
+    // 旅行档案是一本相册：路线图在最前面（写在 index.html 里），后面是两列大照片，不分城市。
     function renderTravel() {
-        const all = data().travel || [];
-        const list = all.filter((item) => state.tf === 'all' || item.city === state.tf);
-        renderTabs('travelTabs', data().travelCities, state.tf, 'tf');
-        setList('travel', list.map((item) => `
-            <figure class="cw-sighting" style="--rot:${num(item.rot)}deg">
-                <div class="cw-sighting-photo">${item.img ? `<img src="${escapeHtml(item.img)}?v=${TRAVEL_IMG_VERSION}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async">` : ''}</div>
+        setList('travel', (data().travel || []).map((item) => `
+            <figure class="cw-shot">
+                <div class="cw-shot-photo">${item.img ? `<img src="${escapeHtml(item.img)}?v=${TRAVEL_IMG_VERSION}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async">` : ''}</div>
                 <figcaption>
-                    <div class="cw-sighting-title">${escapeHtml(item.title)}</div>
-                    <div class="cw-sighting-en">${escapeHtml(item.en)}</div>
-                    <div class="cw-sighting-desc">${escapeHtml(item.desc)}</div>
+                    <span class="cw-shot-title">${escapeHtml(item.title)}</span>
+                    <span class="cw-shot-desc">${escapeHtml(item.desc)}</span>
                 </figcaption>
             </figure>`).join(''));
     }
@@ -178,13 +173,11 @@
 
     function renderPosts() {
         setList('posts', (data().posts || []).map((post) => `
-            <button class="cw-post" type="button" style="--rot:${num(post.rot)}deg" data-article="${escapeHtml(slugOf(post.link))}">
-                <span class="cw-post-tape" aria-hidden="true"></span>
-                <span class="cw-post-meta"><span>${escapeHtml(t('post.kicker', { date: post.date }))}</span><span>${escapeHtml(post.read)}</span></span>
+            <button class="cw-post" type="button" data-article="${escapeHtml(slugOf(post.link))}">
                 ${post.img ? `<span class="cw-post-photo"><img src="${escapeHtml(post.img)}" alt="" loading="lazy" decoding="async"></span>` : ''}
+                <span class="cw-post-meta">${escapeHtml(post.date)} · ${escapeHtml(post.read)}</span>
                 <span class="cw-post-title">${escapeHtml(post.title)}</span>
                 <span class="cw-post-excerpt">${escapeHtml(post.excerpt)}</span>
-                <span class="cw-post-link">${escapeHtml(t('link.read'))}</span>
             </button>`).join(''));
     }
 
@@ -249,8 +242,6 @@
         set('cwArtTitle', article.title);
         set('cwArtMeta', `${article.date} · ${article.readTime}`);
         set('cwArtExcerpt', article.excerpt);
-        set('cwArtPaperDate', t('reader.paperDate', { date: article.date }));
-        set('cwArtPaperCount', t('reader.blocks', { n: article.blocks.length }));
         // 这篇文章还没有当前语言的译文时，正文仍是中文原文，在稿纸顶上说明一句。
         const note = document.getElementById('cwArtNote');
         if (note) {
@@ -582,6 +573,14 @@
         carried.style.transform = `translate(${target.x}px, ${target.y}px) rotate(${atLand ? 0 : state.note.r}deg) scale(${k * scale}) translate(${-w / 2}px, ${-h / 2}px)`;
     }
 
+    // 档案摊开后纸的缩放：按窗口的宽和高各算一个，取小的那个，四周只留一圈边。
+    // 以前是 k × 0.9（k 是整面墙 1440 × 900 的缩放），纸只占窗口的一半多，里面的字缩得太小。
+    // 高度只给 92%：顶部要给右上角的语言切换留位置，纸整体还向下偏 20k。上限 1.5：超大屏上再放大只是糊。
+    function sheetScale() {
+        const { vw: W, vh: H } = state;
+        return Math.max(0.3, Math.min(W / SHEET_WIDTH * 0.96, H / SHEET_HEIGHT * 0.92, 1.5));
+    }
+
     function renderSheet() {
         if (!sheet) return;
         sheet.hidden = !state.sheetIn;
@@ -592,9 +591,11 @@
         if (labelledBy) sheet.setAttribute('aria-labelledby', labelledBy);
         sheet.classList.toggle('is-open', state.sheetFull);
 
-        if (skipChoreography()) { sheet.style.transform = ''; return; }
+        // 只有窄屏的 CSS 会把纸铺满屏幕、自己滚动；「减少动态效果」在桌面宽度下纸仍是 1280 × 760，要照常缩放居中，
+        // 只是不演过渡动画（样式里 prefers-reduced-motion 已把 .cw-sheet 的 transition 关掉）。
+        if (stackedQuery.matches) { sheet.style.transform = ''; return; }
         const { k, vw: W, vh: H, land } = state;
-        const ks = k * 0.9;
+        const ks = sheetScale();
         sheet.style.transform = (state.sheetFull || !land)
             ? `translate(${W / 2}px, ${H / 2 + 20 * k}px) rotate(0deg) scale(${ks}, ${ks}) rotateX(4deg) translate(-640px, -380px)`
             : `translate(${land.x}px, ${land.y}px) rotate(0deg) scale(${land.w / SHEET_WIDTH}, ${land.h / SHEET_HEIGHT}) rotateX(4deg) translate(-640px, -380px)`;
@@ -937,14 +938,6 @@
 
     // 档案里的筛选标签和文章卡片都是渲染出来的，统一用事件委托。
     sheetInner.addEventListener('click', (event) => {
-        const tab = event.target.closest('.cw-tab');
-        if (tab) {
-            const key = tab.dataset.filter;
-            state[key] = tab.dataset.value;
-            if (key === 'pf') renderProjects();
-            else renderTravel();
-            return;
-        }
         const post = event.target.closest('[data-article]');
         if (post) { openArticle(post.dataset.article, post); return; }
         if (event.target.closest('#cwArtBack')) closeArticle();

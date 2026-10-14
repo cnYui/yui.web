@@ -15,13 +15,6 @@ window.YuiClueData = {
         { date: '2026.01', city: '上海 Shanghai', title: '环球黑客松 Global Hackathon', note: '金奖 · Gold Award', img: CW_IMG + 'global-gold.webp', award: 'GOLD', rot: -2 },
         { date: '2026.03', city: '南京 Nanjing', title: '南京高校黑客松', note: '2026 AI Hackathon Tour · 决赛入围', img: CW_IMG + 'nanjing-finalist.webp', award: 'FINALIST', rot: 2 }
     ],
-    projectCats: [
-        { id: 'all', label: '全部 ALL' },
-        { id: 'award', label: '获奖 AWARD' },
-        { id: 'hackathon', label: '黑客松 HACKATHON' },
-        { id: 'meetup', label: '聚会 MEETUP' },
-        { id: 'project', label: '项目 PROJECT' }
-    ],
     projects: [
         { date: '2026.09', city: '大阪 Osaka', title: '大阪 Rokid Mini Hackathon', cat: 'award', desc: '作品「DoubleTraining」并列第二名（亚军）。', img: CW_IMG + 'osaka-rokid.webp', award: '2ND PLACE', link: '', rot: -1.5 },
         { date: '2026.07', city: '京都 Kyoto', title: 'IVS2026 Kyoto', cat: 'meetup', desc: '以 Academia 通行证参加京都 IVS2026 创业大会，逛了 WaytoAGI 等展位，并参加晚宴交流。', img: CW_IMG + 'ivs-kyoto.webp', award: '', link: '', rot: 1 },
@@ -57,23 +50,6 @@ window.YuiClueData = {
         { date: '2026.04.13', read: '15 分钟', title: 'AI Native Developer：黑客松赛场上的开发者生存范式', excerpt: '从黑客松实战、Vibe Coding 到 AI Native Developer，记录 AI 时代作品如何更容易拿奖。', img: CW_IMG + 'blog-hackathon.webp', link: '/blog/ai-native-hackathon', rot: 1.6 },
         { date: '2026.01.04', read: '8 分钟', title: 'AI 生图生视频使用经历和经验', excerpt: 'AI 只是工具，人之所以为人是因为会使用工具。从 Sora2 到 Nano Banana Pro，分享我的 AI 创作经历。', img: CW_IMG + 'blog-factory.webp', link: '/blog/ai-image-video', rot: -1 },
         { date: '2025.12.31', read: '12 分钟', title: 'Vibe Coding 实战指南', excerpt: '一年多 AI Coding 实战经验总结，从构思设计到纠错技巧，帮助你减少「屎山代码」、提升开发效率。', img: CW_IMG + 'blog-vibe.webp', link: '/blog/vibe-coding', rot: 1.2 }
-    ],
-    travelCities: [
-        { id: 'all', label: '全部 ALL' },
-        { id: 'tokyo', label: '东京' },
-        { id: 'kyoto', label: '京都' },
-        { id: 'osaka', label: '大阪' },
-        { id: 'nara', label: '奈良' },
-        { id: 'nagoya', label: '名古屋' },
-        { id: 'hiroshima', label: '广岛' },
-        { id: 'yokohama', label: '横滨' },
-        { id: 'kawasaki', label: '川崎' },
-        { id: 'okinawa', label: '冲绳' },
-        { id: 'fukui', label: '福井' },
-        { id: 'hangzhou', label: '杭州' },
-        { id: 'nanjing', label: '南京' },
-        { id: 'food', label: '美食' },
-        { id: 'others', label: '其他' }
     ],
     travel: [
         { city: 'fukui', title: '永平寺', en: 'Eiheiji Temple · Fukui', desc: '2026.09.18 · 曹洞宗大本山，据说乔布斯与库克都曾造访', img: CW_IMG + 'eiheiji.webp', rot: -2 },

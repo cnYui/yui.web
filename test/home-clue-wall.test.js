@@ -69,7 +69,7 @@ test('每张便签都标了自己的封面，取件动画才知道举的是哪�
 test('线索墙档案数据引用的图片与文章都存在', () => {
     const data = loadClueData();
 
-    for (const key of ['timeline', 'projects', 'projectCats', 'posts', 'travel', 'travelCities', 'awards', 'keywords']) {
+    for (const key of ['timeline', 'projects', 'posts', 'travel', 'awards', 'keywords']) {
         assert.ok(Array.isArray(data[key]) && data[key].length > 0, `YuiClueData.${key} 为空`);
     }
 
@@ -84,15 +84,13 @@ test('线索墙档案数据引用的图片与文章都存在', () => {
         assert.ok(fs.existsSync(path.join(rootDir, `${post.link}.html`)), `缺少文章 ${post.link}.html`);
     }
 
-    // 筛选标签的 id 必须能在数据里选出东西，否则点了会是空白。
-    const cats = new Set(data.projects.map((item) => item.cat));
-    for (const tab of data.projectCats.filter((tab) => tab.id !== 'all')) {
-        assert.ok(cats.has(tab.id), `没有项目属于分类 ${tab.id}`);
+    // 项目时间线靠 cat === 'award' 标出获奖的节点（墙上的奖项数也数它），所以至少得有一个。
+    assert.ok(data.projects.some((item) => item.cat === 'award'), '没有任何项目被标成获奖');
+    for (const item of data.projects) {
+        assert.match(item.date, /^\d{4}\.\d{2}$/, `项目日期应是 YYYY.MM：${item.title}`);
+        assert.ok(item.title && item.desc && item.city, `项目缺少标题 / 说明 / 城市：${item.date}`);
     }
-    const cities = new Set(data.travel.map((item) => item.city));
-    for (const tab of data.travelCities.filter((tab) => tab.id !== 'all')) {
-        assert.ok(cities.has(tab.id), `没有照片属于城市 ${tab.id}`);
-    }
+    for (const item of data.travel) assert.ok(item.title && item.desc && item.img, `照片缺少标题 / 说明 / 图片：${item.title}`);
 });
 
 test('桌上的文章手稿覆盖每篇博客，图片都在站内', () => {
