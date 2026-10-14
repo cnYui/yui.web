@@ -51,13 +51,13 @@ test('每张便签都标了自己的封面，取件动画才知道举的是哪�
     const cards = [...html.matchAll(/class="cw-card[^"]*" data-section="([^"]+)" data-card="([^"]+)" data-tilt="(-?[\d.]+)"/g)]
         .map(([, section, card, tilt]) => ({ section, card, tilt }));
 
-    assert.equal(cards.length, 7, '墙上应有 7 张可点开的便签');
+    assert.equal(cards.length, 6, '墙上应有 6 张可点开的便签（每份档案一张；个人介绍只有「关于我」这一个入口，不另放肖像卡）');
     assert.equal(new Set(cards.map((card) => card.card)).size, cards.length, 'data-card 不能重复');
     for (const card of cards) {
         assert.ok(Number.isFinite(Number(card.tilt)), `${card.card} 的 data-tilt 不是数字`);
     }
 
-    // 封面按 data-card 找，找不到就退回该档案的封面（行踪图、肖像这类同档案的不同便签）。
+    // 封面按 data-card 找，找不到就退回该档案的封面（行踪图这类名字和档案不同的便签）。
     const script = readFile('js/clue-wall.js');
     const covers = new Set([...script.matchAll(/^\s{8}(\w+): \{ key:/gm)].map((match) => match[1]));
     assert.ok(covers.size > 0, '没有解析到 COVERS');

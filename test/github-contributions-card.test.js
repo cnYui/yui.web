@@ -29,7 +29,7 @@ test('首页带上贡献图脚本，卡片是纯展示的装饰块而不是可�
     assert.match(block, /aria-hidden="true"/);
 });
 
-test('卡片样式不接收指针事件，拿不到数据时保持透明', () => {
+test('数据到达之前卡片不接收指针事件、保持透明；到达之后只能拖动，没有悬停 / 聚焦样式', () => {
     const css = readFile('styles/clue-wall.css');
     const rule = css.match(/\.cw-github\s*\{[^}]*\}/);
 
@@ -37,6 +37,8 @@ test('卡片样式不接收指针事件，拿不到数据时保持透明', () =>
     assert.match(rule[0], /pointer-events:\s*none/);
     assert.match(rule[0], /opacity:\s*0/);
     assert.match(css, /\.cw-github\.is-ready\s*\{[^}]*opacity:\s*1/);
+    // 到达之后才接收指针：墙上的纸都能拖（js/clue-board.js），但它不是便签，点不开。
+    assert.match(css, /\.cw-github\.is-ready\s*\{[^}]*pointer-events:\s*auto/);
     assert.doesNotMatch(css, /\.cw-github[^{]*:(?:hover|focus|active)/, '贡献图卡片不应有悬停 / 聚焦样式');
     assert.doesNotMatch(rule[0], /cursor:\s*pointer/);
 });

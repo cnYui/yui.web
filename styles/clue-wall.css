@@ -552,8 +552,8 @@ body {
 }
 
 .cw-card--about {
-    left: 120px;
-    top: 130px;
+    left: 575px;
+    top: 175px;
     width: 380px;
     height: 236px;
     transform: rotate(-4deg);
@@ -603,44 +603,8 @@ body {
     box-shadow: 0 0 0 3px rgba(62, 138, 58, .25);
 }
 
-.cw-card--portrait {
-    left: 700px;
-    top: 80px;
-    width: 300px;
-    transform: rotate(-2deg);
-    background: #f2ede2;
-    padding: 14px 14px 16px;
-    box-shadow: 0 14px 26px rgba(0, 0, 0, .55);
-}
-
-.cw-portrait-photo {
-    width: 272px;
-    height: 300px;
-    overflow: hidden;
-    background: #222;
-}
-
-.cw-portrait-photo img,
 .cw-about-photo-img img {
     filter: sepia(.35) contrast(1.08) saturate(.8);
-}
-
-.cw-portrait-caption {
-    font-family: 'Ma Shan Zheng', cursive;
-    font-size: 66px;
-    color: #2a1d12;
-    margin-top: 8px;
-    line-height: 1.05;
-    white-space: nowrap;
-}
-
-.cw-portrait-sub {
-    font-family: 'Special Elite', serif;
-    font-size: 21px;
-    letter-spacing: .04em;
-    color: #4a3524;
-    margin-top: 2px;
-    white-space: nowrap;
 }
 
 .cw-card--projects {
@@ -733,7 +697,7 @@ body {
 .cw-bizcard {
     position: absolute;
     left: 150px;
-    top: 424px;
+    top: 392px;
     width: 250px;
     height: 100px;
     transform: rotate(3deg);
@@ -761,8 +725,8 @@ body {
 
 /* 博客便签是一页笔记本：红色页边线正好压在大标签下面，下面的蓝色横线随便留白。 */
 .cw-card--blog {
-    left: 90px;
-    top: 600px;
+    left: 100px;
+    top: 120px;
     width: 380px;
     height: 214px;
     transform: rotate(2deg);
@@ -794,8 +758,8 @@ body {
    这里按 230 px 宽等比缩，1 mm ≈ 2.61 px，于是留白 12 px、画面 206 × 201 px、下巴 67 px。 */
 .cw-polaroid {
     position: absolute;
-    left: 1078px;
-    top: 500px;
+    left: 130px;
+    top: 560px;
     width: 230px;
     box-sizing: border-box;
     padding: 12px 12px 67px;
@@ -912,7 +876,6 @@ body {
    毛笔体里拉丁字母比汉字小得多，英文放大一档才和中文一样醒目；
    日文的假名和汉字一样占一整格，「プロジェクト」「ショップ」放在窄便签上要缩小，免得超出纸边。 */
 :lang(en) .cw-about-title { font-size: 96px; }
-:lang(en) .cw-portrait-caption { font-size: 84px; }
 :lang(en) .cw-shop-title { font-size: 58px; }
 :lang(en) .cw-projects-title { font-size: 88px; }
 :lang(en) .cw-blog-title { font-size: 88px; }
@@ -929,9 +892,9 @@ body {
 :lang(ja) .cw-resume-title { font-size: 86px; }
 :lang(ja) .cw-resume-lines { font-size: 18px; }
 
-/* 墙上钉着的一张 GitHub 个人主页贡献图的「截图」。纯展示：不带 .cw-card，没有指针、焦点框和
-   取件动画，整张卡片 pointer-events: none，拖动环视会直接穿过它。数据由 js/github-contributions.js
-   填入，拿不到数据时卡片保持透明，墙面不受影响。配色取自 GitHub 深色主题的贡献图（等级 0–4）。 */
+/* 墙上钉着的一张 GitHub 个人主页贡献图的「截图」。不带 .cw-card，没有焦点框和取件动画，只能拖动、连线。
+   数据由 js/github-contributions.js 填入：到达之前整张卡片透明、pointer-events: none（拖动环视会直接穿过它，
+   图钉也不出现），拿不到数据时就一直这样，墙面不受影响。配色取自 GitHub 深色主题的贡献图（等级 0–4）。 */
 .cw-github {
     --gap: 2px;
     position: absolute;
@@ -954,17 +917,7 @@ body {
 
 .cw-github.is-ready {
     opacity: 1;
-}
-
-/* 图钉压在上边框上，标题从图钉下面开始，不被盖住。 */
-.cw-github-pin--left {
-    left: 24px;
-    top: 1px;
-}
-
-.cw-github-pin--right {
-    left: calc(100% - 24px);
-    top: 1px;
+    pointer-events: auto;
 }
 
 /* 标题行：GitHub 的名字 + 贡献总数（最大最亮）+ 单位和年份。 */
@@ -1046,17 +999,9 @@ body {
         box-shadow: 0 24px 36px rgba(0, 0, 0, .55), inset 0 0 50px rgba(90, 60, 20, .18);
     }
 
-    .cw-card--portrait:hover,
-    .cw-card--projects:hover {
-        box-shadow: 0 26px 40px rgba(0, 0, 0, .6);
-    }
-
-    .cw-card--portrait:hover {
-        transform: rotate(0deg) translateY(-8px) scale(1.03);
-    }
-
     .cw-card--projects:hover {
         transform: rotate(1deg) translateY(-8px) scale(1.03);
+        box-shadow: 0 26px 40px rgba(0, 0, 0, .6);
     }
 
     .cw-card--map:hover {
@@ -1086,7 +1031,9 @@ body {
     overflow: visible;
 }
 
+/* 红线和图钉层压在所有便签之上（便签被拖动时会按 z-index 叠起来，最多到 800 左右，见 js/clue-board.js）。 */
 .cw-strings {
+    z-index: 900;
     width: 1700px;
     height: 880px;
 }
@@ -1148,6 +1095,89 @@ body {
 
 .cw-pin--blue {
     background: radial-gradient(circle at 35% 35%, #9fd0ff, #2b62a8 55%, #10305a);
+}
+
+/* ---- 墙上可拖动的便签、可点的图钉和访客自己拉的红线（js/clue-board.js） ---- */
+
+/* 软木板四个角上看不见的探针：js/clue-board.js 用它们在屏幕上的位置反算透视，把指针换回软木板坐标。 */
+.cw-probe {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* 选了第一枚图钉后，从它拖向光标的那根虚线，松开点第二枚才算连上。 */
+.cw-strings-preview {
+    fill: none;
+    stroke: #b0231d;
+    stroke-width: 2.4px;
+    stroke-linecap: round;
+    stroke-dasharray: 2 7;
+    opacity: .85;
+}
+
+.cw-pins {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 901;
+    width: 1700px;
+    height: 880px;
+    pointer-events: none;
+}
+
+/* 图钉只有 16px，在被缩小的 3D 墙面上更小，用一圈看不见的 44px 热区兜住手指和鼠标。 */
+.cw-pins .cw-pin {
+    pointer-events: auto;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease, opacity .3s ease;
+}
+
+.cw-pins .cw-pin::after {
+    content: '';
+    position: absolute;
+    inset: -14px;
+    border-radius: 50%;
+}
+
+.cw-pins .cw-pin.is-off {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.cw-pins .cw-pin.is-selected {
+    transform: scale(1.4);
+    box-shadow: 0 0 0 4px rgba(255, 236, 170, .6), 0 4px 6px rgba(0, 0, 0, .5);
+}
+
+@media (hover: hover) {
+    .cw-pins .cw-pin:hover:not(.is-selected) {
+        transform: scale(1.25);
+    }
+}
+
+/* 联系卡、拍立得、GitHub 贡献图点不开，只能拖，光标用抓手；便签本身仍是点开，所以保持手指。 */
+.cw-bizcard,
+.cw-polaroid,
+.cw-github.is-ready {
+    cursor: grab;
+}
+
+/* 被按住拖动的那张纸：抬起来一点，阴影更深。放在 hover 规则之后，同样的特异性下以它为准。 */
+.cw-card.is-held,
+.cw-bizcard.is-held,
+.cw-polaroid.is-held,
+.cw-github.is-held {
+    scale: 1.02;
+    cursor: grabbing;
+    box-shadow: 0 30px 46px rgba(0, 0, 0, .6);
+}
+
+.cw-scene.is-holding,
+.cw-scene.is-holding * {
+    cursor: grabbing !important;
 }
 
 /* ---- 墙面之上的界面 ---- */
