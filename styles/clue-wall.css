@@ -603,10 +603,6 @@ body {
     box-shadow: 0 0 0 3px rgba(62, 138, 58, .25);
 }
 
-.cw-about-photo-img img {
-    filter: sepia(.35) contrast(1.08) saturate(.8);
-}
-
 .cw-card--projects {
     left: 1230px;
     top: 80px;
@@ -643,16 +639,6 @@ body {
     font-size: 23px;
     line-height: 1.3;
     color: #3a2a1c;
-    white-space: nowrap;
-}
-
-/* 盖章：项目档案右上角的「N / M 个项目」、商店档案里的「营业中」等。 */
-.cw-stamp,
-.cw-case-award {
-    font-family: 'Special Elite', serif;
-    color: #b3261e;
-    border: 3px double #b3261e;
-    mix-blend-mode: multiply;
     white-space: nowrap;
 }
 
@@ -1022,25 +1008,16 @@ body {
 
 /* ---- 红线与图钉 ---- */
 
-.cw-strings,
-.cw-file-strings {
+/* 红线和图钉层压在所有便签之上（便签被拖动时会按 z-index 叠起来，最多到 800 左右，见 js/clue-board.js）。 */
+.cw-strings {
     position: absolute;
     left: 0;
     top: 0;
-    pointer-events: none;
-    overflow: visible;
-}
-
-/* 红线和图钉层压在所有便签之上（便签被拖动时会按 z-index 叠起来，最多到 800 左右，见 js/clue-board.js）。 */
-.cw-strings {
     z-index: 900;
     width: 1700px;
     height: 880px;
-}
-
-.cw-file-strings {
-    width: 1280px;
-    height: 760px;
+    pointer-events: none;
+    overflow: visible;
 }
 
 .cw-strings-shadow,
@@ -1049,27 +1026,14 @@ body {
     stroke-linecap: round;
 }
 
-.cw-strings--flat {
-    stroke-linecap: butt;
-}
-
-.cw-strings .cw-strings-shadow {
+.cw-strings-shadow {
     stroke: rgba(0, 0, 0, .35);
     stroke-width: 2.6px;
-}
-
-.cw-file-strings .cw-strings-shadow {
-    stroke: rgba(0, 0, 0, .28);
-    stroke-width: 2.4px;
 }
 
 .cw-strings-red {
     stroke: #b0231d;
     stroke-width: 2.4px;
-}
-
-.cw-file-strings .cw-strings--flat {
-    stroke-width: 2.6px;
 }
 
 .cw-pin {
@@ -1526,6 +1490,9 @@ html[data-i18n-pending] .cw-root {
 
 /* ---- 桌面上的档案：1280 × 760 的一张纸 ---- */
 
+/* 每份档案都是同一个骨架：左上角一个返回键，旁边一个大标题，下面一整块内容区（.cw-pane，里面可以用滚轮上下滚）。
+   没有印章、胶带、图钉和倾斜的纸片：纸整体按窗口缩放，里面的字只有做大，缩小之后才读得清。 */
+
 .cw-desk-layer {
     position: absolute;
     inset: 0;
@@ -1536,12 +1503,19 @@ html[data-i18n-pending] .cw-root {
 }
 
 .cw-sheet {
+    --ink: #2a1d12;
+    --ink-soft: #4a3524;
+    --muted: #6a5238;
+    --accent: #8a2a22;
+    --rule: rgba(90, 60, 30, .3);
     position: absolute;
     left: 0;
     top: 0;
     width: 1280px;
     height: 760px;
     transform-origin: 0 0;
+    background: linear-gradient(180deg, #f5f0e4, #ece4d1);
+    color: var(--ink);
     box-shadow: 0 40px 70px rgba(0, 0, 0, .6), 0 4px 10px rgba(0, 0, 0, .35);
     pointer-events: auto;
     will-change: transform;
@@ -1552,12 +1526,8 @@ html[data-i18n-pending] .cw-root {
     display: none;
 }
 
-.cw-sheet[data-file="about"] { background: linear-gradient(135deg, #cfae7c, #bb955f 55%, #caa877); }
-.cw-sheet[data-file="projects"] { background: linear-gradient(180deg, #f1ece1, #e9e2d3); }
-.cw-sheet[data-file="blog"] { background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0 44px, rgba(70, 110, 170, .2) 44px 46px), linear-gradient(180deg, #f0e8d4, #ebe2cb); }
-.cw-sheet[data-file="resume"] { background: linear-gradient(180deg, #f4efe3, #e9e1cf); }
-.cw-sheet[data-file="travel"] { background: linear-gradient(180deg, #ebe0c6, #e3d5b6); }
-.cw-sheet[data-file="shop"] { background: linear-gradient(180deg, #f1ebdd, #e8e0cf); }
+/* 履历是一张白色的 A4 放在稍深的底上，纸才看得出边。 */
+.cw-sheet[data-file="resume"] { background: linear-gradient(180deg, #d9cfba, #cdc1a7); }
 
 .cw-sheet-inner {
     position: absolute;
@@ -1573,24 +1543,21 @@ html[data-i18n-pending] .cw-root {
 
 .cw-back {
     position: absolute;
-    left: 36px;
-    top: 30px;
+    left: 40px;
+    top: 34px;
     z-index: 5;
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 14px;
-    letter-spacing: .2em;
-    color: #2a1d12;
-    background: rgba(240, 228, 190, .94);
+    font: 600 21px/1 var(--cw-serif);
+    color: #f2e8d0;
+    background: var(--ink);
     border: 0;
-    padding: 10px 18px;
-    transform: rotate(-2deg);
-    box-shadow: 0 3px 6px rgba(0, 0, 0, .3);
+    border-radius: 4px;
+    padding: 14px 24px;
     cursor: pointer;
     white-space: nowrap;
 }
 
 .cw-back:focus-visible {
-    outline: 2px solid #b3261e;
+    outline: 3px solid #b3261e;
     outline-offset: 3px;
 }
 
@@ -1605,435 +1572,331 @@ html[data-i18n-pending] .cw-root {
 
 .cw-file-head {
     position: absolute;
-    left: 56px;
-    top: 86px;
+    left: 178px;
+    top: 18px;
 }
 
 .cw-file-title {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 54px;
-    line-height: 1;
-    color: #2a1d12;
+    font-size: 76px;
+    font-weight: 400;
+    line-height: 1.05;
+    color: var(--ink);
     white-space: nowrap;
 }
 
-/* 标题下面那一行：商店档案里是店名、博客档案里是操作说明、履历档案里是姓名。 */
-.cw-file-sub {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 18px;
-    letter-spacing: .14em;
-    color: #5a4028;
-    margin-top: 10px;
-    white-space: nowrap;
-}
-
-.cw-file .cw-pin {
+/* 内容区：标题下面整块，超出就在里面滚（鼠标滚轮、触控板、键盘上下键 / 翻页键）。 */
+.cw-pane {
     position: absolute;
-}
-
-.cw-stamp {
-    position: absolute;
-    opacity: .85;
-}
-
-/* 档案里的滚动区：项目和旅行的卡片墙。 */
-.cw-scroll {
-    position: absolute;
-    overflow-y: auto;
-    overflow-x: hidden;
+    left: 56px;
+    top: 124px;
+    width: 1168px;
+    height: 616px;
     box-sizing: border-box;
-    border-top: 2px solid rgba(90, 60, 30, .35);
+    padding: 0 18px 40px 0;
+    overflow-x: hidden;
+    overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #8a6a3a rgba(0, 0, 0, .08);
 }
 
-.cw-scroll::-webkit-scrollbar { width: 10px; }
-.cw-scroll::-webkit-scrollbar-track { background: rgba(0, 0, 0, .08); }
-.cw-scroll::-webkit-scrollbar-thumb { background: #8a6a3a; border-radius: 5px; }
-
-.cw-tabs {
-    position: absolute;
-    display: flex;
-    gap: 6px;
-    align-items: flex-end;
+.cw-pane:focus {
+    outline: none;
 }
 
-.cw-tab {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 13px;
-    letter-spacing: .16em;
-    padding: 10px 16px 9px;
-    border: 0;
-    cursor: pointer;
-    background: rgba(236, 222, 180, .94);
-    color: #2a1d12;
-    box-shadow: 0 3px 5px rgba(0, 0, 0, .18);
-    border-radius: 6px 6px 0 0;
-    white-space: nowrap;
+.cw-pane:focus-visible {
+    outline: 3px solid #b3261e;
+    outline-offset: 4px;
 }
 
-.cw-tab.is-active {
-    background: #2a1d12;
-    color: #f2e8d0;
-}
+.cw-pane::-webkit-scrollbar { width: 10px; }
+.cw-pane::-webkit-scrollbar-track { background: rgba(0, 0, 0, .08); }
+.cw-pane::-webkit-scrollbar-thumb { background: #8a6a3a; border-radius: 5px; }
 
-.cw-tab:focus-visible {
-    outline: 2px solid #b3261e;
-    outline-offset: 2px;
-}
-
-.cw-tabs--travel {
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: flex-start;
-}
-
-.cw-tabs--travel .cw-tab {
-    font-size: 12.5px;
-    letter-spacing: .14em;
-    padding: 8px 12px 7px;
-    border-radius: 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, .18);
-}
-
-/* 英文城市名比中文长，15 个标签按中文的字距排会折成两行、压到下面的照片，收紧一点。 */
-:lang(en) .cw-tabs--travel .cw-tab {
-    letter-spacing: .04em;
-    padding: 8px 9px 7px;
+.cw-strong {
+    font-weight: 700;
 }
 
 /* 档案 01：关于我 */
 
-.cw-about-stamp {
-    left: 900px;
-    top: 100px;
-    transform: rotate(-8deg);
-    font-size: 21px;
-    letter-spacing: .22em;
-    padding: 6px 14px;
-}
-
 .cw-about-photo {
     position: absolute;
-    left: 64px;
-    top: 204px;
-    width: 230px;
-    transform: rotate(-3deg);
-    background: #f2ede2;
-    padding: 12px 12px 14px;
+    left: 56px;
+    top: 132px;
+    width: 380px;
+    margin: 0;
+    padding: 14px 14px 20px;
     box-sizing: border-box;
-    box-shadow: 0 12px 24px rgba(0, 0, 0, .4);
+    background: #fffdf8;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .28);
 }
 
 .cw-about-photo-img {
-    height: 230px;
+    height: 352px;
     overflow: hidden;
     background: #222;
 }
 
 .cw-about-photo-img img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: sepia(.35) contrast(1.08) saturate(.8);
+    object-position: center 55%;
+    filter: sepia(.25) contrast(1.06) saturate(.85);
 }
 
 .cw-about-photo figcaption {
+    margin-top: 14px;
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 23px;
-    color: #2a1d12;
-    margin-top: 10px;
-    line-height: 1.1;
-    white-space: nowrap;
+    font-size: 38px;
+    line-height: 1.2;
+    color: var(--ink);
+    text-align: center;
+}
+
+.cw-about-pane {
+    left: 480px;
+    width: 744px;
 }
 
 .cw-about-profile {
-    position: absolute;
-    left: 328px;
-    top: 206px;
-    width: 492px;
-    transform: rotate(1deg);
-    background-color: #f1e9d6;
-    background-image: linear-gradient(180deg, #c95c4d 0 3px, transparent 3px);
-    box-shadow: 0 10px 22px rgba(0, 0, 0, .35);
-    padding: 22px 26px 20px;
-    box-sizing: border-box;
-}
-
-.cw-about-profile-kicker,
-.cw-about-metaphors-kicker {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 13px;
-    letter-spacing: .24em;
-    color: #6a5238;
-    white-space: nowrap;
-}
-
-.cw-about-profile-grid {
     display: grid;
-    grid-template-columns: 140px 1fr;
-    gap: 9px 14px;
-    margin-top: 12px;
-    font-size: 15px;
-    line-height: 1.45;
-    color: #2a1d12;
+    grid-template-columns: 130px minmax(0, 1fr);
+    gap: 14px 22px;
+    margin: 0;
 }
 
-.cw-about-profile-grid dt {
-    font-family: 'Special Elite', var(--cw-serif);
-    color: #6a5238;
-    font-size: 14px;
+.cw-about-profile dt {
+    font: 600 21px/1.55 var(--cw-serif);
+    color: var(--muted);
+}
+
+.cw-about-profile dd {
+    margin: 0;
+    font: 400 26px/1.5 var(--cw-serif);
+    color: var(--ink);
+}
+
+.cw-about-block {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 2px solid var(--rule);
+}
+
+.cw-about-h {
+    margin: 0 0 14px;
+    font: 600 21px/1.2 var(--cw-serif);
+    letter-spacing: .14em;
+    color: var(--accent);
+}
+
+.cw-about-lead {
+    margin: 0;
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 46px;
+    line-height: 1.2;
+    color: var(--ink);
+}
+
+.cw-about-text {
+    margin: 12px 0 0;
+    font: 400 26px/1.65 var(--cw-serif);
+    color: var(--ink-soft);
+}
+
+.cw-about-pillars {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 22px 24px;
+    margin: 0;
+}
+
+.cw-about-pillars dt {
+    font: 400 30px/1.2 'Special Elite', var(--cw-serif);
+    color: var(--ink);
+}
+
+.cw-about-pillars dt span {
+    display: block;
+    margin-top: 4px;
+    font: 600 21px/1.3 var(--cw-serif);
+    color: var(--muted);
+}
+
+.cw-about-pillars dd {
+    margin: 0;
+    font: 400 24px/1.6 var(--cw-serif);
+    color: var(--ink-soft);
 }
 
 .cw-keywords {
-    position: absolute;
-    left: 840px;
-    top: 222px;
-    width: 420px;
     display: flex;
     flex-wrap: wrap;
-    gap: 14px 12px;
+    gap: 12px;
+    margin: 40px 0 0;
+    padding: 30px 0 0;
+    border-top: 2px solid var(--rule);
+    list-style: none;
 }
 
 .cw-keyword {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 15px;
-    letter-spacing: .12em;
-    color: #2a1d12;
-    background: rgba(236, 222, 180, .94);
-    padding: 7px 14px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, .25);
-    transform: rotate(var(--rot, 0deg));
+    padding: 11px 20px;
+    border: 1.5px solid rgba(90, 60, 30, .38);
+    border-radius: 999px;
+    background: rgba(90, 60, 30, .07);
+    font: 400 23px/1 'Special Elite', var(--cw-serif);
+    color: var(--ink);
     white-space: nowrap;
-}
-
-.cw-about-metaphors {
-    position: absolute;
-    left: 64px;
-    top: 540px;
-    width: 290px;
-    min-height: 196px;
-    transform: rotate(3deg);
-    background: linear-gradient(180deg, #eedb86, #e2c96a);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, .35);
-    padding: 18px 22px;
-    box-sizing: border-box;
-}
-
-.cw-about-metaphors-kicker {
-    font-size: 12.5px;
-    color: #6a5a28;
-}
-
-.cw-about-metaphors-title {
-    font-family: 'Ma Shan Zheng', cursive;
-    font-size: 30px;
-    color: #2a1d12;
-    line-height: 1.15;
-    margin-top: 8px;
-}
-
-.cw-about-metaphors-text {
-    font-size: 14.5px;
-    line-height: 1.55;
-    color: #4a3a18;
-    margin-top: 8px;
-}
-
-.cw-about-note {
-    position: absolute;
-    width: 240px;
-    height: 166px;
-    background: #f1e9d6;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, .3);
-    padding: 26px 20px 16px;
-    box-sizing: border-box;
-}
-
-.cw-about-note--vibe { left: 392px; top: 578px; transform: rotate(-1deg); }
-.cw-about-note--spec { left: 656px; top: 594px; transform: rotate(1.5deg); }
-.cw-about-note--harness { left: 920px; top: 578px; transform: rotate(-1deg); }
-
-.cw-about-note-title {
-    font-family: 'Special Elite', serif;
-    font-size: 20px;
-    letter-spacing: .2em;
-    color: #1f1712;
-}
-
-.cw-about-note-title span {
-    font-family: 'Ma Shan Zheng', cursive;
-    font-size: 24px;
-    letter-spacing: 0;
-    color: #8a2a22;
-}
-
-.cw-about-note-text {
-    font-size: 14.5px;
-    line-height: 1.55;
-    color: #4a3524;
-    margin-top: 8px;
 }
 
 .cw-about-contact {
-    position: absolute;
-    left: 1040px;
-    top: 410px;
-    width: 230px;
-    height: 116px;
-    transform: rotate(-4deg);
-    background: #f6f1e6;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, .4);
-    padding: 14px 18px;
-    box-sizing: border-box;
+    margin: 0;
+    font: 400 26px/1.9 var(--cw-serif);
+    color: var(--ink);
 }
 
-.cw-about-contact-title {
-    font-family: 'Special Elite', serif;
-    font-size: 16px;
-    color: #1f1712;
-    letter-spacing: .08em;
-    white-space: nowrap;
+.cw-about-contact a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 4px;
 }
 
-.cw-about-contact-lines {
-    font-family: 'Special Elite', serif;
-    font-size: 12.5px;
-    margin-top: 6px;
-    line-height: 1.6;
-    white-space: nowrap;
+/* 档案 02：项目 —— 时间线。一个节点一场比赛，每个节点正好占满内容区的高度，滚轮一格翻一个。 */
+
+.cw-timeline-pane {
+    padding-right: 18px;
+    padding-bottom: 0;
+    scroll-snap-type: y mandatory;
 }
 
-.cw-about-contact-lines span {
-    color: #4a3524;
-}
-
-/* 档案 02：项目 */
-
-.cw-projects-file-stamp {
-    left: 960px;
-    top: 98px;
-    transform: rotate(6deg);
-    font-size: 20px;
-    letter-spacing: .22em;
-    padding: 5px 12px;
-}
-
-.cw-file--projects .cw-tabs {
-    left: 56px;
-    top: 180px;
-}
-
-.cw-projects-scroll {
-    left: 56px;
-    top: 222px;
-    width: 1168px;
-    height: 500px;
-    padding: 16px 14px 30px 8px;
-}
-
-.cw-cases {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 30px 22px;
-    align-items: start;
-}
-
-.cw-case {
+.cw-timeline {
     position: relative;
-    background: #f6f2ea;
-    padding: 12px 12px 14px;
-    box-sizing: border-box;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, .3);
-    transform: rotate(var(--rot, 0deg));
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
-.cw-case-clip {
+/* 贯穿所有节点的那根线：日期 170px + 半个轨道 26px。 */
+.cw-timeline::before {
+    content: '';
     position: absolute;
-    left: 50%;
-    top: -9px;
-    width: 84px;
-    height: 20px;
-    margin-left: -42px;
-    background: rgba(236, 222, 180, .94);
-    transform: rotate(-2deg);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+    left: 196px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    margin-left: -2px;
+    background: rgba(90, 60, 30, .3);
 }
 
-.cw-case-photo {
-    height: 130px;
+.cw-event {
+    position: relative;
+    display: grid;
+    grid-template-columns: 170px 52px minmax(0, 1fr);
+    align-items: center;
+    height: 616px;
+    box-sizing: border-box;
+    padding: 10px 0;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}
+
+.cw-event-date {
+    padding-right: 6px;
+    font: 400 34px/1.1 'Special Elite', var(--cw-serif);
+    color: var(--muted);
+    text-align: right;
+    white-space: nowrap;
+}
+
+.cw-event-dot {
+    justify-self: center;
+    z-index: 1;
+    width: 26px;
+    height: 26px;
+    box-sizing: border-box;
+    border: 5px solid #8a6a3a;
+    border-radius: 50%;
+    background: #f5f0e4;
+}
+
+.cw-event.is-award .cw-event-dot {
+    border-color: #b3261e;
+    background: #b3261e;
+    box-shadow: 0 0 0 7px rgba(179, 38, 30, .16);
+}
+
+.cw-event-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+.cw-event-photo {
+    height: 372px;
     overflow: hidden;
+    border: 10px solid #fffdf8;
     background: #222;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .28);
 }
 
-.cw-case-photo img {
+.cw-event-photo img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: sepia(.3) contrast(1.05) saturate(.85);
 }
 
-.cw-case-meta {
+.cw-event-head {
     display: flex;
-    justify-content: space-between;
-    margin-top: 10px;
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 12px;
-    letter-spacing: .1em;
-    color: #6a5238;
-    white-space: nowrap;
-}
-
-.cw-case-title {
-    font-family: var(--cw-serif);
-    font-weight: 600;
-    font-size: 15px;
-    line-height: 1.3;
-    color: #2a1d12;
-    margin-top: 4px;
-}
-
-.cw-case-note {
-    font-size: 12.5px;
-    line-height: 1.5;
-    color: #4a3524;
-    margin-top: 4px;
-}
-
-.cw-case-foot {
-    display: flex;
-    justify-content: space-between;
     align-items: baseline;
-    margin-top: 8px;
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 11px;
-    letter-spacing: .16em;
-    color: #8a6a3a;
-    white-space: nowrap;
+    gap: 18px;
 }
 
-.cw-case-foot a {
-    color: #8a2a22;
+.cw-event-title {
+    margin: 0;
+    font: 700 38px/1.25 var(--cw-serif);
+    color: var(--ink);
 }
 
-.cw-case-award {
-    position: absolute;
-    right: -6px;
-    top: 104px;
-    transform: rotate(-14deg);
-    font-family: 'Special Elite', serif;
-    font-size: 13px;
-    letter-spacing: .2em;
+.cw-event-award {
+    flex: none;
+    font: 700 24px/1 var(--cw-serif);
     color: #b3261e;
-    border: 2.5px double #b3261e;
-    padding: 3px 8px;
-    opacity: .88;
-    mix-blend-mode: multiply;
     white-space: nowrap;
-    background: rgba(246, 242, 234, .6);
 }
 
-/* 档案 03：博客 · 笔记 */
+.cw-event-sub {
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+}
+
+.cw-event-city {
+    font: 400 22px/1.3 'Special Elite', var(--cw-serif);
+    color: var(--muted);
+}
+
+.cw-event-desc {
+    margin: 0;
+    font: 400 25px/1.55 var(--cw-serif);
+    color: var(--ink-soft);
+}
+
+.cw-event-link {
+    font: 600 22px/1.3 var(--cw-serif);
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+/* 没有照片的节点：标题更大，撑满那一屏。 */
+.cw-event-card--text .cw-event-title {
+    font-size: 54px;
+}
+
+/* 档案 03：博客 */
 
 .cw-file--blog {
     overflow: hidden;
@@ -2054,107 +1917,75 @@ html[data-i18n-pending] .cw-root {
     pointer-events: none;
 }
 
-/* 笔记列表与项目页、旅行页一致，包进 .cw-scroll，超出一屏的卡片可滚动查看。 */
-.cw-blog-scroll {
-    left: 48px;
-    top: 186px;
-    width: 1190px;
-    height: 536px;
-    padding: 14px 14px 30px 8px;
-    border-top: 0;
-}
-
 .cw-posts {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px 28px;
     align-items: start;
 }
 
 .cw-post {
-    position: relative;
-    background: #f7f2e6;
-    padding: 18px 20px 16px;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, .3);
-    transform: rotate(var(--rot, 0deg));
-    box-sizing: border-box;
-    cursor: pointer;
-    border: 0;
-    text-align: left;
-    font: inherit;
-    color: inherit;
     display: block;
     width: 100%;
+    box-sizing: border-box;
+    padding: 12px 12px 24px;
+    border: 0;
+    background: #fffdf8;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .25);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
     transition: transform .3s ease, box-shadow .3s ease;
 }
 
-.cw-post-tape {
-    position: absolute;
-    left: 50%;
-    top: -10px;
-    width: 90px;
-    height: 22px;
-    margin-left: -45px;
-    background: rgba(230, 215, 170, .92);
-    transform: rotate(-2deg);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
-}
-
-.cw-post-meta {
-    display: flex;
-    justify-content: space-between;
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 12.5px;
-    letter-spacing: .12em;
-    color: #6a5238;
-    white-space: nowrap;
+.cw-post:focus-visible {
+    outline: 3px solid #b3261e;
+    outline-offset: 3px;
 }
 
 .cw-post-photo {
-    height: 90px;
+    display: block;
+    height: 250px;
     overflow: hidden;
-    margin-top: 10px;
     background: #222;
 }
 
 .cw-post-photo img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: sepia(.25) contrast(1.05) saturate(.85);
+}
+
+.cw-post-meta {
+    display: block;
+    margin: 18px 10px 0;
+    font: 400 21px/1.2 'Special Elite', var(--cw-serif);
+    color: var(--muted);
 }
 
 .cw-post-title {
-    font-family: var(--cw-serif);
-    font-weight: 600;
-    font-size: 16px;
-    line-height: 1.35;
-    color: #2a1d12;
-    margin-top: 10px;
+    display: -webkit-box;
+    margin: 8px 10px 0;
+    overflow: hidden;
+    font: 700 31px/1.3 var(--cw-serif);
+    color: var(--ink);
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
 
 .cw-post-excerpt {
-    font-size: 13px;
-    line-height: 1.6;
-    color: #4a3524;
-    margin-top: 8px;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    margin: 10px 10px 0;
     overflow: hidden;
+    font: 400 22px/1.6 var(--cw-serif);
+    color: var(--ink-soft);
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
 }
 
-.cw-post-link {
-    display: inline-block;
-    margin-top: 10px;
-    font-family: 'Special Elite', serif;
-    font-size: 12.5px;
-    letter-spacing: .18em;
-    color: #8a2a22;
-    border-bottom: 1px solid #8a2a22;
-}
-
-/* 文章阅读器：从被点开的卡片里长出来，模糊转清晰。 */
+/* 文章阅读器：从被点开的卡片里长出来，模糊转清晰。左边是这篇的概要，右边是正文，正文可以滚。 */
 
 .cw-reader {
     position: absolute;
@@ -2165,7 +1996,7 @@ html[data-i18n-pending] .cw-root {
     filter: blur(16px);
     transition: transform .8s cubic-bezier(.2, .75, .15, 1), filter .8s cubic-bezier(.3, .6, .2, 1), opacity .5s ease;
     will-change: transform, filter;
-    background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0 44px, rgba(70, 110, 170, .2) 44px 46px), linear-gradient(180deg, #f0e8d4, #ebe2cb);
+    background: linear-gradient(180deg, #f5f0e4, #ece4d1);
     box-shadow: 0 30px 60px rgba(0, 0, 0, .35);
 }
 
@@ -2182,89 +2013,52 @@ html[data-i18n-pending] .cw-root {
 .cw-reader-cover {
     position: absolute;
     left: 56px;
-    top: 84px;
-    width: 330px;
-    height: 640px;
-    background: linear-gradient(135deg, #cfae7c, #bb955f 55%, #caa877);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, .4), inset 0 0 50px rgba(90, 60, 20, .18);
-    padding: 22px 22px 20px;
+    top: 104px;
+    width: 316px;
+    height: 636px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    transform: rotate(-.6deg);
-}
-
-.cw-reader-cover-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    white-space: nowrap;
-}
-
-.cw-reader-kicker {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 12px;
-    letter-spacing: .24em;
-    color: #5a4028;
-}
-
-.cw-reader-ai {
-    transform: rotate(-6deg);
-    font-family: 'Special Elite', serif;
-    font-size: 13px;
-    letter-spacing: .2em;
-    color: #b3261e;
-    border: 2.5px double #b3261e;
-    padding: 2px 8px;
-    opacity: .85;
-    mix-blend-mode: multiply;
 }
 
 .cw-reader-title {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 27px;
+    font-size: 40px;
     line-height: 1.2;
-    color: #2a1d12;
-    margin-top: 10px;
+    color: var(--ink);
 }
 
 .cw-reader-meta {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 12px;
-    letter-spacing: .14em;
-    color: #4a3524;
-    margin-top: 8px;
-    white-space: nowrap;
+    margin-top: 10px;
+    font: 400 21px/1.3 'Special Elite', var(--cw-serif);
+    color: var(--muted);
 }
 
 .cw-reader-hero {
-    margin: 14px 0 0;
-    background: #f2ede2;
-    padding: 8px 8px 10px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, .35);
-    transform: rotate(1.5deg);
+    margin: 18px 0 0;
+    border: 8px solid #fffdf8;
+    background: #222;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, .28);
 }
 
 .cw-reader-hero-img {
-    height: 140px;
+    height: 168px;
     overflow: hidden;
-    background: #222;
 }
 
 .cw-reader-hero-img img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: sepia(.2) contrast(1.05);
 }
 
 .cw-reader-excerpt {
-    font-size: 13.5px;
-    line-height: 1.65;
-    color: #3a2a1c;
-    margin-top: 14px;
+    margin-top: 18px;
+    font: 400 21px/1.6 var(--cw-serif);
+    color: var(--ink-soft);
     display: -webkit-box;
-    -webkit-line-clamp: 4;
+    -webkit-line-clamp: 5;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -2272,18 +2066,16 @@ html[data-i18n-pending] .cw-root {
 .cw-reader-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 12px;
+    gap: 8px;
+    margin-top: 14px;
 }
 
 .cw-reader-tag {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 11px;
-    letter-spacing: .12em;
-    color: #2a1d12;
-    background: rgba(236, 222, 180, .94);
-    padding: 4px 9px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+    padding: 5px 12px;
+    border: 1.5px solid rgba(90, 60, 30, .38);
+    border-radius: 999px;
+    font: 400 17px/1.2 'Special Elite', var(--cw-serif);
+    color: var(--ink);
     white-space: nowrap;
 }
 
@@ -2293,203 +2085,166 @@ html[data-i18n-pending] .cw-root {
 
 .cw-reader-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
     align-items: center;
-    flex-wrap: wrap;
 }
 
 .cw-reader-back {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 12.5px;
-    letter-spacing: .16em;
-    color: #f2e8d0;
-    background: #2a1d12;
+    padding: 14px 22px;
     border: 0;
-    padding: 9px 14px;
+    border-radius: 4px;
+    background: var(--ink);
+    font: 600 21px/1 var(--cw-serif);
+    color: #f2e8d0;
     cursor: pointer;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, .3);
     white-space: nowrap;
+}
+
+.cw-reader-back:focus-visible {
+    outline: 3px solid #b3261e;
+    outline-offset: 3px;
 }
 
 .cw-reader-paper {
     position: absolute;
-    left: 414px;
-    top: 84px;
-    width: 810px;
-    height: 640px;
-    background: linear-gradient(180deg, #f8f3e8, #f1eadc);
-    box-shadow: 0 14px 28px rgba(0, 0, 0, .35);
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 34px 44px 44px;
+    left: 404px;
+    top: 104px;
+    width: 820px;
+    height: 636px;
     box-sizing: border-box;
+    padding: 40px 54px 52px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: #fffdf8;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, .3);
     scrollbar-width: thin;
     scrollbar-color: #8a6a3a rgba(0, 0, 0, .08);
+}
+
+.cw-reader-paper:focus {
+    outline: none;
+}
+
+.cw-reader-paper:focus-visible {
+    outline: 3px solid #b3261e;
+    outline-offset: -3px;
 }
 
 .cw-reader-paper::-webkit-scrollbar { width: 10px; }
 .cw-reader-paper::-webkit-scrollbar-track { background: rgba(0, 0, 0, .08); }
 .cw-reader-paper::-webkit-scrollbar-thumb { background: #8a6a3a; border-radius: 5px; }
 
-.cw-reader-paper-head,
-.cw-reader-end {
-    display: flex;
-    justify-content: space-between;
-    font-family: 'Special Elite', var(--cw-serif);
-    letter-spacing: .24em;
-    color: #8a6a3a;
-    white-space: nowrap;
-}
-
-.cw-reader-paper-head {
-    font-size: 11.5px;
-    border-bottom: 1px dashed rgba(90, 60, 30, .4);
-    padding-bottom: 8px;
-}
-
-/* 当前语言还没有这篇文章的译文时，在稿纸顶上说明正文是中文原文。 */
+/* 当前语言还没有这篇文章的译文时，在正文顶上说明正文是中文原文。 */
 .cw-reader-note {
-    margin: 12px 0 0;
-    padding: 7px 11px;
-    font-size: 12.5px;
-    line-height: 1.6;
+    margin: 0 0 8px;
+    padding: 10px 14px;
+    font: 400 19px/1.6 var(--cw-serif);
     color: #7a1f18;
     background: rgba(179, 38, 30, .07);
-    border-left: 2px solid #b3261e;
+    border-left: 3px solid #b3261e;
 }
 
 .cw-reader-note[hidden] {
     display: none;
 }
 
-.cw-reader-end {
-    margin-top: 36px;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    letter-spacing: .2em;
-    color: #6a5238;
-}
-
 .cw-blk-h2 {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 20px;
-    letter-spacing: .04em;
-    color: #2a1d12;
-    margin: 30px 0 12px;
-    padding-bottom: 6px;
-    border-bottom: 1.5px solid #8a2a22;
-    line-height: 1.35;
+    margin: 36px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent);
+    font: 700 32px/1.35 var(--cw-serif);
+    color: var(--ink);
 }
 
 .cw-blk-h3 {
-    font-family: var(--cw-serif);
-    font-weight: 600;
-    font-size: 17px;
-    color: #2a1d12;
-    margin: 22px 0 8px;
-    line-height: 1.4;
+    margin: 26px 0 10px;
+    font: 700 26px/1.4 var(--cw-serif);
+    color: var(--ink);
 }
 
 .cw-blk-p {
-    font-size: 15.5px;
-    line-height: 1.85;
+    margin: 0 0 16px;
+    font: 400 22px/1.85 var(--cw-serif);
     color: #2a2118;
-    margin: 0 0 14px;
     text-wrap: pretty;
 }
 
 .cw-blk-img {
     position: relative;
-    margin: 18px 10px 22px;
-    background: #fbf8f1;
+    margin: 20px 0 26px;
     padding: 10px 10px 8px;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, .28);
-    transform: rotate(var(--rot, 0deg));
-}
-
-.cw-blk-img-tape {
-    position: absolute;
-    left: 50%;
-    top: -10px;
-    width: 90px;
-    height: 22px;
-    margin-left: -45px;
-    background: rgba(230, 215, 170, .92);
-    transform: rotate(-2deg);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+    background: #f6f1e6;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, .22);
 }
 
 .cw-blk-img img {
+    display: block;
     width: 100%;
     height: auto;
     background: #e8e0cf;
 }
 
 .cw-blk-img-cap {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 11.5px;
-    letter-spacing: .1em;
-    color: #6a5238;
-    margin-top: 8px;
+    margin-top: 10px;
+    font: 400 17px/1.4 'Special Elite', var(--cw-serif);
+    color: var(--muted);
     text-align: center;
 }
 
 .cw-blk-code {
-    margin: 16px 0 18px;
+    margin: 18px 0 22px;
+    padding: 16px 20px 18px;
     background: #2b241e;
     color: #e8dfc9;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, .35);
-    padding: 14px 18px 16px;
 }
 
 .cw-blk-code-kicker {
-    font-family: 'Special Elite', serif;
-    font-size: 10.5px;
+    margin-bottom: 8px;
+    font: 400 14px/1 'Special Elite', serif;
     letter-spacing: .3em;
     color: #b8a27a;
-    margin-bottom: 8px;
 }
 
 .cw-blk-code pre {
     margin: 0;
     font-family: 'Courier New', Courier, monospace;
-    font-size: 12.5px;
+    font-size: 17px;
     line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-word;
 }
 
 .cw-blk-list {
-    margin: 4px 0 14px 6px;
+    margin: 4px 0 16px 4px;
 }
 
 .cw-blk-list-item {
     display: flex;
-    gap: 12px;
-    font-size: 15px;
+    gap: 14px;
+    margin-bottom: 6px;
+    font-size: 22px;
     line-height: 1.75;
     color: #2a2118;
-    margin-bottom: 4px;
 }
 
 .cw-blk-list-mark {
-    font-family: 'Special Elite', serif;
-    color: #8a2a22;
     flex: none;
+    font-family: 'Special Elite', serif;
+    color: var(--accent);
 }
 
 .cw-blk-list--ol .cw-blk-list-mark {
-    min-width: 18px;
+    min-width: 26px;
 }
 
 .cw-blk-quote {
-    margin: 16px 0 18px;
-    padding: 14px 20px 14px 46px;
-    background: rgba(236, 222, 180, .55);
     position: relative;
+    margin: 18px 0 22px;
+    padding: 16px 22px 16px 54px;
+    background: rgba(236, 222, 180, .55);
+    font-size: 22px;
     font-style: italic;
-    font-size: 15.5px;
     line-height: 1.75;
     color: #3a2a1c;
 }
@@ -2497,569 +2252,367 @@ html[data-i18n-pending] .cw-root {
 .cw-blk-quote::before {
     content: '\201C';
     position: absolute;
-    left: 14px;
+    left: 16px;
     top: 2px;
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 38px;
+    font-size: 46px;
     line-height: 1;
     color: #b3261e;
 }
 
 .cw-blk-table {
-    margin: 14px 0 18px;
-    border-top: 1.5px solid #2a1d12;
-    border-bottom: 1.5px solid #2a1d12;
+    margin: 16px 0 22px;
+    border-top: 2px solid var(--ink);
+    border-bottom: 2px solid var(--ink);
 }
 
 .cw-blk-row {
     display: flex;
     border-bottom: 1px dashed rgba(90, 60, 30, .35);
-    font-size: 13.5px;
+    font-size: 19px;
     line-height: 1.6;
     color: #2a2118;
 }
 
 .cw-blk-row--head {
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .cw-blk-cell {
     flex: 1;
-    padding: 8px 10px;
     min-width: 0;
-}
-
-.cw-blk-hr {
-    margin: 22px 0;
-    border-top: 1px dashed rgba(90, 60, 30, .45);
-}
-
-/* 档案 04：履历 */
-
-/* 盖在档案左下角：证书行下沿到纸张底边只有 148px，倾角收到 7 度才两头都留得住空白 */
-.cw-dossier {
-    position: absolute;
-    left: 56px;
-    top: 190px;
-    width: 1168px;
-    display: flex;
-    gap: 40px;
-    align-items: flex-start;
-}
-
-.cw-dossier-main {
-    flex: 0 0 580px;
-}
-
-.cw-dossier-side {
-    flex: 1;
-    min-width: 0;
-}
-
-.cw-dossier-head {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 13px;
-    letter-spacing: .26em;
-    color: #8a2a22;
-    border-bottom: 1.5px solid #8a2a22;
-    padding-bottom: 6px;
-    margin-top: 22px;
-    font-weight: 400;
-}
-
-.cw-dossier-head:first-child {
-    margin-top: 0;
-}
-
-.cw-strong {
-    font-weight: 600;
-}
-
-.cw-dossier-date {
-    font-family: 'Special Elite', serif;
-    color: #6a5238;
-    white-space: nowrap;
-}
-
-.cw-dossier-edu {
-    margin-top: 10px;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 8px 20px;
-    font-size: 15px;
-    line-height: 1.45;
-    color: #2a1d12;
-}
-
-.cw-dossier-exp {
-    margin-top: 10px;
-    font-size: 15px;
-    line-height: 1.45;
-    color: #2a1d12;
-}
-
-/* 多段经历之间留一点气口，最新的那段在最上面。 */
-.cw-dossier-exp + .cw-dossier-exp {
-    margin-top: 14px;
-    padding-top: 12px;
-    border-top: 1px dashed rgba(90, 60, 30, .3);
-}
-
-/* 在职的那段日期标红，扫一眼就知道哪份还在进行。 */
-.cw-dossier-date--now {
-    color: #8a2a22;
-}
-
-.cw-dossier-exp-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 20px;
-}
-
-.cw-dossier-exp-desc {
-    margin-top: 6px;
-    color: #4a3524;
-    font-size: 14px;
-    line-height: 1.55;
-}
-
-.cw-dossier-exp-list {
-    margin: 8px 0 0;
-    padding-left: 18px;
-    color: #4a3524;
-    font-size: 13.5px;
-    line-height: 1.6;
-    list-style: disc;
-}
-
-.cw-dossier-certs {
-    display: flex;
-    gap: 12px;
-    margin-top: 10px;
-}
-
-.cw-dossier-box {
-    background: #f8f4ea;
-    border: 1px solid rgba(90, 60, 30, .25);
     padding: 10px 12px;
 }
 
-.cw-dossier-certs .cw-dossier-box {
-    flex: 1;
+.cw-blk-hr {
+    margin: 26px 0;
+    border-top: 1px dashed rgba(90, 60, 30, .45);
 }
 
-.cw-dossier-cert {
-    font-family: 'Special Elite', serif;
-    font-size: 16px;
+/* 档案 04：履历 —— 两张 A4（210 : 297）纸，宽 800 → 高 1131；内容多的那张自己长高。 */
+
+.cw-resume-pane {
+    padding-bottom: 0;
+}
+
+.cw-a4 {
+    width: 800px;
+    min-height: 1131px;
+    margin: 0 auto 36px;
+    box-sizing: border-box;
+    padding: 62px 68px 60px;
+    background: #fffdf9;
     color: #1f1712;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, .3);
 }
 
-.cw-dossier-cert-date {
-    font-family: 'Special Elite', serif;
-    font-size: 12px;
-    color: #6a5238;
-    margin-top: 2px;
+.cw-a4-head {
+    padding-bottom: 30px;
+    border-bottom: 3px solid #1f1712;
 }
 
-.cw-dossier-skills {
-    margin-top: 10px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+.cw-a4-name {
+    margin: 0;
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 78px;
+    font-weight: 400;
+    line-height: 1.05;
 }
 
-.cw-dossier-skills .cw-dossier-box {
-    padding: 11px 13px;
+.cw-a4-legal {
+    margin: 8px 0 0;
+    font: 400 22px/1.2 'Special Elite', var(--cw-serif);
+    letter-spacing: .24em;
+    color: var(--muted);
 }
 
-.cw-dossier-skill {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 14px;
-    letter-spacing: .06em;
-    color: #1f1712;
+.cw-a4-role {
+    margin: 20px 0 0;
+    font: 700 25px/1.5 var(--cw-serif);
 }
 
-.cw-dossier-skill-text {
-    font-size: 12.5px;
-    line-height: 1.5;
-    color: #4a3524;
+.cw-a4-mail {
+    margin: 6px 0 0;
+    font: 400 23px/1.5 var(--cw-serif);
+}
+
+.cw-a4-mail a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.cw-a4-sec {
+    margin-top: 38px;
+}
+
+.cw-a4-h {
+    margin: 0 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent);
+    font: 700 26px/1.2 var(--cw-serif);
+    letter-spacing: .3em;
+    color: var(--accent);
+}
+
+.cw-a4-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 24px;
+    font: 400 24px/1.5 var(--cw-serif);
+}
+
+.cw-a4-what {
+    min-width: 0;
+    text-wrap: pretty;
+}
+
+.cw-a4-what .cw-strong {
+    font-size: 26px;
+}
+
+.cw-a4-date {
+    font: 400 22px/1.4 'Special Elite', var(--cw-serif);
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.cw-a4-date--now {
+    color: var(--accent);
+}
+
+.cw-a4-job + .cw-a4-job {
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px dashed var(--rule);
+}
+
+.cw-a4-desc {
+    margin: 8px 0 0;
+    text-wrap: pretty;
+    font: 400 22px/1.65 var(--cw-serif);
+    color: var(--ink-soft);
+}
+
+.cw-a4-list {
+    margin: 8px 0 0;
+    padding-left: 28px;
+    list-style: disc;
+    font: 400 22px/1.65 var(--cw-serif);
+    color: var(--ink-soft);
+}
+
+.cw-a4-list li + li {
     margin-top: 4px;
 }
 
-.cw-dossier-awards {
-    margin-top: 6px;
-}
-
-.cw-dossier-award {
+.cw-a4-skills {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 16px;
-    font-size: 13.5px;
-    line-height: 1.4;
-    color: #2a1d12;
-    padding: 4px 0;
-    border-bottom: 1px dashed rgba(90, 60, 30, .3);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 30px;
+    margin: 0;
 }
 
-.cw-dossier-award span:first-child {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.cw-a4-skills dt {
+    font: 700 25px/1.3 var(--cw-serif);
 }
 
-.cw-dossier-award span:last-child {
-    font-family: 'Special Elite', serif;
-    color: #6a5238;
-    white-space: nowrap;
+.cw-a4-skills dd {
+    margin: 6px 0 0;
+    font: 400 21px/1.6 var(--cw-serif);
+    color: var(--ink-soft);
 }
 
-.cw-dossier-download,
-.cw-dossier-download:hover {
-    color: #1f1712;
-    text-decoration: none;
+.cw-a4-lines {
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
-.cw-dossier-download {
-    position: absolute;
-    border: 0;
-    font: inherit;
-    cursor: pointer;
-    text-align: left;
-    left: 940px;
-    top: 676px;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    background: linear-gradient(135deg, #cfae7c, #bb955f);
-    padding: 12px 18px 12px 14px;
-    transform: rotate(-3deg);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, .35);
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 13px;
-    letter-spacing: .18em;
-    white-space: nowrap;
-}
-
-.cw-dossier-download-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #2a1d12;
-    box-shadow: inset 0 0 0 2px #e8d9b5;
-}
-
-/* 档案 05：旅行 · 行踪 */
-
-.cw-travel-map {
-    position: absolute;
-    left: 56px;
-    top: 186px;
-    width: 560px;
-    background: #e8dcc0;
-    padding: 10px;
-    box-sizing: border-box;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, .3);
-    transform: rotate(-1deg);
-}
-
-.cw-travel-map img {
-    width: 540px;
-    height: 291px;
-    object-fit: cover;
-}
-
-.cw-travel-map-row {
+.cw-a4-lines li {
     display: flex;
     justify-content: space-between;
-    margin-top: 8px;
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 12px;
-    letter-spacing: .16em;
-    color: #6a5238;
-    white-space: nowrap;
+    align-items: baseline;
+    gap: 24px;
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--rule);
+    font: 400 24px/1.45 var(--cw-serif);
 }
 
-.cw-travel-recent {
+/* 右上角那一块（x ≥ 860、y < 50）会被语言切换和环境音按钮盖住，下载按钮放在标题右边。 */
+.cw-resume-download {
     position: absolute;
-    left: 64px;
-    top: 530px;
-    width: 544px;
-    background: #f6f1e6;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, .3);
-    padding: 16px 20px;
-    box-sizing: border-box;
-    transform: rotate(.6deg);
-}
-
-.cw-travel-recent-kicker {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 12px;
-    letter-spacing: .24em;
-    color: #6a5238;
+    left: 560px;
+    top: 34px;
+    z-index: 2;
+    padding: 14px 24px;
+    border: 0;
+    border-radius: 4px;
+    background: var(--ink);
+    font: 600 21px/1 var(--cw-serif);
+    color: #f2e8d0;
+    cursor: pointer;
     white-space: nowrap;
 }
 
-.cw-travel-recent-list {
-    margin-top: 8px;
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 13px;
-    line-height: 1.9;
-    color: #2a1d12;
-    white-space: nowrap;
+.cw-resume-download:focus-visible {
+    outline: 3px solid #b3261e;
+    outline-offset: 3px;
 }
 
-.cw-travel-recent-list > div {
+/* 档案 05：旅行 —— 一本相册：先是路线图，往下是两列大照片，没有分类。 */
+
+.cw-gallery-map {
+    display: table;
+    margin: 0 auto 30px;
+    padding: 12px;
+    background: #e8dcc0;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .25);
+}
+
+.cw-gallery-map img {
+    display: block;
+    width: auto;
+    height: 400px;
+}
+
+.cw-gallery {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 16px;
-    border-bottom: 1px dashed rgba(90, 60, 30, .3);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px 28px;
 }
 
-.cw-travel-recent-list > div:last-child {
-    border-bottom: 0;
+.cw-shot {
+    margin: 0;
+    padding: 12px 12px 18px;
+    background: #fffdf8;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .25);
 }
 
-.cw-travel-recent-list span:first-child {
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.cw-travel-recent-list span:last-child {
-    color: #6a5238;
-}
-
-.cw-file--travel .cw-tabs {
-    left: 650px;
-    top: 186px;
-    width: 590px;
-}
-
-.cw-travel-scroll {
-    left: 650px;
-    top: 276px;
-    width: 590px;
-    height: 452px;
-    padding: 16px 12px 24px 6px;
-}
-
-.cw-sightings {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 26px 18px;
-    align-items: start;
-}
-
-.cw-sighting {
-    background: #f6f2ea;
-    padding: 9px 9px 10px;
-    box-sizing: border-box;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, .35);
-    transform: rotate(var(--rot, 0deg));
-}
-
-.cw-sighting-photo {
-    height: 124px;
+.cw-shot-photo {
+    height: 340px;
     overflow: hidden;
     background: #222;
 }
 
-.cw-sighting-photo img {
+.cw-shot-photo img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: sepia(.25) contrast(1.05) saturate(.9);
 }
 
-.cw-sighting-title {
+.cw-shot figcaption {
+    display: block;
+    margin: 14px 8px 0;
+}
+
+.cw-shot-title {
+    display: block;
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 19px;
-    color: #2a1d12;
-    margin-top: 7px;
+    font-size: 38px;
     line-height: 1.15;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: var(--ink);
 }
 
-.cw-sighting-en {
-    font-family: 'Special Elite', serif;
-    font-size: 10.5px;
-    letter-spacing: .08em;
-    color: #6a5238;
-    margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.cw-sighting-desc {
-    font-size: 11.5px;
-    line-height: 1.45;
-    color: #4a3524;
-    margin-top: 4px;
+.cw-shot-desc {
     display: -webkit-box;
+    margin-top: 6px;
+    overflow: hidden;
+    font: 400 22px/1.5 var(--cw-serif);
+    color: var(--ink-soft);
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    overflow: hidden;
 }
 
 /* 档案 06：商店 */
 
 .cw-shop-storefront,
 .cw-shop-storefront:hover,
-.cw-shop-ticket,
-.cw-shop-ticket:hover {
+.cw-shop-cta,
+.cw-shop-cta:hover {
     text-decoration: none;
 }
 
 .cw-shop-storefront {
     position: absolute;
     left: 56px;
-    top: 186px;
+    top: 134px;
     width: 700px;
     display: block;
-    background: #1a1512;
-    padding: 14px 14px 16px;
     box-sizing: border-box;
-    box-shadow: 0 16px 30px rgba(0, 0, 0, .5);
-    transform: rotate(-1.5deg);
+    padding: 12px;
+    background: #1a1512;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, .4);
+}
+
+.cw-shop-storefront:focus-visible {
+    outline: 3px solid #b3261e;
+    outline-offset: 4px;
 }
 
 .cw-shop-storefront-img {
-    height: 400px;
+    height: 480px;
     overflow: hidden;
     background: #000;
 }
 
 .cw-shop-storefront-img img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.cw-shop-ticket {
+.cw-shop-info {
     position: absolute;
-    left: 810px;
-    top: 226px;
-    width: 430px;
-    height: 190px;
-    transform: rotate(2deg);
-    background: linear-gradient(180deg, #e9d9a8, #dcc88f);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, .35);
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 96px;
-    color: #2a1d12;
-    overflow: hidden;
+    left: 804px;
+    top: 168px;
+    width: 420px;
 }
 
-.cw-shop-ticket-main {
-    padding: 20px 22px;
-    border-right: 2px dashed rgba(42, 29, 18, .45);
-}
-
-.cw-shop-ticket-kicker {
-    font-family: 'Special Elite', serif;
-    font-size: 12px;
-    letter-spacing: .3em;
-    color: #6a5238;
-    white-space: nowrap;
-}
-
-.cw-shop-ticket-title {
+.cw-shop-name {
+    margin: 0;
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 40px;
-    line-height: 1.05;
-    margin-top: 8px;
-    white-space: nowrap;
-}
-
-.cw-shop-ticket-sub {
-    font-family: 'Special Elite', serif;
-    font-size: 12.5px;
-    letter-spacing: .14em;
-    margin-top: 8px;
-    white-space: nowrap;
-}
-
-.cw-shop-ticket-cta {
-    margin-top: 12px;
-    display: inline-block;
-    background: #2a1d12;
-    color: #f2e8d0;
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 13px;
-    letter-spacing: .2em;
-    padding: 8px 14px;
-    white-space: nowrap;
-}
-
-.cw-shop-ticket-stub {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    writing-mode: vertical-rl;
-    font-family: 'Special Elite', serif;
-    font-size: 14px;
-    letter-spacing: .3em;
-    color: #6a5238;
-}
-
-.cw-shop-clue {
-    position: absolute;
-    left: 830px;
-    top: 460px;
-    width: 400px;
-    height: 150px;
-    transform: rotate(-2deg);
-    background: #f6f1e6;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, .3);
-    padding: 18px 22px;
-    box-sizing: border-box;
-}
-
-.cw-shop-clue-kicker {
-    font-family: 'Special Elite', var(--cw-serif);
-    font-size: 12px;
-    letter-spacing: .24em;
-    color: #6a5238;
-    white-space: nowrap;
-}
-
-.cw-shop-clue-title {
-    font-family: 'Ma Shan Zheng', cursive;
-    font-size: 26px;
-    color: #2a1d12;
-    margin-top: 8px;
+    font-size: 58px;
     line-height: 1.2;
+    color: var(--ink);
 }
 
-.cw-shop-clue-en {
-    font-family: 'Special Elite', serif;
-    font-size: 12.5px;
-    letter-spacing: .1em;
-    color: #4a3524;
-    margin-top: 6px;
+.cw-shop-product {
+    margin: 14px 0 0;
+    font: 400 32px/1.2 'Special Elite', var(--cw-serif);
+    letter-spacing: .08em;
+    color: var(--muted);
 }
 
-.cw-shop-stamp {
-    left: 1000px;
-    top: 640px;
-    transform: rotate(-8deg);
-    font-size: 20px;
-    letter-spacing: .22em;
-    padding: 5px 12px;
+.cw-shop-cta {
+    display: inline-block;
+    margin-top: 40px;
+    padding: 20px 36px;
+    border-radius: 4px;
+    background: var(--ink);
+    font: 700 30px/1 var(--cw-serif);
+    color: #f2e8d0;
+    white-space: nowrap;
+}
+
+.cw-shop-cta:focus-visible {
+    outline: 3px solid #b3261e;
+    outline-offset: 4px;
 }
 
 /* ---- 悬停 ---- */
 
 @media (hover: hover) {
     .cw-post:hover {
-        transform: rotate(0deg) translateY(-6px);
-        box-shadow: 0 18px 30px rgba(0, 0, 0, .4);
+        transform: translateY(-6px);
+        box-shadow: 0 18px 30px rgba(0, 0, 0, .35);
     }
 }
 
-/* ---- 窄屏：桌面上的档案改成单列滚动 ---- */
+/* ---- 窄屏：桌面上的档案改成单列，整张纸自己滚动 ---- */
 
 @media (max-width: 899px) {
     .cw-toolbar {
@@ -3103,7 +2656,7 @@ html[data-i18n-pending] .cw-root {
         position: relative;
         inset: auto;
         min-height: 100%;
-        padding: 74px 18px 40px;
+        padding: 72px 18px 56px;
         box-sizing: border-box;
     }
 
@@ -3111,36 +2664,19 @@ html[data-i18n-pending] .cw-root {
         position: fixed;
         left: 16px;
         top: 16px;
-        transform: none;
-        font-size: 11px;
-        letter-spacing: .12em;
-        padding: 8px 11px;
-        max-width: 58vw;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        padding: 11px 16px;
+        font-size: 16px;
     }
 
-    /* 单列排版下，所有绝对定位的模块改为按顺序流动。 */
+    /* 单列排版下，所有绝对定位的模块改为按顺序流动，内容区不再自己滚，由整张纸滚。 */
     .cw-file,
     .cw-file-head,
     .cw-about-photo,
-    .cw-about-profile,
-    .cw-keywords,
-    .cw-about-metaphors,
-    .cw-about-note,
-    .cw-about-contact,
-    .cw-tabs,
-    .cw-scroll,
-    .cw-dossier,
-    .cw-dossier-download,
-    .cw-travel-map,
-    .cw-travel-recent,
+    .cw-pane,
+    .cw-resume-download,
     .cw-shop-storefront,
-    .cw-shop-ticket,
-    .cw-shop-clue,
+    .cw-shop-info,
     .cw-blog-pane,
-    .cw-posts,
     .cw-reader,
     .cw-reader-cover,
     .cw-reader-paper {
@@ -3153,97 +2689,192 @@ html[data-i18n-pending] .cw-root {
         width: auto;
         max-width: 100%;
         height: auto;
-        transform: none;
         margin: 0 0 18px;
     }
 
-    .cw-file-title {
-        font-size: 34px;
-        white-space: normal;
-    }
-
-    .cw-file-sub {
-        font-size: 14px;
-        letter-spacing: .1em;
-        white-space: normal;
-        line-height: 1.6;
-    }
-
-    .cw-stamp,
-    .cw-file .cw-pin,
-    .cw-file-strings,
-    .cw-desk-layer .cw-strings {
-        display: none;
-    }
-
-    .cw-scroll {
-        overflow: visible;
-        border-top: 0;
+    .cw-pane,
+    .cw-reader-paper {
         padding: 0;
+        overflow: visible;
     }
 
-    .cw-cases,
-    .cw-posts,
-    .cw-sightings {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 16px 12px;
+    .cw-file-title {
+        font-size: 46px;
+        white-space: normal;
     }
 
-    .cw-case,
-    .cw-post,
-    .cw-sighting {
-        transform: none;
+    .cw-resume-download {
+        display: inline-block;
+        padding: 12px 18px;
+        font-size: 16px;
+    }
+
+    /* 关于我 */
+    .cw-about-photo {
+        width: 100%;
+        max-width: 420px;
+    }
+
+    .cw-about-photo-img {
+        height: auto;
+        aspect-ratio: 1;
+    }
+
+    .cw-about-photo figcaption {
+        font-size: 30px;
+    }
+
+    .cw-about-profile {
+        grid-template-columns: 1fr;
+        gap: 2px;
+    }
+
+    .cw-about-profile dt {
+        margin-top: 10px;
+        font-size: 15px;
+    }
+
+    .cw-about-profile dd {
+        font-size: 19px;
+    }
+
+    .cw-about-block {
+        margin-top: 28px;
+        padding-top: 22px;
+    }
+
+    .cw-about-h {
+        font-size: 15px;
+    }
+
+    .cw-about-lead {
+        font-size: 34px;
+    }
+
+    .cw-about-text,
+    .cw-about-contact {
+        font-size: 18px;
+    }
+
+    .cw-about-pillars {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    .cw-about-pillars dt {
+        margin-top: 14px;
+        font-size: 24px;
+    }
+
+    .cw-about-pillars dt span {
+        display: inline;
+        margin-left: 8px;
+        font-size: 16px;
+    }
+
+    .cw-about-pillars dd {
+        font-size: 17px;
     }
 
     .cw-keywords {
         gap: 8px;
+        margin-top: 28px;
+        padding-top: 22px;
     }
 
-    .cw-dossier {
+    .cw-keyword {
+        padding: 8px 14px;
+        font-size: 16px;
+    }
+
+    /* 项目：时间线靠左，日期在节点上面，一场一个节点，整张纸往下滚。 */
+    .cw-timeline-pane {
+        scroll-snap-type: none;
+    }
+
+    .cw-timeline::before {
+        left: 11px;
+    }
+
+    .cw-event {
         display: block;
+        height: auto;
+        padding: 0 0 34px 38px;
+        scroll-snap-align: none;
     }
 
-    .cw-dossier-main,
-    .cw-dossier-side {
-        flex: none;
+    .cw-event-date {
+        padding: 0;
+        font-size: 22px;
+        text-align: left;
     }
 
-    .cw-dossier-side {
-        margin-top: 22px;
+    .cw-event-dot {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 24px;
+        height: 24px;
     }
 
-    .cw-dossier-skills {
-        grid-template-columns: 1fr;
+    .cw-event-card {
+        margin-top: 10px;
+        gap: 10px;
     }
 
-    .cw-dossier-certs {
+    .cw-event-photo {
+        height: auto;
+        aspect-ratio: 16 / 10;
+        border-width: 6px;
+    }
+
+    .cw-event-head {
         flex-wrap: wrap;
+        gap: 4px 12px;
     }
 
-    .cw-travel-map img {
-        width: 100%;
+    .cw-event-title,
+    .cw-event-card--text .cw-event-title {
+        font-size: 22px;
+    }
+
+    .cw-event-award {
+        font-size: 16px;
+    }
+
+    .cw-event-city {
+        font-size: 15px;
+    }
+
+    .cw-event-desc {
+        font-size: 17px;
+    }
+
+    .cw-event-link {
+        font-size: 16px;
+    }
+
+    /* 博客 */
+    .cw-posts {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .cw-post-photo {
         height: auto;
+        aspect-ratio: 16 / 9;
     }
 
-    .cw-shop-storefront-img {
-        height: auto;
-        aspect-ratio: 7 / 4;
+    .cw-post-meta {
+        font-size: 15px;
     }
 
-    .cw-shop-ticket {
-        display: block;
-        min-height: 0;
+    .cw-post-title {
+        font-size: 22px;
     }
 
-    .cw-shop-ticket-main {
-        border-right: 0;
-        border-bottom: 2px dashed rgba(42, 29, 18, .45);
-    }
-
-    .cw-shop-ticket-stub {
-        writing-mode: horizontal-tb;
-        padding: 8px 22px 14px;
-        justify-content: flex-start;
+    .cw-post-excerpt {
+        font-size: 16px;
     }
 
     .cw-reader {
@@ -3254,17 +2885,176 @@ html[data-i18n-pending] .cw-root {
         background: none;
     }
 
+    .cw-reader-title {
+        font-size: 32px;
+    }
+
+    .cw-reader-meta,
+    .cw-reader-excerpt {
+        font-size: 16px;
+    }
+
+    .cw-reader-hero-img {
+        height: auto;
+        aspect-ratio: 16 / 9;
+    }
+
+    .cw-reader-back {
+        font-size: 16px;
+        padding: 11px 16px;
+    }
+
     .cw-reader-paper {
-        overflow: visible;
         padding: 18px;
     }
 
-    .cw-reader-cover {
-        display: block;
+    .cw-blk-h2 {
+        font-size: 24px;
+    }
+
+    .cw-blk-h3 {
+        font-size: 20px;
+    }
+
+    .cw-blk-p,
+    .cw-blk-list-item,
+    .cw-blk-quote {
+        font-size: 17px;
+    }
+
+    .cw-blk-row {
+        font-size: 15px;
+    }
+
+    .cw-blk-code pre {
+        font-size: 14px;
+    }
+
+    .cw-blk-img-cap {
+        font-size: 14px;
     }
 
     .cw-blog-pane.is-behind {
         display: none;
+    }
+
+    /* 履历：纸跟着屏幕宽，不再固定 800px。 */
+    .cw-a4 {
+        width: 100%;
+        min-height: 0;
+        margin-bottom: 18px;
+        padding: 26px 20px 28px;
+    }
+
+    .cw-a4-name {
+        font-size: 52px;
+    }
+
+    .cw-a4-legal {
+        font-size: 15px;
+    }
+
+    .cw-a4-role {
+        font-size: 18px;
+    }
+
+    .cw-a4-mail {
+        font-size: 17px;
+    }
+
+    .cw-a4-sec {
+        margin-top: 26px;
+    }
+
+    .cw-a4-h {
+        font-size: 18px;
+    }
+
+    .cw-a4-row {
+        flex-direction: column;
+        gap: 2px;
+        font-size: 17px;
+    }
+
+    .cw-a4-what .cw-strong {
+        font-size: 18px;
+    }
+
+    .cw-a4-date {
+        font-size: 15px;
+    }
+
+    .cw-a4-desc,
+    .cw-a4-list {
+        font-size: 16px;
+    }
+
+    .cw-a4-skills {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .cw-a4-skills dt {
+        font-size: 18px;
+    }
+
+    .cw-a4-skills dd {
+        font-size: 16px;
+    }
+
+    .cw-a4-lines li {
+        flex-direction: column;
+        gap: 0;
+        font-size: 17px;
+    }
+
+    /* 旅行 */
+    .cw-gallery-map {
+        display: block;
+        padding: 8px;
+    }
+
+    .cw-gallery-map img {
+        width: 100%;
+        height: auto;
+    }
+
+    .cw-gallery {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .cw-shot-photo {
+        height: auto;
+        aspect-ratio: 3 / 2;
+    }
+
+    .cw-shot-title {
+        font-size: 30px;
+    }
+
+    .cw-shot-desc {
+        font-size: 17px;
+    }
+
+    /* 商店 */
+    .cw-shop-storefront-img {
+        height: auto;
+        aspect-ratio: 7 / 4;
+    }
+
+    .cw-shop-name {
+        font-size: 40px;
+    }
+
+    .cw-shop-product {
+        font-size: 22px;
+    }
+
+    .cw-shop-cta {
+        margin-top: 24px;
+        padding: 16px 26px;
+        font-size: 21px;
     }
 
     /* 窄屏不演取件动画，手和封面都不出现。 */
