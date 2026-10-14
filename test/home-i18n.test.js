@@ -198,7 +198,7 @@ test('index.html 里的中文和词典 zh 一致，词典没有多余或缺失�
 test('封面标题取自便签标签的词典键，兜底文案和词典 zh 一致，覆盖每张可点开的便签', () => {
     const script = readFile('js/clue-wall.js');
     const covers = [...script.matchAll(/^\s{8}(\w+): \{ key: '([^']*)', title: '([^']*)'/gm)];
-    assert.equal(covers.length, 7);
+    assert.equal(covers.length, 6);
     const labelKeys = new Set([...html.matchAll(/data-i18n="(wall\.[a-z]+\.(?:title|caption))"/g)].map((match) => match[1]));
     for (const [, name, key, title] of covers) {
         assert.ok(labelKeys.has(key), `${name} 的封面键 ${key} 不是墙上某张便签的大标签`);

@@ -10,10 +10,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Special+Elite&amp;family=Ma+Shan+Zheng&amp;family=Noto+Serif+SC:wght@400;600&amp;display=swap" rel="stylesheet">
-  <link href="/styles/clue-wall.css?v=20261013-1" rel="stylesheet">
+  <link href="/styles/clue-wall.css?v=20261014-3" rel="stylesheet">
   <script src="/js/clue-data.js?v=20261010-2" defer></script>
-  <script src="/js/clue-i18n.js?v=20261013-1" defer></script>
-  <script src="/js/clue-wall.js?v=20261013-1" defer></script>
+  <script src="/js/clue-i18n.js?v=20261014-3" defer></script>
+  <script src="/js/clue-wall.js?v=20261014-3" defer></script>
+  <script src="/js/clue-board.js?v=20261014-3" defer></script>
   <script src="/js/resume-download.js?v=20261010-2" defer></script>
   <script src="/js/github-contributions.js?v=20261013-1" defer></script>
 </head>
@@ -81,41 +82,38 @@
             <div class="cw-board-frame"></div>
             <div class="cw-cork">
 
-              <div class="cw-card cw-card--about" data-section="about" data-card="aboutNote" data-tilt="-4" role="button" tabindex="0" aria-label="打开：关于我" data-i18n-attrs="aria-label:wall.about.aria">
+              <!-- 墙上的每张纸都能拖动换位置（js/clue-board.js）：data-pins 写这张纸上钉几枚图钉、什么颜色、钉在哪，
+                   格式是「颜色[:左,上]」，左为负数时从右边量起，省略位置就钉在上边中间。点两枚不同的图钉会拉一根红线。
+                   「关于我」就是个人介绍的入口，墙上不再另放一张肖像卡。 -->
+              <div class="cw-card cw-card--about" data-section="about" data-card="aboutNote" data-tilt="-4" data-pins="gold" role="button" tabindex="0" aria-label="打开：关于我" data-i18n-attrs="aria-label:wall.about.aria">
                 <div class="cw-about-title" data-i18n="wall.about.title">关于我</div>
                 <div class="cw-about-school" data-i18n="wall.about.school">福井大学研究生</div>
                 <div class="cw-about-remote" data-i18n="wall.about.remote">接受远程工作</div>
               </div>
 
-              <div class="cw-card cw-card--portrait" data-section="about" data-card="aboutPortrait" data-tilt="-2" role="button" tabindex="0" aria-label="打开：悠一 Yui · 关于我" data-i18n-attrs="aria-label:wall.portrait.aria">
-                <div class="cw-portrait-photo"><img src="/images/optimized/profile/portrait-compressed.webp" alt="悠一 Yui" data-i18n-attrs="alt:wall.portrait.alt" decoding="async"></div>
-                <div class="cw-portrait-caption" data-i18n="wall.portrait.caption">悠一 Yui</div>
-                <div class="cw-portrait-sub">AI Native Developer</div>
-              </div>
-
-              <div class="cw-bizcard">
+              <div class="cw-bizcard" data-tilt="3" data-pins="red">
                 <div class="cw-bizcard-title" data-i18n="wall.bizcard.title">联系我</div>
                 <div class="cw-bizcard-mail">xiaobianfuai@gmail.com</div>
               </div>
 
-              <div class="cw-card cw-card--shop" data-section="shop" data-card="shop" data-tilt="4" role="button" tabindex="0" aria-label="打开：商店" data-i18n-attrs="aria-label:wall.shop.aria">
+              <div class="cw-card cw-card--shop" data-section="shop" data-card="shop" data-tilt="4" data-pins="red" role="button" tabindex="0" aria-label="打开：商店" data-i18n-attrs="aria-label:wall.shop.aria">
                 <div class="cw-shop-photo"><img src="/images/optimized/clue-wall/shop-entry.webp" alt="CODE TRANSIT" decoding="async"></div>
                 <div class="cw-shop-title" data-i18n="wall.shop.title">商店</div>
                 <div class="cw-shop-brand">CODE TRANSIT</div>
               </div>
 
-              <div class="cw-card cw-card--projects" data-section="projects" data-card="projects" data-tilt="3" role="button" tabindex="0" aria-label="打开：项目" data-i18n-attrs="aria-label:wall.projects.aria">
+              <div class="cw-card cw-card--projects" data-section="projects" data-card="projects" data-tilt="3" data-pins="red" role="button" tabindex="0" aria-label="打开：项目" data-i18n-attrs="aria-label:wall.projects.aria">
                 <div class="cw-projects-photo"><img src="/images/optimized/clue-wall/global-gold.webp" alt="环球黑客松 金奖" data-i18n-attrs="alt:wall.projects.alt" decoding="async"></div>
                 <div class="cw-projects-title" data-i18n="wall.projects.title">项目</div>
                 <div class="cw-projects-stat" data-stat="projects"><b>25</b> 个项目 · <b>6</b> 个奖项</div>
               </div>
 
-              <div class="cw-card cw-card--blog" data-section="blog" data-card="blog" data-tilt="2" role="button" tabindex="0" aria-label="打开：博客" data-i18n-attrs="aria-label:wall.blog.aria">
+              <div class="cw-card cw-card--blog" data-section="blog" data-card="blog" data-tilt="2" data-pins="red" role="button" tabindex="0" aria-label="打开：博客" data-i18n-attrs="aria-label:wall.blog.aria">
                 <div class="cw-blog-title" data-i18n="wall.blog.title">博客</div>
                 <div class="cw-blog-stat" data-stat="blog"><b>7</b> 篇文章</div>
               </div>
 
-              <div class="cw-card cw-card--map" data-section="travel" data-card="travelMap" data-tilt="-1.5" role="button" tabindex="0" aria-label="打开：旅行" data-i18n-attrs="aria-label:wall.map.aria">
+              <div class="cw-card cw-card--map" data-section="travel" data-card="travelMap" data-tilt="-1.5" data-pins="blue:15,15 blue:-15,15" role="button" tabindex="0" aria-label="打开：旅行" data-i18n-attrs="aria-label:wall.map.aria">
                 <img class="cw-map-img" src="/images/optimized/clue-wall/travel-map-v4.webp" alt="旅行路线地图" data-i18n-attrs="alt:wall.map.alt" decoding="async">
                 <div class="cw-map-row">
                   <div class="cw-map-title" data-i18n="wall.map.title">旅行</div>
@@ -123,21 +121,20 @@
                 </div>
               </div>
 
-              <!-- 墙上钉着的一张拍立得。纯装饰：旅行档案由旁边的旅行地图打开，这里不再放第二个同样的入口。 -->
-              <div class="cw-polaroid">
+              <!-- 墙上钉着的一张拍立得。可以拖动、可以连线，但不能点开：旅行档案由旁边的旅行地图打开，这里不再放第二个同样的入口。 -->
+              <div class="cw-polaroid" data-tilt="4" data-pins="red">
                 <div class="cw-polaroid-photo"><img src="/images/optimized/clue-wall/tokyo-night.webp" alt="东京夜景" data-i18n-attrs="alt:wall.polaroid.alt" decoding="async"></div>
               </div>
 
-              <div class="cw-card cw-card--resume" data-section="resume" data-card="resume" data-tilt="-3" role="button" tabindex="0" aria-label="打开：履历" data-i18n-attrs="aria-label:wall.resume.aria">
+              <div class="cw-card cw-card--resume" data-section="resume" data-card="resume" data-tilt="-3" data-pins="red" role="button" tabindex="0" aria-label="打开：履历" data-i18n-attrs="aria-label:wall.resume.aria">
                 <div class="cw-resume-title" data-i18n="wall.resume.title">履历</div>
                 <div class="cw-resume-lines" data-i18n="wall.resume.lines" data-i18n-html>福井大学 · 研究生<br>AI Mage（东京）· 实习<br>国家能源研究院 · 实习</div>
               </div>
 
-              <!-- 墙上钉着的一张 GitHub 贡献图。纯展示：不是 .cw-card，没有点击、焦点和取件动画；
-                   数据由 js/github-contributions.js 从 /files/github-contributions 取来填入，取不到就一直透明。 -->
-              <div class="cw-github" id="cwGithub" aria-hidden="true">
-                <span class="cw-pin cw-pin--blue cw-github-pin--left"></span>
-                <span class="cw-pin cw-pin--blue cw-github-pin--right"></span>
+              <!-- 墙上钉着的一张 GitHub 贡献图。能拖动、能连线，但不是 .cw-card：没有点击、焦点和取件动画；
+                   数据由 js/github-contributions.js 从 /files/github-contributions 取来填入，取不到就一直透明、
+                   不接收指针，图钉也跟着不出现（data-pin-ready 指的就是数据到达后加上的类）。 -->
+              <div class="cw-github" id="cwGithub" data-tilt="-1" data-pins="blue:24,1 blue:-24,1" data-pin-ready="is-ready" aria-hidden="true">
                 <div class="cw-github-head">
                   <span class="cw-github-name">GitHub</span>
                   <span class="cw-github-total" data-gh="total"></span>
@@ -146,24 +143,14 @@
                 <div class="cw-github-grid" data-gh="grid"></div>
               </div>
 
+              <!-- 红线由访客自己拉：点一枚图钉再点另一枚，两枚之间就会连起一根线（再点一次剪断），
+                   连线、图钉和拖动都由 js/clue-board.js 在这两层里生成。 -->
               <svg class="cw-strings" viewBox="0 0 1700 880" preserveAspectRatio="none" aria-hidden="true">
-                <g class="cw-strings-shadow" transform="translate(3,6)">
-                  <path d="M850 95 Q575 160 300 150"></path><path d="M850 95 Q1120 130 1390 92"></path><path d="M850 95 Q520 380 280 612"></path><path d="M850 95 Q1230 320 1525 464"></path><path d="M850 95 Q660 340 515 545"></path><path d="M850 95 Q1060 345 1210 507"></path><path d="M850 95 Q1000 220 1130 300"></path><path d="M300 150 Q260 390 280 612"></path><path d="M1390 92 Q1490 300 1525 464"></path><path d="M1005 545 Q1110 565 1210 507"></path>
-                </g>
-                <g class="cw-strings-red">
-                  <path d="M850 95 Q575 160 300 150"></path><path d="M850 95 Q1120 130 1390 92"></path><path d="M850 95 Q520 380 280 612"></path><path d="M850 95 Q1230 320 1525 464"></path><path d="M850 95 Q660 340 515 545"></path><path d="M850 95 Q1060 345 1210 507"></path><path d="M850 95 Q1000 220 1130 300"></path><path d="M300 150 Q260 390 280 612"></path><path d="M1390 92 Q1490 300 1525 464"></path><path d="M1005 545 Q1110 565 1210 507"></path>
-                </g>
+                <g class="cw-strings-shadow" transform="translate(3,6)"></g>
+                <g class="cw-strings-red"></g>
+                <path class="cw-strings-preview"></path>
               </svg>
-
-              <span class="cw-pin cw-pin--gold" style="left:850px; top:95px"></span>
-              <span class="cw-pin cw-pin--red" style="left:300px; top:150px"></span>
-              <span class="cw-pin cw-pin--red" style="left:1390px; top:92px"></span>
-              <span class="cw-pin cw-pin--red" style="left:280px; top:612px"></span>
-              <span class="cw-pin cw-pin--red" style="left:1525px; top:464px"></span>
-              <span class="cw-pin cw-pin--red" style="left:1210px; top:507px"></span>
-              <span class="cw-pin cw-pin--red" style="left:1130px; top:300px"></span>
-              <span class="cw-pin cw-pin--blue" style="left:515px; top:545px"></span>
-              <span class="cw-pin cw-pin--blue" style="left:1005px; top:545px"></span>
+              <div class="cw-pins" id="cwPins" aria-hidden="true"></div>
             </div>
           </div>
 
@@ -196,7 +183,7 @@
     </div>
     <button class="cw-sound" id="cwSound" type="button" aria-pressed="false"><span data-i18n="ui.sound.label">环境音：</span><span id="cwSoundState">关</span></button>
   </div>
-  <div class="cw-hint" id="cwHint" data-i18n="ui.hint">拖动环视 · 点击便签打开</div>
+  <div class="cw-hint" id="cwHint" data-i18n="ui.hint">拖动环视 · 拖动便签换位置 · 点两枚图钉连线 · 点击便签打开</div>
 
   <div class="cw-desk-layer" id="cwDeskLayer">
     <div class="cw-sheet" id="cwSheet" role="dialog" aria-modal="true" hidden>

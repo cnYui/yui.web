@@ -29,7 +29,6 @@
     // 这里的中文是词典加载不上时的兜底（测试会核对它和词典 zh 一致）。
     const COVERS = {
         about: { key: 'wall.about.title', title: '关于我', bg: 'linear-gradient(135deg,#cfae7c,#bb955f 55%,#caa877)', fg: '#2a1d12' },
-        aboutPortrait: { key: 'wall.portrait.caption', title: '悠一 Yui', bg: '#f2ede2', fg: '#2a1d12' },
         projects: { key: 'wall.projects.title', title: '项目', bg: '#f2ede2', fg: '#2a1d12' },
         blog: { key: 'wall.blog.title', title: '博客', bg: '#efe6d0', fg: '#2a1d12' },
         resume: { key: 'wall.resume.title', title: '履历', bg: 'linear-gradient(180deg,#f4efe3,#e9e1cf)', fg: '#2a1d12' },
