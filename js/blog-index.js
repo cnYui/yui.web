@@ -1,137 +1,93 @@
+// 随笔列表（侘寂版）：按 js/blog-data.js 渲染，按年分组，最新在前。
+// 日期写法：中文、日文都用汉字数字（十月十日），英文用 Oct 10；切换语言时整表重排。
 (function () {
-    const blogData = [...(window.YuiBlogData || [])].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+    'use strict';
 
-    let currentIndex = 0;
-    let currentFilter = 'All';
-    let filteredData = [...blogData];
-    const itemsPerPage = 4;
-    const blogList = document.getElementById('blogList');
-    const loadMoreContainer = document.getElementById('loadMoreContainer');
-    const filterButtons = document.querySelectorAll('.filter-btn');
+    var list = document.getElementById('postList');
+    if (!list || !Array.isArray(window.YuiBlogData)) return;
 
-    if (!blogList || !loadMoreContainer) return;
+    var MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var DIGITS = '〇一二三四五六七八九';
 
-    function createCard(item) {
-        const articleLink = item.link || `/blog/article?id=${item.id}`;
-        const translations = window.YuiLang ? window.YuiLang.getPageTranslations() : null;
-        const readText = translations?.readArticle || 'Read Article';
-        const lang = window.YuiLang ? window.YuiLang.getCurrentLang() : 'zh';
-        const title = item.title[lang] || item.title.zh;
-        const date = item.date[lang] || item.date.zh;
-        const readTime = item.readTime[lang] || item.readTime.zh;
-        const excerpt = item.excerpt[lang] || item.excerpt.zh;
-        return `
-            <a href="${articleLink}" class="blog-item group flex flex-col md:flex-row gap-6 p-6 border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card hover:border-primary/30 dark:hover:border-dark-text/30 hover:shadow-sm transition-all">
-                <div class="w-full md:w-48 h-32 shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-dark-surface">
-                    <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="${item.image}" alt="${title}" loading="lazy" decoding="async"/>
-                </div>
-                <div class="flex-1 flex flex-col gap-3">
-                    <div class="flex items-center gap-3 text-xs">
-                        <span class="px-2 py-1 rounded bg-primary dark:bg-dark-text text-white dark:text-dark-bg font-semibold uppercase tracking-wider">${item.category}</span>
-                        <span class="text-text-muted dark:text-dark-text-muted">${date}</span>
-                        <span class="text-text-muted dark:text-dark-text-muted">•</span>
-                        <span class="text-text-muted dark:text-dark-text-muted">${readTime}</span>
-                    </div>
-                    <h2 class="text-xl font-bold text-primary dark:text-dark-text group-hover:text-text-muted dark:group-hover:text-dark-text-muted transition-colors">${title}</h2>
-                    <p class="text-sm text-text-muted dark:text-dark-text-muted leading-relaxed line-clamp-2">${excerpt}</p>
-                    <div class="flex items-center justify-between mt-auto pt-2">
-                        <div class="flex items-center gap-2">
-                            <div class="w-6 h-6 rounded-full overflow-hidden shrink-0">
-                                <img src="/images/optimized/profile/avatar-small.webp" alt="${item.author}" class="w-full h-full object-cover" loading="lazy" decoding="async"/>
-                            </div>
-                            <span class="text-sm text-text-muted dark:text-dark-text-muted">${item.author}</span>
-                        </div>
-                        <span class="text-sm font-medium text-primary dark:text-dark-text flex items-center gap-1 group-hover:gap-2 transition-all">
-                            ${readText} <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                        </span>
-                    </div>
-                </div>
-            </a>
-        `;
+    // 1–99 的汉字写法：十、十二、二十、三十一。
+    function hanziCount(n) {
+        if (n < 10) return DIGITS[n];
+        var tens = Math.floor(n / 10);
+        var ones = n % 10;
+        return (tens > 1 ? DIGITS[tens] : '') + '十' + (ones ? DIGITS[ones] : '');
     }
 
-    function updateFilterButtons(activeFilter) {
-        filterButtons.forEach((btn) => {
-            const btnFilter = btn.dataset.filter;
-            if (btnFilter === activeFilter) {
-                btn.classList.remove('bg-secondary', 'dark:bg-dark-card', 'text-text-main', 'dark:text-dark-text');
-                btn.classList.add('bg-primary', 'dark:bg-dark-text', 'text-white', 'dark:text-dark-bg');
-            } else {
-                btn.classList.remove('bg-primary', 'dark:bg-dark-text', 'text-white', 'dark:text-dark-bg');
-                btn.classList.add('bg-secondary', 'dark:bg-dark-card', 'text-text-main', 'dark:text-dark-text');
-            }
+    function hanziYear(y) {
+        return String(y).split('').map(function (d) { return DIGITS[d]; }).join('');
+    }
+
+    function currentLang() {
+        return window.YuiSite ? window.YuiSite.getLang() : 'zh';
+    }
+
+    function dateLabel(iso, lang) {
+        var parts = iso.split('-').map(Number);
+        if (lang === 'en') return MONTHS_EN[parts[1] - 1] + ' ' + parts[2];
+        return hanziCount(parts[1]) + '月' + hanziCount(parts[2]) + '日';
+    }
+
+    function minutesLabel(post, lang) {
+        var n = parseInt(String((post.readTime && post.readTime.zh) || ''), 10);
+        if (!n) return '';
+        if (lang === 'en') return n + ' min read';
+        return hanziCount(n) + (lang === 'ja' ? '分' : '分钟');
+    }
+
+    function pick(field, lang) {
+        if (!field) return '';
+        return field[lang] || field.zh || '';
+    }
+
+    function el(tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text) node.textContent = text;
+        return node;
+    }
+
+    function render() {
+        var lang = currentLang();
+        var posts = window.YuiBlogData.slice().sort(function (a, b) {
+            return String(b.publishedAt).localeCompare(String(a.publishedAt));
         });
-    }
+        var years = [];
+        posts.forEach(function (post) {
+            var y = String(post.publishedAt).slice(0, 4);
+            var group = years[years.length - 1];
+            if (!group || group.year !== y) years.push(group = { year: y, posts: [] });
+            group.posts.push(post);
+        });
 
-    function loadMore() {
-        const endIndex = Math.min(currentIndex + itemsPerPage, filteredData.length);
-        const fragment = document.createDocumentFragment();
-        const tempDiv = document.createElement('div');
-
-        for (let i = currentIndex; i < endIndex; i++) {
-            tempDiv.innerHTML = createCard(filteredData[i]);
-            const card = tempDiv.firstElementChild;
-            fragment.appendChild(card);
-        }
-
-        blogList.appendChild(fragment);
-
-        setTimeout(() => {
-            const items = blogList.querySelectorAll('.blog-item:not(.visible)');
-            items.forEach((item, index) => {
-                setTimeout(() => {
-                    item.classList.add('visible');
-                }, index * 100);
+        list.textContent = '';
+        years.forEach(function (group) {
+            var section = el('section', 'posts-year');
+            var heading = el('h2', 'block-label', lang === 'en' ? group.year : hanziYear(group.year));
+            section.appendChild(heading);
+            var ol = el('ol', 'posts');
+            group.posts.forEach(function (post) {
+                var li = el('li');
+                var a = el('a');
+                a.href = post.link;
+                a.appendChild(el('span', 'post-date', dateLabel(post.publishedAt, lang)));
+                var main = el('span', 'post-main');
+                main.appendChild(el('span', 'post-title', pick(post.title, lang)));
+                main.appendChild(el('span', 'post-excerpt', pick(post.excerpt, lang)));
+                var minutes = minutesLabel(post, lang);
+                if (minutes) main.appendChild(el('span', 'post-minutes', minutes));
+                a.appendChild(main);
+                li.appendChild(a);
+                ol.appendChild(li);
             });
-        }, 50);
-
-        currentIndex = endIndex;
-
-        if (currentIndex >= filteredData.length) {
-            const translations = window.YuiLang ? window.YuiLang.getPageTranslations() : null;
-            const noMoreText = translations?.noMore || 'That\'s all! No more articles.';
-            loadMoreContainer.innerHTML = `
-                <div class="text-center text-text-muted text-sm py-8">
-                    <span class="material-symbols-outlined text-2xl mb-2 block">check_circle</span>
-                    ${noMoreText}
-                </div>
-            `;
-        }
-    }
-
-    function filterBlog(filter) {
-        currentFilter = filter;
-        currentIndex = 0;
-        filteredData = filter === 'All' ? [...blogData] : blogData.filter((item) => item.category === filter);
-        blogList.innerHTML = '';
-
-        const translations = window.YuiLang ? window.YuiLang.getPageTranslations() : null;
-        const loadMoreText = translations?.loadMore || 'Load More Articles';
-        loadMoreContainer.innerHTML = `
-            <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle bg-white px-8 py-3 text-sm font-medium text-text-main hover:bg-gray-50 transition-colors">
-                ${loadMoreText}
-                <span class="material-symbols-outlined text-lg">expand_more</span>
-            </button>
-        `;
-        document.getElementById('loadMoreBtn').addEventListener('click', loadMore);
-
-        updateFilterButtons(filter);
-        loadMore();
-    }
-
-    filterButtons.forEach((btn) => {
-        btn.addEventListener('click', () => {
-            filterBlog(btn.dataset.filter);
+            section.appendChild(ol);
+            list.appendChild(section);
         });
-    });
+    }
 
-    const initialLoadMoreButton = document.getElementById('loadMoreBtn');
-    if (initialLoadMoreButton) initialLoadMoreButton.addEventListener('click', loadMore);
-    loadMore();
-
-    window.addEventListener('languageChanged', (event) => {
-        if (event.detail.page === 'blog') {
-            filterBlog(currentFilter);
-        }
-    });
+    render();
+    window.addEventListener('languageChanged', render);
 })();

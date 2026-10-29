@@ -51,7 +51,7 @@ test('Shop 首页只保留 Sub2API 跳转入口', async () => {
         const html = await readText(response);
 
         assert.equal(response.status, 200);
-        assert.match(html, /src="\/images\/optimized\/shop\/code-transit-entry\.webp"/);
+        assert.match(html, /天才程序员中转站/);
         assert.match(html, /href="https:\/\/sub2api\.example\.com"[^>]*data-sub2api-link/);
         assert.doesNotMatch(html, /\/shop\/login/);
         assert.doesNotMatch(html, /\/shop\/account/);

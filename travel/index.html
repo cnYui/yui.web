@@ -1,168 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN" data-title-zh="行旅 · 悠一" data-title-ja="旅 · 悠一" data-title-en="Travel · Yui">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Travel - Yui's Portfolio</title>
-    <script src="/js/ui-init.js"></script>
-    <style>
-        html { background-color: #ffffff; }
-        html.dark { background-color: #0f0f0f; }
-        html[data-ui-ready="false"] body { opacity: 0; }
-        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
-    </style>
-    <link href="https://fonts.googleapis.com" rel="preconnect"/>
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Inter:wght@300..600&amp;display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <link href="/styles/site.css" rel="stylesheet"/>
-    <script src="/js/theme.js"></script>
-    <script src="/js/lang.js?v=20260921-7"></script>
-    <script src="/js/mobile-menu.js"></script>
-    <style>
-        .gallery-item { opacity: 0; transform: scale(0.95); transition: opacity 0.6s ease, transform 0.6s ease; }
-        .gallery-item.visible { opacity: 1; transform: scale(1); }
-        .masonry { column-count: 3; column-gap: 1.5rem; }
-        @media (max-width: 1024px) { .masonry { column-count: 2; } }
-        @media (max-width: 640px) { .masonry { column-count: 1; } }
-        .masonry-item { break-inside: avoid; margin-bottom: 1.5rem; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="/js/site.js?v=20261029-1"></script>
+  <title>行旅 · 悠一</title>
+  <meta name="description" content="悠一在日本与中国十三座城市拍下的照片，一图一行。">
+  <meta name="theme-color" content="#f0eee8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400&amp;display=swap" rel="stylesheet">
+  <link href="/styles/wabi.css?v=20261029-1" rel="stylesheet">
+  <script src="/js/travel.js?v=20261029-1" defer></script>
 </head>
-<body class="bg-cream dark:bg-dark-bg text-text-main dark:text-dark-text font-body antialiased transition-colors duration-300">
-    <!-- Header -->
-    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-cream/95 dark:bg-dark-bg/95 backdrop-blur-sm">
-        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
-            <div class="flex items-center gap-4">
-                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
-            </div>
-            <div class="flex items-center gap-10">
-                <nav class="hidden md:flex items-center gap-8">
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
-                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/travel/">Travel</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
-                </nav>
-                <div class="flex gap-2">
-                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Chinese/English/Japanese">
-                        <span class="text-xs font-bold">EN</span>
-                    </button>
-                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
-                        <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
-                    </button>
-                    <button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card transition-colors" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu">
-                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <nav id="mobileMenu" class="hidden md:hidden border-t border-border-subtle dark:border-dark-border bg-cream/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
-            <div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
-                <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 w-fit" href="/travel/">Travel</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
-            </div>
-        </nav>
-    </header>
+<body>
+<header class="site-head">
+  <a class="site-name" href="/"><span data-l="zh">悠一</span><span data-l="ja">悠一</span><span data-l="en" lang="en">Yui</span></a>
+  <div class="site-tools">
+    <nav class="site-nav" aria-label="站内" data-aria-zh="站内" data-aria-ja="サイト内" data-aria-en="Site">
+      <a href="/projects/"><span data-l="zh">作品</span><span data-l="ja">作品</span><span data-l="en" lang="en">Works</span></a>
+      <a href="/blog/"><span data-l="zh">随笔</span><span data-l="ja">随筆</span><span data-l="en" lang="en">Notes</span></a>
+      <a href="/travel/" aria-current="page"><span data-l="zh">行旅</span><span data-l="ja">旅</span><span data-l="en" lang="en">Travel</span></a>
+      <a href="/resume/"><span data-l="zh">履历</span><span data-l="ja">履歴</span><span data-l="en" lang="en">Resume</span></a>
+    </nav>
+    <div class="lang-switch" role="group" aria-label="语言 · 言語 · Language">
+      <button type="button" data-set-lang="zh" lang="zh-CN" aria-label="中文" aria-pressed="true">中</button>
+      <button type="button" data-set-lang="ja" lang="ja" aria-label="日本語" aria-pressed="false">日</button>
+      <button type="button" data-set-lang="en" lang="en" aria-label="English" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
 
-    <main class="w-full">
-        <!-- Hero Section - Full Width Image -->
-        <section class="relative h-[70vh] min-h-[500px] overflow-hidden">
-            <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('/images/optimized/travel-hero-tokyo-night.webp');">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-            </div>
-            <div class="absolute bottom-0 left-0 right-0 p-8 md:p-16">
-                <div class="max-w-[1400px] mx-auto">
-                    <p class="text-white/70 text-sm uppercase tracking-[0.3em] mb-4" data-i18n="subtitle">Travel Journal • 2026</p>
-                    <h1 class="text-white text-5xl md:text-7xl lg:text-8xl font-display font-medium leading-none mb-6">
-                        <span data-i18n="mainTitle">Wandering</span><br/><span data-i18n="mainTitleLine2">Through Asia</span>
-                    </h1>
-                    <p class="text-white/80 text-lg md:text-xl font-light max-w-xl" data-i18n="description">
-                        From the neon streets of Tokyo to the ancient temples of Kyoto. A visual journey across Japan and China.
-                    </p>
-                </div>
-            </div>
-        </section>
+<main class="page">
+  <div class="column-narrow">
+    <section class="page-intro">
+      <h1><span data-l="zh">行旅</span><span data-l="ja">旅</span><span data-l="en" lang="en">Travel</span></h1>
+      <p class="lead">
+        <span data-l="zh">日本，和中国。十三座城。</span>
+        <span data-l="ja">日本と、中国。十三の街。</span>
+        <span data-l="en" lang="en">Japan, and China. Thirteen cities.</span>
+      </p>
+    </section>
 
-        <!-- Quick Stats Bar -->
-        <section class="bg-primary text-white py-6">
-            <div class="max-w-[1400px] mx-auto px-6 md:px-12 flex flex-wrap justify-center md:justify-between items-center gap-8">
-                <div class="flex items-center gap-12">
-                    <div class="text-center">
-                        <p class="text-3xl font-display font-medium">2</p>
-                        <p class="text-xs uppercase tracking-widest text-white/60" data-i18n="countries">Countries</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-3xl font-display font-medium">13</p>
-                        <p class="text-xs uppercase tracking-widest text-white/60" data-i18n="cities">Cities</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-3xl font-display font-medium">80+</p>
-                        <p class="text-xs uppercase tracking-widest text-white/60" data-i18n="photos">Photos</p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2 text-white/60">
-                    <span class="material-symbols-outlined text-lg">flight_takeoff</span>
-                    <span class="text-sm"><span data-i18n="nextDest">Next destination:</span> <span class="text-white font-medium" data-i18n="osaka">Osaka</span></span>
-                </div>
-            </div>
-        </section>
+    <ol class="photos" id="photoList" aria-label="照片" data-aria-zh="照片" data-aria-ja="写真" data-aria-en="Photos"></ol>
 
-        <!-- Filter Pills -->
-        <section class="sticky top-[88px] z-40 bg-cream dark:bg-dark-bg border-b border-border-subtle dark:border-dark-border py-4">
-            <div class="max-w-[1400px] mx-auto px-6 md:px-12">
-                <div class="flex flex-wrap items-center gap-3">
-                    <button class="filter-btn px-5 py-2 rounded-full bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-sm font-medium transition-all hover:scale-105" data-filter="All" data-i18n="all">All</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Tokyo" data-i18n="tokyo">Tokyo</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Kyoto" data-i18n="kyoto">Kyoto</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Osaka" data-i18n="osaka">Osaka</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Nagoya" data-i18n="nagoya">Nagoya</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Hiroshima" data-i18n="hiroshima">Hiroshima</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Yokohama" data-i18n="yokohama">Yokohama</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Kawasaki" data-i18n="kawasaki">Kawasaki</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Nara" data-i18n="nara">Nara</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Okinawa" data-i18n="okinawa">Okinawa</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Fukui" data-i18n="fukui">Fukui</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Hangzhou" data-i18n="hangzhou">Hangzhou</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Nanjing" data-i18n="nanjing">Nanjing</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Beijing" data-i18n="beijing">Beijing</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Food" data-i18n="food">Food</button>
-                    <button class="filter-btn px-5 py-2 rounded-full bg-white dark:bg-dark-card border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Others" data-i18n="others">Others</button>
-                </div>
-            </div>
-        </section>
+    <section class="block" aria-labelledby="travel-places">
+      <h2 class="block-label" id="travel-places"><span data-l="zh">去过的地方</span><span data-l="ja">訪れた街</span><span data-l="en" lang="en">Places</span></h2>
+      <p class="places" data-l="zh">东京　京都　大阪　奈良　名古屋　广岛　横滨　川崎　冲绳　福井<br>杭州　南京　北京</p>
+      <p class="places" data-l="ja">東京　京都　大阪　奈良　名古屋　広島　横浜　川崎　沖縄　福井<br>杭州　南京　北京</p>
+      <p class="places" data-l="en" lang="en">Tokyo, Kyoto, Osaka, Nara, Nagoya, Hiroshima, Yokohama, Kawasaki, Okinawa, Fukui<br>Hangzhou, Nanjing, Beijing</p>
+    </section>
+  </div>
+</main>
 
-        <!-- Masonry Gallery -->
-        <section class="py-12 md:py-16">
-            <div class="max-w-[1400px] mx-auto px-6 md:px-12">
-                <div id="gallery" class="masonry">
-                </div>
-                
-                <!-- Load More -->
-                <div id="loadMoreContainer" class="flex justify-center mt-12">
-                    <button id="loadMoreBtn" class="group flex items-center gap-3 px-8 py-4 bg-primary dark:bg-dark-text text-white dark:text-dark-bg rounded-full hover:bg-primary/90 dark:hover:bg-dark-text/90 transition-all hover:scale-105">
-                        <span class="font-medium" data-i18n="loadMore">Load More Photos</span>
-                        <span class="material-symbols-outlined group-hover:translate-y-1 transition-transform">expand_more</span>
-                    </button>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- Footer -->
-    <footer class="w-full border-t border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
-        <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div class="flex flex-col gap-1 text-center md:text-left">
-                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold">Portfolio.</h2>
-                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 Yui's Travel Journal. All memories preserved.</p>
-            </div>
-            <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
-                <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
-                <span class="cursor-default">15951875192</span>
-            </div>
-        </div>
-    </footer>
-
-    <script src="/js/travel.js?v=20260921-7"></script>
+<footer class="site-foot">
+  <span data-season="line">二〇二六年　霜降</span>
+  <nav aria-label="其他" data-aria-zh="其他" data-aria-ja="その他" data-aria-en="More">
+    <a href="/shop/"><span data-l="zh">商店</span><span data-l="ja">ショップ</span><span data-l="en" lang="en">Shop</span></a>
+    <a href="/skill/"><span data-l="zh">给 AI 读的悠一</span><span data-l="ja">AI のための自己紹介</span><span data-l="en" lang="en">Yui, for AI readers</span></a>
+  </nav>
+</footer>
 </body>
 </html>

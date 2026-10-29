@@ -221,8 +221,21 @@
 
 ## 2026-10-28 首页改为侘寂竖排单屏
 
+> 已被 2026-10-29「全站侘寂版」取代：深色金缮首页、`styles/home.css`、`js/home.js` 都已删除，下面只作历史记录（线索墙源码的保留约定仍有效）。
+
 - 首页 `index.html` 按 Claude Design 画布「侘寂个人网站 · 三稿」的「壹 · 挂轴」版式重写，配色取「贰 · 金缮」：底 `#1E1D1A`、正文 `#D2CCC0`、次要字 `#9A9488`，金色 `#B0925A` 只用在落款圆点、链接悬停和键盘焦点上。
 - 只有一屏、全部竖排、从右往左读：姓名 → 四句介绍（散らし書き 错落起笔）→ 邮件 / GitHub / SKILL.md → 金色落款；左下角是项目 / 博客 / 履历 / 旅行 / 商店入口，左上角是中 / 日 / EN 切换。手机号、肖像、奖项、照片不再上首页，别再往首页加内容，细节放子页面。
 - 文件：`index.html`、`styles/home.css`、`js/home.js`。三种语言的文案都写在页面里，`html[lang]` 决定显示哪一种（`[data-l]`），改文案时三种语言一起改，`test/home.test.js` 会校验数量一致。`js/home.js` 是 `<head>` 里唯一的同步脚本，和子页面共用 `yui-portfolio-lang`，只有点击切换器才写回；旧线索墙锚点（`#projects` 等）由它转到对应子页面。
 - 线索墙源码（`styles/clue-wall.css`、`js/clue-*.js`、`js/hand3d.js`、`js/three/` 等）暂时保留但首页已不引用，对应的 5 个首页测试已删除；其他线索墙分支收尾后再删源码。要恢复线索墙，从 `8326841` 取回 `index.html` 和那 5 个测试。
 - 实施记录见 `docs/ai/context/20261028-224639-home-wabi-vertical-implementation_CN.md`。
+
+## 2026-10-29 全站侘寂版（首页挂轴 + 子页横排 + 三语 + 节气 + 墨洇）
+
+- 设计源：Claude Design 画布「侘寂个人网站 · 三稿」（https://claude.ai/artifact/CikB6gVL1Caobt9NQvBkgC），首页按 `Home.dc.html`（甲 · 竖排），所有子页面按 `*-B.dc.html`（乙 · 横排）。纸色 `#f0eee8`、墨色 `#25231f`、次要字 `#66625a`、细线 `#dad6cd`、金色 `#917347` 只用于圆点、当前页标记和焦点框；字体只有霞鹜文楷 TC（Google Fonts）。不要再加深色模式、卡片、阴影、筛选器、计数器或「加载更多」。
+- 文件：`styles/wabi.css` 是全站唯一样式表；`js/site.js` 必须是每个公开页面 `<head>` 里第一个同步脚本（`test/page-csp.test.js` 会查）。旧的 `ui-init.js`、`lang.js`、`theme.js`、`mobile-menu.js`、`styles/site.css` 只剩下线的动漫、音乐页面在用，新页面别再引用。
+- 三语：文案写三份 `<span data-l="zh|ja|en">`，`<html data-title-zh/ja/en>` 给标题；改文案三种语言一起改，测试核对数量。脚本渲染的内容（`js/blog-index.js`、`js/travel.js`、文章的 `js/blog-<slug>.js`）监听 `languageChanged` 重排，取当前语言用 `window.YuiSite.getLang()` / `window.YuiLang.getCurrentLang()`。
+- 日期：中文、日文都用汉字数字（二〇二六年九月十八日、十月十日、十二分钟），英文用 Sep 18, 2026。节气不要写死：`[data-season="line"]`（页脚年份 + 节气）、`[data-season="mark"]`（首页落款：节气 + 候）由 `js/site.js` 按日期推算填字。
+- 墨洇：`<main>` 里的文字块进入视野时一个字一个字洇开，自动生效；某块不想要就加 `data-ink-skip`。新增的块级文字元素用 h1–h4 / p / li / dt / dd / figcaption，图片、`pre`、`table` 会整块淡入。
+- 首页只放五列介绍（做视频，／讲一点 AI，／也写代码。／做有人类温度的产品，／极度克制的审美。）、作品三档节目、联系方式，不放手机号和图片；「住在日本」已按用户要求删去。联系里 bilibili、抖音、note 还缺地址，拿到后再加。
+- 行旅照片数据在 `js/travel.js`，每条要写 `w` / `h`（图片实际像素）和 zh / ja / en 标题说明，有日期的写 ISO `date`。
+- 实施记录见 `docs/ai/context/20261029-113156-wabi-site-redesign-implementation_CN.md`。

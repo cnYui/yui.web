@@ -152,7 +152,7 @@ test('公开页面引用的站内脚本都能通过静态白名单访问', async
         }
     }
 
-    assert.ok(scriptUrls.has('/js/ui-init.js'), '没有页面引用 /js/ui-init.js');
+    assert.ok([...scriptUrls.keys()].some((key) => /^\/js\/site\.js(?:\?|$)/.test(key)), '没有页面引用 /js/site.js');
     for (const [scriptPath, pagePath] of scriptUrls) {
         const response = await fetch(`${baseUrl}${scriptPath}`, { redirect: 'manual' });
         await response.arrayBuffer();
@@ -161,21 +161,27 @@ test('公开页面引用的站内脚本都能通过静态白名单访问', async
     }
 });
 
-test('首屏预初始化脚本在 <head> 中最先同步执行，且页面会加载 lang.js 恢复显示', () => {
-    const pagesWithInit = pages.filter(({ html }) => scriptTags(html).some((script) => script.src === '/js/ui-init.js'));
-    // 动漫、音乐页面暂时下线后，公开页面中加载 ui-init.js 的是简历、项目、旅行和 8 个博客页面；
-    // 首页（侘寂竖排单屏）固定深色，用自己的 js/home.js 定语言，不接入 ui-init.js / lang.js。
-    assert.ok(pagesWithInit.length >= 11, `只有 ${pagesWithInit.length} 个页面加载 /js/ui-init.js`);
+test('每个公开页面都在 <head> 里最先同步加载 site.js，三语文案成套出现', () => {
+    // 侘寂版：所有公开页面共用 js/site.js 定语言、填节气，旧的 ui-init.js / lang.js / theme.js 只剩下线的动漫、音乐页面在用。
+    const htmlPages = pages.filter(({ pagePath }) => pagePath.endsWith('.html'));
+    assert.ok(htmlPages.length >= 15, `只找到 ${htmlPages.length} 个公开页面`);
 
-    for (const { pagePath, html } of pagesWithInit) {
+    for (const { pagePath, html } of htmlPages) {
         const scripts = scriptTags(html);
         const init = scripts[0];
-        assert.equal(init.src, '/js/ui-init.js', `${pagePath} 的第一个脚本不是 /js/ui-init.js`);
-        assert.equal(init.inHead, true, `${pagePath} 的 /js/ui-init.js 不在 <head> 中`);
-        assert.equal(init.type, '', `${pagePath} 的 /js/ui-init.js 不应设置 type`);
-        assert.equal(attribute(init.attributes, 'async'), null, `${pagePath} 的 /js/ui-init.js 不应 async`);
-        assert.equal(attribute(init.attributes, 'defer'), null, `${pagePath} 的 /js/ui-init.js 不应 defer`);
-        // ui-init.js sets data-ui-ready="false"; lang.js flips it back to "true".
-        assert.ok(scripts.some((script) => /^\/js\/lang\.js(?:\?|$)/.test(script.src || '')), `${pagePath} 缺少 /js/lang.js`);
+        assert.ok(init && /^\/js\/site\.js(?:\?v=[^"]+)?$/.test(init.src || ''), `${pagePath} 的第一个脚本不是 /js/site.js`);
+        assert.equal(init.inHead, true, `${pagePath} 的 /js/site.js 不在 <head> 中`);
+        assert.equal(init.type, '', `${pagePath} 的 /js/site.js 不应设置 type`);
+        assert.equal(attribute(init.attributes, 'async'), null, `${pagePath} 的 /js/site.js 不应 async`);
+        assert.equal(attribute(init.attributes, 'defer'), null, `${pagePath} 的 /js/site.js 不应 defer`);
+        for (const retired of ['ui-init.js', 'lang.js', 'theme.js', 'mobile-menu.js', 'site.css', 'tailwind']) {
+            assert.ok(!html.includes(retired), `${pagePath} 还在引用 ${retired}`);
+        }
+        // 日文和英文成对出现；只有中文正文的文章多一条只给日英访客看的说明，所以日英可以比中文多。
+        const count = (lang) => (html.match(new RegExp(`data-l="${lang}"`, 'g')) || []).length;
+        assert.ok(count('zh') > 0, `${pagePath} 没有三语文案`);
+        assert.equal(count('en'), count('ja'), `${pagePath} 的英文和日文文案数量不一致`);
+        assert.ok(count('ja') >= count('zh'), `${pagePath} 有中文文案缺了日文`);
+        assert.doesNotMatch(html, /1[3-9]\d{9}/, `${pagePath} 不应出现手机号`);
     }
 });
