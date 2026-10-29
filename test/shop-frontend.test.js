@@ -77,13 +77,15 @@ test('公共顶部导航支持 Shop 的中英日翻译', () => {
     assert.match(script, /path === '\/shop' \|\| path\.startsWith\('\/shop\/'\)[\s\S]*return null/);
 });
 
-test('Resume 页面展示公开履历并提供密码校验后的 PDF 下载', () => {
+test('Resume 页面展示公开履历，履历和作品集 PDF 在新标签页预览', () => {
     const resume = readFile('resume/index.html');
 
-    // 简历 PDF 改为密码校验后下载，页面只保留触发密码框的按钮。
-    assert.match(resume, /data-resume-download/);
-    assert.match(resume, /\/js\/resume-download\.js/);
-    assert.doesNotMatch(resume, /href="\/files\/WU_JIANXIANG_resume\.pdf"/);
+    // 2026-10-29 起按用户要求去掉下载口令，PDF 直接在浏览器里打开。
+    for (const name of ['resume', 'portfolio']) {
+        assert.match(resume, new RegExp(`<a href="/files/WU_JIANXIANG_${name}\\.pdf\\?v=[0-9A-Za-z.-]+" target="_blank" rel="noopener">`));
+        assert.ok(fs.existsSync(path.join(__dirname, '..', 'files', `WU_JIANXIANG_${name}.pdf`)), `缺少 ${name} PDF`);
+    }
+    assert.doesNotMatch(resume, /resume-download/);
     assert.match(resume, /xiaobianfuai@gmail\.com/);
     assert.match(resume, /University of Fukui/);
     assert.match(resume, /Shandong Jiaotong University/);

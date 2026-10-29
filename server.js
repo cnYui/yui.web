@@ -11,12 +11,7 @@ const {
     isAllowedPublicStaticPath,
     isRetiredShopPath
 } = require('./lib/static-public-policy');
-const {
-    RESUME_PDF_FILE_NAME,
-    createAttemptLimiter,
-    resolveResumePassword,
-    verifyResumePassword
-} = require('./lib/resume-download');
+const { createAttemptLimiter } = require('./lib/attempt-limiter');
 const { createNowLocationStore, verifyBearerToken } = require('./lib/now-location');
 const { createContributionsService } = require('./lib/github-contributions');
 const {
@@ -3506,55 +3501,6 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
                 message: 'GitHub 贡献数据暂时不可用。'
             });
         }
-    });
-
-    // 简历 PDF 已从公开静态目录移除，只能经这里校验口令后取回。
-    // 路径必须挂在 /resume/ 下：cloudflared 的 ingress 只把固定几个前缀转发给本服务，
-    // /api/ 会被转发到 Sub2API，放在那里公网会 404（2026-09-22 实测过）。
-    // 6 位数字口令只有 100 万种组合，必须按来源限流，否则可以直接跑字典。
-    const resumePdfFile = path.join(rootDir, 'files', RESUME_PDF_FILE_NAME);
-    const resumePassword = resolveResumePassword();
-    const resumeLimiter = createAttemptLimiter({ maxFailures: 8, windowMs: 10 * 60 * 1000 });
-
-    app.post('/resume/download', (req, res) => {
-        const clientKey = String(req.ip || 'unknown');
-        const gate = resumeLimiter.check(clientKey);
-        if (!gate.allowed) {
-            const retryAfterSeconds = Math.max(1, Math.ceil(gate.retryAfterMs / 1000));
-            res.setHeader('Retry-After', String(retryAfterSeconds));
-            return res.status(429).json({
-                code: 'TOO_MANY_ATTEMPTS',
-                message: '尝试次数过多，请稍后再试。'
-            });
-        }
-
-        const password = req.body && typeof req.body.password === 'string' ? req.body.password : '';
-        if (!verifyResumePassword(password, resumePassword)) {
-            resumeLimiter.recordFailure(clientKey);
-            return res.status(401).json({
-                code: 'INVALID_PASSWORD',
-                message: '密码不正确。'
-            });
-        }
-
-        resumeLimiter.reset(clientKey);
-        if (!fs.existsSync(resumePdfFile)) {
-            return res.status(404).json({
-                code: 'RESUME_FILE_MISSING',
-                message: '简历文件暂时不可用。'
-            });
-        }
-
-        // cacheControl: false 保留上面安全头设的 no-store，避免 express 覆盖成可缓存。
-        return res.sendFile(resumePdfFile, {
-            cacheControl: false,
-            headers: {
-                'Content-Type': 'application/pdf',
-                // 安全头里的 no-store 只对 /api/ 生效，这里要自己声明，避免被缓存。
-                'Cache-Control': 'no-store',
-                'Content-Disposition': 'attachment; filename="' + RESUME_PDF_FILE_NAME + '"'
-            }
-        });
     });
 
     // 行旅页「此刻」：iPhone 快捷指令带 NOW_LOCATION_TOKEN 推位置，页面只读城市级结果（见 lib/now-location.js）。

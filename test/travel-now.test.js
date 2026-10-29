@@ -74,7 +74,7 @@ test('此刻：口令连续错八次后限流', async (t) => {
     assert.equal((await post(app.base, { lat: 35, lon: 135 })).status, 429);
 });
 
-// cloudflared 只把固定几个前缀转给 yui.web，/api/ 会落到 Sub2API（见 test/resume-download-endpoint.test.js）。
+// cloudflared 只把固定几个前缀转给 yui.web，/api/ 会落到 Sub2API（2026-09-22 简历下载接口就踩过）。
 test('此刻：前端读的路径就是服务端注册的路径，并且在隧道转发的 /travel/ 下', () => {
     assert.match(readFile('server.js'), /app\.get\('\/travel\/now'/);
     assert.match(readFile('server.js'), /app\.post\('\/travel\/now'/);
