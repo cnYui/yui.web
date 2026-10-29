@@ -1,142 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN" data-title-zh="随笔 · 悠一" data-title-ja="随筆 · 悠一" data-title-en="Notes · Yui">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Tech Blog - Yui's Portfolio</title>
-    <script src="/js/ui-init.js"></script>
-    <style>
-        html { background-color: #ffffff; }
-        html.dark { background-color: #0f0f0f; }
-        html[data-ui-ready="false"] body { opacity: 0; }
-        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
-    </style>
-    <link href="/styles/site.css" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com" rel="preconnect"/>
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <script src="/js/theme.js"></script>
-    <script src="/js/lang.js?v=20260921-7"></script>
-    <script src="/js/blog-data.js?v=20261010-1"></script>
-    <script src="/js/mobile-menu.js"></script>
-    <script src="/js/blog-index.js?v=20260919-2" defer></script>
-    <style>
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="/js/site.js?v=20261029-1"></script>
+  <title>随笔 · 悠一</title>
+  <meta name="description" content="悠一的随笔：大多关于 AI，和怎么用它。">
+  <meta name="theme-color" content="#f0eee8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400&amp;display=swap" rel="stylesheet">
+  <link href="/styles/wabi.css?v=20261029-1" rel="stylesheet">
+  <script src="/js/blog-data.js?v=20261010-1" defer></script>
+  <script src="/js/blog-index.js?v=20261029-1" defer></script>
 </head>
-<body class="bg-background dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col overflow-x-hidden antialiased transition-colors duration-300">
-    <!-- Header -->
-    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
-        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
-            <div class="flex items-center gap-4">
-                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
-            </div>
-            <div class="flex items-center gap-10">
-                <nav class="hidden md:flex items-center gap-8">
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
-                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/blog/">Blog</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
-                </nav>
-                <div class="flex gap-2">
-                        <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Language: Chinese / English / Japanese">
-                            <span class="text-xs font-bold">EN</span>
-                        </button>
-                        <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
-                            <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
-                        </button>
-                        <button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card transition-colors" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu">
-                            <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
-                        </button>
-                    </div>
-            </div>
-        </div>
-        <nav id="mobileMenu" class="hidden md:hidden border-t border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
-            <div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
-                <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 w-fit" href="/blog/">Blog</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
-            </div>
-        </nav>
-    </header>
+<body>
+<header class="site-head">
+  <a class="site-name" href="/"><span data-l="zh">悠一</span><span data-l="ja">悠一</span><span data-l="en" lang="en">Yui</span></a>
+  <div class="site-tools">
+    <nav class="site-nav" aria-label="站内" data-aria-zh="站内" data-aria-ja="サイト内" data-aria-en="Site">
+      <a href="/projects/"><span data-l="zh">作品</span><span data-l="ja">作品</span><span data-l="en" lang="en">Works</span></a>
+      <a href="/blog/" aria-current="page"><span data-l="zh">随笔</span><span data-l="ja">随筆</span><span data-l="en" lang="en">Notes</span></a>
+      <a href="/travel/"><span data-l="zh">行旅</span><span data-l="ja">旅</span><span data-l="en" lang="en">Travel</span></a>
+      <a href="/resume/"><span data-l="zh">履历</span><span data-l="ja">履歴</span><span data-l="en" lang="en">Resume</span></a>
+    </nav>
+    <div class="lang-switch" role="group" aria-label="语言 · 言語 · Language">
+      <button type="button" data-set-lang="zh" lang="zh-CN" aria-label="中文" aria-pressed="true">中</button>
+      <button type="button" data-set-lang="ja" lang="ja" aria-label="日本語" aria-pressed="false">日</button>
+      <button type="button" data-set-lang="en" lang="en" aria-label="English" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
 
-    <main class="flex-1 w-full max-w-[1400px] mx-auto px-6 md:px-12 py-12">
-        <div class="flex flex-col lg:flex-row gap-12">
-            <!-- Sidebar -->
-            <aside class="lg:w-72 shrink-0">
-                <!-- Search -->
-                <div class="mb-8">
-                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-4" data-i18n="search">Search</h3>
-                    <div class="relative">
-                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted dark:text-dark-text-muted text-lg">search</span>
-                        <input type="text" placeholder="Search articles..." data-i18n-placeholder="searchPlaceholder" class="w-full h-10 pl-10 pr-4 rounded-md border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card text-sm text-text-main dark:text-dark-text focus:outline-none focus:border-primary dark:focus:border-dark-text transition-colors"/>
-                    </div>
-                </div>
+<main class="page">
+  <div class="column">
+    <section class="page-intro">
+      <h1><span data-l="zh">随笔</span><span data-l="ja">随筆</span><span data-l="en" lang="en">Notes</span></h1>
+      <p class="lead">
+        <span data-l="zh">大多关于 AI，和怎么用它。</span>
+        <span data-l="ja">ほとんどが AI のこと、そしてその使い方について。</span>
+        <span data-l="en" lang="en">Mostly about AI, and how to use it.</span>
+      </p>
+    </section>
 
-                <!-- Topics -->
-                <div class="mb-8">
-                    <h3 class="text-xs font-bold uppercase tracking-widest text-text-muted dark:text-dark-text-muted mb-4" data-i18n="topics">Topics</h3>
-                    <div class="flex flex-wrap gap-2">
-                        <button class="filter-btn px-4 py-2 rounded-md bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-sm font-medium transition-all" data-filter="All" data-i18n="allPosts">All Posts</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Frontend" data-i18n="frontend">Frontend</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Backend" data-i18n="backend">Backend</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="DevOps" data-i18n="devops">DevOps</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="Design" data-i18n="design">Design</button>
-                        <button class="filter-btn px-4 py-2 rounded-md bg-secondary dark:bg-dark-card text-text-main dark:text-dark-text text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-border transition-all" data-filter="AI" data-i18n="ai">AI</button>
-                    </div>
-                </div>
+    <div id="postList" aria-live="polite"></div>
+  </div>
+</main>
 
-                <!-- Author Card -->
-                <div class="p-6 border border-border-subtle dark:border-dark-border rounded-lg bg-white dark:bg-dark-card">
-                    <div class="flex items-center gap-4 mb-4">
-                        <div class="w-12 h-12 rounded-full overflow-hidden">
-                            <img src="/images/optimized/profile/avatar-small.webp" alt="Yui" class="w-full h-full object-cover" decoding="async"/>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold text-primary dark:text-dark-text">Yui</h4>
-                            <p class="text-xs text-text-muted dark:text-dark-text-muted" data-i18n="authorRole">Developer & Creator</p>
-                        </div>
-                    </div>
-                    <p class="text-sm text-text-muted dark:text-dark-text-muted leading-relaxed mb-4" data-i18n="authorBio">
-                        Passionate about building accessible web apps and sharing programming knowledge.
-                    </p>
-                    <div class="flex gap-4 text-text-muted dark:text-dark-text-muted">
-                        <a href="#" class="hover:text-primary dark:hover:text-dark-text transition-colors"><span class="material-symbols-outlined text-lg">link</span></a>
-                        <a href="#" class="hover:text-primary dark:hover:text-dark-text transition-colors"><span class="material-symbols-outlined text-lg">alternate_email</span></a>
-                    </div>
-                </div>
-            </aside>
-
-            <!-- Blog List -->
-            <div class="flex-1">
-                <div id="blogList" class="flex flex-col gap-8">
-                </div>
-
-                <!-- Load More -->
-                <div id="loadMoreContainer" class="flex justify-center mt-12">
-                    <button id="loadMoreBtn" class="flex items-center gap-2 rounded-md border border-border-subtle dark:border-dark-border bg-white dark:bg-dark-card px-8 py-3 text-sm font-medium text-text-main dark:text-dark-text hover:bg-gray-50 dark:hover:bg-dark-border transition-colors">
-                        <span data-i18n="loadMore">Load More Articles</span>
-                        <span class="material-symbols-outlined text-lg">expand_more</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
-        <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div class="flex flex-col gap-1 text-center md:text-left">
-                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui's Portfolio</h2>
-                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 Tech Blog.</p>
-            </div>
-            <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
-                <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
-                <span class="cursor-default">15951875192</span>
-            </div>
-        </div>
-    </footer>
-
+<footer class="site-foot">
+  <span data-season="line">二〇二六年　霜降</span>
+  <nav aria-label="其他" data-aria-zh="其他" data-aria-ja="その他" data-aria-en="More">
+    <a href="/shop/"><span data-l="zh">商店</span><span data-l="ja">ショップ</span><span data-l="en" lang="en">Shop</span></a>
+    <a href="/skill/"><span data-l="zh">给 AI 读的悠一</span><span data-l="ja">AI のための自己紹介</span><span data-l="en" lang="en">Yui, for AI readers</span></a>
+  </nav>
+</footer>
 </body>
 </html>

@@ -1,234 +1,172 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Yui | Resume</title>
-<script src="/js/ui-init.js"></script>
-<style>
-        html { background-color: #ffffff; }
-        html.dark { background-color: #0f0f0f; }
-        html[data-ui-ready="false"] body { opacity: 0; }
-        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
-</style>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Inter:wght@300..600&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="/styles/site.css" rel="stylesheet"/>
-<script src="/js/theme.js"></script>
-<script src="/js/lang.js?v=20260921-7"></script>
-<script src="/js/mobile-menu.js"></script>
-<script src="/js/resume-download.js?v=20261010-2" defer></script>
+<html lang="zh-CN" data-title-zh="履历 · 悠一" data-title-ja="履歴 · 悠一" data-title-en="Resume · Yui">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="/js/site.js?v=20261029-1"></script>
+  <title>履历 · 悠一</title>
+  <meta name="description" content="WU JIANXIANG（悠一）的公开履历：AI Native Developer，福井大学研究生，在 AI Mage 实习。">
+  <meta name="theme-color" content="#f0eee8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400&amp;display=swap" rel="stylesheet">
+  <link href="/styles/wabi.css?v=20261029-1" rel="stylesheet">
+  <script src="/js/resume-download.js?v=20261010-2" defer></script>
 </head>
-<body class="bg-background-light dark:bg-dark-bg font-sans text-text-main dark:text-dark-text antialiased overflow-x-hidden selection:bg-secondary selection:text-primary transition-colors duration-300">
-<div class="relative flex flex-col min-h-screen w-full">
-<header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
-<div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
-<div class="flex items-center gap-4">
-<a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">
-                    Portfolio.
-                </a>
-</div>
-<div class="flex items-center gap-10">
-<nav class="hidden md:flex items-center gap-8">
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
-</nav>
-<div class="flex gap-2">
-<button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="ZH/EN/JA">
-<span class="text-xs font-bold">EN</span>
-</button>
-<button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
-<span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
-</button>
-<button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card transition-colors" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu">
-<span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
-</button>
-</div>
-</div>
-</div>
-<nav id="mobileMenu" class="hidden md:hidden border-t border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
-<div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
-<a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
-</div>
-</nav>
-</header>
-<main class="flex-grow flex flex-col items-center w-full">
-<section class="w-full px-6 md:px-12 pt-20 pb-16 max-w-5xl mx-auto text-center">
-<span class="inline-block px-3 py-1 bg-surface-light dark:bg-dark-card text-text-muted dark:text-dark-text-muted text-[10px] font-bold tracking-[0.2em] uppercase border border-border-light dark:border-dark-border rounded-full mb-6" data-i18n="badge">
-                    Resume
-                </span>
-<h1 class="font-serif text-5xl md:text-6xl lg:text-7xl text-text-main dark:text-dark-text mb-6 leading-tight">
-                    WU JIANXIANG
-                </h1>
-<p class="text-xl md:text-2xl font-light text-text-muted dark:text-dark-text-muted max-w-3xl mx-auto leading-relaxed" data-i18n="mainDesc">
-                    AI Native Developer focused on RAG systems, generative AI applications, and end-to-end product delivery.
-                </p>
-<div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-<a class="text-sm text-text-muted dark:text-dark-text-muted underline underline-offset-4 hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
-<button class="btn-primary gap-3" type="button" data-resume-download>
-<span class="material-symbols-outlined font-light" style="font-size: 18px;">download</span>
-<span data-i18n="downloadPdf">Download PDF Resume</span>
-</button>
-</div>
-</section>
-<section class="w-full px-6 md:px-12 py-16 max-w-5xl mx-auto border-t border-gray-100 dark:border-dark-border">
-<div class="flex flex-col md:flex-row">
-<h2 class="resume-section-heading dark:text-dark-text-muted" data-i18n="profile">Profile</h2>
-<div class="flex-grow">
-<p class="text-text-muted dark:text-dark-text-muted font-light leading-relaxed" data-i18n="profileDesc">
-                            Graduate student at the University of Fukui with a background in artificial intelligence and practical experience in multimodal RAG, Agentic RAG, GraphRAG, semantic retrieval, and AI-assisted software delivery.
-                        </p>
-</div>
-</div>
-</section>
-<section class="w-full px-6 md:px-12 py-16 max-w-5xl mx-auto border-t border-gray-100 dark:border-dark-border">
-<div class="flex flex-col md:flex-row">
-<h2 class="resume-section-heading dark:text-dark-text-muted" data-i18n="experience">Experience</h2>
-<div class="flex-grow flex flex-col gap-12">
-<div class="flex flex-col gap-2">
-<div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
-<h3 class="text-xl font-serif font-medium text-text-main dark:text-dark-text" data-i18n="job0Title">Anime IP Supervision × AI Intern</h3>
-<span class="text-sm font-medium text-text-main dark:text-dark-text" data-i18n="job0Period">2026.9-Present</span>
-</div>
-<span class="text-sm text-text-muted dark:text-dark-text-muted font-medium mb-3" data-i18n="job0Company">AI Mage (Tokyo)</span>
-<p class="text-text-muted dark:text-dark-text-muted font-light leading-relaxed" data-i18n="job0Desc">
-                                A Tokyo startup working at the intersection of anime IP and AI, building AI applications for IP supervision.
-                            </p>
-</div>
-<div class="flex flex-col gap-2">
-<div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
-<h3 class="text-xl font-serif font-medium text-text-main dark:text-dark-text" data-i18n="job1Title">R&D / Operations Intern</h3>
-<span class="text-sm font-medium text-text-main dark:text-dark-text" data-i18n="job1Period">2025.9-2026.3</span>
-</div>
-<span class="text-sm text-text-muted dark:text-dark-text-muted font-medium mb-3" data-i18n="job1Company">National Energy Research Institute</span>
-<p class="text-text-muted dark:text-dark-text-muted font-light leading-relaxed mb-4" data-i18n="job1Desc">
-                                Worked on multimodal RAG development, deployment, and operations, turning raw documents into searchable text, image, table, and vector assets.
-                            </p>
-<ul class="list-disc list-inside text-sm text-text-muted dark:text-dark-text-muted font-light space-y-1 ml-2">
-<li data-i18n="job1Item1">Extracted text, images, and tables from source documents for retrieval workflows.</li>
-<li data-i18n="job1Item2">Used local vision models for image tagging and embedding models for vectorization and recall testing.</li>
-<li data-i18n="job1Item3">Designed Docker networking and built a multimodal Agentic RAG chat WebUI with frontend and backend integration.</li>
-</ul>
-</div>
-</div>
-</div>
-</section>
-<section class="w-full px-6 md:px-12 py-16 max-w-5xl mx-auto border-t border-gray-100 dark:border-dark-border">
-<div class="flex flex-col md:flex-row">
-<h2 class="resume-section-heading dark:text-dark-text-muted" data-i18n="education">Education</h2>
-<div class="flex-grow flex flex-col gap-10">
-<div class="flex flex-col gap-1">
-<div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
-<h3 class="text-lg font-serif font-medium text-text-main dark:text-dark-text" data-i18n="edu1Title">University of Fukui</h3>
-<span class="text-sm font-medium text-text-muted dark:text-dark-text-muted" data-i18n="edu1Period">2026.4-2028.3</span>
-</div>
-<p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="edu1School">Graduate School of Engineering, Knowledge Society Basic Engineering</p>
-</div>
-<div class="flex flex-col gap-1">
-<div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
-<h3 class="text-lg font-serif font-medium text-text-main dark:text-dark-text" data-i18n="edu2Title">B.S. Artificial Intelligence</h3>
-<span class="text-sm font-medium text-text-muted dark:text-dark-text-muted" data-i18n="edu2Period">2021.9-2025.6</span>
-</div>
-<p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="edu2School">Shandong Jiaotong University</p>
-</div>
-</div>
-</div>
-</section>
-<section class="w-full px-6 md:px-12 py-16 max-w-5xl mx-auto border-t border-gray-100 dark:border-dark-border">
-<div class="flex flex-col md:flex-row">
-<h2 class="resume-section-heading dark:text-dark-text-muted" data-i18n="skills">Skills</h2>
-<div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-6">
-<div class="rounded-xl border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card p-6">
-<h3 class="text-lg font-serif font-medium text-text-main dark:text-dark-text mb-3" data-i18n="skill1Title">RAG Systems</h3>
-<p class="text-sm text-text-muted dark:text-dark-text-muted leading-relaxed" data-i18n="skill1Desc">Multimodal RAG, Agentic RAG, GraphRAG, vector databases, semantic retrieval, and recall evaluation.</p>
-</div>
-<div class="rounded-xl border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card p-6">
-<h3 class="text-lg font-serif font-medium text-text-main dark:text-dark-text mb-3" data-i18n="skill2Title">Workflow Automation</h3>
-<p class="text-sm text-text-muted dark:text-dark-text-muted leading-relaxed" data-i18n="skill2Desc">Hands-on experience with Dify, n8n, Coze, LangGraph, and AI workflow orchestration.</p>
-</div>
-<div class="rounded-xl border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card p-6">
-<h3 class="text-lg font-serif font-medium text-text-main dark:text-dark-text mb-3" data-i18n="skill3Title">AI Native Development</h3>
-<p class="text-sm text-text-muted dark:text-dark-text-muted leading-relaxed" data-i18n="skill3Desc">Uses Codex-style AI development workflows from requirements, context design, and code review to production validation.</p>
-</div>
-<div class="rounded-xl border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card p-6">
-<h3 class="text-lg font-serif font-medium text-text-main dark:text-dark-text mb-3" data-i18n="skill4Title">Deployment</h3>
-<p class="text-sm text-text-muted dark:text-dark-text-muted leading-relaxed" data-i18n="skill4Desc">Docker networking, frontend/backend WebUI delivery, local model integration, and operational maintenance.</p>
-</div>
-</div>
-</div>
-</section>
-<section class="w-full px-6 md:px-12 py-16 max-w-5xl mx-auto border-t border-gray-100 dark:border-dark-border">
-<div class="flex flex-col md:flex-row">
-<h2 class="resume-section-heading dark:text-dark-text-muted" data-i18n="certifications">Certifications</h2>
-<div class="flex-grow grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-<div class="border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card p-5 rounded-xl">
-<h3 class="text-base font-medium text-text-main dark:text-dark-text">JLPT N2</h3>
-<p class="text-sm text-text-muted dark:text-dark-text-muted mt-1" data-i18n="cert1Date">2024.7</p>
-</div>
-<div class="border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card p-5 rounded-xl">
-<h3 class="text-base font-medium text-text-main dark:text-dark-text">TOEIC 850</h3>
-<p class="text-sm text-text-muted dark:text-dark-text-muted mt-1" data-i18n="cert2Date">2024.5</p>
-</div>
-<div class="border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card p-5 rounded-xl">
-<h3 class="text-base font-medium text-text-main dark:text-dark-text">TOEFL iBT 84</h3>
-<p class="text-sm text-text-muted dark:text-dark-text-muted mt-1" data-i18n="cert3Date">2024.12</p>
-</div>
-</div>
-</div>
-</section>
-<section class="w-full px-6 md:px-12 py-16 max-w-5xl mx-auto border-t border-gray-100 dark:border-dark-border">
-<div class="flex flex-col md:flex-row">
-<h2 class="resume-section-heading dark:text-dark-text-muted" data-i18n="awards">Awards</h2>
-<div class="flex-grow flex flex-col gap-8">
-<div class="flex flex-col gap-1">
-<h3 class="text-lg font-serif font-medium text-text-main dark:text-dark-text" data-i18n="award7Title">Osaka Rokid Mini Hackathon Runner-up (Tied 2nd Place)</h3>
-<p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="award7Source">Osaka Rokid Mini Hackathon • 2026</p>
-</div>
-<div class="flex flex-col gap-1">
-<h3 class="text-lg font-serif font-medium text-text-main dark:text-dark-text" data-i18n="award1Title">Global Hackathon Gold Award</h3>
-<p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="award1Source">Global Hackathon • 2026</p>
-</div>
-<div class="flex flex-col gap-1">
-<h3 class="text-lg font-serif font-medium text-text-main dark:text-dark-text" data-i18n="award2Title">Nanjing University AI Hackathon Tour Finalist</h3>
-<p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="award2Source">Nanjing University • 2026</p>
-</div>
-<div class="flex flex-col gap-1">
-<h3 class="text-lg font-serif font-medium text-text-main dark:text-dark-text" data-i18n="award3Title">TRAE Solo Hackathon 2nd Place</h3>
-<p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="award3Source">TRAE Solo Hackathon • 2025</p>
-</div>
-<div class="flex flex-col gap-1">
-<h3 class="text-lg font-serif font-medium text-text-main dark:text-dark-text" data-i18n="award4Title">Yukesong Google GDG Track Winner</h3>
-<p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="award4Source">Yukesong • 2025</p>
-</div>
-<div class="flex flex-col gap-1">
-<h3 class="text-lg font-serif font-medium text-text-main dark:text-dark-text" data-i18n="award5Title">Rokid AR AI Smart Glasses Development 3rd Place</h3>
-<p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="award5Source">Wuxi Rokid AR AI • 2025</p>
-</div>
-<div class="flex flex-col gap-1">
-<h3 class="text-lg font-serif font-medium text-text-main dark:text-dark-text" data-i18n="award6Title">Tencent Cloud Hackathon Award</h3>
-<p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="award6Source">Tencent Cloud Hackathon • 2025</p>
-</div>
-</div>
-</div>
-</section>
-</main>
-<footer class="w-full border-t border-gray-100 dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
-    <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div class="flex flex-col gap-1 text-center md:text-left">
-            <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="resumeFooterTitle">Yui's Portfolio</h2>
-            <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="resumeFooterCopyright">© 2026 Resume.</p>
-        </div>
-        <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
-            <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
-        </div>
+<body>
+<header class="site-head">
+  <a class="site-name" href="/"><span data-l="zh">悠一</span><span data-l="ja">悠一</span><span data-l="en" lang="en">Yui</span></a>
+  <div class="site-tools">
+    <nav class="site-nav" aria-label="站内" data-aria-zh="站内" data-aria-ja="サイト内" data-aria-en="Site">
+      <a href="/projects/"><span data-l="zh">作品</span><span data-l="ja">作品</span><span data-l="en" lang="en">Works</span></a>
+      <a href="/blog/"><span data-l="zh">随笔</span><span data-l="ja">随筆</span><span data-l="en" lang="en">Notes</span></a>
+      <a href="/travel/"><span data-l="zh">行旅</span><span data-l="ja">旅</span><span data-l="en" lang="en">Travel</span></a>
+      <a href="/resume/" aria-current="page"><span data-l="zh">履历</span><span data-l="ja">履歴</span><span data-l="en" lang="en">Resume</span></a>
+    </nav>
+    <div class="lang-switch" role="group" aria-label="语言 · 言語 · Language">
+      <button type="button" data-set-lang="zh" lang="zh-CN" aria-label="中文" aria-pressed="true">中</button>
+      <button type="button" data-set-lang="ja" lang="ja" aria-label="日本語" aria-pressed="false">日</button>
+      <button type="button" data-set-lang="en" lang="en" aria-label="English" aria-pressed="false">EN</button>
     </div>
-</footer>
-</div>
+  </div>
+</header>
 
-</body></html>
+<main class="page">
+  <div class="column">
+
+    <section class="page-intro">
+      <p class="kicker"><span data-l="zh">履历</span><span data-l="ja">履歴</span><span data-l="en" lang="en">Resume</span></p>
+      <h1 lang="en">WU JIANXIANG</h1>
+      <p class="lead">
+        <span data-l="zh">AI Native Developer，专注于 RAG 系统、生成式 AI 应用和端到端产品交付。</span>
+        <span data-l="ja">RAG システム、生成 AI アプリケーション、エンドツーエンドのプロダクト開発に取り組む AI Native Developer です。</span>
+        <span data-l="en" lang="en">AI Native Developer focused on RAG systems, generative AI applications, and end-to-end product delivery.</span>
+      </p>
+      <p class="links">
+        <a href="mailto:xiaobianfuai@gmail.com" lang="en">xiaobianfuai@gmail.com</a>
+        <button type="button" data-resume-download><span class="dot" aria-hidden="true"></span><span data-l="zh">下载 PDF 履历</span><span data-l="ja">PDF の履歴書をダウンロード</span><span data-l="en" lang="en">Download the PDF resume</span></button>
+      </p>
+    </section>
+
+    <section class="block" aria-labelledby="resume-profile">
+      <h2 class="block-label" id="resume-profile"><span data-l="zh">简介</span><span data-l="ja">プロフィール</span><span data-l="en" lang="en">Profile</span></h2>
+      <p class="prose-plain">
+        <span data-l="zh">福井大学在读研究生，拥有人工智能本科背景和多模态 RAG、Agentic RAG、GraphRAG、语义检索、AI 辅助软件交付的实践经验。</span>
+        <span data-l="ja">福井大学大学院在学中。人工知能の学士課程を修了し、マルチモーダル RAG、Agentic RAG、GraphRAG、セマンティック検索、AI 支援ソフトウェア開発の実務経験があります。</span>
+        <span data-l="en" lang="en">Graduate student at the University of Fukui with a background in artificial intelligence and practical experience in multimodal RAG, Agentic RAG, GraphRAG, semantic retrieval, and AI-assisted software delivery.</span>
+      </p>
+    </section>
+
+    <section class="block" aria-labelledby="resume-work">
+      <h2 class="block-label" id="resume-work"><span data-l="zh">经历</span><span data-l="ja">職歴</span><span data-l="en" lang="en">Experience</span></h2>
+      <div class="rows">
+        <div class="row">
+          <p class="row-when"><span data-l="zh">二〇二六年九月<br>至今</span><span data-l="ja">二〇二六年九月<br>現在</span><span data-l="en" lang="en">Sep 2026 –<br>present</span></p>
+          <div class="row-main">
+            <h3><span data-l="zh">アニメ IP 監修 × AI 实习生</span><span data-l="ja">アニメ IP 監修 × AI インターン</span><span data-l="en" lang="en">Anime IP Supervision × AI Intern</span></h3>
+            <p class="org"><span data-l="zh">AI Mage（东京）</span><span data-l="ja">AI Mage（東京）</span><span data-l="en" lang="en">AI Mage (Tokyo)</span></p>
+            <p><span data-l="zh">アニメ IP × AI 方向的东京初创公司，在 IP 監修场景下做 AI 应用。</span><span data-l="ja">アニメ IP × AI のスタートアップ（東京）。IP 監修の現場で AI を活用したアプリケーションに取り組んでいます。</span><span data-l="en" lang="en">A Tokyo startup working at the intersection of anime IP and AI, building AI applications for IP supervision.</span></p>
+          </div>
+        </div>
+        <div class="row">
+          <p class="row-when"><span data-l="zh">二〇二五年九月<br>二〇二六年三月</span><span data-l="ja">二〇二五年九月<br>二〇二六年三月</span><span data-l="en" lang="en">Sep 2025 –<br>Mar 2026</span></p>
+          <div class="row-main">
+            <h3><span data-l="zh">研究开发／运维实习生</span><span data-l="ja">研究開発・運用インターン</span><span data-l="en" lang="en">R&amp;D / Operations Intern</span></h3>
+            <p class="org"><span data-l="zh">国家能源研究所</span><span data-l="ja">国家エネルギー研究所</span><span data-l="en" lang="en">National Energy Research Institute</span></p>
+            <p><span data-l="zh">参与多模态 RAG 的开发、部署和运维，将原始文档整理为可检索的文本、图像、表格和向量资产。</span><span data-l="ja">マルチモーダル RAG の開発、デプロイ、運用保守に従事し、元ドキュメントを検索可能なテキスト、画像、表、ベクトル資産へ整理しました。</span><span data-l="en" lang="en">Worked on multimodal RAG development, deployment, and operations, turning raw documents into searchable text, image, table, and vector assets.</span></p>
+            <ul data-l="zh">
+              <li>从源文档中抽取文本、图像和表格，支持检索流程。</li>
+              <li>使用本地视觉模型生成图像标签，用嵌入模型做向量化和召回测试。</li>
+              <li>设计 Docker 网络，构建前后端一体的多模态 Agentic RAG 聊天 WebUI。</li>
+            </ul>
+            <ul data-l="ja">
+              <li>元ドキュメントからテキスト、画像、表を抽出し、検索ワークフローを支援。</li>
+              <li>ローカルのビジョンモデルで画像タグ付けを行い、埋め込みモデルでベクトル化とリコールテストを実施。</li>
+              <li>Docker ネットワークを設計し、前後端一体のマルチモーダル Agentic RAG チャット WebUI を構築。</li>
+            </ul>
+            <ul data-l="en" lang="en">
+              <li>Extracted text, images, and tables from source documents for retrieval workflows.</li>
+              <li>Used local vision models for image tagging and embedding models for vectorization and recall testing.</li>
+              <li>Designed Docker networking and built a multimodal Agentic RAG chat WebUI with frontend and backend integration.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" aria-labelledby="resume-edu">
+      <h2 class="block-label" id="resume-edu"><span data-l="zh">教育</span><span data-l="ja">学歴</span><span data-l="en" lang="en">Education</span></h2>
+      <div class="rows">
+        <div class="row">
+          <p class="row-when"><span data-l="zh">二〇二六年四月<br>二〇二八年三月</span><span data-l="ja">二〇二六年四月<br>二〇二八年三月</span><span data-l="en" lang="en">Apr 2026 –<br>Mar 2028</span></p>
+          <div class="row-main">
+            <h3><span data-l="zh">福井大学</span><span data-l="ja">福井大学</span><span data-l="en" lang="en">University of Fukui</span></h3>
+            <p class="org"><span data-l="zh">工学研究科　知识社会基础工学専攻</span><span data-l="ja">工学研究科　知識社会基礎工学専攻</span><span data-l="en" lang="en">Graduate School of Engineering, Knowledge Society Basic Engineering</span></p>
+          </div>
+        </div>
+        <div class="row">
+          <p class="row-when"><span data-l="zh">二〇二一年九月<br>二〇二五年六月</span><span data-l="ja">二〇二一年九月<br>二〇二五年六月</span><span data-l="en" lang="en">Sep 2021 –<br>Jun 2025</span></p>
+          <div class="row-main">
+            <h3><span data-l="zh">山东交通学院</span><span data-l="ja">山東交通学院</span><span data-l="en" lang="en">Shandong Jiaotong University</span></h3>
+            <p class="org"><span data-l="zh">人工智能　学士</span><span data-l="ja">人工知能　学士</span><span data-l="en" lang="en">B.S. Artificial Intelligence</span></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" aria-labelledby="resume-skill">
+      <h2 class="block-label" id="resume-skill"><span data-l="zh">能力</span><span data-l="ja">スキル</span><span data-l="en" lang="en">Skills</span></h2>
+      <div class="rows rows-tight">
+        <div class="row">
+          <h3 class="skill-name"><span data-l="zh">RAG 系统</span><span data-l="ja">RAG システム</span><span data-l="en" lang="en">RAG Systems</span></h3>
+          <p class="skill-desc"><span data-l="zh">多模态 RAG、Agentic RAG、GraphRAG、向量数据库、语义检索和召回评估。</span><span data-l="ja">マルチモーダル RAG、Agentic RAG、GraphRAG、ベクトルデータベース、セマンティック検索、リコール評価。</span><span data-l="en" lang="en">Multimodal RAG, Agentic RAG, GraphRAG, vector databases, semantic retrieval, and recall evaluation.</span></p>
+        </div>
+        <div class="row">
+          <h3 class="skill-name"><span data-l="zh">工作流自动化</span><span data-l="ja">ワークフロー自動化</span><span data-l="en" lang="en">Workflow Automation</span></h3>
+          <p class="skill-desc"><span data-l="zh">熟悉 Dify、n8n、Coze、LangGraph 和 AI 工作流编排。</span><span data-l="ja">Dify、n8n、Coze、LangGraph、AI ワークフローオーケストレーションの実践経験。</span><span data-l="en" lang="en">Hands-on experience with Dify, n8n, Coze, LangGraph, and AI workflow orchestration.</span></p>
+        </div>
+        <div class="row">
+          <h3 class="skill-name"><span data-l="zh">AI Native 开发</span><span data-l="ja">AI Native 開発</span><span data-l="en" lang="en">AI Native Development</span></h3>
+          <p class="skill-desc"><span data-l="zh">使用 Codex 类 AI 开发流程，覆盖需求定义、上下文设计、代码审查和生产验证。</span><span data-l="ja">Codex 型の AI 開発フローで、要件定義、コンテキスト設計、コードレビュー、本番検証まで対応。</span><span data-l="en" lang="en">Uses Codex-style AI development workflows from requirements, context design, and code review to production validation.</span></p>
+        </div>
+        <div class="row">
+          <h3 class="skill-name"><span data-l="zh">部署与运维</span><span data-l="ja">デプロイ・運用</span><span data-l="en" lang="en">Deployment</span></h3>
+          <p class="skill-desc"><span data-l="zh">Docker 网络、前后端 WebUI 交付、本地模型集成和运维维护。</span><span data-l="ja">Docker ネットワーク、前後端 WebUI、ローカルモデル連携、運用保守。</span><span data-l="en" lang="en">Docker networking, frontend/backend WebUI delivery, local model integration, and operational maintenance.</span></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" aria-labelledby="resume-cert">
+      <h2 class="block-label" id="resume-cert"><span data-l="zh">资格</span><span data-l="ja">資格</span><span data-l="en" lang="en">Certifications</span></h2>
+      <div class="rows rows-tight">
+        <div class="row"><p class="row-when"><span data-l="zh">二〇二四年七月</span><span data-l="ja">二〇二四年七月</span><span data-l="en" lang="en">Jul 2024</span></p><p class="row-main" lang="en">JLPT N2</p></div>
+        <div class="row"><p class="row-when"><span data-l="zh">二〇二四年五月</span><span data-l="ja">二〇二四年五月</span><span data-l="en" lang="en">May 2024</span></p><p class="row-main" lang="en">TOEIC 850</p></div>
+        <div class="row"><p class="row-when"><span data-l="zh">二〇二四年十二月</span><span data-l="ja">二〇二四年十二月</span><span data-l="en" lang="en">Dec 2024</span></p><p class="row-main" lang="en">TOEFL iBT 84</p></div>
+      </div>
+    </section>
+
+    <section class="block" aria-labelledby="resume-award">
+      <h2 class="block-label" id="resume-award"><span data-l="zh">奖项</span><span data-l="ja">受賞歴</span><span data-l="en" lang="en">Awards</span></h2>
+      <div class="rows rows-tight">
+        <div class="row"><p class="row-when"><span data-l="zh">二〇二六</span><span data-l="ja">二〇二六</span><span data-l="en" lang="en">2026</span></p><p class="row-main"><span data-l="zh">大阪 Rokid Mini Hackathon　亚军（并列第二）</span><span data-l="ja">大阪 Rokid ミニハッカソン　同率第 2 位（準優勝）</span><span data-l="en" lang="en">Osaka Rokid Mini Hackathon, runner-up (tied 2nd place)</span></p></div>
+        <div class="row"><p class="row-when"><span data-l="zh">二〇二六</span><span data-l="ja">二〇二六</span><span data-l="en" lang="en">2026</span></p><p class="row-main"><span data-l="zh">环球黑客松　金奖</span><span data-l="ja">グローバルハッカソン　金賞</span><span data-l="en" lang="en">Global Hackathon, Gold Award</span></p></div>
+        <div class="row"><p class="row-when"><span data-l="zh">二〇二六</span><span data-l="ja">二〇二六</span><span data-l="en" lang="en">2026</span></p><p class="row-main"><span data-l="zh">南京高校 AI 黑客松巡回赛　决赛入围</span><span data-l="ja">南京大学 AI Hackathon Tour　決勝進出</span><span data-l="en" lang="en">Nanjing University AI Hackathon Tour, finalist</span></p></div>
+        <div class="row"><p class="row-when"><span data-l="zh">二〇二五</span><span data-l="ja">二〇二五</span><span data-l="en" lang="en">2025</span></p><p class="row-main"><span data-l="zh">TRAE Solo Hackathon　二等奖</span><span data-l="ja">TRAE Solo Hackathon　第 2 位</span><span data-l="en" lang="en">TRAE Solo Hackathon, 2nd place</span></p></div>
+        <div class="row"><p class="row-when"><span data-l="zh">二〇二五</span><span data-l="ja">二〇二五</span><span data-l="en" lang="en">2025</span></p><p class="row-main"><span data-l="zh">渝客松 Google GDG 赛道　一等奖</span><span data-l="ja">渝客松 Google GDG トラック　優勝</span><span data-l="en" lang="en">Yukesong Google GDG Track, winner</span></p></div>
+        <div class="row"><p class="row-when"><span data-l="zh">二〇二五</span><span data-l="ja">二〇二五</span><span data-l="en" lang="en">2025</span></p><p class="row-main"><span data-l="zh">Rokid AR AI 智能眼镜开发赛　三等奖</span><span data-l="ja">無錫 Rokid AR AI スマートグラス開発　第 3 位</span><span data-l="en" lang="en">Wuxi Rokid AR AI Smart Glasses Development, 3rd place</span></p></div>
+        <div class="row"><p class="row-when"><span data-l="zh">二〇二五</span><span data-l="ja">二〇二五</span><span data-l="en" lang="en">2025</span></p><p class="row-main"><span data-l="zh">腾讯云黑客松　获奖</span><span data-l="ja">Tencent Cloud Hackathon　入賞</span><span data-l="en" lang="en">Tencent Cloud Hackathon, award</span></p></div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="site-foot">
+  <span data-season="line">二〇二六年　霜降</span>
+  <nav aria-label="其他" data-aria-zh="其他" data-aria-ja="その他" data-aria-en="More">
+    <a href="/shop/"><span data-l="zh">商店</span><span data-l="ja">ショップ</span><span data-l="en" lang="en">Shop</span></a>
+    <a href="/skill/"><span data-l="zh">给 AI 读的悠一</span><span data-l="ja">AI のための自己紹介</span><span data-l="en" lang="en">Yui, for AI readers</span></a>
+  </nav>
+</footer>
+</body>
+</html>

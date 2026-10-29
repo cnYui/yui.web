@@ -1,222 +1,128 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-title-zh="Vibe Coding 实战指南 · 悠一" data-title-ja="Vibe Coding 実践ガイド · 悠一" data-title-en="Vibe Coding Practical Guide · Yui">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Vibe Coding 实战指南 - Tech Blog</title>
-    <script src="/js/ui-init.js"></script>
-    <style>
-        html { background-color: #ffffff; }
-        html.dark { background-color: #0f0f0f; }
-        html[data-ui-ready="false"] body { opacity: 0; }
-        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
-    </style>
-    <link href="/styles/site.css" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com" rel="preconnect"/>
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <script src="/js/theme.js"></script>
-    <script src="/js/lang.js?v=20260921-7"></script>
-    <script src="/js/mobile-menu.js"></script>
-    <style>
-        .prose, article { 
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-        .prose h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; }
-        .prose h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; }
-        .prose p { margin-bottom: 1rem; line-height: 1.8; }
-        .prose ul, .prose ol { margin-bottom: 1rem; padding-left: 1.5rem; }
-        .prose li { margin-bottom: 0.5rem; line-height: 1.7; }
-        .prose strong { font-weight: 600; color: inherit; }
-        .dark .prose strong { color: #ffffff; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="/js/site.js?v=20261029-1"></script>
+  <title>Vibe Coding 实战指南 · 悠一</title>
+  <meta name="description" content="一年多 AI Coding 实战经验总结，从构思设计到纠错技巧，帮助你减少&quot;屎山代码&quot;、提升开发效率。">
+  <meta name="theme-color" content="#f0eee8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400&amp;display=swap" rel="stylesheet">
+  <link href="/styles/wabi.css?v=20261029-1" rel="stylesheet">
 </head>
-<body class="bg-background dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col overflow-x-hidden antialiased transition-colors duration-300">
-    <!-- Header -->
-    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
-        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
-            <div class="flex items-center gap-4">
-                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">作品集.</a>
-            </div>
-            <div class="flex items-center gap-10">
-                <nav class="hidden md:flex items-center gap-8">
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
-                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/blog/">博客</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
-                </nav>
-                <div class="flex gap-2">
-                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="中/EN/日">
-                        <span class="text-xs font-bold">EN</span>
-                    </button>
-                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
-                        <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
-                    </button>
-                    <button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card transition-colors" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu">
-                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <nav id="mobileMenu" class="hidden md:hidden border-t border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
-            <div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">项目</a>
-                <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 w-fit" href="/blog/">博客</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">旅行</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
-            </div>
-        </nav>
-    </header>
+<body>
+<header class="site-head">
+  <a class="site-name" href="/"><span data-l="zh">悠一</span><span data-l="ja">悠一</span><span data-l="en" lang="en">Yui</span></a>
+  <div class="site-tools">
+    <nav class="site-nav" aria-label="站内" data-aria-zh="站内" data-aria-ja="サイト内" data-aria-en="Site">
+      <a href="/projects/"><span data-l="zh">作品</span><span data-l="ja">作品</span><span data-l="en" lang="en">Works</span></a>
+      <a href="/blog/" aria-current="page"><span data-l="zh">随笔</span><span data-l="ja">随筆</span><span data-l="en" lang="en">Notes</span></a>
+      <a href="/travel/"><span data-l="zh">行旅</span><span data-l="ja">旅</span><span data-l="en" lang="en">Travel</span></a>
+      <a href="/resume/"><span data-l="zh">履历</span><span data-l="ja">履歴</span><span data-l="en" lang="en">Resume</span></a>
+    </nav>
+    <div class="lang-switch" role="group" aria-label="语言 · 言語 · Language">
+      <button type="button" data-set-lang="zh" lang="zh-CN" aria-label="中文" aria-pressed="true">中</button>
+      <button type="button" data-set-lang="ja" lang="ja" aria-label="日本語" aria-pressed="false">日</button>
+      <button type="button" data-set-lang="en" lang="en" aria-label="English" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
 
-    <main class="flex-1 w-full">
-        <!-- Article Header -->
-        <div class="w-full bg-background-soft dark:bg-dark-surface py-16">
-            <div class="max-w-3xl mx-auto px-6">
-                <a href="/blog/" class="inline-flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors mb-8">
-                    <span class="material-symbols-outlined text-lg">arrow_back</span>
-                    <span data-i18n="backToBlog">返回博客</span>
-                </a>
-                <div class="flex items-center gap-3 mb-6">
-                    <span class="px-3 py-1 rounded bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-xs font-semibold uppercase tracking-wider">AI</span>
-                    <span id="articleMetaDate" class="text-sm text-text-muted dark:text-dark-text-muted">Dec 31, 2025</span>
-                    <span class="text-text-muted dark:text-dark-text-muted">•</span>
-                    <span id="articleMetaReadTime" class="text-sm text-text-muted dark:text-dark-text-muted">12 min read</span>
-                </div>
-                <h1 id="articleTitle" class="text-4xl md:text-5xl font-display font-bold text-primary dark:text-dark-text leading-tight mb-6">
-                    Vibe Coding 实战指南
-                </h1>
-                <p id="articleExcerpt" class="text-xl text-text-muted dark:text-dark-text-muted font-light leading-relaxed">
-                    一年多 AI Coding 实战经验总结，从构思设计到纠错技巧，帮助你减少"屎山代码"、提升开发效率。
-                </p>
-                <div class="flex items-center gap-4 mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
-                    <div class="w-12 h-12 rounded-full overflow-hidden">
-                        <img src="/images/optimized/profile/avatar-small.webp" alt="Yui" class="w-full h-full object-cover" decoding="async"/>
-                    </div>
-                    <div>
-                        <p class="font-semibold text-primary dark:text-dark-text">Yui</p>
-                        <p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="authorRole">开发者 & 创作者</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+<main class="page">
+  <article class="article">
+    <p class="article-meta"><span id="articleMetaDate">二〇二五年十二月三十一日</span>　<span id="articleMetaReadTime">十二分钟</span></p>
+    <h1 id="articleTitle" class="article-title">Vibe Coding 实战指南</h1>
+    <p id="articleExcerpt" class="article-excerpt">一年多 AI Coding 实战经验总结，从构思设计到纠错技巧，帮助你减少"屎山代码"、提升开发效率。</p>
 
-        <!-- Featured Image -->
-        <div class="w-full max-w-4xl mx-auto px-6 -mt-0">
-            <div class="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-lg">
-                <img class="w-full h-full object-cover" src="/images/optimized/blog/vibe-coding-guide.webp" alt="Vibe Coding 实战指南"/>
-            </div>
-        </div>
+    <div id="articleBody" class="article-body">
+      <h2>前言</h2>
+      <p>本人自去年10月起重度使用 AI Coding，历经毕业设计（深度学习/模型融合）、React + TypeScript、Flutter、微信小程序及安卓开发等多个领域。在一年多的实战中，我总结了一套减少"屎山代码"、提升开发效率的 Vibe Coding 经验，主要侧重于前端与流程控制。</p>
 
-        <!-- Article Content -->
-        <article class="w-full max-w-3xl mx-auto px-6 py-16">
-            <div id="articleBody" class="prose prose-lg max-w-none text-text-main dark:text-dark-text">
-                <h2 class="text-primary dark:text-dark-text">前言</h2>
-                <p>本人自去年10月起重度使用 AI Coding，历经毕业设计（深度学习/模型融合）、React + TypeScript、Flutter、微信小程序及安卓开发等多个领域。在一年多的实战中，我总结了一套减少"屎山代码"、提升开发效率的 Vibe Coding 经验，主要侧重于前端与流程控制。</p>
+      <h2>1. 动笔前的核心：构思与设计闭环</h2>
+      <p>在让 AI 写代码之前，必须先理清整体框架，切忌盲目开工。</p>
 
-                <h2 class="text-primary dark:text-dark-text">1. 动笔前的核心：构思与设计闭环</h2>
-                <p>在让 AI 写代码之前，必须先理清整体框架，切忌盲目开工。</p>
-                
-                <h3 class="text-primary dark:text-dark-text">逻辑先行</h3>
-                <p>不要只盯着界面长什么样，更要明确用户的操作流程。例如：如何点击、如何输入、数据流向哪里。必须确保整个交互流程是闭环的，提前预判并解决逻辑冲突点（这些细节往往在实际上手测试时才会暴露，提前构思能大幅减少返工）。</p>
-                
-                <h3 class="text-primary dark:text-dark-text">视觉具象化</h3>
-                <p>推荐先用笔画草图，然后将草图配合文字描述发送给前端 AI 设计工具。</p>
-                
-                <h3 class="text-primary dark:text-dark-text">精确指令</h3>
-                <p>提供具体的配色方案（如 #XXXXXX 颜色代码）和布局细节（如"底部圆角矩形导航栏"）。AI 根据图片生成的界面往往比纯文字描述更精准。</p>
+      <h3>逻辑先行</h3>
+      <p>不要只盯着界面长什么样，更要明确用户的操作流程。例如：如何点击、如何输入、数据流向哪里。必须确保整个交互流程是闭环的，提前预判并解决逻辑冲突点（这些细节往往在实际上手测试时才会暴露，提前构思能大幅减少返工）。</p>
 
-                <h2 class="text-primary dark:text-dark-text">2. 上下文投喂：从设计稿到 Trae</h2>
-                <p>当你在 AI 设计工具中完成了满意的 UI 调整后，如何将其无缝迁移到 Trae？</p>
-                
-                <ul class="list-disc">
-                    <li><strong>素材准备：</strong>下载设计好的 HTML 文件并解压。</li>
-                    <li><strong>精准投喂：</strong>将每一个界面的 HTML 拖入 Trae 的工作目录。</li>
-                    <li><strong>建立认知：</strong>明确告诉 Trae："这个 HTML 是参考界面，包含哪些按钮，点击后跳转到哪里"。</li>
-                    <li><strong>复现与微调：</strong>即使目标代码不是 HTML（如 React 或 Flutter），也可以让 Trae 严格参考该 HTML 的布局进行 1:1 复现。复现后，可配合浏览器预览，选中具体元素发给 Trae 进行像素级的微调。</li>
-                </ul>
+      <h3>视觉具象化</h3>
+      <p>推荐先用笔画草图，然后将草图配合文字描述发送给前端 AI 设计工具。</p>
 
-                <h2 class="text-primary dark:text-dark-text">3. 需求文档策略：原子化与 Human-in-the-loop</h2>
-                <p>需求文档的质量直接决定了代码的质量，越详细越好。</p>
-                
-                <h3 class="text-primary dark:text-dark-text">人机协作（Human-in-the-loop）</h3>
-                <p>可以先写一个简单的草稿，让 AI 扩充，但必须要人工审核。尽管 AI 理解能力很强，但为了防止方向性错误，人工把关是必不可少的。</p>
-                
-                <h3 class="text-primary dark:text-dark-text">原子化切分</h3>
-                <p>建议主动要求 Trae 将需求切分为一个个"原子化"的任务。</p>
-                
-                <h3 class="text-primary dark:text-dark-text">分阶段实现</h3>
-                <p>不要试图一次性生成所有功能。分阶段编写代码的好处在于，一旦出现重大错误，你可以回滚到上一个健康的"存档点"，而不是推倒重来。</p>
+      <h3>精确指令</h3>
+      <p>提供具体的配色方案（如 #XXXXXX 颜色代码）和布局细节（如"底部圆角矩形导航栏"）。AI 根据图片生成的界面往往比纯文字描述更精准。</p>
 
-                <h2 class="text-primary dark:text-dark-text">4. 纠错技巧：逆向约束法</h2>
-                <p>当 AI 在某个功能上反复出错，或者一直曲解你的意图时：</p>
-                
-                <ul class="list-disc">
-                    <li><strong>及时撤回：</strong>不要基于错误的代码继续对话，立即撤回该次生成。</li>
-                    <li><strong>添加"禁止项"：</strong>在原始提示词（Prompt）中显式添加"禁止 XXX"或"不要使用 XXX 方法"。</li>
-                    <li><strong>迭代修正：</strong>这种"负面约束"能有效防止 AI 再次掉入同样的逻辑陷阱。如果仍有偏差，继续迭代提示词，直到逻辑完全对齐。</li>
-                </ul>
+      <h2>2. 上下文投喂：从设计稿到 Trae</h2>
+      <p>当你在 AI 设计工具中完成了满意的 UI 调整后，如何将其无缝迁移到 Trae？</p>
 
-                <h2 class="text-primary dark:text-dark-text">5. 陷入死循环时的"暂停思考"</h2>
-                <p>如果一个报错让 AI 修复了多次（消耗了多个最大思考长度）仍未解决，或者你输入了好几个"继续"它还在原地打转：</p>
-                
-                <ul class="list-disc">
-                    <li><strong>强制叫停：</strong>此时 AI 可能已经糊涂了，不要盲目让它继续试错。</li>
-                    <li><strong>引导反思：</strong>停下来问 AI 三个问题："当前具体的报错是什么？"、"是哪个代码文件出了问题？"、"你觉得应该怎么解决？"。</li>
-                    <li><strong>理清思路：</strong>帮助 AI 重新梳理上下文，往往能跳出死循环，找到真正的解决方案。</li>
-                </ul>
+      <ul>
+          <li><strong>素材准备：</strong>下载设计好的 HTML 文件并解压。</li>
+          <li><strong>精准投喂：</strong>将每一个界面的 HTML 拖入 Trae 的工作目录。</li>
+          <li><strong>建立认知：</strong>明确告诉 Trae："这个 HTML 是参考界面，包含哪些按钮，点击后跳转到哪里"。</li>
+          <li><strong>复现与微调：</strong>即使目标代码不是 HTML（如 React 或 Flutter），也可以让 Trae 严格参考该 HTML 的布局进行 1:1 复现。复现后，可配合浏览器预览，选中具体元素发给 Trae 进行像素级的微调。</li>
+      </ul>
 
-                <h2 class="text-primary dark:text-dark-text">6. 特定框架开发：文档先行</h2>
-                <p>在开发微信小程序、安卓、鸿蒙或使用 LangGraph 等特定框架/库时：</p>
-                
-                <ul class="list-disc">
-                    <li><strong>避免幻觉：</strong>AI 可能会因为不熟悉特定语法而瞎编代码（幻觉）。</li>
-                    <li><strong>喂养文档：</strong>直接让 AI 开发前，先让它阅读相关的官方文档或语法指南。例如 iOS 开发可以利用 MCP 工具加载 Swift 语法，鸿蒙或 LangGraph 1.0 同理。</li>
-                    <li><strong>参考系：</strong>给 AI 一个准确的语法 Docs 作为参考系（Context），能极大降低写出"屎山代码"的概率。</li>
-                </ul>
+      <h2>3. 需求文档策略：原子化与 Human-in-the-loop</h2>
+      <p>需求文档的质量直接决定了代码的质量，越详细越好。</p>
 
-                <h2 class="text-primary dark:text-dark-text">总结</h2>
-                <p>Vibe Coding 的核心在于：先构思后动手、精准投喂上下文、原子化需求、善用负面约束、及时暂停反思、以及文档先行。掌握这些技巧，你将能更高效地与 AI 协作，写出更优质的代码。</p>
-            </div>
+      <h3>人机协作（Human-in-the-loop）</h3>
+      <p>可以先写一个简单的草稿，让 AI 扩充，但必须要人工审核。尽管 AI 理解能力很强，但为了防止方向性错误，人工把关是必不可少的。</p>
 
-            <!-- Tags -->
-            <div id="articleTags" class="flex flex-wrap gap-2 mt-12 pt-8 border-t border-border-subtle dark:border-dark-border">
-                <span class="text-sm text-text-muted dark:text-dark-text-muted mr-2" data-i18n="tags">标签:</span>
-                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">AI Coding</span>
-                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Vibe Coding</span>
-                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">Trae</span>
-                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">开发效率</span>
-                <span class="px-3 py-1 rounded-full bg-secondary dark:bg-dark-card text-sm text-text-main dark:text-dark-text">前端</span>
-            </div>
+      <h3>原子化切分</h3>
+      <p>建议主动要求 Trae 将需求切分为一个个"原子化"的任务。</p>
 
-            <!-- Share -->
-            <div class="flex items-center justify-between mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
-                <span class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="shareArticle">Share this article:</span>
-                <div class="flex gap-4">
-                    <button id="shareBtn" class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text" title="Copy link">
-                        <span class="material-symbols-outlined text-lg">share</span>
-                    </button>
-                </div>
-            </div>
-        </article>
-    </main>
+      <h3>分阶段实现</h3>
+      <p>不要试图一次性生成所有功能。分阶段编写代码的好处在于，一旦出现重大错误，你可以回滚到上一个健康的"存档点"，而不是推倒重来。</p>
 
-    <!-- Footer -->
-    <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
-        <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div class="flex flex-col gap-1 text-center md:text-left">
-                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui的作品集</h2>
-                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 技术博客.</p>
-            </div>
-            <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
-                <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
-                <span class="cursor-default">15951875192</span>
-            </div>
-        </div>
-    </footer>
-    <script src="/js/blog-vibe-coding.js"></script>
+      <h2>4. 纠错技巧：逆向约束法</h2>
+      <p>当 AI 在某个功能上反复出错，或者一直曲解你的意图时：</p>
+
+      <ul>
+          <li><strong>及时撤回：</strong>不要基于错误的代码继续对话，立即撤回该次生成。</li>
+          <li><strong>添加"禁止项"：</strong>在原始提示词（Prompt）中显式添加"禁止 XXX"或"不要使用 XXX 方法"。</li>
+          <li><strong>迭代修正：</strong>这种"负面约束"能有效防止 AI 再次掉入同样的逻辑陷阱。如果仍有偏差，继续迭代提示词，直到逻辑完全对齐。</li>
+      </ul>
+
+      <h2>5. 陷入死循环时的"暂停思考"</h2>
+      <p>如果一个报错让 AI 修复了多次（消耗了多个最大思考长度）仍未解决，或者你输入了好几个"继续"它还在原地打转：</p>
+
+      <ul>
+          <li><strong>强制叫停：</strong>此时 AI 可能已经糊涂了，不要盲目让它继续试错。</li>
+          <li><strong>引导反思：</strong>停下来问 AI 三个问题："当前具体的报错是什么？"、"是哪个代码文件出了问题？"、"你觉得应该怎么解决？"。</li>
+          <li><strong>理清思路：</strong>帮助 AI 重新梳理上下文，往往能跳出死循环，找到真正的解决方案。</li>
+      </ul>
+
+      <h2>6. 特定框架开发：文档先行</h2>
+      <p>在开发微信小程序、安卓、鸿蒙或使用 LangGraph 等特定框架/库时：</p>
+
+      <ul>
+          <li><strong>避免幻觉：</strong>AI 可能会因为不熟悉特定语法而瞎编代码（幻觉）。</li>
+          <li><strong>喂养文档：</strong>直接让 AI 开发前，先让它阅读相关的官方文档或语法指南。例如 iOS 开发可以利用 MCP 工具加载 Swift 语法，鸿蒙或 LangGraph 1.0 同理。</li>
+          <li><strong>参考系：</strong>给 AI 一个准确的语法 Docs 作为参考系（Context），能极大降低写出"屎山代码"的概率。</li>
+      </ul>
+
+      <h2>总结</h2>
+      <p>Vibe Coding 的核心在于：先构思后动手、精准投喂上下文、原子化需求、善用负面约束、及时暂停反思、以及文档先行。掌握这些技巧，你将能更高效地与 AI 协作，写出更优质的代码。</p>
+    </div>
+
+    <p id="articleTags" class="article-tags"><span>标签</span><span>AI Coding</span><span>Vibe Coding</span><span>Trae</span><span>开发效率</span><span>前端</span></p>
+
+    <nav class="article-actions" aria-label="文章" data-aria-zh="文章" data-aria-ja="記事" data-aria-en="Article">
+      <a href="/blog/"><span data-l="zh">回到随笔</span><span data-l="ja">随筆一覧へ</span><span data-l="en" lang="en">Back to notes</span></a>
+      <button type="button" id="shareBtn"><span data-l="zh">复制链接</span><span data-l="ja">リンクをコピー</span><span data-l="en" lang="en">Copy link</span></button>
+      <a class="next" href="/blog/ai-image-video"><span class="note"><span data-l="zh">下一篇</span><span data-l="ja">次の記事</span><span data-l="en" lang="en">Next</span></span><span data-l="zh">AI生图生视频使用经历和经验</span><span data-l="ja">AI画像・動画生成の体験と実践メモ</span><span data-l="en" lang="en">My Experience with AI Image and Video Generation</span></a>
+    </nav>
+  </article>
+</main>
+
+<footer class="site-foot">
+  <span data-season="line">二〇二六年　霜降</span>
+  <nav aria-label="其他" data-aria-zh="其他" data-aria-ja="その他" data-aria-en="More">
+    <a href="/shop/"><span data-l="zh">商店</span><span data-l="ja">ショップ</span><span data-l="en" lang="en">Shop</span></a>
+    <a href="/skill/"><span data-l="zh">给 AI 读的悠一</span><span data-l="ja">AI のための自己紹介</span><span data-l="en" lang="en">Yui, for AI readers</span></a>
+  </nav>
+</footer>
+
+<script src="/js/blog-vibe-coding.js?v=20261029-1"></script>
 </body>
 </html>

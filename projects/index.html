@@ -1,189 +1,126 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN" data-title-zh="作品 · 悠一" data-title-ja="作品 · 悠一" data-title-en="Works · Yui">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Projects - Yui's Portfolio</title>
-    <script src="/js/ui-init.js"></script>
-    <style>
-        html { background-color: #ffffff; }
-        html.dark { background-color: #0f0f0f; }
-        html[data-ui-ready="false"] body { opacity: 0; }
-        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
-    </style>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com" rel="preconnect"/>
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;1,400&amp;display=swap" rel="stylesheet"/>
-    <link href="/styles/site.css" rel="stylesheet"/>
-    <script src="/js/theme.js"></script>
-    <script src="/js/lang.js?v=20260921-7"></script>
-    <script src="/js/mobile-menu.js"></script>
-    <style>
-        .timeline-item { opacity: 0; transform: translateX(-20px); transition: opacity 0.6s ease, transform 0.6s ease; }
-        .timeline-item.visible { opacity: 1; transform: translateX(0); }
-        .timeline-line { background: linear-gradient(to bottom, #e5e5e5 0%, #1a1a1a 10%, #1a1a1a 90%, #e5e5e5 100%); }
-        
-        /* Particle Canvas */
-        #particleCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-        }
-        .hero-content {
-            position: relative;
-            z-index: 10;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="/js/site.js?v=20261029-1"></script>
+  <title>作品 · 悠一</title>
+  <meta name="description" content="悠一的作品：三档视频节目，以及 2024 年以来参加的黑客松、获奖和做过的小东西。">
+  <meta name="theme-color" content="#f0eee8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400&amp;display=swap" rel="stylesheet">
+  <link href="/styles/wabi.css?v=20261029-1" rel="stylesheet">
 </head>
-<body class="bg-white dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen transition-colors duration-300">
-    <!-- Header -->
-    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
-        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
-            <div class="flex items-center gap-4">
-                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
-            </div>
-            <div class="flex items-center gap-10">
-                <nav class="hidden md:flex items-center gap-8">
-                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/projects/">Projects</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
-                </nav>
-                <div class="flex gap-2">
-                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="ZH/EN/JA">
-                        <span class="text-xs font-bold">EN</span>
-                    </button>
-                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
-                        <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
-                    </button>
-                    <button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card transition-colors" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu">
-                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <nav id="mobileMenu" class="hidden md:hidden border-t border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
-            <div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
-                <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 w-fit" href="/projects/">Projects</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/blog/">Blog</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
-            </div>
-        </nav>
-    </header>
+<body>
+<header class="site-head">
+  <a class="site-name" href="/"><span data-l="zh">悠一</span><span data-l="ja">悠一</span><span data-l="en" lang="en">Yui</span></a>
+  <div class="site-tools">
+    <nav class="site-nav" aria-label="站内" data-aria-zh="站内" data-aria-ja="サイト内" data-aria-en="Site">
+      <a href="/projects/" aria-current="page"><span data-l="zh">作品</span><span data-l="ja">作品</span><span data-l="en" lang="en">Works</span></a>
+      <a href="/blog/"><span data-l="zh">随笔</span><span data-l="ja">随筆</span><span data-l="en" lang="en">Notes</span></a>
+      <a href="/travel/"><span data-l="zh">行旅</span><span data-l="ja">旅</span><span data-l="en" lang="en">Travel</span></a>
+      <a href="/resume/"><span data-l="zh">履历</span><span data-l="ja">履歴</span><span data-l="en" lang="en">Resume</span></a>
+    </nav>
+    <div class="lang-switch" role="group" aria-label="语言 · 言語 · Language">
+      <button type="button" data-set-lang="zh" lang="zh-CN" aria-label="中文" aria-pressed="true">中</button>
+      <button type="button" data-set-lang="ja" lang="ja" aria-label="日本語" aria-pressed="false">日</button>
+      <button type="button" data-set-lang="en" lang="en" aria-label="English" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
 
-    <main class="w-full">
-        <!-- Hero Section with Particle Background -->
-        <section class="relative bg-[#0a0a12] text-white py-20 md:py-28 overflow-hidden">
-            <canvas id="particleCanvas"></canvas>
-            <div class="hero-content max-w-[1200px] mx-auto px-6 md:px-12">
-                <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
-                    <div>
-                        <p class="text-white/50 text-sm uppercase tracking-[0.3em] mb-4" data-i18n="period">2024 — Present</p>
-                        <h1 class="text-5xl md:text-7xl font-display font-medium leading-tight">
-                            <span data-i18n="journeyTitle">My Journey</span><br/>
-                            <span class="italic text-white/70" data-i18n="journeySubtitle">in Tech</span>
-                        </h1>
-                    </div>
-                    <div class="md:max-w-md">
-                        <p class="text-white/70 text-lg font-light leading-relaxed" data-i18n="journeyDesc">
-                            From attending my first hackathon as a spectator to winning awards across the country. A timeline of growth, learning, and creation.
-                        </p>
-                    </div>
-                </div>
-                
-                <!-- Stats -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16 pt-16 border-t border-white/20">
-                    <div>
-                        <p class="text-4xl md:text-5xl font-display font-medium">10+</p>
-                        <p class="text-white/50 text-sm uppercase tracking-widest mt-2" data-i18n="hackathons">Hackathons</p>
-                    </div>
-                    <div>
-                        <p class="text-4xl md:text-5xl font-display font-medium">6</p>
-                        <p class="text-white/50 text-sm uppercase tracking-widest mt-2" data-i18n="awards">Awards</p>
-                    </div>
-                    <div>
-                        <p class="text-4xl md:text-5xl font-display font-medium">10</p>
-                        <p class="text-white/50 text-sm uppercase tracking-widest mt-2" data-i18n="cities">Cities</p>
-                    </div>
-                    <div>
-                        <p class="text-4xl md:text-5xl font-display font-medium italic">∞</p>
-                        <p class="text-white/50 text-sm uppercase tracking-widest mt-2" data-i18n="connections">Connections</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+<main class="page">
+  <div class="column">
 
-        <!-- Filter -->
-        <section class="sticky top-[88px] z-40 bg-white dark:bg-dark-bg border-b border-border-subtle dark:border-dark-border py-4">
-            <div class="max-w-[1200px] mx-auto px-6 md:px-12">
-                <div class="flex flex-wrap items-center gap-3">
-                    <span class="text-sm text-text-light dark:text-dark-text-muted mr-2" data-i18n="filter">Filter:</span>
-                    <button class="filter-btn px-4 py-2 rounded-full bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-sm font-medium transition-all" data-filter="All" data-i18n="all">All</button>
-                    <button class="filter-btn px-4 py-2 rounded-full border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Award" data-i18n="award">Award</button>
-                    <button class="filter-btn px-4 py-2 rounded-full border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Hackathon" data-i18n="hackathon">Hackathon</button>
-                    <button class="filter-btn px-4 py-2 rounded-full border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Meetup" data-i18n="meetup">Meetup</button>
-                    <button class="filter-btn px-4 py-2 rounded-full border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="Project" data-i18n="project">Project</button>
-                    <button class="filter-btn px-4 py-2 rounded-full border border-border-subtle dark:border-dark-border text-text-main dark:text-dark-text text-sm font-medium hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all" data-filter="AI Video/Comic" data-i18n="aiVideo">AI Video/Comic</button>
-                </div>
-            </div>
-        </section>
+    <section class="page-intro">
+      <h1><span data-l="zh">作品</span><span data-l="ja">作品</span><span data-l="en" lang="en">Works</span></h1>
+      <p class="lead">
+        <span data-l="zh">做视频，参加黑客松，也做一些小东西。</span>
+        <span data-l="ja">動画をつくり、ハッカソンに出て、小さなものもつくっています。</span>
+        <span data-l="en" lang="en">Videos, hackathons, and a few small things I built.</span>
+      </p>
+    </section>
 
-        <!-- Timeline -->
-        <section class="py-16 md:py-24">
-            <div class="max-w-[1200px] mx-auto px-6 md:px-12">
-                <div class="relative">
-                    <!-- Timeline Line -->
-                    <div class="hidden md:block absolute left-[140px] top-0 bottom-0 w-[2px] timeline-line"></div>
-                    
-                    <!-- Timeline Items -->
-                    <div id="timeline" class="flex flex-col gap-12 md:gap-16">
-                    </div>
-                </div>
+    <section class="block" aria-labelledby="works-video">
+      <h2 class="block-label" id="works-video"><span data-l="zh">视频</span><span data-l="ja">動画</span><span data-l="en" lang="en">Videos</span></h2>
+      <ul class="series">
+        <li>
+          <span class="series-name">原LAI如此</span>
+          <span class="series-desc"><span data-l="zh">AI 科普。每期一位像素讲解员，一块白板。</span><span data-l="ja">AI の解説。毎回ひとりのピクセル解説員と、一枚のホワイトボード。</span><span data-l="en" lang="en">AI explained: one pixel-art host and a whiteboard each episode.</span></span>
+        </li>
+        <li>
+          <span class="series-name" lang="en">Way to AGI</span>
+          <span class="series-desc"><span data-l="zh">出镜口播。讲我在用的 AI，和它要去哪里。</span><span data-l="ja">顔出しのトーク。いま使っている AI と、その行き先について。</span><span data-l="en" lang="en">On camera: the AI I use, and where it is going.</span></span>
+        </li>
+        <li>
+          <span class="series-name">AI每日日报</span>
+          <span class="series-desc"><span data-l="zh">每天清晨六点，鲸鱼娘读几条 AI 新闻。</span><span data-l="ja">毎朝六時、クジラ娘が AI ニュースをいくつか読み上げます。</span><span data-l="en" lang="en">At six every morning, the whale girl reads a few AI headlines.</span></span>
+        </li>
+      </ul>
+    </section>
 
-                <!-- Load More -->
-                <div id="loadMoreContainer" class="flex justify-center mt-16">
-                    <button id="loadMoreBtn" class="group flex items-center gap-3 px-8 py-4 border-2 border-primary text-primary rounded-full hover:bg-primary hover:text-white transition-all">
-                        <span class="font-medium">Load More Milestones</span>
-                        <span class="material-symbols-outlined group-hover:translate-y-1 transition-transform">expand_more</span>
-                    </button>
-                </div>
-            </div>
-        </section>
+    <section class="block" aria-labelledby="works-years">
+      <h2 class="block-label" id="works-years"><span data-l="zh">年表</span><span data-l="ja">年表</span><span data-l="en" lang="en">Timeline</span></h2>
 
-        <!-- Quote Section -->
-        <section class="bg-secondary dark:bg-dark-surface py-20">
-            <div class="max-w-[800px] mx-auto px-6 text-center">
-                <span class="material-symbols-outlined text-5xl text-text-light dark:text-dark-text-muted mb-6">format_quote</span>
-                <blockquote class="text-2xl md:text-3xl font-display italic text-text-main dark:text-dark-text leading-relaxed" data-i18n="quote">
-                    "Every hackathon is an opportunity to learn something new, meet amazing people, and push my limits."
-                </blockquote>
-                <p class="text-text-muted dark:text-dark-text-muted mt-6">— Yui, 2025</p>
-            </div>
-        </section>
-    </main>
+      <div class="year">
+        <h3><span data-l="zh">二〇二六</span><span data-l="ja">二〇二六</span><span data-l="en" lang="en">2026</span></h3>
+        <ol class="entries">
+          <li><span class="when"><span data-l="zh">九月</span><span data-l="ja">九月</span><span data-l="en" lang="en">Sep</span></span><span class="what"><span data-l="zh">大阪 Rokid Mini Hackathon<span class="result">　并列第二</span><span class="note">　「DoubleTraining」</span></span><span data-l="ja">大阪 Rokid ミニハッカソン<span class="result">　同率第 2 位</span><span class="note">　「DoubleTraining」</span></span><span data-l="en" lang="en">Osaka Rokid Mini Hackathon <span class="result">· tied 2nd place</span> <span class="note">· “DoubleTraining”</span></span></span></li>
+          <li><span class="when"><span data-l="zh">六月</span><span data-l="ja">六月</span><span data-l="en" lang="en">Jun</span></span><span class="what"><a href="https://github.com/cnYui/SpeakMore" lang="en">SpeakMore</a><span data-l="zh" class="note">　开源的云输入软件</span><span data-l="ja" class="note">　オープンソースのクラウド音声入力</span><span data-l="en" lang="en" class="note"> · open-source cloud dictation app</span></span></li>
+          <li><span class="when"><span data-l="zh">三月</span><span data-l="ja">三月</span><span data-l="en" lang="en">Mar</span></span><span class="what"><span data-l="zh">南京高校黑客松<span class="result">　决赛入围</span></span><span data-l="ja">南京の大学ハッカソン<span class="result">　決勝進出</span></span><span data-l="en" lang="en">Nanjing university hackathon <span class="result">· finalist</span></span></span></li>
+          <li><span class="when"><span data-l="zh">二月</span><span data-l="ja">二月</span><span data-l="en" lang="en">Feb</span></span><span class="what"><span data-l="zh">汤泉黑客松<span class="note">　在温泉里写代码</span></span><span data-l="ja">湯泉ハッカソン<span class="note">　温泉でコードを書く</span></span><span data-l="en" lang="en">Tangquan Hackathon <span class="note">· coding in a hot spring</span></span></span></li>
+          <li><span class="when"><span data-l="zh">一月</span><span data-l="ja">一月</span><span data-l="en" lang="en">Jan</span></span><span class="what"><span data-l="zh">环球黑客松<span class="result">　金奖</span></span><span data-l="ja">グローバルハッカソン<span class="result">　金賞</span></span><span data-l="en" lang="en">Global Hackathon <span class="result">· gold award</span></span></span></li>
+          <li><span class="when"><span data-l="zh">一月</span><span data-l="ja">一月</span><span data-l="en" lang="en">Jan</span></span><span class="what"><span data-l="zh">OpenClaw 飞书插件<span class="note">　为疯狂星期四而做</span></span><span data-l="ja">OpenClaw Feishu プラグイン<span class="note">　「クレイジー木曜日」のために</span></span><span data-l="en" lang="en">OpenClaw Feishu plugin <span class="note">· made for Crazy Thursday</span></span></span></li>
+          <li><span class="when"><span data-l="zh">一月</span><span data-l="ja">一月</span><span data-l="en" lang="en">Jan</span></span><span class="what"><span data-l="zh">南京 OPC 黑客松<span class="note">　AI 与游戏</span></span><span data-l="ja">南京 OPC ハッカソン<span class="note">　AI とゲーム</span></span><span data-l="en" lang="en">Nanjing OPC Hackathon <span class="note">· AI and games</span></span></span></li>
+        </ol>
+      </div>
 
-    <!-- Footer -->
-    <footer class="w-full border-t border-border-subtle dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
-        <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div class="flex flex-col gap-1 text-center md:text-left">
-                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold">Yui's Portfolio</h2>
-                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 Yui's Journey. Keep creating.</p>
-            </div>
-            <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
-                <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
-                <span class="cursor-default">15951875192</span>
-            </div>
-        </div>
-    </footer>
+      <div class="year">
+        <h3><span data-l="zh">二〇二五</span><span data-l="ja">二〇二五</span><span data-l="en" lang="en">2025</span></h3>
+        <ol class="entries">
+          <li><span class="when"><span data-l="zh">十二月</span><span data-l="ja">十二月</span><span data-l="en" lang="en">Dec</span></span><span class="what"><span data-l="zh">AI 视频与漫画</span><span data-l="ja">AI 動画と漫画</span><span data-l="en" lang="en">AI video and comics</span></span></li>
+          <li><span class="when"><span data-l="zh">十二月</span><span data-l="ja">十二月</span><span data-l="en" lang="en">Dec</span></span><span class="what"><span data-l="zh">南京 MoFa 黑客松</span><span data-l="ja">南京 MoFa ハッカソン</span><span data-l="en" lang="en">Nanjing MoFa Hackathon</span></span></li>
+          <li><span class="when"><span data-l="zh">十二月</span><span data-l="ja">十二月</span><span data-l="en" lang="en">Dec</span></span><span class="what"><span data-l="zh">上海圣诞黑客松</span><span data-l="ja">上海クリスマスハッカソン</span><span data-l="en" lang="en">Shanghai Christmas Hackathon</span></span></li>
+          <li><span class="when"><span data-l="zh">十一月</span><span data-l="ja">十一月</span><span data-l="en" lang="en">Nov</span></span><span class="what"><span data-l="zh">渝客松 · Google GDG 赛道<span class="result">　第一名</span></span><span data-l="ja">渝客松 Google GDG トラック<span class="result">　優勝</span></span><span data-l="en" lang="en">Yukesong, Google GDG track <span class="result">· 1st place</span></span></span></li>
+          <li><span class="when"><span data-l="zh">十一月</span><span data-l="ja">十一月</span><span data-l="en" lang="en">Nov</span></span><span class="what"><span data-l="zh">无锡 Rokid AR AI 开发赛<span class="result">　三等奖</span><span class="note">　ADHD 阅读辅助眼镜</span></span><span data-l="ja">無錫 Rokid AR AI 開発コンテスト<span class="result">　第 3 位</span><span class="note">　ADHD 向けの読書支援グラス</span></span><span data-l="en" lang="en">Wuxi Rokid AR AI contest <span class="result">· 3rd place</span> <span class="note">· reading-aid glasses for ADHD</span></span></span></li>
+          <li><span class="when"><span data-l="zh">十月</span><span data-l="ja">十月</span><span data-l="en" lang="en">Oct</span></span><span class="what"><span data-l="zh">徽客松<span class="note">　「</span><a href="http://xhslink.com/o/9pQHBf9V1Fv">随口成曲</a><span class="note">」</span></span><span data-l="ja">徽客松<span class="note">　「</span><a href="http://xhslink.com/o/9pQHBf9V1Fv">随口成曲</a><span class="note">」</span></span><span data-l="en" lang="en">Huikesong <span class="note">· </span><a href="http://xhslink.com/o/9pQHBf9V1Fv">“Suikou Chengqu”</a></span></span></li>
+          <li><span class="when"><span data-l="zh">九月</span><span data-l="ja">九月</span><span data-l="en" lang="en">Sep</span></span><span class="what"><span data-l="zh"><a href="http://xhslink.com/o/ATzpS0qsjaQ">腾讯云线上黑客松</a><span class="result">　获奖</span><span class="note">　宠物健康陪伴小程序</span></span><span data-l="ja"><a href="http://xhslink.com/o/ATzpS0qsjaQ">Tencent Cloud オンラインハッカソン</a><span class="result">　入賞</span><span class="note">　ペットの健康見守りミニアプリ</span></span><span data-l="en" lang="en"><a href="http://xhslink.com/o/ATzpS0qsjaQ">Tencent Cloud online hackathon</a> <span class="result">· award</span> <span class="note">· pet-health companion mini-program</span></span></span></li>
+          <li><span class="when"><span data-l="zh">九月</span><span data-l="ja">九月</span><span data-l="en" lang="en">Sep</span></span><span class="what"><span data-l="zh"><a href="https://www.xiaohongshu.com/user/profile/5b869e548bf5ee0001f35235">n8n × 小红书 MCP 自动发帖</a></span><span data-l="ja"><a href="https://www.xiaohongshu.com/user/profile/5b869e548bf5ee0001f35235">n8n × 小紅書 MCP 自動投稿</a></span><span data-l="en" lang="en"><a href="https://www.xiaohongshu.com/user/profile/5b869e548bf5ee0001f35235">n8n × Xiaohongshu MCP auto-posting</a></span></span></li>
+          <li><span class="when"><span data-l="zh">九月</span><span data-l="ja">九月</span><span data-l="en" lang="en">Sep</span></span><span class="what"><span data-l="zh">抖音创作者大赛<span class="note">　「</span><a href="http://xhslink.com/o/5kBv2KfGeLj">法治剧场助手</a><span class="note">」</span></span><span data-l="ja">Douyin クリエイターコンテスト<span class="note">　「</span><a href="http://xhslink.com/o/5kBv2KfGeLj">法治劇場アシスタント</a><span class="note">」</span></span><span data-l="en" lang="en">Douyin creator contest <span class="note">· </span><a href="http://xhslink.com/o/5kBv2KfGeLj">“Legal Theater Assistant”</a></span></span></li>
+          <li><span class="when"><span data-l="zh">八月</span><span data-l="ja">八月</span><span data-l="en" lang="en">Aug</span></span><span class="what"><span data-l="zh">TRAE SOLO Hackathon 上海站<span class="result">　二等奖</span></span><span data-l="ja">TRAE SOLO Hackathon 上海<span class="result">　第 2 位</span></span><span data-l="en" lang="en">TRAE SOLO Hackathon Shanghai <span class="result">· 2nd place</span></span></span></li>
+          <li><span class="when"><span data-l="zh">八月</span><span data-l="ja">八月</span><span data-l="en" lang="en">Aug</span></span><span class="what"><span data-l="zh">南客松 S1</span><span data-l="ja">南客松 S1</span><span data-l="en" lang="en">Nanckathon S1</span></span></li>
+          <li><span class="when"><span data-l="zh">七月</span><span data-l="ja">七月</span><span data-l="en" lang="en">Jul</span></span><span class="what"><span data-l="zh">AdventureX<span class="note">　观众</span></span><span data-l="ja">AdventureX<span class="note">　見学</span></span><span data-l="en" lang="en">AdventureX <span class="note">· as a visitor</span></span></span></li>
+          <li><span class="when"><span data-l="zh">六月</span><span data-l="ja">六月</span><span data-l="en" lang="en">Jun</span></span><span class="what"><span data-l="zh">Trae Solo Hackathon 杭州站<span class="note">　首战</span></span><span data-l="ja">Trae Solo Hackathon 杭州<span class="note">　初出場</span></span><span data-l="en" lang="en">Trae Solo Hackathon Hangzhou <span class="note">· my first hackathon</span></span></span></li>
+        </ol>
+      </div>
 
-    <script src="/js/projects.js?v=20260919-2"></script>
+      <div class="year">
+        <h3><span data-l="zh">二〇二四</span><span data-l="ja">二〇二四</span><span data-l="en" lang="en">2024</span></h3>
+        <ol class="entries">
+          <li><span class="when"><span data-l="zh">七月</span><span data-l="ja">七月</span><span data-l="en" lang="en">Jul</span></span><span class="what"><span data-l="zh">AdventureX<span class="note">　第一次围观黑客松</span></span><span data-l="ja">AdventureX<span class="note">　はじめてハッカソンを見学</span></span><span data-l="en" lang="en">AdventureX <span class="note">· first time watching a hackathon</span></span></span></li>
+        </ol>
+      </div>
+    </section>
 
-    <!-- Particle Earth Animation -->
-    <script src="/js/projects-earth.js"></script>
+    <section class="block" aria-labelledby="works-also">
+      <h2 class="block-label" id="works-also"><span data-l="zh">也去过</span><span data-l="ja">ほかに</span><span data-l="en" lang="en">Also attended</span></h2>
+      <p class="also">
+        <span data-l="zh">IVS2026 京都、火山引擎 Force 大会、阿里云栖大会、TRAE Friends 南京与苏州。</span>
+        <span data-l="ja">IVS2026 京都、火山エンジン Force、Alibaba Cloud 雲栖大会、TRAE Friends 南京・蘇州。</span>
+        <span data-l="en" lang="en">IVS2026 Kyoto, Volcano Engine Force, the Alibaba Cloud Apsara Conference, and TRAE Friends in Nanjing and Suzhou.</span>
+      </p>
+    </section>
+
+  </div>
+</main>
+
+<footer class="site-foot">
+  <span data-season="line">二〇二六年　霜降</span>
+  <nav aria-label="其他" data-aria-zh="其他" data-aria-ja="その他" data-aria-en="More">
+    <a href="/shop/"><span data-l="zh">商店</span><span data-l="ja">ショップ</span><span data-l="en" lang="en">Shop</span></a>
+    <a href="/skill/"><span data-l="zh">给 AI 读的悠一</span><span data-l="ja">AI のための自己紹介</span><span data-l="en" lang="en">Yui, for AI readers</span></a>
+  </nav>
+</footer>
 </body>
 </html>

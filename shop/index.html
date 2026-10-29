@@ -1,71 +1,51 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-title-zh="商店 · 悠一" data-title-ja="ショップ · 悠一" data-title-en="Shop · Yui">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Shop - Yui's Portfolio</title>
-    <style>
-        html,
-        body {
-            margin: 0;
-            min-height: 100%;
-            background: #050505;
-        }
-
-        body {
-            width: 100%;
-            min-height: 100vh;
-            min-height: 100dvh;
-            overflow: hidden;
-        }
-
-        .shop-entry-page {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            height: 100dvh;
-            min-height: 100vh;
-            min-height: 100dvh;
-            overflow: hidden;
-            background: #050505;
-        }
-
-        .shop-entry-image {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
-            user-select: none;
-            pointer-events: none;
-        }
-
-        .shop-entry-hotspot {
-            position: absolute;
-            top: 51%;
-            left: 50%;
-            display: block;
-            width: clamp(190px, 21vw, 560px);
-            height: clamp(160px, 17vw, 430px);
-            transform: translate(-50%, -50%);
-            border-radius: 999px;
-            color: transparent;
-            cursor: pointer;
-            font-size: 0;
-            outline-offset: 8px;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .shop-entry-hotspot:focus-visible {
-            outline: 2px solid rgba(255, 255, 255, 0.86);
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="/js/site.js?v=20261029-1"></script>
+  <title>商店 · 悠一</title>
+  <meta name="description" content="天才程序员中转站：Sub2API 的入口。">
+  <meta name="theme-color" content="#f0eee8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400&amp;display=swap" rel="stylesheet">
+  <link href="/styles/wabi.css?v=20261029-1" rel="stylesheet">
 </head>
 <body>
-    <main class="shop-entry-page" aria-label="Shop">
-        <img class="shop-entry-image" src="/images/optimized/shop/code-transit-entry.webp" alt="" width="1800" height="1005" decoding="async"/>
-        <a class="shop-entry-hotspot" href="/login" data-sub2api-link aria-label="进入 Sub2API"></a>
-    </main>
+<header class="site-head">
+  <a class="site-name" href="/"><span data-l="zh">悠一</span><span data-l="ja">悠一</span><span data-l="en" lang="en">Yui</span></a>
+  <div class="site-tools">
+    <nav class="site-nav" aria-label="站内" data-aria-zh="站内" data-aria-ja="サイト内" data-aria-en="Site">
+      <a href="/projects/"><span data-l="zh">作品</span><span data-l="ja">作品</span><span data-l="en" lang="en">Works</span></a>
+      <a href="/blog/"><span data-l="zh">随笔</span><span data-l="ja">随筆</span><span data-l="en" lang="en">Notes</span></a>
+      <a href="/travel/"><span data-l="zh">行旅</span><span data-l="ja">旅</span><span data-l="en" lang="en">Travel</span></a>
+      <a href="/resume/"><span data-l="zh">履历</span><span data-l="ja">履歴</span><span data-l="en" lang="en">Resume</span></a>
+    </nav>
+    <div class="lang-switch" role="group" aria-label="语言 · 言語 · Language">
+      <button type="button" data-set-lang="zh" lang="zh-CN" aria-label="中文" aria-pressed="true">中</button>
+      <button type="button" data-set-lang="ja" lang="ja" aria-label="日本語" aria-pressed="false">日</button>
+      <button type="button" data-set-lang="en" lang="en" aria-label="English" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
+
+<main class="page solo">
+  <div class="column-narrow solo-inner">
+    <p class="kicker block-label"><span data-l="zh">商店</span><span data-l="ja">ショップ</span><span data-l="en" lang="en">Shop</span></p>
+    <h1>天才程序员中转站</h1>
+    <p class="sub" lang="en">Sub2API · CODE TRANSIT</p>
+    <!-- 这个链接的地址由 server.js 换成 SUB2API_PUBLIC_URL（Sub2API 登录页），标记属性必须写在地址之后。 -->
+    <a class="go" href="/login" data-sub2api-link><span class="dot" aria-hidden="true"></span><span data-l="zh">进入商店　→</span><span data-l="ja">ショップに入る　→</span><span data-l="en" lang="en">Enter the shop →</span></a>
+  </div>
+</main>
+
+<footer class="site-foot">
+  <span data-season="line">二〇二六年　霜降</span>
+  <nav aria-label="其他" data-aria-zh="其他" data-aria-ja="その他" data-aria-en="More">
+    <a href="/shop/" aria-current="page"><span data-l="zh">商店</span><span data-l="ja">ショップ</span><span data-l="en" lang="en">Shop</span></a>
+    <a href="/skill/"><span data-l="zh">给 AI 读的悠一</span><span data-l="ja">AI のための自己紹介</span><span data-l="en" lang="en">Yui, for AI readers</span></a>
+  </nav>
+</footer>
 </body>
 </html>

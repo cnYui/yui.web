@@ -1,152 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN" data-title-zh="低成本使用 Codex Token 的几种方法 · 悠一" data-title-ja="Codex Tokenを低コストで使うためのいくつかの方法 · 悠一" data-title-en="Several Ways to Use Codex Tokens at Lower Cost · Yui">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Several Ways to Use Codex Tokens at Lower Cost - Tech Blog</title>
-    <meta name="description" content="A practical note on using Codex tokens at lower cost with Codex CLI, CPA/CLIProxyAPI, account pools, public endpoints, and troubleshooting boundaries."/>
-    <script src="/js/ui-init.js"></script>
-    <style>
-        html { background-color: #ffffff; }
-        html.dark { background-color: #0f0f0f; }
-        html[data-ui-ready="false"] body { opacity: 0; }
-        html[data-ui-ready="true"] body { opacity: 1; transition: opacity 120ms ease-out; }
-    </style>
-    <link href="/styles/site.css" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com" rel="preconnect"/>
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <script src="/js/theme.js"></script>
-    <script src="/js/lang.js?v=20260921-7"></script>
-    <script src="/js/mobile-menu.js"></script>
-    <style>
-        .prose, article {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-        .prose h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; }
-        .prose h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; }
-        .prose p { margin-bottom: 1rem; line-height: 1.8; }
-        .prose ul, .prose ol { margin-bottom: 1rem; padding-left: 1.5rem; }
-        .prose li { margin-bottom: 0.5rem; line-height: 1.7; }
-        .prose strong { font-weight: 600; color: inherit; }
-        .prose a { text-decoration: underline; text-underline-offset: 4px; }
-        .prose code { border-radius: 0.25rem; background: rgba(229, 229, 229, 0.7); padding: 0.12rem 0.35rem; font-size: 0.92em; }
-        .dark .prose code { background: rgba(51, 51, 51, 0.9); }
-        .prose blockquote { border-left: 4px solid #e5e5e5; padding-left: 1rem; margin: 1.5rem 0; font-style: italic; color: #71717a; }
-        .dark .prose blockquote { border-left-color: #333; color: #a0a0a0; }
-        .dark .prose strong { color: #ffffff; }
-        .prose hr { border: none; border-top: 1px solid #e5e5e5; margin: 2rem 0; }
-        .dark .prose hr { border-top-color: #333; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="/js/site.js?v=20261029-1"></script>
+  <title>低成本使用 Codex Token 的几种方法 · 悠一</title>
+  <meta name="description" content="从 Codex CLI、CPA/CLIProxyAPI、账号池、公网入口和排障方法出发，整理低成本使用 Codex Token 的可行路径和边界。">
+  <meta name="theme-color" content="#f0eee8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400&amp;display=swap" rel="stylesheet">
+  <link href="/styles/wabi.css?v=20261029-1" rel="stylesheet">
 </head>
-<body class="bg-background dark:bg-dark-bg text-text-main dark:text-dark-text font-body min-h-screen flex flex-col overflow-x-hidden antialiased transition-colors duration-300">
-    <header class="sticky top-0 z-50 w-full border-b border-solid border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 backdrop-blur-sm">
-        <div class="px-6 md:px-12 py-6 flex items-center justify-between max-w-[1400px] mx-auto">
-            <div class="flex items-center gap-4">
-                <a class="text-2xl font-display font-semibold italic tracking-tight text-primary dark:text-dark-text hover:opacity-80 transition-opacity" href="/">Portfolio.</a>
-            </div>
-            <div class="flex items-center gap-10">
-                <nav class="hidden md:flex items-center gap-8">
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
-                    <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5" href="/blog/">Blog</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
-                    <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
-                </nav>
-                <div class="flex gap-2">
-                    <button id="langToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Language: Chinese / English / Japanese">
-                        <span class="text-xs font-bold">EN</span>
-                    </button>
-                    <button id="themeToggle" class="flex items-center justify-center size-10 text-primary dark:text-dark-text hover:text-text-muted dark:hover:text-dark-text-muted transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-card" title="Toggle theme">
-                        <span class="material-symbols-outlined font-light" style="font-size: 20px;">dark_mode</span>
-                    </button>
-                    <button id="mobileMenuToggle" class="md:hidden flex items-center justify-center size-10 text-primary dark:text-dark-text rounded-full hover:bg-gray-100 dark:hover:bg-dark-card transition-colors" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open navigation menu">
-                        <span class="material-symbols-outlined font-light" style="font-size: 24px;">menu</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <nav id="mobileMenu" class="hidden md:hidden border-t border-border-subtle dark:border-dark-border bg-white/95 dark:bg-dark-bg/95 px-6 py-4" aria-label="Mobile navigation">
-            <div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/projects/">Projects</a>
-                <a class="text-sm uppercase tracking-widest text-primary dark:text-dark-text font-medium border-b border-primary dark:border-dark-text pb-0.5 w-fit" href="/blog/">Blog</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/travel/">Travel</a>
-                <a class="text-sm uppercase tracking-widest text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors" href="/shop/">Shop</a>
-            </div>
-        </nav>
-    </header>
+<body>
+<header class="site-head">
+  <a class="site-name" href="/"><span data-l="zh">悠一</span><span data-l="ja">悠一</span><span data-l="en" lang="en">Yui</span></a>
+  <div class="site-tools">
+    <nav class="site-nav" aria-label="站内" data-aria-zh="站内" data-aria-ja="サイト内" data-aria-en="Site">
+      <a href="/projects/"><span data-l="zh">作品</span><span data-l="ja">作品</span><span data-l="en" lang="en">Works</span></a>
+      <a href="/blog/" aria-current="page"><span data-l="zh">随笔</span><span data-l="ja">随筆</span><span data-l="en" lang="en">Notes</span></a>
+      <a href="/travel/"><span data-l="zh">行旅</span><span data-l="ja">旅</span><span data-l="en" lang="en">Travel</span></a>
+      <a href="/resume/"><span data-l="zh">履历</span><span data-l="ja">履歴</span><span data-l="en" lang="en">Resume</span></a>
+    </nav>
+    <div class="lang-switch" role="group" aria-label="语言 · 言語 · Language">
+      <button type="button" data-set-lang="zh" lang="zh-CN" aria-label="中文" aria-pressed="true">中</button>
+      <button type="button" data-set-lang="ja" lang="ja" aria-label="日本語" aria-pressed="false">日</button>
+      <button type="button" data-set-lang="en" lang="en" aria-label="English" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
 
-    <main class="flex-1 w-full">
-        <div class="w-full bg-background-soft dark:bg-dark-surface py-16">
-            <div class="max-w-3xl mx-auto px-6">
-                <a href="/blog/" class="inline-flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-dark-text transition-colors mb-8">
-                    <span class="material-symbols-outlined text-lg">arrow_back</span>
-                    <span data-i18n="backToBlog">Back to Blog</span>
-                </a>
-                <div class="flex items-center gap-3 mb-6">
-                    <span class="px-3 py-1 rounded bg-primary dark:bg-dark-text text-white dark:text-dark-bg text-xs font-semibold uppercase tracking-wider">AI</span>
-                    <span id="articleMetaDate" class="text-sm text-text-muted dark:text-dark-text-muted">Jun 6, 2026</span>
-                    <span class="text-text-muted dark:text-dark-text-muted">•</span>
-                    <span id="articleMetaReadTime" class="text-sm text-text-muted dark:text-dark-text-muted">7 min read</span>
-                </div>
-                <h1 id="articleTitle" class="text-4xl md:text-5xl font-display font-bold text-primary dark:text-dark-text leading-tight mb-6">
-                    Several Ways to Use Codex Tokens at Lower Cost
-                </h1>
-                <p id="articleExcerpt" class="text-xl text-text-muted dark:text-dark-text-muted font-light leading-relaxed">
-                    A practical note on using Codex tokens at lower cost with Codex CLI, CPA/CLIProxyAPI, account pools, public endpoints, and troubleshooting boundaries.
-                </p>
-                <div class="flex items-center gap-4 mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
-                    <div class="w-12 h-12 rounded-full overflow-hidden">
-                        <img src="/images/optimized/profile/avatar-small.webp" alt="Yui" class="w-full h-full object-cover" decoding="async"/>
-                    </div>
-                    <div>
-                        <p class="font-semibold text-primary dark:text-dark-text">Yui</p>
-                        <p class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="authorRole">Developer & Creator</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+<main class="page">
+  <article class="article">
+    <p class="article-meta"><span id="articleMetaDate">二〇二六年六月六日</span>　<span id="articleMetaReadTime">七分钟</span></p>
+    <h1 id="articleTitle" class="article-title">低成本使用 Codex Token 的几种方法</h1>
+    <p id="articleExcerpt" class="article-excerpt">从 Codex CLI、CPA/CLIProxyAPI、账号池、公网入口和排障方法出发，整理低成本使用 Codex Token 的可行路径和边界。</p>
 
-        <div class="w-full max-w-4xl mx-auto px-6">
-            <div class="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-card shadow-lg">
-                <img id="articleHeroImage" class="w-full h-full object-cover" src="/images/optimized/blog/codex-token-low-cost-cover.webp" alt="Codex Token low-cost usage cover"/>
-            </div>
-        </div>
+    <div id="articleBody" class="article-body"></div>
 
-        <article class="w-full max-w-3xl mx-auto px-6 py-16">
-            <div id="articleBody" class="prose prose-lg max-w-none text-text-main dark:text-dark-text"></div>
+    <p id="articleTags" class="article-tags"><span>标签</span><span>Codex</span><span>OpenAI</span><span>AI Coding</span><span>CLIProxyAPI</span><span>API Gateway</span><span>CPA</span></p>
 
-            <div id="articleTags" class="flex flex-wrap gap-2 mt-12 pt-8 border-t border-border-subtle dark:border-dark-border">
-                <span class="text-sm text-text-muted dark:text-dark-text-muted mr-2" data-i18n="tags">Tags:</span>
-            </div>
+    <nav class="article-actions" aria-label="文章" data-aria-zh="文章" data-aria-ja="記事" data-aria-en="Article">
+      <a href="/blog/"><span data-l="zh">回到随笔</span><span data-l="ja">随筆一覧へ</span><span data-l="en" lang="en">Back to notes</span></a>
+      <button type="button" id="shareBtn"><span data-l="zh">复制链接</span><span data-l="ja">リンクをコピー</span><span data-l="en" lang="en">Copy link</span></button>
+      <a class="next" href="/blog/back-to-vibe-coding-ai-driven-dev-before"><span class="note"><span data-l="zh">下一篇</span><span data-l="ja">次の記事</span><span data-l="en" lang="en">Next</span></span><span data-l="zh">Back to Vibe Coding：AI驱动开发之前，你需要知道的几件事（上）</span><span data-l="ja">Back to Vibe Coding：AI駆動開発の前に知っておきたいこと（上）</span><span data-l="en" lang="en">Back to Vibe Coding: What to Know Before AI-Driven Development (Part 1)</span></a>
+    </nav>
+  </article>
+</main>
 
-            <div class="flex items-center justify-between mt-8 pt-8 border-t border-border-subtle dark:border-dark-border">
-                <span class="text-sm text-text-muted dark:text-dark-text-muted" data-i18n="shareArticle">Share this article:</span>
-                <div class="flex gap-4">
-                    <button id="shareBtn" class="w-10 h-10 rounded-full border border-border-subtle dark:border-dark-border flex items-center justify-center hover:bg-primary dark:hover:bg-dark-text hover:text-white dark:hover:text-dark-bg hover:border-primary dark:hover:border-dark-text transition-all text-text-main dark:text-dark-text" title="Copy link">
-                        <span class="material-symbols-outlined text-lg">share</span>
-                    </button>
-                </div>
-            </div>
-        </article>
-    </main>
+<footer class="site-foot">
+  <span data-season="line">二〇二六年　霜降</span>
+  <nav aria-label="其他" data-aria-zh="其他" data-aria-ja="その他" data-aria-en="More">
+    <a href="/shop/"><span data-l="zh">商店</span><span data-l="ja">ショップ</span><span data-l="en" lang="en">Shop</span></a>
+    <a href="/skill/"><span data-l="zh">给 AI 读的悠一</span><span data-l="ja">AI のための自己紹介</span><span data-l="en" lang="en">Yui, for AI readers</span></a>
+  </nav>
+</footer>
 
-    <footer class="w-full border-t border-accent-soft dark:border-dark-border bg-white dark:bg-dark-bg py-12 md:py-16">
-        <div class="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div class="flex flex-col gap-1 text-center md:text-left">
-                <h2 class="text-primary dark:text-dark-text text-lg font-display font-semibold" data-i18n="footerTitle">Yui's Portfolio</h2>
-                <p class="text-text-tertiary dark:text-dark-text-muted text-xs" data-i18n="footerText">© 2026 Tech Blog.</p>
-            </div>
-            <div class="flex flex-col gap-1 text-right text-sm text-text-muted dark:text-dark-text-muted">
-                <a class="hover:text-primary dark:hover:text-dark-text transition-colors" href="mailto:xiaobianfuai@gmail.com">xiaobianfuai@gmail.com</a>
-                <span class="cursor-default">15951875192</span>
-            </div>
-        </div>
-    </footer>
-
-    <script src="/js/blog-codex-token-low-cost.js"></script>
+<script src="/js/blog-codex-token-low-cost.js?v=20261029-1"></script>
 </body>
 </html>
