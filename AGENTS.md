@@ -278,3 +278,9 @@
 - 位置：`right: calc(var(--gutter) + 470px)`（贴着字块左缘），`top: 188px`，宽度 `min(46vw, 800px, 100vw − gutter − 486px)`；窄于 900px 字块占满，不画。
 - 动效只有一种：`html.ink-on`（没开「减少动态效果」）时，正文洇完后从领头那只起，每只相隔约 0.3 秒洇出来（opacity + blur，缓动同墨洇）。`.goose:nth-child(n)` 的延迟是写死的，增减雁要同步改 `styles/wabi.css`，`test/home.test.js` 会逐只核对。不要给雁加飞动、视差或悬停。
 - `wabi.css` 缓存号升到 `20261029-6`（所有页面一起升）。
+
+## 2026-10-29 中文简历 PDF
+
+- 履历页中文界面的「PDF 履历」改指向新的中文简历 `files/WU_JIANXIANG_resume_zh.pdf`（一页 A4）；日文、英文界面仍指向日文履歴書 `files/WU_JIANXIANG_resume.pdf`。三个链接是各自带 `data-l` 的 `<a>`，不是一个链接里换文字。
+- 中文简历内容取自履历页中文版（含 2026.09 起的 AI Mage 实习，日文履歴書是 7 月的，没有），加上履歴書里的志望动机一段译文；只放邮箱和 aaccx.pw，不放现住所、电话和出生日期。日文履歴書公开住所是用户明确选的，这份中文简历没有这个授权，要加要先问。
+- 源文件在 `scripts/resume-zh/resume-zh.html` 和同目录的 `photo.jpg`（取自原 PDF 里的证件照，无 EXIF，缩到 600 px 宽），`node scripts/build-resume-zh-pdf.js` 用无头 Edge / Chrome 打印成 PDF。改内容后重新打印，并升级 `resume/index.html` 里链接的 `?v=`（Cloudflare 缓存 7 天）。

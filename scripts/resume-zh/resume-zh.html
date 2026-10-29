@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>邬健翔 · 履历</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
+    font-size: 9.3pt;
+    line-height: 1.55;
+    color: #25231f;
+  }
+  .page { width: 210mm; padding: 12mm 17mm 8mm; }
+  .page + .page { page-break-before: always; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8mm; padding-bottom: 5mm; border-bottom: 1.2pt solid #25231f; }
+  .head-text { flex: 1; }
+  h1 { margin: 0; font-size: 24pt; line-height: 1.2; font-weight: 500; letter-spacing: 0.18em; }
+  .roman { margin: 1mm 0 0; font-size: 10pt; letter-spacing: 0.22em; color: #66625a; }
+  .title { margin: 3.5mm 0 0; font-size: 10.4pt; }
+  .contact { margin: 3mm 0 0; color: #66625a; }
+  .contact span + span { margin-left: 6mm; }
+  .photo { width: 27mm; height: 36mm; object-fit: cover; flex: none; }
+  section { margin-top: 4.4mm; }
+  h2 { margin: 0 0 2.2mm; padding-left: 2.6mm; border-left: 2.4pt solid #917347; font-size: 11pt; line-height: 1.25; font-weight: 600; letter-spacing: 0.2em; }
+  p { margin: 0; }
+  .item { display: flex; gap: 5mm; margin-bottom: 2.6mm; break-inside: avoid; }
+  .when { flex: none; width: 34mm; white-space: nowrap; color: #66625a; font-variant-numeric: tabular-nums; }
+  .main { flex: 1; }
+  .what { font-weight: 600; }
+  .what small { font-weight: 400; color: #66625a; font-size: 9.3pt; }
+  .org { color: #66625a; }
+  ul { margin: 1mm 0 0; padding-left: 4.4mm; }
+  li { margin: 0.4mm 0; }
+  .skill { margin-bottom: 2.4mm; break-inside: avoid; }
+  .skill b { font-weight: 600; }
+  .tight .item { margin-bottom: 1.4mm; }
+  .cols { display: grid; grid-template-columns: 1.12fr 1fr; column-gap: 4mm; }
+  .cols .when { width: 11.5mm; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="head">
+    <div class="head-text">
+      <h1>邬健翔</h1>
+      <p class="roman">WU JIANXIANG</p>
+      <p class="title">AI Native Developer｜RAG 系统 · 生成式 AI 应用 · 端到端产品交付</p>
+      <p class="contact"><span>xiaobianfuai@gmail.com</span><span>aaccx.pw</span></p>
+    </div>
+    <img class="photo" src="photo.jpg" alt="">
+  </header>
+
+  <section>
+    <h2>个人简介</h2>
+    <p>福井大学在读研究生，人工智能本科背景，有多模态 RAG、Agentic RAG、GraphRAG、语义检索和 AI 辅助软件交付的实践经验。在国家能源研究所实习期间，负责基于向量数据库的语义检索、Agentic RAG 架构以及 GraphRAG 知识图谱的构建与优化。以「AI 原生开发者」的方式工作：借助 Codex 等 AI 工具，能够独立贯穿需求定义、上下文设计、代码审查到生产环境验证的开发全流程。</p>
+  </section>
+
+  <section>
+    <h2>实习经历</h2>
+    <div class="item">
+      <p class="when">2026.09 – 至今</p>
+      <div class="main">
+        <p class="what">动漫 IP 监修 × AI 实习生　<small>AI Mage（东京）</small></p>
+        <p>动漫 IP × AI 方向的东京初创公司，在 IP 监修场景下做 AI 应用。</p>
+      </div>
+    </div>
+    <div class="item">
+      <p class="when">2025.09 – 2026.03</p>
+      <div class="main">
+        <p class="what">研究开发／运维实习生　<small>国家能源研究所</small></p>
+        <p>参与多模态 RAG 的开发、部署和运维，将原始文档整理为可检索的文本、图像、表格和向量资产。</p>
+        <ul>
+          <li>从源文档中抽取文本、图像和表格，支持检索流程。</li>
+          <li>使用本地视觉模型生成图像标签，用嵌入模型做向量化和召回测试。</li>
+          <li>设计 Docker 网络，构建前后端一体的多模态 Agentic RAG 聊天 WebUI。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>教育经历</h2>
+    <div class="item">
+      <p class="when">2026.04 – 2028.03</p>
+      <div class="main">
+        <p class="what">福井大学　<small>在读</small></p>
+        <p class="org">工学研究科　知识社会基础工学专攻</p>
+      </div>
+    </div>
+    <div class="item">
+      <p class="when">2021.09 – 2025.06</p>
+      <div class="main">
+        <p class="what">山东交通学院</p>
+        <p class="org">人工智能　学士</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>专业技能</h2>
+    <p class="skill"><b>RAG 系统</b>　多模态 RAG、Agentic RAG、GraphRAG、向量数据库、语义检索和召回评估。</p>
+    <p class="skill"><b>工作流自动化</b>　熟悉 Dify、n8n、Coze、LangGraph 和 AI 工作流编排。</p>
+    <p class="skill"><b>AI Native 开发</b>　使用 Codex 类 AI 开发流程，覆盖需求定义、上下文设计、代码审查和生产验证。</p>
+    <p class="skill"><b>部署与运维</b>　Docker 网络、前后端 WebUI 交付、本地模型集成和运维维护。</p>
+  </section>
+
+  <section class="tight">
+    <h2>语言与资格</h2>
+    <div class="cols">
+      <div class="item"><p class="when">2024.07</p><p class="main">日本语能力测试 JLPT N2</p></div>
+      <div class="item"><p class="when">2024.05</p><p class="main">TOEIC 850</p></div>
+      <div class="item"><p class="when">2024.12</p><p class="main">TOEFL iBT 84</p></div>
+    </div>
+  </section>
+
+  <section class="tight">
+    <h2>获奖经历</h2>
+    <div class="cols">
+      <div class="item"><p class="when">2026</p><p class="main">大阪 Rokid Mini Hackathon　亚军（并列第二）</p></div>
+      <div class="item"><p class="when">2026</p><p class="main">环球黑客松　金奖</p></div>
+      <div class="item"><p class="when">2026</p><p class="main">南京高校 AI 黑客松巡回赛　决赛入围</p></div>
+      <div class="item"><p class="when">2025</p><p class="main">TRAE Solo Hackathon　二等奖</p></div>
+      <div class="item"><p class="when">2025</p><p class="main">渝客松 Google GDG 赛道　一等奖</p></div>
+      <div class="item"><p class="when">2025</p><p class="main">Rokid AR AI 智能眼镜开发赛　三等奖</p></div>
+      <div class="item"><p class="when">2025</p><p class="main">腾讯云黑客松　获奖</p></div>
+    </div>
+  </section>
+</div>
+</body>
+</html>
