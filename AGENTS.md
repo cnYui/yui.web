@@ -265,3 +265,8 @@
 - 履历页「PDF 履历」「作品集」两个链接都用 `target="_blank"` 在浏览器里预览，不带 `download`。作品集是 `files/WU_JIANXIANG_portfolio.pdf`，九页，源文件是用户给的《邬健翔_作品集.pdf》，第七页「数字窗户」还写着「项目名、截图待确认」。
 - PDF 的 Cloudflare 缓存是 7 天，替换同名 PDF 时要改链接上的 `?v=`。
 - 原来的限流器挪到 `lib/attempt-limiter.js`，`/travel/now` 的口令校验在用它。
+
+## 2026-10-29 搜索结果里的站点名
+
+- Google 搜索结果还显示线索墙时代的「Yui · 悠一 | Clue Wall」，是旧索引没更新；页面标题早就是「悠一 Yui」。首页补了 `canonical`（https://aaccx.pw/）、Open Graph 和 WebSite 结构化数据（name「悠一 Yui」，alternateName「悠一」「Yui」），Google 会按它决定站点名。
+- `www.aaccx.pw` 和 `http://` 也能打开同一个站，所以 canonical 统一指向 `https://aaccx.pw/`。`/sitemap.xml` 落在 Sub2API 上，返回的是 SPA 页面，不是站点地图；`/robots.txt` 是 Cloudflare 托管的。

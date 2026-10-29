@@ -57,7 +57,8 @@ function fakeNode(attrs) {
 }
 
 test('首页 <head> 里第一个脚本是同步的 site.js，样式只有 wabi.css 和 Google Fonts', () => {
-    const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+    // 结构化数据（application/ld+json）不执行，不算脚本。
+    const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].filter((match) => !/type="application\/ld\+json"/.test(match[1]));
     assert.equal(scripts.length, 1, '首页只应有一个脚本');
     assert.match(scripts[0][1], /^\s*src="\/js\/site\.js\?v=[^"]+"\s*$/, 'site.js 必须是同步的 <script src>，不带 defer / async');
     assert.ok(scripts[0].index < html.indexOf('</head>'), 'site.js 必须在 <head> 里');
@@ -116,6 +117,19 @@ test('入口和联系方式都在，手机号与图片不上首页', () => {
     assert.doesNotMatch(html, /<img\b/, '首页不放图片');
     assert.match(html, /data-season="mark"/, '落款要写当天的节气与候');
     assert.match(html, /data-season="line"/, '落款年份与节气');
+});
+
+test('搜索引擎看到的站点名是「悠一 Yui」，规范地址是 https://aaccx.pw/', () => {
+    assert.match(html, /<title>悠一 Yui<\/title>/);
+    assert.match(html, /<link rel="canonical" href="https:\/\/aaccx\.pw\/">/);
+    assert.match(html, /<meta property="og:site_name" content="悠一 Yui">/);
+    const ld = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    assert.ok(ld, '缺少 WebSite 结构化数据');
+    const site = JSON.parse(ld[1]);
+    assert.equal(site['@type'], 'WebSite');
+    assert.equal(site.name, '悠一 Yui');
+    assert.equal(site.url, 'https://aaccx.pw/');
+    assert.doesNotMatch(html, /Clue Wall/i, '不要再出现线索墙时代的标题');
 });
 
 test('茶叙：嵌悠一自己的一小时飞书预约页，新窗口链接和嵌入页是同一个预约，CSP 允许它', () => {
