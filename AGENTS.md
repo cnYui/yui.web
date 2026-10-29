@@ -251,6 +251,7 @@
 ## 2026-10-29 首页茶叙（飞书预约）
 
 - 首页「作品」和「联系」之间加了「茶叙」（`#coffee-chat`），照 stv.pm 的 Coffee chat 区块：右边竖排说明和「新窗口打开」，左边直接 iframe 嵌飞书预约页（`https://<租户>.feishu.cn/scheduler/embed/<id>`），新窗口链接是去掉 `/embed` 的同一个预约。只有这张卡片横排。
-- 不能用飞书给的 `scheduler-inline-widget` 脚本（第三方脚本被 `script-src 'self'` 挡），所以手写 iframe；`server.js` 的 CSP 加了 `frame-src https://*.feishu.cn`。换成 Lark（larksuite.com）预约页时要同步改这条。
+- 预约页是悠一自己的一小时预约（租户 `bcn54ef2p2f4.feishu.cn`，`ecafb5a3802923ae`，飞书视频会议），只能在飞书客户端「日历 → 预约活动」里建和改，网页版和开放接口都没有入口。
+- 不能用飞书给的 `scheduler-inline-widget` 脚本（第三方脚本被 `script-src 'self'` 挡）。那个脚本只是往 div 里塞一个 100% 宽高的 iframe，没有别的交互，所以直接手写同样的 iframe；`server.js` 的 CSP 加了 `frame-src https://*.feishu.cn`。换成 Lark（larksuite.com）预约页时要同步改这条。
 - 飞书预约页窄于约 360px 会切掉日历最右一列，所以手机上卡片去掉页边距通栏显示。
 - `test/home.test.js` 会校验 iframe 和新窗口链接是同一个预约、CSP 放行飞书。
