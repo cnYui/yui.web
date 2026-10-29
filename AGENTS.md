@@ -236,6 +236,14 @@
 - 三语：文案写三份 `<span data-l="zh|ja|en">`，`<html data-title-zh/ja/en>` 给标题；改文案三种语言一起改，测试核对数量。脚本渲染的内容（`js/blog-index.js`、`js/travel.js`、文章的 `js/blog-<slug>.js`）监听 `languageChanged` 重排，取当前语言用 `window.YuiSite.getLang()` / `window.YuiLang.getCurrentLang()`。
 - 日期：中文、日文都用汉字数字（二〇二六年九月十八日、十月十日、十二分钟），英文用 Sep 18, 2026。节气不要写死：`[data-season="line"]`（页脚年份 + 节气）、`[data-season="mark"]`（首页落款：节气 + 候）由 `js/site.js` 按日期推算填字。
 - 墨洇：`<main>` 里的文字块进入视野时一个字一个字洇开，自动生效；某块不想要就加 `data-ink-skip`。新增的块级文字元素用 h1–h4 / p / li / dt / dd / figcaption，图片、`pre`、`table` 会整块淡入。
-- 首页只放五列介绍（做视频，／讲一点 AI，／也写代码。／做有人类温度的产品，／极度克制的审美。）、作品三档节目、联系方式，不放手机号和图片；「住在日本」已按用户要求删去。联系里 bilibili、抖音、note 还缺地址，拿到后再加。
+- 首页只放五列介绍（做视频，／讲一点 AI，／也写代码。／做有人类温度的产品，／极度克制的审美。）、作品（四个黑客松获奖作品）、联系方式，不放手机号和图片；「住在日本」已按用户要求删去。联系里 bilibili、抖音、note 还缺地址，拿到后再加。
 - 行旅照片数据在 `js/travel.js`，每条要写 `w` / `h`（图片实际像素）和 zh / ja / en 标题说明，有日期的写 ISO `date`。
 - 实施记录见 `docs/ai/context/20261029-113156-wabi-site-redesign-implementation_CN.md`。
+
+## 2026-10-29 行旅页「此刻」（iPhone 推城市级位置）
+
+- 用户要求：iPhone 发定位、只公开到城市级、在现有行踪图上打点。行旅页照片列表上方的「此刻」（`#now`）读 `GET /travel/now`，在 `images/optimized/clue-wall/travel-map-v4.webp`（褪成墨色）上点一个金点，下面一行「此刻在 大阪市　三小时前」；没有数据、`hidden`、或者三十天没更新时整块不显示。
+- 写入：iPhone 快捷指令 `POST /travel/now`，头 `Authorization: Bearer <NOW_LOCATION_TOKEN>`，JSON `{ lat, lon, city }`；`{ "hidden": true }` 收起。坐标写盘前四舍五入到 0.1°，原始坐标不落盘；存在 `data/now-location.json`。口令错八次限流十分钟；没配 `NOW_LOCATION_TOKEN` 时写入返回 503。
+- 接口挂在 `/travel/` 下而不是 `/api/`：cloudflared 只把固定前缀转给 yui.web，所以不用改 tunnel。
+- 点的位置按墨卡托投影算，常数在 `js/travel-now.js`，用图上四个标记点拟合；换行踪图要重新拟合。落进标题框、图例或长三角放大图的位置不画点。
+- 快捷指令的设置步骤见 `docs/ai/context/20261029-134128-travel-now-location_CN.md`。

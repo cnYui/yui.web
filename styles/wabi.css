@@ -441,6 +441,38 @@ html.ink-on:not(.ink-ready) main { visibility: hidden; }
 .photo-title:lang(en) { letter-spacing: 0.04em; }
 .photo-place { font-size: 12px; letter-spacing: 0.24em; color: var(--quiet); }
 .photo-desc { display: block; margin-top: 8px; font-size: 14px; line-height: 1.9; letter-spacing: 0.08em; color: var(--quiet); }
+/* 此刻（js/travel-now.js）：旧线索墙的行踪图褪成墨色压在纸上，只留一个金点 */
+.now-map { position: relative; margin: 0; }
+.now-map img { width: 100%; filter: grayscale(1) contrast(0.72) brightness(1.3); mix-blend-mode: multiply; }
+.now-dot {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    margin: -4.5px 0 0 -4.5px;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 0 2px var(--paper);
+}
+.now-dot::after {
+    content: '';
+    position: absolute;
+    inset: -9px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    opacity: 0;
+    animation: now-ring 3s cubic-bezier(0.22, 0.61, 0.36, 1) 1.2s infinite;
+}
+@keyframes now-ring {
+    from { transform: scale(0.4); opacity: 0.8; }
+    to { transform: scale(1.5); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .now-dot::after { animation: none; }
+}
+.now-line { margin: 20px 0 0; font-size: 14px; line-height: 1.9; letter-spacing: 0.2em; color: var(--quiet); }
+.now-line:lang(en) { letter-spacing: 0.04em; }
+.now-city { color: var(--ink); font-size: 17px; }
+
 .places { margin: 0; font-size: 16px; line-height: 2.2; letter-spacing: 0.2em; }
 .places:lang(en) { letter-spacing: 0.04em; }
 
