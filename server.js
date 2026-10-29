@@ -17,6 +17,7 @@ const {
     resolveResumePassword,
     verifyResumePassword
 } = require('./lib/resume-download');
+const { createNowLocationStore, verifyBearerToken } = require('./lib/now-location');
 const { createContributionsService } = require('./lib/github-contributions');
 const {
     encryptApiKeyEnvelope,
@@ -3554,6 +3555,42 @@ ORDER BY ak.created_at DESC, ak.api_key_preview ASC
                 'Content-Disposition': 'attachment; filename="' + RESUME_PDF_FILE_NAME + '"'
             }
         });
+    });
+
+    // 行旅页「此刻」：iPhone 快捷指令带 NOW_LOCATION_TOKEN 推位置，页面只读城市级结果（见 lib/now-location.js）。
+    // 没配口令时只关掉写入，页面照常读（读到空就不显示）。
+    const nowLocationToken = String(options.nowLocationToken ?? process.env.NOW_LOCATION_TOKEN ?? '').trim();
+    if (nowLocationToken) assertStrongSecret('NOW_LOCATION_TOKEN', nowLocationToken, { production });
+    const nowLocation = createNowLocationStore({
+        filePath: options.nowLocationPath || path.join(rootDir, 'data', 'now-location.json'),
+        now: appNow
+    });
+    const nowLocationLimiter = createAttemptLimiter({ maxFailures: 8, windowMs: 10 * 60 * 1000 });
+
+    app.get('/travel/now', (req, res) => {
+        res.setHeader('Cache-Control', 'public, max-age=60');
+        return res.json(nowLocation.read());
+    });
+
+    app.post('/travel/now', (req, res) => {
+        res.setHeader('Cache-Control', 'no-store');
+        if (!nowLocationToken) {
+            return res.status(503).json({ code: 'NOW_LOCATION_DISABLED', message: '服务端没有配置 NOW_LOCATION_TOKEN。' });
+        }
+        const clientKey = String(req.ip || 'unknown');
+        const gate = nowLocationLimiter.check(clientKey);
+        if (!gate.allowed) {
+            res.setHeader('Retry-After', String(Math.max(1, Math.ceil(gate.retryAfterMs / 1000))));
+            return res.status(429).json({ code: 'TOO_MANY_ATTEMPTS', message: '尝试次数过多，请稍后再试。' });
+        }
+        if (!verifyBearerToken(req.get('authorization'), nowLocationToken)) {
+            nowLocationLimiter.recordFailure(clientKey);
+            return res.status(401).json({ code: 'INVALID_TOKEN', message: '口令不正确。' });
+        }
+        nowLocationLimiter.reset(clientKey);
+        const result = nowLocation.update(req.body || {});
+        if (!result.ok) return res.status(400).json({ code: result.code, message: result.message });
+        return res.json(result.view);
     });
 
     app.get(['/shop', '/shop/', '/shop/index.html'], renderShopHomePage);
