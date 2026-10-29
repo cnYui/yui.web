@@ -245,7 +245,7 @@
 - 用户要求：iPhone 发定位、只公开到城市级、在现有行踪图上打点。行旅页照片列表上方的「此刻」（`#now`）读 `GET /travel/now`，在地图上点一个金点（先是旧行踪图，后改为 OpenStreetMap，见下），下面一行「此刻在 大阪市　三小时前」；没有数据、`hidden`、或者三十天没更新时整块不显示。
 - 写入：iPhone 快捷指令 `POST /travel/now`，头 `Authorization: Bearer <NOW_LOCATION_TOKEN>`，JSON `{ lat, lon, city }`；`{ "hidden": true }` 收起。坐标写盘前四舍五入到 0.1°，原始坐标不落盘；存在 `data/now-location.json`。口令错八次限流十分钟；没配 `NOW_LOCATION_TOKEN` 时写入返回 503。
 - 接口挂在 `/travel/` 下而不是 `/api/`：cloudflared 只把固定前缀转给 yui.web，所以不用改 tunnel。
-- 2026-10-29 晚改成真实地图：Leaflet 1.9.4 自托管（`js/leaflet/leaflet.js` + `styles/leaflet.css`，目录不叫 `vendor`，Cloudflare 会 403），OpenStreetMap 瓦片，有位置时才由 `js/travel-now.js` 动态加载。瓦片图片来源只在 `/travel/` 的 CSP `img-src` 里放开（`https://tile.openstreetmap.org`）；瓦片图要带 `referrerPolicy: 'origin'`，因为站点默认 `same-origin` 会让 OSM 当成无来源请求拒掉。缩放封顶 11、画一圈 6 km 的虚线范围，是因为坐标只到 0.1°（约十公里）；旧的墨卡托拟合、`COVERED` 遮挡区和 `travel-map-v4` 引用都已删除。
+- 2026-10-29 晚改成真实地图：Leaflet 1.9.4 自托管（`js/leaflet/leaflet.js` + `styles/leaflet.css`，目录不叫 `vendor`，Cloudflare 会 403），OpenStreetMap 瓦片，有位置时才由 `js/travel-now.js` 动态加载。瓦片图片来源只在 `/travel/` 的 CSP `img-src` 里放开（`https://tile.openstreetmap.org`）；瓦片图要带 `referrerPolicy: 'origin'`，因为站点默认 `same-origin` 会让 OSM 当成无来源请求拒掉。缩放范围 4–14（11 时用户嫌放不够大，放开到 14）、画一圈 6 km 的虚线范围，是因为坐标只到 0.1°（约十公里），放大只是看清街道，点不会更准；旧的墨卡托拟合、`COVERED` 遮挡区和 `travel-map-v4` 引用都已删除。
 - 快捷指令的设置步骤见 `docs/ai/context/20261029-134128-travel-now-location_CN.md`。
 
 ## 2026-10-29 首页茶叙（飞书预约）

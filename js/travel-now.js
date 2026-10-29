@@ -12,8 +12,8 @@
     const LEAFLET_VERSION = '1.9.4';
     const TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
     const ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
-    // 坐标已经被服务端取整到 0.1°（约十公里），放得太大会显得比实际精确，所以缩放封顶；圆圈画的就是这份模糊范围。
-    const ZOOM = { start: 9, min: 4, max: 11 };
+    // 坐标已经被服务端取整到 0.1°（约十公里），再放大也只是看清这一带的街道，点不会更准；圆圈画的就是这份模糊范围。
+    const ZOOM = { start: 9, min: 4, max: 14 };
     const FUZZ_METERS = 6000;
     const STALE_MS = 30 * 24 * 60 * 60 * 1000;
     const DIGITS = '〇一二三四五六七八九';
