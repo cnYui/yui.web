@@ -647,14 +647,53 @@ html.ink-on:not(.ink-ready) main { visibility: hidden; }
 }
 .scroll-chat-note p { margin: 0; font-size: 14px; line-height: 2.3; letter-spacing: 0.24em; }
 .scroll-chat-note p:lang(en) { letter-spacing: 0.04em; }
+/* 预约页仍按 680 × 626 的桌面版排版，再整体缩到 0.8（直接改窄会掉成手机版的单列）。
+   外面像装裱一样压两道细线，四角各一个墨色折角。 */
 .scroll-chat-frame {
-    flex: 0 1 680px;
-    min-width: 0;
-    height: 626px;
+    --chat-scale: 0.8;
+    position: relative;
+    flex: 0 0 auto;
+    padding: 10px;
     border: 1px solid var(--line);
+}
+.scroll-chat-frame::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px solid var(--line);
+    pointer-events: none;
+}
+.scroll-chat-frame::after {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    background:
+        linear-gradient(var(--quiet), var(--quiet)) left top / 15px 1px,
+        linear-gradient(var(--quiet), var(--quiet)) left top / 1px 15px,
+        linear-gradient(var(--quiet), var(--quiet)) right top / 15px 1px,
+        linear-gradient(var(--quiet), var(--quiet)) right top / 1px 15px,
+        linear-gradient(var(--quiet), var(--quiet)) left bottom / 15px 1px,
+        linear-gradient(var(--quiet), var(--quiet)) left bottom / 1px 15px,
+        linear-gradient(var(--quiet), var(--quiet)) right bottom / 15px 1px,
+        linear-gradient(var(--quiet), var(--quiet)) right bottom / 1px 15px;
+    background-repeat: no-repeat;
+    pointer-events: none;
+}
+.scroll-chat-window {
+    position: relative;
+    width: calc(680px * var(--chat-scale));
+    height: calc(626px * var(--chat-scale));
+    overflow: hidden;
     background: #fff;
 }
-.scroll-chat-frame iframe { display: block; width: 100%; height: 100%; border: 0; }
+.scroll-chat-window iframe {
+    display: block;
+    width: 680px;
+    height: 626px;
+    border: 0;
+    transform: scale(var(--chat-scale));
+    transform-origin: 0 0;
+}
 
 .scroll-contact { padding-top: 48px; padding-bottom: 112px; gap: 64px clamp(40px, 7vw, 120px); }
 .scroll-list { margin: 0; padding: 0; list-style: none; writing-mode: vertical-rl; font-size: 15px; line-height: 1; letter-spacing: 0.3em; }
@@ -694,6 +733,9 @@ html.ink-on:not(.ink-ready) main { visibility: hidden; }
     .scroll-section { padding-top: 88px; padding-bottom: 72px; gap: 56px 40px; }
     .scroll-work p { padding-top: 40px; }
     /* 飞书预约页窄于 360px 会切掉右边一列，手机上去掉页边距通栏显示 */
-    .scroll-chat-frame { flex-basis: 100vw; margin: 0 calc(-1 * var(--gutter)); border-right: 0; border-left: 0; }
+    .scroll-chat-frame { flex: 0 0 100vw; margin: 0 calc(-1 * var(--gutter)); padding: 0; border: 0; }
+    .scroll-chat-frame::before, .scroll-chat-frame::after { display: none; }
+    .scroll-chat-window { width: 100%; height: 626px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .scroll-chat-window iframe { width: 100%; height: 100%; transform: none; }
     .site-foot { padding-top: 88px; }
 }
