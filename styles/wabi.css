@@ -441,9 +441,22 @@ html.ink-on:not(.ink-ready) main { visibility: hidden; }
 .photo-title:lang(en) { letter-spacing: 0.04em; }
 .photo-place { font-size: 12px; letter-spacing: 0.24em; color: var(--quiet); }
 .photo-desc { display: block; margin-top: 8px; font-size: 14px; line-height: 1.9; letter-spacing: 0.08em; color: var(--quiet); }
-/* 此刻（js/travel-now.js）：旧线索墙的行踪图褪成墨色压在纸上，只留一个金点 */
-.now-map { position: relative; margin: 0; }
-.now-map img { width: 100%; filter: grayscale(1) contrast(0.72) brightness(1.3); mix-blend-mode: multiply; }
+/* 此刻（js/travel-now.js）：OpenStreetMap 瓦片褪成灰度，只留一个金点和一圈模糊范围。
+   leaflet.css 是后来才动态加进来的，同级选择器会输给它，所以这里都带上 .leaflet-container 或 .now-map 提高优先级。 */
+.now-map { position: relative; width: 100%; height: 360px; margin: 0; }
+.now-map.leaflet-container { background: var(--paper); font-family: inherit; }
+.now-map .leaflet-tile-pane { filter: grayscale(1) contrast(0.92) brightness(1.02); }
+.now-map .leaflet-control-attribution {
+    background: rgba(240, 238, 232, 0.82);
+    color: var(--quiet);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+}
+.now-map .leaflet-control-attribution a { color: var(--quiet); }
+.now-map .leaflet-bar { border: 1px solid rgba(37, 35, 31, 0.28); border-radius: 0; box-shadow: none; }
+.now-map .leaflet-bar a { background: var(--paper); color: var(--ink); border-bottom-color: rgba(37, 35, 31, 0.28); border-radius: 0; }
+.now-map .leaflet-bar a:hover { background: var(--paper); color: var(--gold-deep); }
+.now-pin { background: none; border: 0; }
 .now-dot {
     position: absolute;
     width: 9px;
@@ -468,6 +481,9 @@ html.ink-on:not(.ink-ready) main { visibility: hidden; }
 }
 @media (prefers-reduced-motion: reduce) {
     .now-dot::after { animation: none; }
+}
+@media (max-width: 560px) {
+    .now-map { height: 280px; }
 }
 .now-line { margin: 20px 0 0; font-size: 14px; line-height: 1.9; letter-spacing: 0.2em; color: var(--quiet); }
 .now-line:lang(en) { letter-spacing: 0.04em; }
