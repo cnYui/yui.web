@@ -81,10 +81,17 @@ test('Resume 页面展示公开履历，履历和作品集 PDF 在新标签页�
     const resume = readFile('resume/index.html');
 
     // 2026-10-29 起按用户要求去掉下载口令，PDF 直接在浏览器里打开。
-    for (const name of ['resume', 'portfolio']) {
-        assert.match(resume, new RegExp(`<a href="/files/WU_JIANXIANG_${name}\\.pdf\\?v=[0-9A-Za-z.-]+" target="_blank" rel="noopener">`));
+    // 中文界面指向中文简历 PDF，日文和英文界面仍然指向日文履歴書。
+    for (const name of ['resume_zh', 'resume', 'portfolio']) {
+        assert.match(resume, new RegExp(`<a href="/files/WU_JIANXIANG_${name}\\.pdf\\?v=[0-9A-Za-z.-]+"[^>]* target="_blank" rel="noopener">`));
         assert.ok(fs.existsSync(path.join(__dirname, '..', 'files', `WU_JIANXIANG_${name}.pdf`)), `缺少 ${name} PDF`);
     }
+    assert.match(resume, /<a href="\/files\/WU_JIANXIANG_resume_zh\.pdf[^"]*" data-l="zh"/);
+    assert.match(resume, /<a href="\/files\/WU_JIANXIANG_resume\.pdf[^"]*" data-l="ja"/);
+    // 中文简历只放邮箱，不放现住所、电话和出生日期（日文履歴書是用户明确选择公开的，这份不是）。
+    const zhSource = readFile('scripts/resume-zh/resume-zh.html');
+    assert.doesNotMatch(zhSource, /福井县福井市|福井県福井市|牧岛|牧島|9457|910-0017|2003/);
+    assert.match(zhSource, /xiaobianfuai@gmail\.com/);
     assert.doesNotMatch(resume, /resume-download/);
     assert.match(resume, /xiaobianfuai@gmail\.com/);
     assert.match(resume, /University of Fukui/);
