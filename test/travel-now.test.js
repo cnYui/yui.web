@@ -82,5 +82,30 @@ test('此刻：前端读的路径就是服务端注册的路径，并且在隧�
     const page = readFile('travel/index.html');
     assert.match(page, /<script src="\/js\/travel-now\.js\?v=[0-9A-Za-z.-]+" defer><\/script>/);
     assert.match(page, /<section class="block now" id="now"[^>]* hidden>/, '没有数据时「此刻」默认藏起来');
-    assert.match(page, /images\/optimized\/clue-wall\/travel-map-v4\.webp/);
+    assert.match(page, /id="nowMap"/);
+});
+
+// 地图是自托管的 Leaflet + OpenStreetMap 瓦片：脚本不能走 CDN（script-src 'self'），瓦片来源只在 /travel/ 下放开，
+// 并且瓦片图片要单独带 Referer（站点默认 same-origin 会让 OSM 把请求当成无来源拒掉）。
+test('此刻：地图脚本自托管，OSM 瓦片只在 /travel/ 下进 CSP', async (t) => {
+    const app = await startApp({ nowLocationToken: TOKEN });
+    t.after(app.close);
+
+    const script = readFile('js/travel-now.js');
+    assert.match(script, /\/js\/leaflet\/leaflet\.js/);
+    assert.match(script, /\/styles\/leaflet\.css/);
+    assert.match(script, /referrerPolicy: 'origin'/);
+    assert.match(script, /tile\.openstreetmap\.org/);
+    assert.doesNotMatch(script, /unpkg|jsdelivr|cdnjs/);
+    assert.ok(fs.existsSync(path.join(rootDir, 'js/leaflet/leaflet.js')));
+    assert.ok(fs.existsSync(path.join(rootDir, 'styles/leaflet.css')));
+
+    for (const route of ['/travel/', '/travel/index.html']) {
+        const csp = (await fetch(`${app.base}${route}`)).headers.get('content-security-policy');
+        assert.match(csp, /img-src 'self' data: https:\/\/tile\.openstreetmap\.org;/, route);
+        assert.match(csp, /script-src 'self';/, route);
+    }
+    const homeCsp = (await fetch(`${app.base}/`)).headers.get('content-security-policy');
+    assert.match(homeCsp, /img-src 'self' data:;/);
+    assert.doesNotMatch(homeCsp, /openstreetmap/);
 });

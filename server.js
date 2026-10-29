@@ -1340,7 +1340,9 @@ function createShopApp(options = {}) {
     function setSecurityHeaders(req, res, next) {
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('Referrer-Policy', 'same-origin');
-        res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self'; frame-src https://*.feishu.cn; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+        // 行旅页「此刻」的地图瓦片来自 OpenStreetMap，只在 /travel/ 下放开这一个图片来源。
+        const imgSrc = /^\/travel(\/|$)/.test(req.path) ? "'self' data: https://tile.openstreetmap.org" : "'self' data:";
+        res.setHeader('Content-Security-Policy', `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src ${imgSrc}; connect-src 'self'; frame-src https://*.feishu.cn; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`);
         res.setHeader('X-Frame-Options', 'DENY');
         res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         if (req.secure || req.header('x-forwarded-proto') === 'https') {

@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400&amp;display=swap" rel="stylesheet">
-  <link href="/styles/wabi.css?v=20261029-6" rel="stylesheet">
+  <link href="/styles/wabi.css?v=20261029-7" rel="stylesheet">
   <script src="/js/travel.js?v=20261029-1" defer></script>
-  <script src="/js/travel-now.js?v=20261029-1" defer></script>
+  <script src="/js/travel-now.js?v=20261029-2" defer></script>
 </head>
 <body>
 <header class="site-head">
@@ -45,10 +45,7 @@
 
     <section class="block now" id="now" aria-labelledby="now-title" hidden>
       <h2 class="block-label" id="now-title"><span data-l="zh">此刻</span><span data-l="ja">いま</span><span data-l="en" lang="en">Now</span></h2>
-      <figure class="now-map">
-        <img src="/images/optimized/clue-wall/travel-map-v4.webp" width="1100" height="592" alt="行踪图" decoding="async">
-        <span class="now-dot" id="nowDot" hidden></span>
-      </figure>
+      <div class="now-map" id="nowMap" role="group" aria-label="地图，金点是悠一此刻所在的城市"></div>
       <p class="now-line" id="nowLine"></p>
     </section>
     <ol class="photos" id="photoList" aria-label="照片" data-aria-zh="照片" data-aria-ja="写真" data-aria-en="Photos"></ol>
