@@ -41,11 +41,9 @@ test('简历下载接口必须落在 cloudflared 会转发给本服务的前缀�
     );
 });
 
-test('两个下载入口引用的脚本版本号一致，避免其中一页加载到旧逻辑', () => {
+// 首页改成竖排单屏后不再有下载按钮，简历页是唯一的下载入口。
+test('简历页引用带版本号的 resume-download.js，避免加载到旧逻辑', () => {
     const pattern = /\/js\/resume-download\.js\?v=([0-9A-Za-z.-]+)/;
-    const home = readFile('index.html').match(pattern);
-    const resume = readFile('resume/index.html').match(pattern);
-    assert.ok(home, '首页缺少 resume-download.js 引用');
-    assert.ok(resume, '简历页缺少 resume-download.js 引用');
-    assert.equal(home[1], resume[1], '两个页面引用的 resume-download.js 版本号不一致');
+    assert.ok(readFile('resume/index.html').match(pattern), '简历页缺少带版本号的 resume-download.js 引用');
+    assert.doesNotMatch(readFile('index.html'), /resume-download\.js/, '首页不再有简历下载入口');
 });

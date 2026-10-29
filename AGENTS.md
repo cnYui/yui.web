@@ -218,3 +218,11 @@
 - 履历是两张 A4（宽 800、`min-height` 1131）；项目是时间线，一个节点一场比赛、正好占满内容区（616px）、`scroll-snap` 一格翻一个，获奖节点靠 `cat === 'award'` 标红，不分类；旅行是路线图 + 两列大照片，不分城市。新增项目 / 照片只要往 `js/clue-data.js` 加一条（并补同下标的英日译文），页面自己会排。
 - 内容区在窄屏（< 900px）改成不自己滚、由整张纸滚，字号单独按手机设置；改桌面字号时别忘了窄屏那一段。
 - 实施记录见 `docs/ai/context/20261014-114017-clue-wall-dossier-redesign-implementation_CN.md`。
+
+## 2026-10-28 首页改为侘寂竖排单屏
+
+- 首页 `index.html` 按 Claude Design 画布「侘寂个人网站 · 三稿」的「壹 · 挂轴」版式重写，配色取「贰 · 金缮」：底 `#1E1D1A`、正文 `#D2CCC0`、次要字 `#9A9488`，金色 `#B0925A` 只用在落款圆点、链接悬停和键盘焦点上。
+- 只有一屏、全部竖排、从右往左读：姓名 → 四句介绍（散らし書き 错落起笔）→ 邮件 / GitHub / SKILL.md → 金色落款；左下角是项目 / 博客 / 履历 / 旅行 / 商店入口，左上角是中 / 日 / EN 切换。手机号、肖像、奖项、照片不再上首页，别再往首页加内容，细节放子页面。
+- 文件：`index.html`、`styles/home.css`、`js/home.js`。三种语言的文案都写在页面里，`html[lang]` 决定显示哪一种（`[data-l]`），改文案时三种语言一起改，`test/home.test.js` 会校验数量一致。`js/home.js` 是 `<head>` 里唯一的同步脚本，和子页面共用 `yui-portfolio-lang`，只有点击切换器才写回；旧线索墙锚点（`#projects` 等）由它转到对应子页面。
+- 线索墙源码（`styles/clue-wall.css`、`js/clue-*.js`、`js/hand3d.js`、`js/three/` 等）暂时保留但首页已不引用，对应的 5 个首页测试已删除；其他线索墙分支收尾后再删源码。要恢复线索墙，从 `8326841` 取回 `index.html` 和那 5 个测试。
+- 实施记录见 `docs/ai/context/20261028-224639-home-wabi-vertical-implementation_CN.md`。
