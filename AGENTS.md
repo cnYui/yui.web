@@ -270,3 +270,11 @@
 
 - Google 搜索结果还显示线索墙时代的「Yui · 悠一 | Clue Wall」，是旧索引没更新；页面标题早就是「悠一 Yui」。首页补了 `canonical`（https://aaccx.pw/）、Open Graph 和 WebSite 结构化数据（name「悠一 Yui」，alternateName「悠一」「Yui」），Google 会按它决定站点名。
 - `www.aaccx.pw` 和 `http://` 也能打开同一个站，所以 canonical 统一指向 `https://aaccx.pw/`。`/sitemap.xml` 落在 Sub2API 上，返回的是 SPA 页面，不是站点地图；`/robots.txt` 是 Cloudflare 托管的。
+
+## 2026-10-29 首页雁阵
+
+- 首页第一屏竖排字块左边的留白里画了一群雁：右边竖排字块起笔高低错落像一排山，左边是飞过的雁。`index.html` 里 `.scroll-head` 第一个子元素是 `<svg class="scroll-geese">`（`aria-hidden`，`pointer-events: none`，只用 `var(--ink)`，不写色值）。
+- 画法：每只雁是一笔翼（填色的弯月，两头尖）加一点墨，四种翼姿 `gs-up / gs-mid / gs-down / gs-tilt` 放在 `<defs>`，用 `<use transform="translate rotate scale" fill-opacity>` 摆位；整群套 `#goose-ink` 滤镜（feTurbulence + feDisplacementMap，边缘一点毛笔的飞白）。共 11 只：领头一只、长短两条雁行、两只更远的；越远越小越淡（`fill-opacity` 0.24 – 0.82）。改群形就改每个 `<use>` 的位置、角度、大小，别再加只数（测试限定 9 – 13 只）。
+- 位置：`right: calc(var(--gutter) + 470px)`（贴着字块左缘），`top: 188px`，宽度 `min(46vw, 800px, 100vw − gutter − 486px)`；窄于 900px 字块占满，不画。
+- 动效只有一种：`html.ink-on`（没开「减少动态效果」）时，正文洇完后从领头那只起，每只相隔约 0.3 秒洇出来（opacity + blur，缓动同墨洇）。`.goose:nth-child(n)` 的延迟是写死的，增减雁要同步改 `styles/wabi.css`，`test/home.test.js` 会逐只核对。不要给雁加飞动、视差或悬停。
+- `wabi.css` 缓存号升到 `20261029-6`（所有页面一起升）。

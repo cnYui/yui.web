@@ -86,6 +86,26 @@ test('配色是纸色、墨色和一种金色', () => {
     assert.match(html, /<meta name="theme-color" content="#f0eee8">/i);
 });
 
+test('雁阵：左边留白处画一群雁，只是装饰，只用墨色，窄屏不画，淡入只在 ink-on 时', () => {
+    const svg = html.match(/<svg class="scroll-geese"[^>]*>/);
+    assert.ok(svg, '首页缺少雁阵 svg');
+    assert.match(svg[0], /aria-hidden="true"/, '雁阵是装饰，要对读屏隐藏');
+    assert.ok(html.indexOf('<header class="scroll-head">') < html.indexOf('scroll-geese'), '雁阵在首屏 header 里');
+    const geese = (html.match(/<g class="goose">/g) || []).length;
+    assert.ok(geese >= 9 && geese <= 13, `一群雁要克制：现在有 ${geese} 只`);
+    assert.doesNotMatch(html.match(/<svg class="scroll-geese"[\s\S]*?<\/svg>/)[0], /#[0-9a-f]{3,6}|<script|style=/i, '雁阵只引用墨色变量，不写色值、脚本和内联样式');
+
+    const block = css.match(/\.scroll-geese\s*\{([^}]*)\}/);
+    assert.ok(block, '样式里找不到 .scroll-geese');
+    assert.match(block[1], /fill:\s*var\(--ink\)/);
+    assert.match(block[1], /pointer-events:\s*none/);
+    assert.match(css, /@media \(max-width: 900px\)\s*\{\s*\.scroll-geese\s*\{\s*display:\s*none;/, '窄屏上字块占满，雁阵不画');
+    assert.match(css, /html\.ink-on \.goose\s*\{[^}]*animation:\s*goose-in/, '淡入只在 ink-on（没开减少动态效果）时');
+    for (let n = 2; n <= geese; n += 1) {
+        assert.match(css, new RegExp(`html\\.ink-on \\.goose:nth-child\\(${n}\\)\\s*\\{ animation-delay`), `第 ${n} 只雁没有起笔延迟`);
+    }
+});
+
 test('三种语言的文案一一对应，默认显示中文', () => {
     const count = (lang) => (html.match(new RegExp(`data-l="${lang}"`, 'g')) || []).length;
     assert.ok(count('zh') > 0);
