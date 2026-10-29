@@ -118,6 +118,13 @@ test('入口和联系方式都在，手机号与图片不上首页', () => {
     assert.match(html, /data-season="line"/, '落款年份与节气');
 });
 
+test('茶叙：嵌飞书预约页，新窗口链接和嵌入页是同一个预约，server.js 的 CSP 允许它', () => {
+    const embed = html.match(/<iframe src="https:\/\/([a-z0-9-]+\.feishu\.cn)\/scheduler\/embed\/([0-9a-f]+)"/);
+    assert.ok(embed, '茶叙缺少飞书预约 iframe');
+    assert.ok(html.includes(`href="https://${embed[1]}/scheduler/${embed[2]}"`), '「新窗口打开」要指向同一个预约页');
+    assert.match(readFile('server.js'), /frame-src https:\/\/\*\.feishu\.cn;/, 'CSP 要放行飞书 iframe');
+});
+
 test('首屏语言：存储优先，其次浏览器语言，其余英语；检测结果不写回存储', () => {
     assert.equal(runSite({ stored: 'ja', languages: ['zh-CN'] }).documentElement.lang, 'ja');
     assert.equal(runSite({ languages: ['zh-TW', 'en'] }).documentElement.lang, 'zh-CN');

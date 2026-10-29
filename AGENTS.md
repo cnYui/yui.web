@@ -236,7 +236,7 @@
 - 三语：文案写三份 `<span data-l="zh|ja|en">`，`<html data-title-zh/ja/en>` 给标题；改文案三种语言一起改，测试核对数量。脚本渲染的内容（`js/blog-index.js`、`js/travel.js`、文章的 `js/blog-<slug>.js`）监听 `languageChanged` 重排，取当前语言用 `window.YuiSite.getLang()` / `window.YuiLang.getCurrentLang()`。
 - 日期：中文、日文都用汉字数字（二〇二六年九月十八日、十月十日、十二分钟），英文用 Sep 18, 2026。节气不要写死：`[data-season="line"]`（页脚年份 + 节气）、`[data-season="mark"]`（首页落款：节气 + 候）由 `js/site.js` 按日期推算填字。
 - 墨洇：`<main>` 里的文字块进入视野时一个字一个字洇开，自动生效；某块不想要就加 `data-ink-skip`。新增的块级文字元素用 h1–h4 / p / li / dt / dd / figcaption，图片、`pre`、`table` 会整块淡入。
-- 首页只放五列介绍（做视频，／讲一点 AI，／也写代码。／做有人类温度的产品，／极度克制的审美。）、作品（四个黑客松获奖作品）、联系方式，不放手机号和图片；「住在日本」已按用户要求删去。联系里 bilibili、抖音、note 还缺地址，拿到后再加。
+- 首页只放五列介绍（做视频，／讲一点 AI，／也写代码。／做有人类温度的产品，／极度克制的审美。）、作品（四个黑客松获奖作品）、茶叙、联系方式，不放手机号和图片；「住在日本」已按用户要求删去。联系里 bilibili、抖音、note 还缺地址，拿到后再加。
 - 行旅照片数据在 `js/travel.js`，每条要写 `w` / `h`（图片实际像素）和 zh / ja / en 标题说明，有日期的写 ISO `date`。
 - 实施记录见 `docs/ai/context/20261029-113156-wabi-site-redesign-implementation_CN.md`。
 
@@ -247,3 +247,10 @@
 - 接口挂在 `/travel/` 下而不是 `/api/`：cloudflared 只把固定前缀转给 yui.web，所以不用改 tunnel。
 - 点的位置按墨卡托投影算，常数在 `js/travel-now.js`，用图上四个标记点拟合；换行踪图要重新拟合。落进标题框、图例或长三角放大图的位置不画点。
 - 快捷指令的设置步骤见 `docs/ai/context/20261029-134128-travel-now-location_CN.md`。
+
+## 2026-10-29 首页茶叙（飞书预约）
+
+- 首页「作品」和「联系」之间加了「茶叙」（`#coffee-chat`），照 stv.pm 的 Coffee chat 区块：右边竖排说明和「新窗口打开」，左边直接 iframe 嵌飞书预约页（`https://<租户>.feishu.cn/scheduler/embed/<id>`），新窗口链接是去掉 `/embed` 的同一个预约。只有这张卡片横排。
+- 不能用飞书给的 `scheduler-inline-widget` 脚本（第三方脚本被 `script-src 'self'` 挡），所以手写 iframe；`server.js` 的 CSP 加了 `frame-src https://*.feishu.cn`。换成 Lark（larksuite.com）预约页时要同步改这条。
+- 飞书预约页窄于约 360px 会切掉日历最右一列，所以手机上卡片去掉页边距通栏显示。
+- `test/home.test.js` 会校验 iframe 和新窗口链接是同一个预约、CSP 放行飞书。

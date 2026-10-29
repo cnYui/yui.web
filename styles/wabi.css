@@ -635,6 +635,27 @@ html.ink-on:not(.ink-ready) main { visibility: hidden; }
 .scroll-work p:lang(en) { letter-spacing: 0.04em; }
 .scroll-more { align-self: flex-end; font-size: 13px; letter-spacing: 0.45em; color: var(--quiet); }
 
+/* 茶叙：飞书预约页整块嵌进来，只有它横排；说明和「新窗口打开」仍竖排 */
+.scroll-chat { padding-top: 48px; column-gap: clamp(32px, 4vw, 64px); }
+.scroll-chat-note {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 24px;
+    writing-mode: vertical-rl;
+}
+.scroll-chat-note p { margin: 0; font-size: 14px; line-height: 2.3; letter-spacing: 0.24em; }
+.scroll-chat-note p:lang(en) { letter-spacing: 0.04em; }
+.scroll-chat-frame {
+    flex: 0 1 680px;
+    min-width: 0;
+    height: 626px;
+    border: 1px solid var(--line);
+    background: #fff;
+}
+.scroll-chat-frame iframe { display: block; width: 100%; height: 100%; border: 0; }
+
 .scroll-contact { padding-top: 48px; padding-bottom: 112px; gap: 64px clamp(40px, 7vw, 120px); }
 .scroll-list { margin: 0; padding: 0; list-style: none; writing-mode: vertical-rl; font-size: 15px; line-height: 1; letter-spacing: 0.3em; }
 .scroll-list a { display: inline-block; padding: 12px 15px; }
@@ -672,5 +693,7 @@ html.ink-on:not(.ink-ready) main { visibility: hidden; }
     .scroll-mark { padding-top: 160px; }
     .scroll-section { padding-top: 88px; padding-bottom: 72px; gap: 56px 40px; }
     .scroll-work p { padding-top: 40px; }
+    /* 飞书预约页窄于 360px 会切掉右边一列，手机上去掉页边距通栏显示 */
+    .scroll-chat-frame { flex-basis: 100vw; margin: 0 calc(-1 * var(--gutter)); border-right: 0; border-left: 0; }
     .site-foot { padding-top: 88px; }
 }
