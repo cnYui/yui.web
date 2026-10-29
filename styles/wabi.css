@@ -571,6 +571,37 @@ html.ink-on:not(.ink-ready) main { visibility: hidden; }
     background: var(--line);
 }
 
+/* 雁阵：右边是竖排的字（像一排山），左边留给飞过的雁。每只雁只用一笔翼、一点墨，越远越淡越小；
+   正文洇完之后从领头的那只起，一只一只洇出来（只在 html.ink-on 时，减少动态效果时直接显示）。
+   svg 的右缘贴着竖排字块的左缘（gutter + 470px），宽度随屏幕缩，窄屏上字块占满，就不画了。 */
+.scroll-geese {
+    position: absolute;
+    top: 188px;
+    right: calc(var(--gutter) + 470px);
+    width: min(46vw, 800px, calc(100vw - var(--gutter) - 486px));
+    height: auto;
+    fill: var(--ink);
+    pointer-events: none;
+}
+html.ink-on .goose {
+    animation: goose-in 2.2s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    animation-delay: 1.4s;
+}
+html.ink-on .goose:nth-child(2) { animation-delay: 1.7s; }
+html.ink-on .goose:nth-child(3) { animation-delay: 2s; }
+html.ink-on .goose:nth-child(4) { animation-delay: 2.3s; }
+html.ink-on .goose:nth-child(5) { animation-delay: 2.6s; }
+html.ink-on .goose:nth-child(6) { animation-delay: 2.9s; }
+html.ink-on .goose:nth-child(7) { animation-delay: 1.9s; }
+html.ink-on .goose:nth-child(8) { animation-delay: 2.2s; }
+html.ink-on .goose:nth-child(9) { animation-delay: 2.5s; }
+html.ink-on .goose:nth-child(10) { animation-delay: 3.2s; }
+html.ink-on .goose:nth-child(11) { animation-delay: 3.5s; }
+@keyframes goose-in {
+    from { opacity: 0; filter: blur(5px); }
+    to { opacity: 1; filter: blur(0); }
+}
+
 .scroll-name { writing-mode: vertical-rl; }
 .scroll-name h1 {
     margin: 0 0 0 18px;
@@ -729,6 +760,10 @@ html.ink-on:not(.ink-ready) main { visibility: hidden; }
 
 @media (max-width: 1100px) {
     .scroll-pillar { display: none; }
+}
+
+@media (max-width: 900px) {
+    .scroll-geese { display: none; }
 }
 
 @media (max-width: 720px) {
