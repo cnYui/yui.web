@@ -254,4 +254,12 @@
 - 预约页是悠一自己的一小时预约（租户 `bcn54ef2p2f4.feishu.cn`，`ecafb5a3802923ae`，飞书视频会议），只能在飞书客户端「日历 → 预约活动」里建和改，网页版和开放接口都没有入口。
 - 不能用飞书给的 `scheduler-inline-widget` 脚本（第三方脚本被 `script-src 'self'` 挡）。那个脚本只是往 div 里塞一个 100% 宽高的 iframe，没有别的交互，所以直接手写同样的 iframe；`server.js` 的 CSP 加了 `frame-src https://*.feishu.cn`。换成 Lark（larksuite.com）预约页时要同步改这条。
 - 飞书预约页窄于约 360px 会切掉日历最右一列，所以手机上卡片去掉页边距通栏显示。
+- 桌面上卡片按用户要求缩小：iframe 仍按 680 × 626 排版，用 `--chat-scale: 0.8` 整体缩放（直接改窄会掉成单列的手机版）。外框像装裱，两道 `--line` 细线加四角墨色折角；手机通栏时不缩放，也不画外框。
 - `test/home.test.js` 会校验 iframe 和新窗口链接是同一个预约、CSP 放行飞书。
+
+## 2026-10-29 履历 PDF 公开预览
+
+- 用户要求去掉简历下载口令：`/resume/download` 接口、`js/resume-download.js` 和密码框都删了，`files/WU_JIANXIANG_resume.pdf` 改回公开静态文件。PDF 里有现住所和邮编，用户已知情并确认公开。
+- 履历页「PDF 履历」「作品集」两个链接都用 `target="_blank"` 在浏览器里预览，不带 `download`。作品集是 `files/WU_JIANXIANG_portfolio.pdf`，九页，源文件是用户给的《邬健翔_作品集.pdf》，第七页「数字窗户」还写着「项目名、截图待确认」。
+- PDF 的 Cloudflare 缓存是 7 天，替换同名 PDF 时要改链接上的 `?v=`。
+- 原来的限流器挪到 `lib/attempt-limiter.js`，`/travel/now` 的口令校验在用它。
